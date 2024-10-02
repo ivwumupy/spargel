@@ -9,13 +9,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpargelEngine.Core.Tests", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpargelEngine.Demos.MacWindow", "SpargelEngine.Demos.MacWindow\SpargelEngine.Demos.MacWindow.csproj", "{DEAB448E-14D6-4C60-936C-A9B6FFC9F54E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpargelEngine.Demos.VulkanTriangle", "SpargelEngine.Demos.VulkanTriangle\SpargelEngine.Demos.VulkanTriangle.csproj", "{A419E4B5-FE20-431B-834F-AD3531DD168F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{0D5B8091-90C0-42D3-8B3F-1F15D8DE2A52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -30,5 +29,15 @@ Global
 		{DEAB448E-14D6-4C60-936C-A9B6FFC9F54E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DEAB448E-14D6-4C60-936C-A9B6FFC9F54E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DEAB448E-14D6-4C60-936C-A9B6FFC9F54E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A419E4B5-FE20-431B-834F-AD3531DD168F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A419E4B5-FE20-431B-834F-AD3531DD168F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A419E4B5-FE20-431B-834F-AD3531DD168F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A419E4B5-FE20-431B-834F-AD3531DD168F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {35AFEA24-4AB5-44C8-A11E-1947584B6304}
 	EndGlobalSection
 EndGlobal
