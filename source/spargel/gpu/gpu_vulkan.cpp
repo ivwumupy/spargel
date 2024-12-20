@@ -460,7 +460,7 @@ namespace spargel::gpu {
 
             VkPhysicalDeviceProperties prop;
             procs->vkGetPhysicalDeviceProperties(adapter, &prop);
-            spargel_log_info("adapter # %ld %s", i, prop.deviceName);
+            spargel_log_info("adapter # %zu %s", i, prop.deviceName);
 
             /* step 8.1. check queue families */
             /* We use only one queue family for now. */
@@ -508,7 +508,7 @@ namespace spargel::gpu {
             all_exts.set_count(count);
         }
         for (usize i = 0; i < all_exts.count(); i++) {
-            spargel_log_info("device extension #%ld = %s", i, all_exts[i].extensionName);
+            spargel_log_info("device extension #%zu = %s", i, all_exts[i].extensionName);
         }
 
         /* step 10. choose device extensions */

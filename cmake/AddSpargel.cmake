@@ -15,6 +15,7 @@ function(spargel_target_common name)
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:
                 -Wall
                 -fmacro-prefix-map=${PROJECT_SOURCE_DIR}=
+                -fPIC
             >
     )
     if(${SPARGEL_ENABLE_SANITIZER_ADDRESS})
@@ -171,7 +172,9 @@ function(spargel_application_add_resources)
     if (SPARGEL_IS_ANDROID)
         add_custom_target(${ARGS_TARGET}_copy_resources
             COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ARGS_SRC} ${PROJECT_SOURCE_DIR}/android/demo/app/src/generated/assets/${ARGS_DST})
-        add_dependencies(${ARGS_TARGET}_copy_resources ${ARGS_DEPS})
+        if (${ARGS_DEPS})
+            add_dependencies(${ARGS_TARGET}_copy_resources ${ARGS_DEPS})
+        endif ()
         add_dependencies(${ARGS_TARGET} ${ARGS_TARGET}_copy_resources)
     else ()
         spargel_target_add_resources(${ARGN})
