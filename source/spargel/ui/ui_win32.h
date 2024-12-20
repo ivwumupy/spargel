@@ -1,9 +1,10 @@
 #pragma once
 
 #include <spargel/base/vector.h>
-#include <spargel/base/win_defs.h>
-#include <spargel/base/win_types.h>
 #include <spargel/ui/ui.h>
+
+// Windows
+#include <windows.h>
 
 namespace spargel::ui {
 

@@ -2,6 +2,7 @@
 #include <spargel/base/base.h>
 #include <spargel/base/logging.h>
 #include <spargel/base/object.h>
+#include <spargel/base/platform.h>
 #include <spargel/base/vector.h>
 #include <spargel/config.h>
 #include <spargel/gpu/gpu_vulkan.h>
@@ -12,17 +13,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* platform */
-#if SPARGEL_IS_POSIX
-#include <dlfcn.h>
-#endif
-
 #define VK_NO_PROTOTYPES
 #include <vulkan/vk_platform.h>
 #include <vulkan/vulkan_core.h>
 
 #if SPARGEL_IS_ANDROID
-#include <vulkan/vulkan.h>
 #include <vulkan/vulkan_android.h>
 #endif
 
@@ -38,7 +33,8 @@
 #endif
 
 #if SPARGEL_IS_WINDOWS
-#include <spargel/base/win_procs.h>
+#include <windows.h>
+/* after windows.h */
 #include <vulkan/vulkan_win32.h>
 #endif
 
@@ -119,7 +115,7 @@ namespace spargel::gpu {
 
     struct vulkan_device {
         int backend;
-        void* library;
+        base::dynamic_library_handle* library;
         VkInstance instance;
         VkDebugUtilsMessengerEXT debug_messenger;
         VkPhysicalDevice physical_device;
@@ -169,26 +165,13 @@ namespace spargel::gpu {
                                      device_id* device) {
         alloc_object(vulkan_device, d);
         d->backend = BACKEND_VULKAN;
-#if SPARGEL_IS_POSIX
-        d->library = dlopen(VULKAN_LIB_FILENAME, RTLD_NOW | RTLD_LOCAL);
-#elif SPARGEL_IS_WINDOWS
-        d->library = LoadLibraryA(VULKAN_LIB_FILENAME);
-#else
-#error unimplemented
-#endif
+        d->library = base::open_dynamic_library(VULKAN_LIB_FILENAME);
         if (d->library == NULL) {
             dealloc_object(vulkan_device, d);
             return RESULT_NO_BACKEND;
         }
-#if SPARGEL_IS_POSIX
         PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
-            (PFN_vkGetInstanceProcAddr)dlsym(d->library, "vkGetInstanceProcAddr");
-#elif SPARGEL_IS_WINDOWS
-        PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
-            (PFN_vkGetInstanceProcAddr)GetProcAddress(d->library, "vkGetInstanceProcAddr");
-#else
-#error unimplemented
-#endif
+            (PFN_vkGetInstanceProcAddr)base::get_proc_address(d->library, "vkGetInstanceProcAddr");
 
         d->procs.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
 #define VULKAN_GENERAL_PROC(name) d->procs.name = (PFN_##name)vkGetInstanceProcAddr(NULL, #name);
@@ -598,13 +581,8 @@ namespace spargel::gpu {
             procs->vkDestroyDebugUtilsMessengerEXT(d->instance, d->debug_messenger, 0);
         procs->vkDestroyInstance(d->instance, 0);
 
-#if SPARGEL_IS_POSIX
-        dlclose(d->library);
-#elif SPARGEL_IS_WINDOWS
-        FreeLibrary(d->library);
-#else
-#error unimplemented
-#endif
+        base::close_dynamic_library(d->library);
+
         dealloc_object(vulkan_device, d);
     }
 
@@ -719,7 +697,7 @@ namespace spargel::gpu {
         info.pNext = 0;
         info.flags = 0;
         info.connection = (xcb_connection_t*)wh.xcb.connection;
-        info.window = wh.xcb.window;
+        info.window = (xcb_window_t)wh.xcb.window;
         CHECK_VK_RESULT(d->procs.vkCreateXcbSurfaceKHR(d->instance, &info, 0, &surf));
 #endif
 #if SPARGEL_IS_MACOS
@@ -735,8 +713,8 @@ namespace spargel::gpu {
         info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
         info.pNext = 0;
         info.flags = 0;
-        info.hinstance = wh.win32.hinstance;
-        info.hwnd = wh.win32.hwnd;
+        info.hinstance = (HINSTANCE)wh.win32.hinstance;
+        info.hwnd = (HWND)wh.win32.hwnd;
         CHECK_VK_RESULT(d->procs.vkCreateWin32SurfaceKHR(d->instance, &info, 0, &surf));
 #endif
 

@@ -19,7 +19,8 @@
 #endif
 
 #if SPARGEL_IS_WINDOWS
-#include <spargel/base/win_procs.h>
+// FIXME: move time utils to platform_XXX.cpp
+#include <windows.h>
 #endif
 
 namespace spargel::base {

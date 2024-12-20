@@ -30,20 +30,20 @@ function(spargel_add_executable)
     cmake_parse_arguments(ARGS
         "" # options
         "NAME" # one value
-        "PRIVATE;PRIVATE_ANDROID;PRIVATE_LINUX;PRIVATE_MACOS;PRIVATE_WINDOWS;DEPS" # multi value
+        "PRIVATE;PRIVATE_POSIX;PRIVATE_ANDROID;PRIVATE_LINUX;PRIVATE_MACOS;PRIVATE_WINDOWS;DEPS" # multi value
         ${ARGN})
 
     add_executable(${ARGS_NAME})
     spargel_target_common(${ARGS_NAME})
     target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE})
     if (SPARGEL_IS_ANDROID)
-        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_ANDROID})
+        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_ANDROID})
     endif ()
     if (SPARGEL_IS_LINUX)
-        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_LINUX})
+        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_LINUX})
     endif ()
     if (SPARGEL_IS_MACOS)
-        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_MACOS})
+        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_MACOS})
     endif ()
     if (SPARGEL_IS_WINDOWS)
         target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_WINDOWS})
@@ -62,7 +62,7 @@ function(spargel_add_application)
     cmake_parse_arguments(ARGS
         "" # options
         "NAME" # one value
-        "PRIVATE;PRIVATE_ANDROID;DEPS" # multi value
+        "PRIVATE;PRIVATE_POSIX;PRIVATE_ANDROID;DEPS" # multi value
         ${ARGN})
 
     if (SPARGEL_IS_ANDROID)
@@ -71,7 +71,7 @@ function(spargel_add_application)
         spargel_target_common(${ARGS_NAME})
         target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE})
         if (SPARGEL_IS_ANDROID)
-            target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_ANDROID})
+            target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_ANDROID})
         endif ()
         target_link_libraries(${ARGS_NAME} PRIVATE ${ARGS_DEPS})
         # Mark the top-level symbol as used, otherwise the library will be optimized out.
@@ -85,19 +85,19 @@ function(spargel_add_library)
     cmake_parse_arguments(ARGS
         "" # options
         "NAME" # one value
-        "PUBLIC;PRIVATE;DEPS;PRIVATE_ANDROID;PRIVATE_LINUX;PRIVATE_MACOS;PRIVATE_WINDOWS" # multi value
+        "PUBLIC;PRIVATE;PRIVATE_POSIX;PRIVATE_ANDROID;PRIVATE_LINUX;PRIVATE_MACOS;PRIVATE_WINDOWS;DEPS" # multi value
         ${ARGN})
     add_library(${ARGS_NAME})
     spargel_target_common(${ARGS_NAME})
     target_sources(${ARGS_NAME} PUBLIC ${ARGS_PUBLIC} PRIVATE ${ARGS_PRIVATE})
     if (SPARGEL_IS_ANDROID)
-        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_ANDROID})
+        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_ANDROID})
     endif ()
     if (SPARGEL_IS_LINUX)
-        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_LINUX})
+        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_LINUX})
     endif ()
     if (SPARGEL_IS_MACOS)
-        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_MACOS})
+        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_MACOS})
     endif ()
     if (SPARGEL_IS_WINDOWS)
         target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_WINDOWS})
@@ -109,19 +109,19 @@ function(spargel_add_component)
     cmake_parse_arguments(ARGS
         "" # options
         "NAME" # one value
-        "PUBLIC;PRIVATE;DEPS;PRIVATE_ANDROID;PRIVATE_LINUX;PRIVATE_MACOS;PRIVATE_WINDOWS" # multi value
+        "PUBLIC;PRIVATE;PRIVATE_POSIX;PRIVATE_ANDROID;PRIVATE_LINUX;PRIVATE_MACOS;PRIVATE_WINDOWS;DEPS" # multi value
         ${ARGN})
     add_library(${ARGS_NAME} SHARED)
     spargel_target_common(${ARGS_NAME})
     target_sources(${ARGS_NAME} PUBLIC ${ARGS_PUBLIC} PRIVATE ${ARGS_PRIVATE})
     if (SPARGEL_IS_ANDROID)
-        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_ANDROID})
+        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_ANDROID})
     endif ()
     if (SPARGEL_IS_LINUX)
-        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_LINUX})
+        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_LINUX})
     endif ()
     if (SPARGEL_IS_MACOS)
-        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_MACOS})
+        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_MACOS})
     endif ()
     if (SPARGEL_IS_WINDOWS)
         target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_WINDOWS})
