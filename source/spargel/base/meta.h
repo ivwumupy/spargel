@@ -64,11 +64,11 @@ namespace spargel::base {
         };
         template <typename T>
         struct is_same<T, T> {
-            static constexpr bool value = false;
+            static constexpr bool value = true;
         };
     }  // namespace _is_same
     template <typename S, typename T>
-    inline constexpr bool is_same = _is_same ::is_same<S, T>::value;
+    inline constexpr bool is_same = _is_same::is_same<S, T>::value;
 #endif
 
 #if spargel_has_builtin(__remove_reference_t)

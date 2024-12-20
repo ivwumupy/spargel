@@ -1,5 +1,8 @@
 #pragma once
 
+#include <spargel/base/compiler.h>
+
+// c std
 #include <stddef.h>
 #include <stdint.h>
 
@@ -18,6 +21,9 @@ using i64 = int64_t;
 
 using nullptr_t = decltype(nullptr);
 
+// TODO
+#if !SPARGEL_IS_MSVC
 using f16 = _Float16;
+#endif
 using f32 = float;
 using f64 = double;

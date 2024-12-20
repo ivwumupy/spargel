@@ -106,7 +106,7 @@ namespace spargel::codec {
                 return false;
             }
             /* todo: hack */
-            ctx->pixels[i] = (struct color4){(u8)b, (u8)g, (u8)r, 255};
+            ctx->pixels[i] = {(u8)b, (u8)g, (u8)r, 255};
         }
         return true;
     }

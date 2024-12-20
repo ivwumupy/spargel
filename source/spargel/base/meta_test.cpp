@@ -2,6 +2,10 @@
 
 using namespace spargel::base;
 
+static_assert(is_same<bool, bool>);
+static_assert(is_same<int, int>);
+static_assert(!is_same<int, bool>);
+
 static_assert(is_same<conditional<true, int, bool>, int>);
 static_assert(is_same<conditional<false, int, bool>, bool>);
 

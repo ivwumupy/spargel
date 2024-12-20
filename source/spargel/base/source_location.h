@@ -7,7 +7,8 @@ namespace spargel::base {
 
     struct source_location {
 #if spargel_has_builtin(__builtin_FILE) && spargel_has_builtin(__builtin_FUNCTION) && \
-    spargel_has_builtin(__builtin_LINE)
+        spargel_has_builtin(__builtin_LINE) ||                                        \
+    SPARGEL_IS_MSVC
         static constexpr source_location current(char const* file = __builtin_FILE(),
                                                  char const* func = __builtin_FUNCTION(),
                                                  u32 line = __builtin_LINE()) {
