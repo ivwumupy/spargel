@@ -27,4 +27,63 @@ namespace spargel::ui {
 #endif
     }
 
+    char keyboard_event::toChar() {
+        switch (key) {
+        case physical_key::key_a:
+            return 'a';
+        case physical_key::key_b:
+            return 'b';
+        case physical_key::key_c:
+            return 'c';
+        case physical_key::key_d:
+            return 'd';
+        case physical_key::key_e:
+            return 'e';
+        case physical_key::key_f:
+            return 'f';
+        case physical_key::key_g:
+            return 'g';
+        case physical_key::key_h:
+            return 'h';
+        case physical_key::key_i:
+            return 'i';
+        case physical_key::key_j:
+            return 'j';
+        case physical_key::key_k:
+            return 'k';
+        case physical_key::key_l:
+            return 'l';
+        case physical_key::key_m:
+            return 'm';
+        case physical_key::key_n:
+            return 'n';
+        case physical_key::key_o:
+            return 'o';
+        case physical_key::key_p:
+            return 'p';
+        case physical_key::key_q:
+            return 'q';
+        case physical_key::key_r:
+            return 'r';
+        case physical_key::key_s:
+            return 's';
+        case physical_key::key_t:
+            return 't';
+        case physical_key::key_u:
+            return 'u';
+        case physical_key::key_v:
+            return 'v';
+        case physical_key::key_w:
+            return 'w';
+        case physical_key::key_x:
+            return 'x';
+        case physical_key::key_y:
+            return 'y';
+        case physical_key::key_z:
+            return 'z';
+        default:
+            return '.';
+        }
+    }
+
 }  // namespace spargel::ui

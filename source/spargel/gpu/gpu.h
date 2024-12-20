@@ -5,7 +5,7 @@
 
 namespace spargel::gpu {
 
-    typedef struct device* device_id;
+    typedef struct Device* device_id;
     typedef u64 command_queue_id;
     typedef u64 command_buffer_id;
     typedef u64 render_pass_encoder_id;
@@ -49,7 +49,7 @@ namespace spargel::gpu {
         ui::platform_kind platform;
     };
 
-    struct render_pipeline_descriptor {
+    struct RenderPipelineDescriptor {
         // int primitive;
         int target_format;
         shader_function_id vertex_function;
@@ -122,7 +122,7 @@ namespace spargel::gpu {
     void destroy_shader_function(device_id device, shader_function_id func);
 
     int create_render_pipeline(device_id device,
-                               struct render_pipeline_descriptor const* descriptor,
+                               struct RenderPipelineDescriptor const* descriptor,
                                render_pipeline_id* pipeline);
 
     void destroy_render_pipeline(device_id device, render_pipeline_id pipeline);

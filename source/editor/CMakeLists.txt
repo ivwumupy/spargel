@@ -4,17 +4,6 @@ spargel_add_executable(
     DEPS codec ui
 )
 
-if (SPARGEL_IS_MACOS)
-spargel_add_executable(
-    NAME node_editor
-    PRIVATE_MACOS
-        node_editor_mac.cpp
-    DEPS
-        base
-        ui
-)
-endif ()
-
 if(SPARGEL_IS_MACOS)
   add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/SpargelEditor.app/Contents/Info.plist

@@ -3,16 +3,16 @@
 
 #if SPARGEL_GPU_ENABLE_METAL
 namespace spargel::gpu {
-    base::unique_ptr<device> make_device_metal();
+    base::unique_ptr<Device> make_device_metal();
 }
 #endif
 
 namespace spargel::gpu {
 
-    base::unique_ptr<device> make_device(device_kind kind) {
+    base::unique_ptr<Device> makeDevice(DeviceKind kind) {
         switch (kind) {
 #if SPARGEL_GPU_ENABLE_METAL
-        case device_kind::metal:
+        case DeviceKind::metal:
             return make_device_metal();
 #endif
         default:

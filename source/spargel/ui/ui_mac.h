@@ -26,6 +26,7 @@ namespace spargel::ui {
         void start_loop() override;
 
         base::unique_ptr<window> make_window(u32 width, u32 height) override;
+        base::unique_ptr<TextSystem> createTextSystem() override;
 
     private:
         void init_global_menu();
@@ -42,6 +43,9 @@ namespace spargel::ui {
 
         void set_title(char const* title) override;
 
+        void setAnimating(bool animating) override;
+        void requestRedraw() override;
+
         window_handle handle() override;
 
         // todo: remove
@@ -50,14 +54,28 @@ namespace spargel::ui {
         // todo: refactor
         void _bridge_render();
 
-        void _bridge_key_down(int key);
+        void _bridge_key_down(int key, NSEventType type);
 
     private:
         NSWindow* _window;
         SpargelWindowDelegate* _bridge;
+        SpargelMetalView* _view;
         CAMetalLayer* _layer;
         float _drawable_width;
         float _drawable_height;
+        bool _animating = true;
+    };
+
+    class TextSystemAppKit final : public TextSystem {
+    public:
+        TextSystemAppKit();
+        ~TextSystemAppKit();
+
+        LineLayout layoutLine(base::string_view str) override;
+        RasterResult rasterizeGlyph(GlyphId id) override;
+
+    private:
+        CTFontRef _font;
     };
 
 }  // namespace spargel::ui

@@ -13,7 +13,7 @@ spargel_add_application(
 spargel_add_executable(
     NAME demo_gpu3
     PRIVATE demo_gpu3.cpp
-    DEPS gpu ui
+    DEPS gpu resource ui
 )
 
 spargel_add_executable(
@@ -68,7 +68,7 @@ if (SPARGEL_GPU_ENABLE_METAL)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shader.ir
         COMMAND
-            xcrun metal -o ${CMAKE_CURRENT_BINARY_DIR}/shader.ir -c ${CMAKE_CURRENT_SOURCE_DIR}/shader.metal
+            xcrun metal -frecord-sources -o ${CMAKE_CURRENT_BINARY_DIR}/shader.ir -c ${CMAKE_CURRENT_SOURCE_DIR}/shader.metal
         DEPENDS shader.metal
     )
     add_custom_command(
@@ -87,6 +87,16 @@ if (SPARGEL_GPU_ENABLE_METAL)
         DEPENDS
             ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib.inc
     )
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
+        COMMAND
+            cp ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib
+    )
+    add_custom_target(demo_gpu3_metal_shaders
+        DEPENDS
+            ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
+    )
     add_dependencies(demo_gpu demo_gpu_metal_shaders)
-    add_dependencies(demo_gpu3 demo_gpu_metal_shaders)
+    add_dependencies(demo_gpu3 demo_gpu3_metal_shaders)
 endif ()

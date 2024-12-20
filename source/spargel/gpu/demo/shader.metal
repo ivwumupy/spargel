@@ -1,24 +1,44 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct rasterize_data {
-    float4 position [[position]];
-    float4 color;
+struct QuadData {
+    float2 origin;
+    float2 size;
+    float2 cell_origin;
 };
 
-struct vertex_data {
+struct VertexData {
     float2 position [[attribute(0)]];
-    float4 color [[attribute(1)]];
 };
 
-[[vertex]] rasterize_data vertex_shader(uint vertex_id [[vertex_id]], vertex_data in [[stage_in]]) {
-    rasterize_data out;
+struct RasterData {
+    float4 position [[position]];
+    float2 texture_coord;
+};
+
+struct UniformData {
+    float2 viewport;
+};
+
+[[vertex]] RasterData vertex_shader(uint vertex_id [[vertex_id]],
+                                    uint instance_id [[instance_id]],
+                                    VertexData in [[stage_in]],
+                                    constant QuadData* quads [[buffer(1)]],
+                                    constant UniformData& uniform [[buffer(2)]]) {
+    float2 pixel_position = in.position * quads[instance_id].size + quads[instance_id].origin;
+
+    RasterData out;
     out.position = float4(0.0, 0.0, 0.0, 1.0);
-    out.position.xy = in.position;
-    out.color = in.color;
+    out.position.xy = pixel_position / (uniform.viewport / 2.0);
+    out.texture_coord = float2(in.position.x, 1.0 - in.position.y) * quads[instance_id].size + quads[instance_id].cell_origin;
+    out.texture_coord /= float2(512, 512);
     return out;
 }
 
-[[fragment]] float4 fragment_shader(rasterize_data in [[stage_in]]) {
-  return in.color;
+[[fragment]] float4 fragment_shader(RasterData in [[stage_in]],
+                                    texture2d<float> color_texture [[texture(0)]]) {
+    constexpr sampler texture_sampler(mag_filter::linear, min_filter::linear);
+    float4 color = float4(1.0, 0.0, 0.0, 1.0);
+    color.a *= color_texture.sample(texture_sampler, in.texture_coord).a;
+    return color;
 }

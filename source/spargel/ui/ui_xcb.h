@@ -20,6 +20,7 @@ namespace spargel::ui {
         void start_loop() override;
 
         base::unique_ptr<window> make_window(u32 width, u32 height) override;
+        base::unique_ptr<TextSystem> createTextSystem() override { return nullptr; }
 
     private:
         xcb_connection_t* _connection;

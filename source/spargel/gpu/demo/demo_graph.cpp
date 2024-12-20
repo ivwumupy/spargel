@@ -4,7 +4,38 @@
 // libc
 #include <stdio.h>
 
+using namespace spargel;
 using namespace spargel::gpu;
+
+struct prepared_graph {
+    enum class node_kind {
+        render,
+        present,
+        texture,
+        buffer,
+    };
+    struct node_info {
+        node_info(node_kind k, u32 i, base::string_view n) : kind{k}, index{i}, name{n} {}
+
+        node_kind kind;
+        u32 index;
+        base::string_view name;
+        u32 refcount = 0;
+        bool culled = false;
+        bool target = false;
+        base::vector<u32> inputs;
+        base::vector<u32> outputs;
+    };
+    struct render_node {};
+    struct present_node {};
+    struct texture_node {};
+    struct buffer_node {};
+    base::vector<node_info> nodes;
+    base::vector<render_node> renders;
+    base::vector<present_node> presents;
+    base::vector<texture_node> textures;
+    base::vector<buffer_node> buffers;
+};
 
 int main() {
     prepared_graph graph;

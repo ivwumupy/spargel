@@ -23,7 +23,7 @@
 #include <spargel/gpu/demo/vertex_shader.spirv.inc>
 #endif
 
-struct renderer final : spargel::ui::window_delegate {
+struct Renderer final : spargel::ui::window_delegate {
     void on_render() override {
         spargel::gpu::reset_command_buffer(device, cmdbuf);
 
@@ -61,7 +61,7 @@ struct renderer final : spargel::ui::window_delegate {
     int frame;
 };
 
-static int create(int backend, char const* title, renderer* r, spargel::ui::platform* platform) {
+static int create(int backend, char const* title, Renderer* r, spargel::ui::platform* platform) {
     auto window = platform->make_window(500, 500);
     window->set_title(title);
     window->set_delegate(r);
@@ -131,12 +131,12 @@ int main() {
     auto platform = spargel::ui::make_platform();
 
 #if USE_VULKAN
-    renderer r_vk;
+    Renderer r_vk;
     if (create(spargel::gpu::BACKEND_VULKAN, "Spargel Demo - Vulkan", &r_vk, platform.get()) != 0)
         return 1;
 #endif
 #if USE_METAL
-    renderer r_mtl;
+    Renderer r_mtl;
     if (create(spargel::gpu::BACKEND_VULKAN, "Spargel Demo - Metal", &r_mtl, platform.get()) != 0)
         return 1;
 #endif

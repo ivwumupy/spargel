@@ -5,6 +5,7 @@
 #include <spargel/base/assert.h>
 #include <spargel/base/meta.h>
 #include <spargel/base/object.h>
+#include <spargel/base/span.h>
 #include <spargel/base/tag_invoke.h>
 #include <spargel/base/types.h>
 
@@ -90,6 +91,8 @@ namespace spargel::base {
             T const* begin() const { return _begin; }
             T* end() { return _end; }
             T const* end() const { return _end; }
+
+            span<T> toSpan() const { return span<T>(_begin, _end); }
 
             friend void tag_invoke(tag<swap>, vector& lhs, vector& rhs) {
                 swap(lhs._begin, rhs._begin);

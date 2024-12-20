@@ -1,6 +1,6 @@
-
 #include <spargel/base/assert.h>
 #include <spargel/base/const.h>
+#include <spargel/base/logging.h>
 #include <spargel/base/platform.h>
 #include <spargel/resource/directory.h>
 #include <spargel/util/path.h>
@@ -65,6 +65,8 @@ namespace spargel::resource {
         base::string real_path = _real_path(id);
         int fd = ::open(real_path.data(), O_RDONLY);
         if (fd < 0) {
+            spargel_log_error("requested resource \"%s//%s\" not found", id.ns().data(),
+                              id.path().data());
             return nullptr;
         }
         struct stat sb;

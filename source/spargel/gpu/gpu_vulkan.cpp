@@ -624,7 +624,7 @@ namespace spargel::gpu {
     }
 
     int vulkan_create_render_pipeline(device_id device,
-                                      struct render_pipeline_descriptor const* descriptor,
+                                      struct RenderPipelineDescriptor const* descriptor,
                                       render_pipeline_id* pipeline) {
         alloc_object(vulkan_render_pipeline, p);
 

@@ -14,8 +14,6 @@ namespace spargel::ui {
 
 namespace spargel::gpu {
 
-    class task_graph;
-
     enum class texture_format {
         bgra8_unorm,
         bgra8_srgb,
@@ -32,7 +30,7 @@ namespace spargel::gpu {
         store,
     };
 
-    enum class device_kind {
+    enum class DeviceKind {
         directx,
         metal,
         vulkan,
@@ -77,7 +75,7 @@ namespace spargel::gpu {
     /// metal: https://developer.apple.com/documentation/metal/mtlcullmode
     /// vulkan: https://registry.khronos.org/vulkan/specs/latest/man/html/VkCullModeFlagBits.html
     ///
-    enum class cull_mode {
+    enum class CullMode {
         /// @brief no triangles are discarded
         none,
         /// @brief front-facing triangles are discarded
@@ -93,7 +91,7 @@ namespace spargel::gpu {
     /// metal: https://developer.apple.com/documentation/metal/mtlwinding
     /// vulkan: https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkFrontFace.html
     ///
-    enum class orientation {
+    enum class Orientation {
         /// @brief clockwise triangles are front-facing
         clockwise,
         /// @brief counter-clockwise triangles are front-facing
@@ -107,7 +105,7 @@ namespace spargel::gpu {
     /// metal: https://developer.apple.com/documentation/metal/mtlprimitivetopologyclass
     /// vulkan: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPrimitiveTopology.html
     ///
-    enum class primitive_kind {
+    enum class PrimitiveKind {
         point,
         line,
         triangle,
@@ -121,11 +119,11 @@ namespace spargel::gpu {
     /// vulkan:
     /// https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkVertexInputRate.html
     ///
-    enum class vertex_step_mode {
+    enum class VertexStepMode {
         /// @brief attributes are fetched per vertex
-        vertex,
+        Vertex,
         /// @brief attributes are fetched per instance
-        instance,
+        Instance,
     };
 
     enum class vertex_attribute_format {
@@ -193,19 +191,37 @@ namespace spargel::gpu {
         always,
     };
 
+    struct Viewport {
+        float x;
+        float y;
+        float width;
+        float height;
+        float z_near;
+        float z_far;
+    };
+
+    struct vertex_buffer_location {
+        struct {
+            int buffer_index;
+        } apple;
+        struct {
+            int vertex_buffer_index;
+        } vulkan;
+    };
+
     template <typename T>
-    class object_ptr {
+    class ObjectPtr {
     public:
-        object_ptr() = default;
-        object_ptr(nullptr_t) {}
+        ObjectPtr() = default;
+        ObjectPtr(nullptr_t) {}
 
         template <typename U>
             requires(base::is_convertible<U*, T*>)
-        explicit object_ptr(U* ptr) : _ptr{ptr} {}
+        explicit ObjectPtr(U* ptr) : _ptr{ptr} {}
 
         template <typename U>
             requires(base::is_convertible<U*, T*>)
-        object_ptr(object_ptr<U> const ptr) : _ptr{ptr.get()} {}
+        ObjectPtr(ObjectPtr<U> const ptr) : _ptr{ptr.get()} {}
 
         T* operator->() { return _ptr; }
         T const* operator->() const { return _ptr; }
@@ -213,12 +229,12 @@ namespace spargel::gpu {
         T* get() const { return _ptr; }
 
         template <typename U>
-        object_ptr<U> cast() {
-            return object_ptr<U>(static_cast<U*>(_ptr));
+        ObjectPtr<U> cast() {
+            return ObjectPtr<U>(static_cast<U*>(_ptr));
         }
         template <typename U>
-        object_ptr<U> const cast() const {
-            return object_ptr<U>(static_cast<U*>(_ptr));
+        ObjectPtr<U> const cast() const {
+            return ObjectPtr<U>(static_cast<U*>(_ptr));
         }
 
     private:
@@ -226,29 +242,76 @@ namespace spargel::gpu {
     };
 
     template <typename T, typename... Args>
-    object_ptr<T> make_object(Args&&... args) {
+    ObjectPtr<T> make_object(Args&&... args) {
         T* ptr = static_cast<T*>(base::default_allocator()->alloc(sizeof(T)));
         base::construct_at(ptr, base::forward<Args>(args)...);
-        return object_ptr<T>(ptr);
+        return ObjectPtr<T>(ptr);
     }
 
     template <typename T>
-    void destroy_object(object_ptr<T> ptr) {
+    void destroy_object(ObjectPtr<T> ptr) {
         ptr->~T();
         base::default_allocator()->free(ptr.get(), sizeof(T));
     }
 
-    class shader_library {};
-    class render_pipeline {};
-    class bind_group {};
-    class bind_group_layout {};
-    class buffer {};
-    class texture {};
-    class surface {
+    class ShaderLibrary {};
+    class RenderPipeline {};
+    class BindGroup {};
+    class BindGroupLayout {};
+    class Buffer {};
+    class Texture {
     public:
-        virtual object_ptr<texture> next_texture() = 0;
+        virtual void updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
+                                  base::span<u8> bytes) = 0;
+    };
+    class Surface {
+    public:
+        virtual ObjectPtr<Texture> nextTexture() = 0;
         virtual float width() = 0;
         virtual float height() = 0;
+    };
+    class RenderPassEncoder {
+    public:
+        virtual void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) = 0;
+        virtual void setVertexBuffer(ObjectPtr<Buffer> buffer,
+                                     vertex_buffer_location const& loc) = 0;
+        virtual void setTexture(ObjectPtr<Texture> texture) = 0;
+        virtual void setViewport(Viewport viewport) = 0;
+        virtual void draw(int vertex_start, int vertex_count) = 0;
+        virtual void draw(int vertex_start, int vertex_count, int instance_start,
+                          int instance_count) = 0;
+    };
+
+    struct ClearColor {
+        float r;
+        float g;
+        float b;
+        float a;
+    };
+
+    struct ColorAttachmentDescriptor {
+        ObjectPtr<Texture> texture;
+        load_action load = load_action::clear;
+        store_action store = store_action::store;
+        ClearColor clear_color;
+    };
+
+    struct RenderPassDescriptor {
+        base::span<ColorAttachmentDescriptor> color_attachments;
+    };
+
+    class CommandBuffer {
+    public:
+        virtual ObjectPtr<RenderPassEncoder> beginRenderPass(
+            RenderPassDescriptor const& descriptor) = 0;
+        virtual void endRenderPass(ObjectPtr<RenderPassEncoder> encoder) = 0;
+        virtual void present(ObjectPtr<Surface> surface) = 0;
+        virtual void submit() = 0;
+    };
+    class CommandQueue {
+    public:
+        virtual ObjectPtr<CommandBuffer> createCommandBuffer() = 0;
+        virtual void destroyCommandBuffer(ObjectPtr<CommandBuffer>) = 0;
     };
 
     struct shader_library_descriptor {
@@ -256,7 +319,7 @@ namespace spargel::gpu {
     };
 
     struct shader_function {
-        object_ptr<shader_library> library;
+        ObjectPtr<ShaderLibrary> library;
         char const* entry;
     };
 
@@ -270,7 +333,7 @@ namespace spargel::gpu {
     ///
     struct vertex_attribute_descriptor {
         /// @brief index of the vertex buffer where the data of the attribute is fetched
-        int buffer;
+        u32 buffer;
 
         /// @brief the location of the vertex attribute
         ///
@@ -287,7 +350,7 @@ namespace spargel::gpu {
         /// - SPIRV-Cross uses "TEXCOORD" by default, and provides the options for remapping.
         /// - dxc relies on user declaration `[[vk::location(0)]]`.
         ///
-        int location;
+        u32 location;
 
         /// @brief the format of the vertex attribute
         vertex_attribute_format format;
@@ -314,10 +377,10 @@ namespace spargel::gpu {
         /// vulkan:
         /// https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkVertexInputBindingDescription.html
         ///
-        ssize stride;
+        usize stride;
 
         /// @brief the rate of fetching vertex attributes
-        vertex_step_mode step_mode;
+        VertexStepMode step_mode;
 
         // TODO: step rate is not supported by vulkan.
     };
@@ -330,22 +393,22 @@ namespace spargel::gpu {
     /// vulkan:
     /// https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkGraphicsPipelineCreateInfo.html
     ///
-    struct render_pipeline_descriptor {
-        // the input-assembler stage
-
+    struct RenderPipelineDescriptor {
         /// @brief the geometric primitive for this render pipeline
-        primitive_kind primitive;
-        /// @brief the orientation of front-facing triangles
-        orientation front_face;
-        /// @brief which triangles to discard
-        cull_mode cull;
+        PrimitiveKind primitive = PrimitiveKind::triangle;
 
-        // the vertex stage
+        /// @brief the orientation of front-facing triangles
+        Orientation front_face = Orientation::counter_clockwise;
+
+        /// @brief which triangles to discard
+        CullMode cull = CullMode::none;
 
         /// @brief the vertex function
         shader_function vertex_shader;
+
         /// @brief the vertex buffers used in this pipeline
         base::span<vertex_buffer_descriptor> vertex_buffers;
+
         /// @brief the vertex attributes used in this pipeline
         base::span<vertex_attribute_descriptor> vertex_attributes;
 
@@ -353,97 +416,68 @@ namespace spargel::gpu {
         shader_function fragment_shader;
     };
 
-    struct viewport {
-        float x;
-        float y;
-        float width;
-        float height;
-        float z_near;
-        float z_far;
-    };
-
-    struct vertex_buffer_location {
-        struct {
-            int buffer_index;
-        } apple;
-        struct {
-            int vertex_buffer_index;
-        } vulkan;
-    };
-
-    class task_graph {
+    class Device {
     public:
-        void add_render_task() {}
-        void add_host_task() {}
-        void add_present_task() {}
-    };
+        virtual ~Device() = default;
 
-    struct prepared_graph {
-        enum class node_kind {
-            render,
-            present,
-            texture,
-            buffer,
-        };
-        struct node_info {
-            node_info(node_kind k, u32 i, base::string_view n) : kind{k}, index{i}, name{n} {}
+        DeviceKind kind() const { return _kind; }
 
-            node_kind kind;
-            u32 index;
-            base::string_view name;
-            u32 refcount = 0;
-            bool culled = false;
-            bool target = false;
-            base::vector<u32> inputs;
-            base::vector<u32> outputs;
-        };
-        struct render_node {};
-        struct present_node {};
-        struct texture_node {};
-        struct buffer_node {};
-        base::vector<node_info> nodes;
-        base::vector<render_node> renders;
-        base::vector<present_node> presents;
-        base::vector<texture_node> textures;
-        base::vector<buffer_node> buffers;
-    };
+        virtual ObjectPtr<ShaderLibrary> createShaderLibrary(base::span<u8> bytes) = 0;
+        virtual ObjectPtr<RenderPipeline> createRenderPipeline(
+            RenderPipelineDescriptor const& descriptor) = 0;
+        virtual ObjectPtr<Surface> createSurface(ui::window* w) = 0;
+        virtual void destroyShaderLibrary(ObjectPtr<ShaderLibrary> library) = 0;
+        virtual void destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) = 0;
 
-    class device {
-    public:
-        virtual ~device() = default;
+        virtual ObjectPtr<Buffer> createBuffer(base::span<u8> bytes) = 0;
+        virtual void destroyBuffer(ObjectPtr<Buffer> buffer) = 0;
 
-        device_kind kind() const { return _kind; }
+        // todo: format, 2d
+        virtual ObjectPtr<Texture> createTexture(u32 width, u32 height) = 0;
+        virtual void destroyTexture(ObjectPtr<Texture> texture) = 0;
 
-        virtual object_ptr<shader_library> make_shader_library(
-            shader_library_descriptor const& descriptor) = 0;
-        virtual object_ptr<render_pipeline> make_render_pipeline(
-            render_pipeline_descriptor const& descriptor) = 0;
-        virtual object_ptr<surface> make_surface(ui::window* w) = 0;
-        virtual void destroy_shader_library(object_ptr<shader_library> library) = 0;
-        virtual void destroy_render_pipeline(object_ptr<render_pipeline> pipeline) = 0;
-
-        virtual object_ptr<buffer> make_buffer_with_bytes(base::span<u8> bytes) = 0;
-        virtual void destroy_buffer(object_ptr<buffer> b) = 0;
-
-        virtual void begin_render_pass(object_ptr<texture> t) = 0;
-        virtual void set_render_pipeline(object_ptr<render_pipeline> p) = 0;
-        virtual void set_vertex_buffer(object_ptr<buffer> b, vertex_buffer_location const& loc) = 0;
-        virtual void set_viewport(viewport v) = 0;
-        virtual void draw(int vertex_start, int vertex_count) = 0;
-        virtual void draw(int vertex_start, int vertex_count, int instance_start,
-                          int instance_count) = 0;
-        virtual void end_render_pass() = 0;
-        virtual void present(object_ptr<surface> s) = 0;
-
-        virtual void execute(task_graph& graph) = 0;
+        virtual ObjectPtr<CommandQueue> createCommandQueue() = 0;
+        virtual void destroyCommandQueue(ObjectPtr<CommandQueue> queue) = 0;
 
     protected:
-        explicit device(device_kind k) : _kind{k} {}
+        explicit Device(DeviceKind k) : _kind{k} {}
 
     private:
-        device_kind _kind;
+        DeviceKind _kind;
     };
 
-    base::unique_ptr<device> make_device(device_kind kind);
+    base::unique_ptr<Device> makeDevice(DeviceKind kind);
+
+    class RenderPipelineBuilder {
+    public:
+        void setPrimitive(PrimitiveKind primitive) { _desc.primitive = primitive; }
+        void setVertexShader(ObjectPtr<ShaderLibrary> library, char const* entry) {
+            _desc.vertex_shader.library = library;
+            _desc.vertex_shader.entry = entry;
+        }
+        void setFragmentShader(ObjectPtr<ShaderLibrary> library, char const* entry) {
+            _desc.fragment_shader.library = library;
+            _desc.fragment_shader.entry = entry;
+        }
+        void addVertexBuffer(usize stride) { _vertex_buffers.push(stride, VertexStepMode::Vertex); }
+        void addVertexBuffer(usize stride, VertexStepMode step_mode) {
+            _vertex_buffers.push(stride, step_mode);
+        }
+        void addVertexAttribute(vertex_attribute_format format, u32 location, u32 buffer,
+                                u32 offset) {
+            _vertex_attributes.push(buffer, location, format, offset);
+        }
+
+        ObjectPtr<RenderPipeline> build(Device* device) {
+            _desc.vertex_buffers = _vertex_buffers.toSpan();
+            _desc.vertex_attributes = _vertex_attributes.toSpan();
+            return device->createRenderPipeline(_desc);
+        }
+
+    private:
+        RenderPipelineDescriptor _desc;
+        base::vector<vertex_buffer_descriptor> _vertex_buffers;
+        base::vector<vertex_attribute_descriptor> _vertex_attributes;
+    };
 
 }  // namespace spargel::gpu

@@ -162,7 +162,7 @@ namespace spargel::gpu {
     }
 
     int metal_create_render_pipeline(device_id device,
-                                     struct render_pipeline_descriptor const* descriptor,
+                                     struct RenderPipelineDescriptor const* descriptor,
                                      render_pipeline_id* pipeline) {
         cast_object(metal_device, d, device);
         cast_object(metal_shader_function, vs, descriptor->vertex_function);

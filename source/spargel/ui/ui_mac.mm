@@ -1,11 +1,23 @@
 #include <spargel/base/allocator.h>
 #include <spargel/base/assert.h>
+#include <spargel/base/logging.h>
+#include <spargel/base/meta.h>
+#include <spargel/base/unique_ptr.h>
+#include <spargel/base/vector.h>
 #include <spargel/ui/ui.h>
 #include <spargel/ui/ui_mac.h>
+
+// libc
+#include <math.h>
+#include <stddef.h>
+#include <string.h>
 
 // platform
 #import <AppKit/AppKit.h>
 #include <Carbon/Carbon.h>
+#include <CoreFoundation/CoreFoundation.h>
+#include <CoreGraphics/CoreGraphics.h>
+#include <CoreText/CoreText.h>
 #import <QuartzCore/QuartzCore.h>
 
 @implementation SpargelApplicationDelegate
@@ -25,9 +37,7 @@
     _bridge = w;
     _layer = layer;
     self.layer = _layer;
-    self.wantsLayer = YES;
-    // view.layer = _layer;
-    // view.wantsLayer = YES;  // layer-hosting view
+    self.wantsLayer = YES;  // layer-hosting view
     return self;
 }
 - (void)viewDidMoveToWindow {
@@ -46,10 +56,17 @@
     [_link invalidate];
     _link = [window displayLinkWithTarget:self selector:@selector(render:)];
 }
+- (void)setAnimating:(bool)animating {
+    _link.paused = !animating;
+}
 - (void)render:(CADisplayLink*)sender {
-    @autoreleasepool {
-        _bridge->_bridge_render();
-    }
+    // The Application Kit creates an autorelease pool on the main thread at the beginning of every
+    // cycle of the event loop, and drains it at the end, thereby releasing any autoreleased objects
+    // generated while processing an event.
+    //
+    // @autoreleasepool {
+    _bridge->_bridge_render();
+    // }
 }
 - (void)viewDidChangeBackingProperties {
     [super viewDidChangeBackingProperties];
@@ -81,7 +98,7 @@
 }
 - (void)keyDown:(NSEvent*)event {
     auto code = [event keyCode];
-    _bridge->_bridge_key_down(code);
+    _bridge->_bridge_key_down(code, event.type);
     // [self interpretKeyEvents:@[ event ]];
 }
 - (BOOL)acceptsFirstResponder {
@@ -98,6 +115,74 @@
     return self;
 }
 @end
+
+namespace {
+    spargel::ui::physical_key translate_physical_key(int code) {
+        using enum spargel::ui::physical_key;
+        switch (code) {
+        case kVK_ANSI_A:
+            return key_a;
+        case kVK_ANSI_B:
+            return key_b;
+        case kVK_ANSI_C:
+            return key_c;
+        case kVK_ANSI_D:
+            return key_d;
+        case kVK_ANSI_E:
+            return key_e;
+        case kVK_ANSI_F:
+            return key_f;
+        case kVK_ANSI_G:
+            return key_g;
+        case kVK_ANSI_H:
+            return key_h;
+        case kVK_ANSI_I:
+            return key_i;
+        case kVK_ANSI_J:
+            return key_j;
+        case kVK_ANSI_K:
+            return key_k;
+        case kVK_ANSI_L:
+            return key_l;
+        case kVK_ANSI_M:
+            return key_m;
+        case kVK_ANSI_N:
+            return key_n;
+        case kVK_ANSI_O:
+            return key_o;
+        case kVK_ANSI_P:
+            return key_p;
+        case kVK_ANSI_Q:
+            return key_q;
+        case kVK_ANSI_R:
+            return key_r;
+        case kVK_ANSI_S:
+            return key_s;
+        case kVK_ANSI_T:
+            return key_t;
+        case kVK_ANSI_U:
+            return key_u;
+        case kVK_ANSI_V:
+            return key_v;
+        case kVK_ANSI_W:
+            return key_w;
+        case kVK_ANSI_X:
+            return key_x;
+        case kVK_ANSI_Y:
+            return key_y;
+        case kVK_ANSI_Z:
+            return key_z;
+        case kVK_Space:
+            return space;
+        case kVK_Escape:
+            return escape;
+        case kVK_Delete:
+            return key_delete;
+        default:
+            return unknown;
+        }
+    }
+}  // namespace
 
 namespace spargel::ui {
 
@@ -123,6 +208,9 @@ namespace spargel::ui {
     base::unique_ptr<window> platform_appkit::make_window(u32 width, u32 height) {
         spargel_assert(width > 0 && height > 0);
         return base::make_unique<window_appkit>(width, height);
+    }
+    base::unique_ptr<TextSystem> platform_appkit::createTextSystem() {
+        return base::make_unique<TextSystemAppKit>();
     }
 
     void platform_appkit::init_global_menu() {
@@ -167,15 +255,10 @@ namespace spargel::ui {
 
         _layer = [[CAMetalLayer alloc] init];
 
-        SpargelMetalView* view = [[SpargelMetalView alloc] initWithSpargelUIWindow:this
-                                                                        metalLayer:_layer];
-        // view.layer = _layer;
-        // view.wantsLayer = YES;  // layer-hosting view
+        _view = [[SpargelMetalView alloc] initWithSpargelUIWindow:this metalLayer:_layer];
 
         // strong reference
-        _window.contentView = view;
-
-        [view release];
+        _window.contentView = _view;
 
         [_window makeKeyAndOrderFront:nil];
     }
@@ -189,10 +272,18 @@ namespace spargel::ui {
         _window.title = [NSString stringWithUTF8String:title];
     }
 
+    void window_appkit::setAnimating(bool animating) {
+        if (_animating != animating) {
+            [_view setAnimating:animating];
+        }
+        _animating = animating;
+    }
+
+    void window_appkit::requestRedraw() { _bridge_render(); }
+
     void window_appkit::_set_drawable_size(float width, float height) {
         _drawable_width = width;
         _drawable_height = height;
-        // _layer.drawableSize = NSMakeSize(width, height);
     }
 
     window_handle window_appkit::handle() {
@@ -207,11 +298,137 @@ namespace spargel::ui {
         }
     }
 
-    void window_appkit::_bridge_key_down(int key) {
+    void window_appkit::_bridge_key_down(int key, NSEventType type) {
         if (delegate() != nullptr) {
-            keyboard_event e{key};
+            keyboard_event e;
+            e.key = translate_physical_key(key);
+            if (type == NSEventTypeKeyDown) {
+                e.action = keyboard_action::press;
+            } else if (type == NSEventTypeKeyUp) {
+                e.action = keyboard_action::release;
+            } else {
+                spargel_panic_here();
+            }
             delegate()->on_keyboard(e);
         }
+    }
+
+    TextSystemAppKit::TextSystemAppKit() {
+        // use system language
+        _font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 14, NULL);
+    }
+
+    TextSystemAppKit::~TextSystemAppKit() { CFRelease(_font); }
+
+    LineLayout TextSystemAppKit::layoutLine(base::string_view str) {
+        auto cfstr = CFStringCreateWithBytes(kCFAllocatorDefault, (u8 const*)str.data(),
+                                             str.length(), kCFStringEncodingUTF8, false);
+
+        void const* keys[] = {kCTFontAttributeName};
+        void const* values[] = {_font};
+
+        auto dict = CFDictionaryCreate(kCFAllocatorDefault, keys, values, 1, NULL, NULL);
+
+        auto attr_str = CFAttributedStringCreate(kCFAllocatorDefault, cfstr, dict);
+
+        auto line = CTLineCreateWithAttributedString(attr_str);
+
+        auto glyph_runs = CTLineGetGlyphRuns(line);
+        auto run_count = CFArrayGetCount(glyph_runs);
+
+        LineLayout result;
+        LayoutRun r;
+
+        base::vector<CGGlyph> glyphs;
+        base::vector<CGPoint> points;
+
+        for (CFIndex i = 0; i < run_count; i++) {
+            CTRunRef run = (CTRunRef)CFArrayGetValueAtIndex(glyph_runs, i);
+            auto count = CTRunGetGlyphCount(run);
+
+            glyphs.reserve(count);
+            CTRunGetGlyphs(run, CFRangeMake(0, count), glyphs.data());
+            glyphs.set_count(count);
+
+            points.reserve(count);
+            CTRunGetPositions(run, CFRangeMake(0, count), points.data());
+            points.set_count(count);
+
+            r.glyphs.reserve(count);
+            r.glyphs.set_count(count);
+            for (usize j = 0; j < count; j++) {
+                r.glyphs[j] = glyphs[j];
+            }
+            r.positions.reserve(count);
+            r.positions.set_count(count);
+            for (usize j = 0; j < count; j++) {
+                r.positions[j].x = points[j].x * 2;
+                r.positions[j].y = points[j].y * 2;
+            }
+
+            r.width =
+                CTRunGetTypographicBounds(run, CFRangeMake(0, count), NULL, NULL, NULL) * 2;
+
+            result.runs.push(base::move(r));
+        }
+
+        CFRelease(line);
+        CFRelease(attr_str);
+        CFRelease(dict);
+        CFRelease(cfstr);
+
+        return result;
+    }
+
+    RasterResult TextSystemAppKit::rasterizeGlyph(GlyphId id) {
+        CGGlyph glyphs[] = {(CGGlyph)id};
+        CGRect rect;
+        CTFontGetBoundingRectsForGlyphs(_font, kCTFontOrientationDefault, glyphs, &rect, 1);
+
+        u32 width = (u32)ceil(rect.size.width);
+        u32 height = (u32)ceil(rect.size.height);
+
+        // scaling
+        width *= 2;
+        height *= 2;
+
+        // ???
+        width += 1;
+        height += 1;
+
+        Bitmap bitmap;
+        bitmap.width = width;
+        bitmap.height = height;
+        bitmap.data.reserve(width *
+                            height);  // only alpha. 8 bits per channel and 1 bytes per pixel
+        bitmap.data.set_count(width * height);
+        memset(bitmap.data.data(), 0, width * height);
+
+        auto color_space = CGColorSpaceCreateDeviceGray();
+        auto ctx = CGBitmapContextCreate(bitmap.data.data(), width, height,
+                                         8,      // bits per channel
+                                         width,  // bytes per row
+                                         color_space, kCGImageAlphaOnly);
+        CGContextTranslateCTM(ctx, -rect.origin.x * 2, -rect.origin.y * 2);
+        CGContextScaleCTM(ctx, 2, 2);
+
+        CGPoint point = CGPointMake(0, 0);
+        CTFontDrawGlyphs(_font, glyphs, &point, 1, ctx);
+
+        auto image = CGBitmapContextCreateImage(ctx);
+
+        CFRelease(image);
+
+        CFRelease(color_space);
+        CGContextRelease(ctx);
+
+        RasterResult result;
+        result.bitmap = base::move(bitmap);
+        result.glyph_width = rect.size.width * 2;
+        result.glyph_height = rect.size.height * 2;
+        result.descent = rect.origin.y * 2;
+
+        return result;
     }
 
 }  // namespace spargel::ui

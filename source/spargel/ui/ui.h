@@ -2,6 +2,7 @@
 
 #include <spargel/base/base.h>
 #include <spargel/base/span.h>
+#include <spargel/base/string_view.h>
 #include <spargel/base/unique_ptr.h>
 #include <spargel/base/vector.h>
 
@@ -51,11 +52,41 @@ namespace spargel::ui {
         key_a,
         key_b,
         key_c,
+        key_d,
+        key_e,
+        key_f,
+        key_g,
+        key_h,
+        key_i,
+        key_j,
+        key_k,
+        key_l,
+        key_m,
+        key_n,
+        key_o,
+        key_p,
+        key_q,
+        key_r,
+        key_s,
+        key_t,
+        key_u,
+        key_v,
+        key_w,
+        key_x,
+        key_y,
+        key_z,
         space,
+        key_delete,
+
+        unknown,
     };
 
     struct keyboard_event {
-        int key;
+        keyboard_action action;
+        physical_key key;
+
+        // todo: hack
+        char toChar();
     };
 
     class window_delegate {
@@ -84,11 +115,54 @@ namespace spargel::ui {
 
         virtual void set_title(char const* title) = 0;
 
+        virtual void setAnimating(bool animating) = 0;
+
+        virtual void requestRedraw() = 0;
+
         // todo: improve
         virtual window_handle handle() = 0;
 
     private:
         window_delegate* _delegate = nullptr;
+    };
+
+    struct Bitmap {
+        usize width;
+        usize height;
+        base::vector<u8> data;
+    };
+
+    using GlyphId = u32;
+    struct GlyphPosition {
+        float x;
+        float y;
+    };
+
+    struct LayoutRun {
+        // TODO: font id
+        base::vector<GlyphId> glyphs;
+        base::vector<GlyphPosition> positions;
+        float width;
+    };
+
+    struct LineLayout {
+        base::vector<LayoutRun> runs;
+    };
+
+    struct RasterResult {
+        Bitmap bitmap;
+        float glyph_width;
+        float glyph_height;
+        float descent;
+    };
+
+    class TextSystem {
+    public:
+        virtual ~TextSystem() = default;
+
+        virtual LineLayout layoutLine(base::string_view str) = 0;
+        /// warning: alpha only
+        virtual RasterResult rasterizeGlyph(GlyphId id) = 0;
     };
 
     class platform {
@@ -100,6 +174,8 @@ namespace spargel::ui {
         virtual void start_loop() = 0;
 
         virtual base::unique_ptr<window> make_window(u32 width, u32 height) = 0;
+
+        virtual base::unique_ptr<TextSystem> createTextSystem() = 0;
 
     protected:
         explicit platform(platform_kind k) : _kind{k} {}

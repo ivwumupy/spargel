@@ -10,7 +10,7 @@ namespace spargel::gpu {
     void metal_destroy_command_queue(device_id device, command_queue_id queue);
     void metal_destroy_shader_function(device_id device, shader_function_id func);
     int metal_create_render_pipeline(device_id device,
-                                     struct render_pipeline_descriptor const* descriptor,
+                                     struct RenderPipelineDescriptor const* descriptor,
                                      render_pipeline_id* pipeline);
     void metal_destroy_render_pipeline(device_id device, render_pipeline_id pipeline);
     int metal_create_command_buffer(device_id device,

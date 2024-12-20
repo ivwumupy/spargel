@@ -30,6 +30,7 @@ namespace spargel::ui {
             spargel_log_fatal("platform_android::make_window should not be called");
             spargel_panic_here();
         }
+        base::unique_ptr<TextSystem> createTextSystem() override { return nullptr; }
 
         base::unique_ptr<window_android> generate_window_handle();
 
