@@ -51,7 +51,7 @@ namespace spargel::base {
             auto v = variants[i];
             const int warmup_number = 100;
             const int run_number = 10;
-            printf("%-30s/%-10lu", name.data(), v);
+            printf("%-50s/%-10lu", name.data(), v);
             for (int j = 0; j < warmup_number; j++) {
                 f(v);
             }

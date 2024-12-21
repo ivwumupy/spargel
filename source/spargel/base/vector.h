@@ -3,6 +3,8 @@
 #include <spargel/base/algorithm.h>
 #include <spargel/base/allocator.h>
 #include <spargel/base/assert.h>
+#include <spargel/base/base.h>
+#include <spargel/base/logging.h>
 #include <spargel/base/meta.h>
 #include <spargel/base/object.h>
 #include <spargel/base/span.h>
@@ -19,9 +21,9 @@ namespace spargel::base {
         template <typename T>
         class vector {
         public:
-            vector() = default;
+            vector(Allocator* alloc = default_allocator()) : _alloc{alloc} {}
 
-            vector(vector const& other) {
+            vector(vector const& other) : _alloc{other._alloc} {
                 allocate(other.count());
                 copy_from(other.begin(), other.end());
             }
@@ -50,7 +52,7 @@ namespace spargel::base {
             // construct and push back
             template <typename... Args>
             void push(Args&&... args) {
-                if (_end >= _capacity) {
+                if (_end >= _capacity) [[unlikely]] {
                     grow(capacity() + 1);
                 }
                 construct_at(_end, forward<Args>(args)...);
@@ -98,9 +100,15 @@ namespace spargel::base {
             span<T> toSpan() const { return span<T>(_begin, _end); }
 
             friend void tag_invoke(tag<swap>, vector& lhs, vector& rhs) {
-                swap(lhs._begin, rhs._begin);
-                swap(lhs._end, rhs._end);
-                swap(lhs._capacity, rhs._capacity);
+                // todo: how to compare allocator?
+                if (lhs._alloc == rhs._alloc) [[likely]] {
+                    swap(lhs._begin, rhs._begin);
+                    swap(lhs._end, rhs._end);
+                    swap(lhs._capacity, rhs._capacity);
+                } else [[unlikely]] {
+                    spargel_log_fatal("unimplemented: swapping vectors with different allocators");
+                    spargel_panic_here();
+                }
             }
 
         private:
@@ -116,7 +124,7 @@ namespace spargel::base {
                 usize old_count = count();
                 auto new_capacity = next_capacity(need);
                 T* new_begin = static_cast<T*>(_alloc->alloc(sizeof(T) * new_capacity));
-                if (_begin != nullptr) {
+                if (_begin != nullptr) [[likely]] {
                     if constexpr (__is_trivially_relocatable(T)) {
                         memcpy(new_begin, _begin, old_count * sizeof(T));
                     } else {
