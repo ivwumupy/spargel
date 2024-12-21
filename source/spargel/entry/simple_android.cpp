@@ -39,10 +39,10 @@ void android_main(struct android_app* app);
 }
 
 void android_main(struct android_app* app) {
-    auto* data = new spargel::ui::android_app_data;
+    volatile auto* data = new spargel::ui::android_app_data;
     data->app = app;
     data->can_render = false;
-    app->userData = data;
+    app->userData = (void*)data;
     app->onAppCmd = onAppCmd;
 
     spargel::entry::simple_entry_data entry_data;

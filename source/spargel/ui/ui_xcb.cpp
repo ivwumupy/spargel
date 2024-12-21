@@ -36,6 +36,19 @@ namespace spargel::ui {
         spargel_log_debug("  height:\t%d", _screen->height_in_pixels);
         spargel_log_debug("  white pixel:\t%08x", _screen->white_pixel);
         spargel_log_debug("  black pixel:\t%08x", _screen->black_pixel);
+
+        xcb_intern_atom_cookie_t cookie;
+        xcb_intern_atom_reply_t* reply;
+
+        cookie = _intern_atom_cookie(1, "WM_PROTOCOLS");
+        reply = _intern_atom_reply(cookie);
+        _atom_wm_protocols = reply->atom;
+        free(reply);
+
+        cookie = _intern_atom_cookie(0, "WM_DELETE_WINDOW");
+        reply = _intern_atom_reply(cookie);
+        _atom_wm_delete_window = reply->atom;
+        free(reply);
     }
 
     platform_xcb::~platform_xcb() { xcb_disconnect(_connection); }
@@ -58,6 +71,15 @@ namespace spargel::ui {
         xcb_generic_event_t* event;
         struct timespec t1, t2, duration = {.tv_sec = 0, .tv_nsec = 0};
         while (true) {
+            bool should_stop = true;
+            for (auto& window : _windows) {
+                if (!window->_closed) {
+                    should_stop = false;
+                    break;
+                }
+            }
+            if (should_stop) break;
+
             event = xcb_poll_for_event(_connection);
             if (!event) {
                 clock_gettime(CLOCK_MONOTONIC, &t1);
@@ -82,7 +104,20 @@ namespace spargel::ui {
                 continue;
             }
 
-            switch (event->response_type & ~0x80) {
+            switch (event->response_type & 0x7f) {
+            case XCB_CLIENT_MESSAGE: {
+                auto* client_message_event = (xcb_client_message_event_t*)event;
+                if (client_message_event->data.data32[0] == _atom_wm_delete_window) {
+                    for (auto& window : _windows) {
+                        if (window->_id == client_message_event->window) {
+                            window->_closed = true;
+                            window->delegate()->on_close_requested();
+                            window->delegate()->on_closed();
+                            break;
+                        }
+                    }
+                }
+            } break;
             case XCB_EXPOSE: {
                 _run_render_callbacks();
                 xcb_flush(_connection);
@@ -109,12 +144,20 @@ namespace spargel::ui {
         }
     }
 
+    xcb_intern_atom_cookie_t platform_xcb::_intern_atom_cookie(u8 only_if_exists,
+                                                               const char* name) {
+        return xcb_intern_atom(_connection, only_if_exists, strlen(name), name);
+    }
+
+    xcb_intern_atom_reply_t* platform_xcb::_intern_atom_reply(xcb_intern_atom_cookie_t cookie) {
+        return xcb_intern_atom_reply(_connection, cookie, nullptr);
+    }
+
     base::unique_ptr<window> platform_xcb::make_window(u32 width, u32 height) {
         xcb_window_t id = xcb_generate_id(_connection);
 
-        uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-        uint32_t values[2] = {_screen->white_pixel,
-                              XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY};
+        u32 mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+        u32 values[2] = {_screen->white_pixel, XCB_EVENT_MASK_EXPOSURE};
 
         xcb_create_window(_connection, XCB_COPY_FROM_PARENT, /* depth*/
                           id, _screen->root,                 /* parent window */
@@ -125,20 +168,25 @@ namespace spargel::ui {
                           _screen->root_visual,              /* visual */
                           mask, values);
 
+        xcb_change_property(_connection, XCB_PROP_MODE_REPLACE, id, _atom_wm_protocols,
+                            XCB_ATOM_ATOM, XCB_ATOM_VISUALID, 1, &_atom_wm_delete_window);
+
         xcb_map_window(_connection, id);
         xcb_flush(_connection);
 
         return base::make_unique<window_xcb>(this, id);
     }
 
-    window_xcb::window_xcb(platform_xcb* platform, xcb_window_t id) : _platform(platform), _id(id) {
+    window_xcb::window_xcb(platform_xcb* platform, xcb_window_t id)
+        : _platform(platform), _id(id), _closed(false) {
         platform->_windows.push(this);
     }
 
-    window_xcb::~window_xcb() { spargel_log_debug("TODO: window_xcb::~window_xcb"); }
+    window_xcb::~window_xcb() {}
 
     void window_xcb::set_title(char const* title) {
-        spargel_log_debug("TODO: window_xcb::set_title");
+        xcb_change_property(_platform->_connection, XCB_PROP_MODE_REPLACE, _id, XCB_ATOM_WM_NAME,
+                            XCB_ATOM_STRING, 8, strlen(title), title);
     }
 
     window_handle window_xcb::handle() {

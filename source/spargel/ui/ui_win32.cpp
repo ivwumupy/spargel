@@ -83,7 +83,7 @@ namespace spargel::ui {
 
     window_win32::~window_win32() { DestroyWindow(_hwnd); }
 
-    void window_win32::set_title(char const* title) {}
+    void window_win32::set_title(char const* title) { SetWindowTextA(_hwnd, title); }
 
     window_handle window_win32::handle() {
         window_handle handle{};

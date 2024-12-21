@@ -29,6 +29,12 @@ namespace spargel::ui {
         base::vector<window_xcb*> _windows;
 
         void _run_render_callbacks();
+
+        xcb_atom_t _atom_wm_protocols;
+        xcb_atom_t _atom_wm_delete_window;
+
+        xcb_intern_atom_cookie_t _intern_atom_cookie(u8 only_if_exists, const char* name);
+        xcb_intern_atom_reply_t* _intern_atom_reply(xcb_intern_atom_cookie_t cookie);
     };
 
     base::unique_ptr<platform> make_platform_xcb();
@@ -51,6 +57,7 @@ namespace spargel::ui {
     private:
         platform_xcb* _platform;
         xcb_window_t _id;
+        bool _closed;
     };
 
 }  // namespace spargel::ui

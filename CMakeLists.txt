@@ -72,12 +72,12 @@ spargel_add_option(SPARGEL_TRACE_ALLOCATION "trace allocation" ON)
 
 if (SPARGEL_IS_ANDROID)
   set(SPARGEL_ANDROID_TARGET simple_entry_demo CACHE STRING "the target to be built" )
-  message("Android build target: ${SPARGEL_ANDROID_TARGET}")
+  message(STATUS "Android build target: ${SPARGEL_ANDROID_TARGET}")
 endif ()
 
 if (SPARGEL_IS_WINDOWS)
   set(SPARGEL_VS_BUILD_TYPE Debug CACHE STRING "Visual Studio build type")
-  message("Visual Studio build type: ${SPARGEL_VS_BUILD_TYPE}")
+  message(STATUS "Visual Studio build type: ${SPARGEL_VS_BUILD_TYPE}")
 endif ()
 
 #### External Libraries ####

@@ -27,8 +27,6 @@
 
 #endif  // SPARGEL_FILE_MMAP
 
-#include <stdio.h>
-
 namespace spargel::resource {
 
 #if SPARGEL_FILE_MMAP
@@ -119,17 +117,15 @@ namespace spargel::resource {
             return nullptr;
         }
 
-        DWORD size_h, size_l;
-        size_l = GetFileSize(file_handle, &size_h);
-        usize size = MAKEWORD(size_l, size_h);
-        if (size == INVALID_FILE_SIZE) {
+        LARGE_INTEGER size;
+        if (!GetFileSizeEx(file_handle, &size)) {
             spargel_log_error("cannot get the size of resource \"%s:%s\"", id.ns().data(),
                               id.path().data());
             CloseHandle(file_handle);
             return nullptr;
         }
 
-        return new directory_resource(size, file_handle);
+        return new directory_resource(size.QuadPart, file_handle);
     }
 
 #else
