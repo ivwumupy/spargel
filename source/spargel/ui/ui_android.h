@@ -50,6 +50,10 @@ namespace spargel::ui {
 
         void set_title(char const* title) override;
 
+        void setAnimating(bool animating) override {}
+
+        void requestRedraw() override {}
+
         window_handle handle() override;
 
     private:

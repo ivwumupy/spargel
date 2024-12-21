@@ -154,8 +154,14 @@ function(spargel_target_add_resources)
         "DEPS" # multi value
         ${ARGN})
 
+        get_target_property(BINARY_DIR ${ARGS_TARGET} BINARY_DIR)
+        if (${CMAKE_GENERATOR} MATCHES "Visual Studio*")
+            set(EXE_DIR ${BINARY_DIR}/${SPARGEL_VS_BUILD_TYPE})
+        else ()
+            set(EXE_DIR ${BINARY_DIR})
+        endif ()
         add_custom_target(${ARGS_TARGET}_copy_resources
-            COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ARGS_SRC} $<TARGET_PROPERTY:${ARGS_TARGET},BINARY_DIR>/resources/${ARGS_DST})
+            COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ARGS_SRC} ${EXE_DIR}/resources/${ARGS_DST})
         if (${ARGS_DEPS})
             add_dependencies(${ARGS_TARGET}_copy_resources ${ARGS_DEPS})
         endif ()

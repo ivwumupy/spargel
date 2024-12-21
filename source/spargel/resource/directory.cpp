@@ -16,6 +16,8 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#elif SPARGEL_IS_WINDOWS
+#include <windows.h>
 #endif
 
 #else  // SPARGEL_FILE_MMAP
@@ -24,6 +26,8 @@
 #include <stdio.h>
 
 #endif  // SPARGEL_FILE_MMAP
+
+#include <stdio.h>
 
 namespace spargel::resource {
 
@@ -35,6 +39,11 @@ namespace spargel::resource {
         }
 #if SPARGEL_IS_POSIX
         ::close(_fd);
+#elif SPARGEL_IS_WINDOWS
+        if (_mapping_handle) {
+            CloseHandle(_mapping_handle);
+        }
+        CloseHandle(_file_handle);
 #else
 #error unimplemented
 #endif  // SPARGEL_IS_POSIX
@@ -57,7 +66,9 @@ namespace spargel::resource {
 
 #if SPARGEL_IS_POSIX
 
-    void* directory_resource::_map() { return mmap(NULL, _size, PROT_READ, MAP_PRIVATE, _fd, 0); }
+    void* directory_resource::_map() {
+        return mmap(nullptr, _size, PROT_READ, MAP_PRIVATE, _fd, 0);
+    }
 
     void directory_resource::_unmap(void* ptr, usize size) { munmap(ptr, size); }
 
@@ -65,7 +76,7 @@ namespace spargel::resource {
         base::string real_path = _real_path(id);
         int fd = ::open(real_path.data(), O_RDONLY);
         if (fd < 0) {
-            spargel_log_error("requested resource \"%s//%s\" not found", id.ns().data(),
+            spargel_log_error("requested resource \"%s:%s\" not found", id.ns().data(),
                               id.path().data());
             return nullptr;
         }
@@ -76,6 +87,49 @@ namespace spargel::resource {
         }
 
         return new directory_resource(sb.st_size, fd);
+    }
+
+#elif SPARGEL_IS_WINDOWS
+
+    void* directory_resource::_map() {
+        if (!_mapping_handle) {
+            if (_file_handle == INVALID_HANDLE_VALUE) {
+                spargel_log_error("invalid file handle");
+                return nullptr;
+            }
+            _mapping_handle = CreateFileMappingA(_file_handle, nullptr, PAGE_READONLY,
+                                                 HIWORD(_size), LOWORD(_size), nullptr);
+            if (!_mapping_handle) {
+                spargel_log_error("cannot create file mapping");
+                return nullptr;
+            }
+        }
+        return MapViewOfFile(_mapping_handle, FILE_MAP_READ, 0, 0, _size);
+    }
+
+    void directory_resource::_unmap(void* ptr, usize size) { UnmapViewOfFile(ptr); }
+
+    directory_resource* directory_resource_manager::open(const resource_id& id) {
+        base::string real_path = _real_path(id);
+        HANDLE file_handle = CreateFileA(real_path.data(), GENERIC_READ, 0, NULL, OPEN_EXISTING,
+                                         FILE_ATTRIBUTE_READONLY, nullptr);
+        if (file_handle == INVALID_HANDLE_VALUE) {
+            spargel_log_error("requested resource \"%s:%s\" not found", id.ns().data(),
+                              id.path().data());
+            return nullptr;
+        }
+
+        DWORD size_h, size_l;
+        size_l = GetFileSize(file_handle, &size_h);
+        usize size = MAKEWORD(size_l, size_h);
+        if (size == INVALID_FILE_SIZE) {
+            spargel_log_error("cannot get the size of resource \"%s:%s\"", id.ns().data(),
+                              id.path().data());
+            CloseHandle(file_handle);
+            return nullptr;
+        }
+
+        return new directory_resource(size, file_handle);
     }
 
 #else

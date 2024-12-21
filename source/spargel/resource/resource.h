@@ -34,7 +34,7 @@ namespace spargel::resource {
 
     class resource {
     public:
-        resource() : _mapped(nullptr) {}
+        resource() : _mapped(nullptr), _mapped_size(0) {}
 
         virtual ~resource() = default;
 

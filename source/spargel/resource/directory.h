@@ -4,7 +4,15 @@
 #include <spargel/base/unique_ptr.h>
 #include <spargel/resource/resource.h>
 
-#if !SPARGEL_FILE_MMAP
+#if SPARGEL_FILE_MMAP
+
+#if SPARGEL_IS_WINDOWS
+
+typedef void* HANDLE;
+
+#endif
+
+#else
 
 // libc
 #include <stdio.h>
@@ -33,6 +41,11 @@ namespace spargel::resource {
 #if SPARGEL_IS_POSIX
         int _fd;
         directory_resource(usize size, int fd) : _size(size), _mapped(nullptr), _fd(fd) {}
+#elif SPARGEL_IS_WINDOWS
+        HANDLE _file_handle;
+        HANDLE _mapping_handle;
+        directory_resource(usize size, HANDLE file_handle)
+            : _size(size), _mapped(nullptr), _file_handle(file_handle), _mapping_handle(nullptr) {}
 #else
 #error unimplemented
 #endif
