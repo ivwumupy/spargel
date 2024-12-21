@@ -6,6 +6,7 @@ spargel_add_library(
         platform.cpp
         string.cpp
         logging.cpp
+        test.cpp
     PRIVATE_POSIX
         platform_posix.cpp
     PRIVATE_ANDROID
@@ -17,6 +18,13 @@ spargel_add_library(
     PRIVATE_WINDOWS
         platform_win.cpp
     DEPS spargel_config
+)
+
+spargel_add_library(
+    NAME test_main
+    PRIVATE
+        test_main.cpp
+    DEPS base
 )
 
 if (SPARGEL_IS_ANDROID OR SPARGEL_IS_LINUX)
@@ -63,4 +71,21 @@ spargel_add_executable(
     NAME meta_test
     PRIVATE meta_test.cpp
     DEPS base
+)
+
+spargel_add_executable(
+    NAME test_demo
+    PRIVATE
+        test_demo.cpp
+    DEPS
+        base
+        test_main
+)
+
+spargel_add_executable(
+    NAME vector_bench
+    PRIVATE
+        vector_bench.cpp
+    DEPS
+        base
 )

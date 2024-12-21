@@ -12,7 +12,7 @@ void* operator new[](usize size, usize align) noexcept {
     return spargel::base::default_allocator()->alloc(size);
 }
 
-void* operator new(usize count, void* ptr) noexcept { return ptr; }
+// void* operator new(usize count, void* ptr) noexcept { return ptr; }
 
 void operator delete(void* ptr, usize size, usize align) noexcept {
     spargel::base::default_allocator()->free(ptr, size);
@@ -24,7 +24,7 @@ void operator delete[](void* ptr, usize size, usize align) noexcept {
 
 namespace spargel::base {
 
-    allocator* default_allocator() { return libc_allocator::instance(); }
+    Allocator* default_allocator() { return libc_allocator::instance(); }
 
     libc_allocator* libc_allocator::instance() {
         static libc_allocator inst;

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <spargel/base/types.h>
-
 /*
  * Different compilers have different definition for std::initializer_list,
  * so we just use the standard library.

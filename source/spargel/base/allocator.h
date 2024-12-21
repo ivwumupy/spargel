@@ -2,18 +2,12 @@
 
 #include <spargel/base/types.h>
 
-/* libc */
-#include <stddef.h>
-
-void* operator new(usize size, usize align) noexcept;
-void* operator new[](usize size, usize align) noexcept;
-void* operator new(usize count, void* ptr) noexcept;
-void operator delete(void* ptr, usize size, usize align) noexcept;
-void operator delete[](void* ptr, usize size, usize align) noexcept;
+// the default placement new cannot be overrided
+#include <new>
 
 namespace spargel::base {
 
-    struct allocator {
+    struct Allocator {
         // requires: size > 0
         virtual void* alloc(usize size) = 0;
         // requires: ptr != nullptr, old_size > 0, new_size > 0
@@ -22,7 +16,7 @@ namespace spargel::base {
         virtual void free(void* ptr, usize size) = 0;
     };
 
-    struct libc_allocator final : allocator {
+    struct libc_allocator final : Allocator {
         static libc_allocator* instance();
 
         void* alloc(usize size) override;
@@ -30,6 +24,13 @@ namespace spargel::base {
         void free(void* ptr, usize size) override;
     };
 
-    allocator* default_allocator();
+    Allocator* default_allocator();
 
 }  // namespace spargel::base
+
+void* operator new(usize size, usize align) noexcept;
+void* operator new[](usize size, usize align) noexcept;
+void operator delete(void* ptr, usize size, usize align) noexcept;
+void operator delete[](void* ptr, usize size, usize align) noexcept;
+
+void* operator new(usize size, usize align, spargel::base::Allocator* alloc) noexcept;

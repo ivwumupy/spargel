@@ -9,6 +9,9 @@
 #include <spargel/base/tag_invoke.h>
 #include <spargel/base/types.h>
 
+// libc
+#include <string.h>
+
 namespace spargel::base {
 
     namespace __vector {
@@ -114,8 +117,12 @@ namespace spargel::base {
                 auto new_capacity = next_capacity(need);
                 T* new_begin = static_cast<T*>(_alloc->alloc(sizeof(T) * new_capacity));
                 if (_begin != nullptr) {
-                    move_items(new_begin);
-                    destruct_items();
+                    if constexpr (__is_trivially_relocatable(T)) {
+                        memcpy(new_begin, _begin, old_count * sizeof(T));
+                    } else {
+                        move_items(new_begin);
+                        destruct_items();
+                    }
                     deallocate();
                 }
                 _begin = new_begin;
@@ -152,7 +159,7 @@ namespace spargel::base {
             T* _begin = nullptr;
             T* _end = nullptr;
             T* _capacity = nullptr;
-            allocator* _alloc = default_allocator();
+            Allocator* _alloc = default_allocator();
         };
 
     }  // namespace __vector
