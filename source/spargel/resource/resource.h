@@ -1,5 +1,6 @@
 #pragma once
 
+#include <spargel/base/span.h>
 #include <spargel/base/string.h>
 #include <spargel/base/string_view.h>
 #include <spargel/base/types.h>
@@ -45,6 +46,8 @@ namespace spargel::resource {
         virtual void get_data(void* buf) = 0;
 
         virtual void* map_data();
+
+        base::span<u8> getSpan() { return base::make_span<u8>(size(), (u8*)map_data()); }
 
     private:
         void* _mapped;

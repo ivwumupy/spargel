@@ -1,308 +1,339 @@
-#include <spargel/base/assert.h>
+#include <spargel/base/base.h>
+#include <spargel/base/unique_ptr.h>
 #include <spargel/gpu/gpu_metal.h>
-#include <spargel/ui/ui_mac.h>
+#include <spargel/ui/ui.h>
 
-/* libc */
-#include <stdlib.h>
-
-/* platform */
+// metal
 #import <Metal/Metal.h>
-
-#define alloc_object(type, name)                                                                   \
-    struct type* name =                                                                            \
-        (struct type*)spargel::base::allocate(sizeof(struct type), spargel::base::ALLOCATION_GPU); \
-    if (!name) spargel_panic_here();
-
-#define cast_object(type, name, object) struct type* name = (struct type*)(object);
-
-#define dealloc_object(type, name) \
-    spargel::base::deallocate(name, sizeof(struct type), spargel::base::ALLOCATION_GPU);
 
 namespace spargel::gpu {
 
-    /**
-     * We only target Apple Silicon.
-     * This in particular guarantees that there is only one GPU.
-     */
+    namespace {
 
-    struct metal_command_queue {
-        id<MTLCommandQueue> queue;
-    };
+        // MTLCullMode translate_cull_mode(cull_mode mode) {
+        //     using enum cull_mode;
+        //     switch (mode) {
+        //     case none:
+        //         return MTLCullModeNone;
+        //     case front:
+        //         return MTLCullModeFront;
+        //     case back:
+        //         return MTLCullModeBack;
+        //     }
+        // }
 
-    struct metal_command_buffer {
-        id<MTLCommandQueue> queue;
-        id<MTLCommandBuffer> buffer;
-    };
+        // MTLWinding translate_orientation(orientation o) {
+        //     using enum orientation;
+        //     switch (o) {
+        //     case clockwise:
+        //         return MTLWindingClockwise;
+        //     case counter_clockwise:
+        //         return MTLWindingCounterClockwise;
+        //     }
+        // }
 
-    struct metal_shader_library {
-        id<MTLLibrary> library;
-    };
+        MTLPrimitiveTopologyClass translatePrimitiveType(PrimitiveKind kind) {
+            using enum PrimitiveKind;
+            switch (kind) {
+            case point:
+                return MTLPrimitiveTopologyClassPoint;
+            case line:
+                return MTLPrimitiveTopologyClassLine;
+            case triangle:
+                return MTLPrimitiveTopologyClassTriangle;
+            }
+        }
 
-    struct metal_shader_function {
-        id<MTLFunction> function;
-    };
+        MTLVertexStepFunction translateStepMode(VertexStepMode mode) {
+            using enum VertexStepMode;
+            switch (mode) {
+            case Vertex:
+                return MTLVertexStepFunctionPerVertex;
+            case Instance:
+                return MTLVertexStepFunctionPerInstance;
+            }
+        }
 
-    struct metal_render_pipeline {
-        id<MTLRenderPipelineState> pipeline;
-    };
+        MTLVertexFormat translateVertexFormat(VertexAttributeFormat format) {
+            using enum VertexAttributeFormat;
+            switch (format) {
+            case float32x2:
+                return MTLVertexFormatFloat2;
+            case float32x4:
+                return MTLVertexFormatFloat4;
+            default:
+                spargel_panic_here();
+            }
+        }
 
-    struct metal_surface {
-        CAMetalLayer* layer;
-    };
+        MTLLoadAction translate_load_action(LoadAction action) {
+            using enum LoadAction;
+            switch (action) {
+            case load:
+                return MTLLoadActionLoad;
+            case clear:
+                return MTLLoadActionClear;
+            case dont_care:
+                return MTLLoadActionDontCare;
+            }
+        }
 
-    struct metal_swapchain {
-        CAMetalLayer* layer;
-    };
+        MTLStoreAction translate_store_action(StoreAction action) {
+            using enum StoreAction;
+            switch (action) {
+            case store:
+                return MTLStoreActionStore;
+            case dont_care:
+                return MTLStoreActionDontCare;
+            }
+        }
 
-    struct metal_texture {
-        id<MTLTexture> texture;
-    };
+        MTLPixelFormat translatePixelFormat(TextureFormat format) {
+            using enum TextureFormat;
+            switch (format) {
+            case bgra8_unorm:
+                return MTLPixelFormatBGRA8Unorm;
+            default:
+                spargel_panic_here();
+            }
+        }
 
-    struct metal_presentable {
-        id<CAMetalDrawable> drawable;
-        struct metal_texture texture;
-    };
+    }  // namespace
 
-    struct metal_render_pass_encoder {
-        id<MTLRenderCommandEncoder> encoder;
-    };
+    base::unique_ptr<Device> make_device_metal() { return base::make_unique<DeviceMetal>(); }
 
-    struct metal_device {
-        int backend;
-        id<MTLDevice> device;
-        struct metal_presentable presentable;
-    };
-
-    int metal_create_default_device(struct device_descriptor const* descriptor, device_id* device) {
-        alloc_object(metal_device, d);
-        d->device = MTLCreateSystemDefaultDevice();
-        d->backend = BACKEND_METAL;
-        *device = (device_id)d;
-        return RESULT_SUCCESS;
+    DeviceMetal::DeviceMetal() : Device(DeviceKind::metal) {
+        _device = MTLCreateSystemDefaultDevice();  // ns_returns_retained
+        [_device retain];
     }
 
-    void metal_destroy_device(device_id device) {
-        cast_object(metal_device, d, device);
-        [d->device release];
-        dealloc_object(metal_device, d);
-    }
+    DeviceMetal::~DeviceMetal() { [_device release]; }
 
-    int metal_create_command_queue(device_id device, command_queue_id* queue) {
-        alloc_object(metal_command_queue, q);
-        cast_object(metal_device, d, device);
-        q->queue = [d->device newCommandQueue];
-        *queue = (command_queue_id)q;
-        return RESULT_SUCCESS;
-    }
-
-    void metal_destroy_command_queue(device_id device, command_queue_id command_queue) {
-        cast_object(metal_command_queue, q, command_queue);
-        [q->queue release];
-        dealloc_object(metal_command_queue, q);
-    }
-
-    int metal_create_shader_library(device_id device,
-                                    struct metal_shader_library_descriptor const* descriptor,
-                                    metal_shader_library_id* library) {
-        alloc_object(metal_shader_library, lib);
-        cast_object(metal_device, d, device);
-
-        dispatch_data_t lib_data =
-            dispatch_data_create(descriptor->code, descriptor->size,
-                                 dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
+    ObjectPtr<ShaderLibrary> DeviceMetal::createShaderLibrary(base::span<u8> bytes) {
+        // dispatch create a copy of the data
+        //
+        // notes:
+        // This object is retained initially. It is your responsibility to release the data object
+        // when you are done using it.
+        //
+        auto library_data =
+            dispatch_data_create(bytes.data(), bytes.count(), dispatch_get_main_queue(),
                                  DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+        NSError* error;
+        auto library = [_device newLibraryWithData:library_data error:&error];
+        if (library == nil) {
+            return nullptr;
+        }
+        return make_object<ShaderLibraryMetal>(library_data, library);
+    }
+
+    ObjectPtr<RenderPipeline> DeviceMetal::createRenderPipeline(
+        RenderPipelineDescriptor const& descriptor) {
+        auto desc = [[MTLRenderPipelineDescriptor alloc] init];
+
+        auto vertex_library = descriptor.vertex_shader.library.cast<ShaderLibraryMetal>();
+        auto vertex_entry = descriptor.vertex_shader.entry;
+
+        auto vertex_function = [vertex_library->library()
+            newFunctionWithName:[NSString stringWithUTF8String:vertex_entry]];
+
+        auto vertex_descriptor = [MTLVertexDescriptor vertexDescriptor];
+
+        for (ssize i = 0; i < descriptor.vertex_buffers.count(); i++) {
+            vertex_descriptor.layouts[i].stepFunction =
+                translateStepMode(descriptor.vertex_buffers[i].step_mode);
+            vertex_descriptor.layouts[i].stride = descriptor.vertex_buffers[i].stride;
+        }
+
+        for (ssize i = 0; i < descriptor.vertex_attributes.count(); i++) {
+            vertex_descriptor.attributes[i].format =
+                translateVertexFormat(descriptor.vertex_attributes[i].format);
+            vertex_descriptor.attributes[i].offset = descriptor.vertex_attributes[i].offset;
+            // TODO: fix
+            vertex_descriptor.attributes[i].bufferIndex = descriptor.vertex_attributes[i].buffer;
+        }
+
+        desc.vertexFunction = vertex_function;
+
+        for (usize i = 0; i < descriptor.color_attachments.count(); i++) {
+            desc.colorAttachments[i].pixelFormat = translatePixelFormat(descriptor.color_attachments[i].format);
+            desc.colorAttachments[i].blendingEnabled = descriptor.color_attachments[i].enable_blend;
+            desc.colorAttachments[i].alphaBlendOperation = MTLBlendOperationAdd;
+            desc.colorAttachments[i].rgbBlendOperation = MTLBlendOperationAdd;
+            desc.colorAttachments[i].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+            desc.colorAttachments[i].sourceAlphaBlendFactor = MTLBlendFactorOne;
+            desc.colorAttachments[i].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+            desc.colorAttachments[i].destinationAlphaBlendFactor = MTLBlendFactorOne;
+        }
+
+        desc.vertexDescriptor = vertex_descriptor;
+        desc.inputPrimitiveTopology = translatePrimitiveType(descriptor.primitive);
+
+        auto frag_library = descriptor.fragment_shader.library.cast<ShaderLibraryMetal>();
+        auto frag_entry = descriptor.fragment_shader.entry;
+
+        auto frag_function = [frag_library->library()
+            newFunctionWithName:[NSString stringWithUTF8String:frag_entry]];
+
+        for (MTLAttribute* attr in frag_function.stageInputAttributes) {
+            NSLog(@"%@", attr);
+        }
+
+        desc.fragmentFunction = frag_function;
 
         NSError* error;
-        lib->library = [d->device newLibraryWithData:lib_data error:&error];
-        if (lib->library == nil) {
-            free(lib);
-            return RESULT_CANNOT_CREATE_METAL_LIBRARY;
-        }
-        *library = (metal_shader_library_id)lib;
-        return RESULT_SUCCESS;
-    }
 
-    void metal_destroy_shader_library(device_id device, metal_shader_library_id shader_library) {
-        cast_object(metal_shader_library, lib, shader_library);
-        [lib->library release];
-        dealloc_object(metal_shader_library, lib);
-    }
+        auto state = [_device newRenderPipelineStateWithDescriptor:desc error:&error];
 
-    int metal_create_shader_function(device_id device,
-                                     struct metal_shader_function_descriptor const* descriptor,
-                                     shader_function_id* func) {
-        alloc_object(metal_shader_function, f);
-        cast_object(metal_shader_library, lib, descriptor->library);
-
-        f->function =
-            [lib->library newFunctionWithName:[NSString stringWithUTF8String:descriptor->name]];
-        if (f->function == nil) {
-            free(f);
-            return RESULT_CANNOT_CREATE_SHADER_FUNCTION;
-        }
-        *func = (shader_function_id)f;
-        return RESULT_SUCCESS;
-    }
-
-    void metal_destroy_shader_function(device_id device, shader_function_id func) {
-        cast_object(metal_shader_function, f, func);
-        [f->function release];
-        dealloc_object(metal_shader_function, f);
-    }
-
-    static MTLPixelFormat metal_translate_format(int format) {
-        switch (format) {
-        case FORMAT_BRGA8_UNORM:
-            return MTLPixelFormatBGRA8Unorm;
-        case FORMAT_BGRA8_SRGB:
-            return MTLPixelFormatBGRA8Unorm_sRGB;
-        default:
-            spargel_panic_here();
-        }
-    }
-
-    int metal_create_render_pipeline(device_id device,
-                                     struct RenderPipelineDescriptor const* descriptor,
-                                     render_pipeline_id* pipeline) {
-        cast_object(metal_device, d, device);
-        cast_object(metal_shader_function, vs, descriptor->vertex_function);
-        cast_object(metal_shader_function, fs, descriptor->fragment_function);
-        alloc_object(metal_render_pipeline, p);
-
-        spargel_assert(d != 0);
-        spargel_assert(vs != 0);
-        spargel_assert(fs != 0);
-
-        MTLRenderPipelineDescriptor* desc = [[MTLRenderPipelineDescriptor alloc] init];
-        desc.vertexFunction = vs->function;
-        desc.fragmentFunction = fs->function;
-        desc.colorAttachments[0].pixelFormat = metal_translate_format(descriptor->target_format);
-
-        NSError* err;
-        id<MTLRenderPipelineState> pstate = [d->device newRenderPipelineStateWithDescriptor:desc
-                                                                                      error:&err];
         [desc release];
 
-        if (pstate == nil) {
-            dealloc_object(metal_render_pipeline, p);
-            return RESULT_CANNOT_CREATE_RENDER_PIPELINE;
+        return make_object<RenderPipelineMetal>(vertex_function, state);
+    }
+
+    ObjectPtr<Buffer> DeviceMetal::createBuffer(base::span<u8> bytes) {
+        auto buf = [_device newBufferWithBytes:bytes.data()
+                                        length:bytes.count()
+                                       options:MTLResourceStorageModeShared];
+        return make_object<BufferMetal>(buf);
+    }
+
+    ObjectPtr<Surface> DeviceMetal::createSurface(ui::window* w) {
+        CAMetalLayer* l = (CAMetalLayer*)w->handle().apple.layer;
+        l.device = _device;
+        return make_object<SurfaceMetal>(l);
+    }
+
+    void DeviceMetal::destroyShaderLibrary(ObjectPtr<ShaderLibrary> l) {
+        auto library = l.cast<ShaderLibraryMetal>();
+        destroy_object(library);
+    }
+
+    void DeviceMetal::destroyRenderPipeline(ObjectPtr<RenderPipeline> p) {
+        auto pipeline = p.cast<RenderPipelineMetal>();
+        destroy_object(pipeline);
+    }
+
+    void DeviceMetal::destroyBuffer(ObjectPtr<Buffer> b) {
+        auto buf = b.cast<BufferMetal>();
+        destroy_object(buf);
+    }
+
+    ObjectPtr<CommandQueue> DeviceMetal::createCommandQueue() {
+        return make_object<CommandQueueMetal>([_device newCommandQueue]);
+    }
+
+    void DeviceMetal::destroyCommandQueue(ObjectPtr<CommandQueue> q) {
+        destroy_object(q.cast<CommandQueueMetal>());
+    }
+
+    ObjectPtr<Texture> DeviceMetal::createTexture(u32 width, u32 height) {
+        auto desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatA8Unorm
+                                                                       width:width
+                                                                      height:height
+                                                                   mipmapped:NO];
+        desc.storageMode = MTLStorageModeShared;
+        auto texture = [_device newTextureWithDescriptor:desc];
+        return make_object<TextureMetal>(texture);
+    }
+
+    void DeviceMetal::destroyTexture(ObjectPtr<Texture> texture) {
+        // todo
+    }
+
+    ShaderLibraryMetal::ShaderLibraryMetal(dispatch_data_t data, id<MTLLibrary> library)
+        : _data{data}, _library{library} {}
+
+    ShaderLibraryMetal::~ShaderLibraryMetal() {
+        [_library release];
+        [_data release];
+    }
+
+    RenderPipelineMetal::RenderPipelineMetal(id<MTLFunction> vertex,
+                                             id<MTLRenderPipelineState> pipeline)
+        : _vertex{vertex}, _pipeline{pipeline} {}
+
+    RenderPipelineMetal::~RenderPipelineMetal() {
+        [_pipeline release];
+        [_vertex release];
+    }
+
+    BufferMetal::BufferMetal(id<MTLBuffer> b) : _buffer{b} {}
+
+    BufferMetal::~BufferMetal() { [_buffer release]; }
+
+    ObjectPtr<CommandBuffer> CommandQueueMetal::createCommandBuffer() {
+        return make_object<CommandBufferMetal>([_queue commandBuffer]);
+    }
+
+    void CommandQueueMetal::destroyCommandBuffer(ObjectPtr<CommandBuffer> cmdbuf) {
+        destroy_object(cmdbuf.cast<CommandBufferMetal>());
+    }
+
+    ObjectPtr<RenderPassEncoder> CommandBufferMetal::beginRenderPass(
+        RenderPassDescriptor const& descriptor) {
+        auto desc = [MTLRenderPassDescriptor renderPassDescriptor];
+        for (usize i = 0; i < descriptor.color_attachments.count(); i++) {
+            desc.colorAttachments[i].texture =
+                descriptor.color_attachments[i].texture.cast<TextureMetal>()->texture();
+            desc.colorAttachments[i].loadAction =
+                translate_load_action(descriptor.color_attachments[i].load);
+            desc.colorAttachments[i].storeAction =
+                translate_store_action(descriptor.color_attachments[i].store);
+            auto& c = descriptor.color_attachments[i].clear_color;
+            desc.colorAttachments[i].clearColor = MTLClearColorMake(c.r, c.g, c.b, c.a);
         }
-
-        p->pipeline = pstate;
-
-        *pipeline = (render_pipeline_id)p;
-
-        return RESULT_SUCCESS;
+        return make_object<RenderPassEncoderMetal>(
+            [_cmdbuf renderCommandEncoderWithDescriptor:desc]);
     }
 
-    void metal_destroy_render_pipeline(device_id device, render_pipeline_id pipeline) {
-        cast_object(metal_render_pipeline, p, pipeline);
-        [p->pipeline release];
-        dealloc_object(metal_render_pipeline, p);
+    void CommandBufferMetal::endRenderPass(ObjectPtr<RenderPassEncoder> e) {
+        auto encoder = e.cast<RenderPassEncoderMetal>();
+        [encoder->encoder() endEncoding];
+        destroy_object(encoder);
     }
 
-    int metal_create_command_buffer(device_id device,
-                                    struct command_buffer_descriptor const* descriptor,
-                                    command_buffer_id* command_buffer) {
-        cast_object(metal_command_queue, q, descriptor->queue);
-        alloc_object(metal_command_buffer, cmdbuf);
-
-        cmdbuf->queue = q->queue;
-        cmdbuf->buffer = [q->queue commandBuffer];
-
-        *command_buffer = (command_buffer_id)cmdbuf;
-        return RESULT_SUCCESS;
+    void CommandBufferMetal::present(ObjectPtr<Surface> s) {
+        [_cmdbuf presentDrawable:s.cast<SurfaceMetal>()->drawable()];
     }
 
-    void metal_destroy_command_buffer(device_id device, command_buffer_id command_buffer) {
-        cast_object(metal_command_buffer, c, command_buffer);
-        dealloc_object(metal_command_buffer, c);
+    void CommandBufferMetal::submit() { [_cmdbuf commit]; }
+
+    void RenderPassEncoderMetal::setRenderPipeline(ObjectPtr<RenderPipeline> p) {
+        [_encoder setRenderPipelineState:p.cast<RenderPipelineMetal>()->pipeline()];
+    }
+    void RenderPassEncoderMetal::setVertexBuffer(ObjectPtr<Buffer> b,
+                                                 vertex_buffer_location const& loc) {
+        [_encoder setVertexBuffer:b.cast<BufferMetal>()->buffer()
+                           offset:0
+                          atIndex:loc.apple.buffer_index];
+    }
+    void RenderPassEncoderMetal::setTexture(ObjectPtr<Texture> texture) {
+        // todo: index
+        [_encoder setFragmentTexture:texture.cast<TextureMetal>()->texture() atIndex:0];
+    }
+    void RenderPassEncoderMetal::setViewport(Viewport v) {
+        [_encoder setViewport:{v.x, v.y, v.width, v.height, v.z_near, v.z_far}];
+    }
+    void RenderPassEncoderMetal::draw(int vertex_start, int vertex_count) {
+        [_encoder drawPrimitives:MTLPrimitiveTypeTriangle
+                     vertexStart:vertex_start
+                     vertexCount:vertex_count];
+    }
+    void RenderPassEncoderMetal::draw(int vertex_start, int vertex_count, int instance_start,
+                                      int instance_count) {
+        [_encoder drawPrimitives:MTLPrimitiveTypeTriangle
+                     vertexStart:vertex_start
+                     vertexCount:vertex_count
+                   instanceCount:instance_count
+                    baseInstance:instance_start];
     }
 
-    void metal_reset_command_buffer(device_id device, command_buffer_id command_buffer) {
-        cast_object(metal_command_buffer, c, command_buffer);
-        c->buffer = [c->queue commandBuffer];
-    }
-
-    int metal_create_surface(device_id device, struct surface_descriptor const* descriptor,
-                             surface_id* surface) {
-        cast_object(metal_device, d, device);
-        alloc_object(metal_surface, s);
-        s->layer = (CAMetalLayer*)descriptor->window->handle().apple.layer;
-        [s->layer retain];
-        s->layer.device = d->device;
-        *surface = (surface_id)s;
-        return RESULT_SUCCESS;
-    }
-
-    void metal_destroy_surface(device_id device, surface_id surface) {
-        cast_object(metal_surface, s, surface);
-        [s->layer release];
-        dealloc_object(metal_surface, s);
-    }
-
-    int metal_create_swapchain(device_id device, struct swapchain_descriptor const* descriptor,
-                               swapchain_id* swapchain) {
-        cast_object(metal_surface, s, descriptor->surface);
-        alloc_object(metal_swapchain, sc);
-        sc->layer = s->layer;
-        *swapchain = (swapchain_id)sc;
-        return RESULT_SUCCESS;
-    }
-
-    void metal_destroy_swapchain(device_id device, swapchain_id swapchain) {
-        cast_object(metal_swapchain, s, swapchain);
-        dealloc_object(metal_swapchain, s);
-    }
-
-    int metal_acquire_image(device_id device, struct acquire_descriptor const* descriptor,
-                            presentable_id* presentable) {
-        cast_object(metal_device, d, device);
-        cast_object(metal_swapchain, s, descriptor->swapchain);
-        d->presentable.drawable = [s->layer nextDrawable];
-        d->presentable.texture.texture = d->presentable.drawable.texture;
-        *presentable = (presentable_id)&d->presentable;
-        return RESULT_SUCCESS;
-    }
-
-    void metal_begin_render_pass(device_id device, struct render_pass_descriptor const* descriptor,
-                                 render_pass_encoder_id* encoder) {
-        cast_object(metal_command_buffer, c, descriptor->command_buffer);
-        cast_object(metal_texture, t, descriptor->color_attachment);
-        alloc_object(metal_render_pass_encoder, e);
-
-        struct color4 const* clear_color = &descriptor->clear_color;
-
-        MTLRenderPassDescriptor* render_pass_desc = [MTLRenderPassDescriptor new];
-        render_pass_desc.colorAttachments[0].loadAction = MTLLoadActionClear;
-        render_pass_desc.colorAttachments[0].storeAction = MTLStoreActionStore;
-        render_pass_desc.colorAttachments[0].clearColor =
-            MTLClearColorMake(clear_color->r, clear_color->g, clear_color->b, clear_color->a);
-        render_pass_desc.colorAttachments[0].texture = t->texture;
-
-        e->encoder = [c->buffer renderCommandEncoderWithDescriptor:render_pass_desc];
-        [render_pass_desc release];
-
-        *encoder = (render_pass_encoder_id)e;
-    }
-
-    void metal_end_render_pass(device_id device, render_pass_encoder_id encoder) {
-        cast_object(metal_render_pass_encoder, e, encoder);
-        [e->encoder endEncoding];
-        dealloc_object(metal_render_pass_encoder, e);
-    }
-
-    void metal_present(device_id device, struct present_descriptor const* descriptor) {
-        cast_object(metal_command_buffer, c, descriptor->command_buffer);
-        cast_object(metal_presentable, p, descriptor->presentable);
-        [c->buffer presentDrawable:p->drawable];
-        [c->buffer commit];
-    }
-
-    void metal_presentable_texture(device_id device, presentable_id presentable,
-                                   texture_id* texture) {
-        cast_object(metal_presentable, p, presentable);
-        *texture = (texture_id)&p->texture;
+    void TextureMetal::updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
+                                    base::span<u8> bytes) {
+        [_texture replaceRegion:MTLRegionMake2D(x, y, width, height)
+                    mipmapLevel:0
+                      withBytes:bytes.data()
+                    bytesPerRow:bytes_per_row];
     }
 
 }  // namespace spargel::gpu

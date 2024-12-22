@@ -13,30 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define VK_NO_PROTOTYPES
-#include <vulkan/vk_platform.h>
-#include <vulkan/vulkan_core.h>
-
-#if SPARGEL_IS_ANDROID
-#include <vulkan/vulkan_android.h>
-#endif
-
-#if SPARGEL_IS_LINUX
-#include <xcb/xcb.h>
-/* after xcb */
-#include <vulkan/vulkan_wayland.h>
-#include <vulkan/vulkan_xcb.h>
-#endif
-
-#if SPARGEL_IS_MACOS
-#include <vulkan/vulkan_metal.h>
-#endif
-
-#if SPARGEL_IS_WINDOWS
-#include <windows.h>
-/* after windows.h */
-#include <vulkan/vulkan_win32.h>
-#endif
 
 #if SPARGEL_IS_ANDROID
 #define VULKAN_LIB_FILENAME "libvulkan.so"

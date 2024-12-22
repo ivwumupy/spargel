@@ -1,5 +1,5 @@
 #include <spargel/base/logging.h>
-#include <spargel/gpu/gpu3.h>
+#include <spargel/gpu/gpu.h>
 
 // libc
 #include <stdio.h>

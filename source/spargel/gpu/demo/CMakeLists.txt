@@ -1,18 +1,18 @@
+# spargel_add_executable(
+#     NAME demo_gpu
+#     PRIVATE demo_gpu.cpp
+#     DEPS gpu ui
+# )
+
+# spargel_add_application(
+#     NAME demo_gpu_port
+#     PRIVATE demo_gpu_port.cpp
+#     DEPS gpu ui entry
+# )
+
 spargel_add_executable(
     NAME demo_gpu
     PRIVATE demo_gpu.cpp
-    DEPS gpu ui
-)
-
-spargel_add_application(
-    NAME demo_gpu_port
-    PRIVATE demo_gpu_port.cpp
-    DEPS gpu ui entry
-)
-
-spargel_add_executable(
-    NAME demo_gpu3
-    PRIVATE demo_gpu3.cpp
     DEPS gpu resource ui
 )
 
@@ -60,8 +60,7 @@ if (SPARGEL_GPU_ENABLE_VULKAN)
             ${CMAKE_CURRENT_BINARY_DIR}/vertex_shader.spirv.inc
             ${CMAKE_CURRENT_BINARY_DIR}/fragment_shader.spirv.inc
     )
-    add_dependencies(demo_gpu demo_gpu_vulkan_shaders)
-    add_dependencies(demo_gpu3 demo_gpu_vulkan_shaders)
+    # add_dependencies(demo_gpu demo_gpu_vulkan_shaders)
 endif ()
 
 if (SPARGEL_GPU_ENABLE_METAL)
@@ -78,25 +77,14 @@ if (SPARGEL_GPU_ENABLE_METAL)
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/shader.ir
     )
     add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib.inc
-        COMMAND
-            xxd -i -n demo_gpu_metal_shader_code ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib.inc
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib
-    )
-    add_custom_target(demo_gpu_metal_shaders
-        DEPENDS
-            ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib.inc
-    )
-    add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
         COMMAND
             cp ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib
     )
-    add_custom_target(demo_gpu3_metal_shaders
+    add_custom_target(demo_gpu_metal_shaders
         DEPENDS
             ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
     )
     add_dependencies(demo_gpu demo_gpu_metal_shaders)
-    add_dependencies(demo_gpu3 demo_gpu3_metal_shaders)
 endif ()

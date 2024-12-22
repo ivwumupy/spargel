@@ -1,61 +1,162 @@
 #pragma once
 
+#include <spargel/base/unique_ptr.h>
+#include <spargel/base/vector.h>
 #include <spargel/gpu/gpu.h>
+
+// metal
+#import <Metal/Metal.h>
+#import <QuartzCore/QuartzCore.h>
 
 namespace spargel::gpu {
 
-    int metal_create_default_device(struct device_descriptor const* descriptor, device_id* device);
-    void metal_destroy_device(device_id device);
-    int metal_create_command_queue(device_id device, command_queue_id* queue);
-    void metal_destroy_command_queue(device_id device, command_queue_id queue);
-    void metal_destroy_shader_function(device_id device, shader_function_id func);
-    int metal_create_render_pipeline(device_id device,
-                                     struct RenderPipelineDescriptor const* descriptor,
-                                     render_pipeline_id* pipeline);
-    void metal_destroy_render_pipeline(device_id device, render_pipeline_id pipeline);
-    int metal_create_command_buffer(device_id device,
-                                    struct command_buffer_descriptor const* descriptor,
-                                    command_buffer_id* command_buffer);
-    void metal_destroy_command_buffer(device_id device, command_buffer_id command_buffer);
-    void metal_reset_command_buffer(device_id device, command_buffer_id command_buffer);
-    int metal_create_surface(device_id device, struct surface_descriptor const* descriptor,
-                             surface_id* surface);
-    void metal_destroy_surface(device_id device, surface_id surface);
-    int metal_create_swapchain(device_id device, struct swapchain_descriptor const* descriptor,
-                               swapchain_id* swapchain);
-    void metal_destroy_swapchain(device_id device, swapchain_id swapchain);
-    int metal_acquire_image(device_id device, struct acquire_descriptor const* descriptor,
-                            presentable_id* presentable);
-    void metal_begin_render_pass(device_id device, struct render_pass_descriptor const* descriptor,
-                                 render_pass_encoder_id* encoder);
-    void metal_end_render_pass(device_id device, render_pass_encoder_id encoder);
-    void metal_present(device_id device, struct present_descriptor const* descriptor);
-    void metal_presentable_texture(device_id device, presentable_id presentable,
-                                   texture_id* texture);
+    class ShaderLibraryMetal : public ShaderLibrary {
+    public:
+        explicit ShaderLibraryMetal(dispatch_data_t data, id<MTLLibrary> library);
+        ~ShaderLibraryMetal();
 
-    /* metal specific api */
+        auto library() const { return _library; }
 
-    typedef struct metal_shader_library* metal_shader_library_id;
-
-    /* todo: refactor using sbase_url and asset loading */
-    struct metal_shader_library_descriptor {
-        void* code;
-        ssize size;
+    private:
+        dispatch_data_t _data;
+        id<MTLLibrary> _library;
     };
 
-    struct metal_shader_function_descriptor {
-        metal_shader_library_id library;
-        char const* name;
+    class RenderPipelineMetal : public RenderPipeline {
+    public:
+        explicit RenderPipelineMetal(id<MTLFunction> vertex_function,
+                                     id<MTLRenderPipelineState> pipeline);
+        ~RenderPipelineMetal();
+
+        auto pipeline() { return _pipeline; }
+
+    private:
+        id<MTLFunction> _vertex;
+        id<MTLRenderPipelineState> _pipeline;
     };
 
-    int metal_create_shader_function(device_id device,
-                                     struct metal_shader_function_descriptor const* descriptor,
-                                     shader_function_id* func);
+    class BufferMetal : public Buffer {
+    public:
+        explicit BufferMetal(id<MTLBuffer> b);
+        ~BufferMetal();
 
-    int metal_create_shader_library(device_id device,
-                                    struct metal_shader_library_descriptor const* descriptor,
-                                    metal_shader_library_id* library);
+        auto buffer() { return _buffer; }
 
-    void metal_destroy_shader_library(device_id device, metal_shader_library_id library);
+    private:
+        id<MTLBuffer> _buffer;
+    };
+
+    class TextureMetal final : public Texture {
+    public:
+        explicit TextureMetal(id<MTLTexture> t) : _texture{t} {}
+        ~TextureMetal() {}
+
+        auto texture() const { return _texture; }
+
+        void updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
+                          base::span<u8> bytes) override;
+
+    private:
+        id<MTLTexture> _texture;
+    };
+
+    class SurfaceMetal final : public Surface {
+    public:
+        explicit SurfaceMetal(CAMetalLayer* layer) : _layer{layer}, _texture(nil) {}
+        ~SurfaceMetal() {}
+
+        auto layer() { return _layer; }
+
+        ObjectPtr<Texture> nextTexture() override {
+            _drawable = [_layer nextDrawable];
+            base::construct_at(&_texture, _drawable.texture);
+            return ObjectPtr<Texture>(&_texture);
+        }
+
+        auto drawable() { return _drawable; }
+
+        float width() override { return _layer.drawableSize.width; }
+        float height() override { return _layer.drawableSize.height; }
+
+    private:
+        CAMetalLayer* _layer;
+        id<CAMetalDrawable> _drawable;
+        TextureMetal _texture;
+    };
+
+    class CommandQueueMetal final : public CommandQueue {
+    public:
+        explicit CommandQueueMetal(id<MTLCommandQueue> queue) : _queue{queue} {}
+        ~CommandQueueMetal() { [_queue release]; }
+
+        id<MTLCommandQueue> commandQueue() { return _queue; }
+
+        ObjectPtr<CommandBuffer> createCommandBuffer() override;
+        void destroyCommandBuffer(ObjectPtr<CommandBuffer>) override;
+
+    private:
+        id<MTLCommandQueue> _queue;
+    };
+
+    class CommandBufferMetal final : public CommandBuffer {
+    public:
+        // command buffer is autoreleased
+        explicit CommandBufferMetal(id<MTLCommandBuffer> cmdbuf) : _cmdbuf{cmdbuf} {}
+
+        id<MTLCommandBuffer> commandBuffer() { return _cmdbuf; }
+
+        ObjectPtr<RenderPassEncoder> beginRenderPass(
+            RenderPassDescriptor const& descriptor) override;
+        void endRenderPass(ObjectPtr<RenderPassEncoder> encoder) override;
+        void present(ObjectPtr<Surface> surface) override;
+        void submit() override;
+
+    private:
+        id<MTLCommandBuffer> _cmdbuf;
+    };
+
+    class RenderPassEncoderMetal final : public RenderPassEncoder {
+    public:
+        // enocder is autoreleased
+        explicit RenderPassEncoderMetal(id<MTLRenderCommandEncoder> encoder) : _encoder{encoder} {}
+
+        id<MTLCommandEncoder> encoder() { return _encoder; }
+
+        void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
+        void setVertexBuffer(ObjectPtr<Buffer> buffer, vertex_buffer_location const& loc) override;
+        void setTexture(ObjectPtr<Texture> texture) override;
+        void setViewport(Viewport viewport) override;
+        void draw(int vertex_start, int vertex_count) override;
+        void draw(int vertex_start, int vertex_count, int instance_start,
+                  int instance_count) override;
+
+    private:
+        id<MTLRenderCommandEncoder> _encoder;
+    };
+
+    class DeviceMetal final : public Device {
+    public:
+        DeviceMetal();
+        ~DeviceMetal() override;
+
+        ObjectPtr<ShaderLibrary> createShaderLibrary(base::span<u8> bytes) override;
+        ObjectPtr<RenderPipeline> createRenderPipeline(
+            RenderPipelineDescriptor const& descriptor) override;
+        ObjectPtr<Buffer> createBuffer(base::span<u8> bytes) override;
+        ObjectPtr<Surface> createSurface(ui::window* w) override;
+
+        ObjectPtr<Texture> createTexture(u32 width, u32 height) override;
+        void destroyTexture(ObjectPtr<Texture> texture) override;
+
+        void destroyShaderLibrary(ObjectPtr<ShaderLibrary> library) override;
+        void destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
+        void destroyBuffer(ObjectPtr<Buffer> b) override;
+
+        ObjectPtr<CommandQueue> createCommandQueue() override;
+        void destroyCommandQueue(ObjectPtr<CommandQueue> q) override;
+
+    private:
+        id<MTLDevice> _device;
+    };
 
 }  // namespace spargel::gpu
