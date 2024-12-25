@@ -3,6 +3,7 @@
 #include <spargel/resource/directory.h>
 #include <spargel/resource/resource.h>
 #include <spargel/ui/ui.h>
+#include <spargel/ui/ui_mac.h>
 
 using namespace spargel::gpu;
 
@@ -78,13 +79,14 @@ struct QuadData {
 
 u32 max(u32 a, u32 b) { return a > b ? a : b; }
 
-class Renderer final : public spargel::ui::window_delegate {
+class Renderer final : public spargel::ui::window_delegate, public spargel::ui::TextInputDelegate {
 public:
-    explicit Renderer(spargel::ui::window* window,
+    explicit Renderer(spargel::ui::window_appkit* window,
                       spargel::resource::resource_manager* resource_manager,
                       spargel::ui::TextSystem* text_system)
         : _window{window}, _manager{resource_manager}, _text_system{text_system} {
         _window->set_delegate(this);
+        _window->setTextDelegate(this);
 
         _device = makeDevice(DeviceKind::metal);
 
@@ -235,6 +237,8 @@ public:
 
         _queue->destroyCommandBuffer(cmdbuf);
         _device->destroyBuffer(_quads);
+
+        _valid = [[NSArray alloc] init];
     }
 
     void on_keyboard(spargel::ui::keyboard_event& e) override {
@@ -254,6 +258,54 @@ public:
                 _window->requestRedraw();
             }
         }
+        // [[NSTextInputContext currentInputContext] invalidateCharacterCoordinates];
+    }
+
+    // TextInputDelegate
+    bool hasMarkedText() override {
+        spargel_log_info("hasMarkedText");
+        return false;
+    }
+    void setMarkedText(id string, NSRange selected, NSRange replaced) override {
+        spargel_log_info("setMarkedText");
+    }
+    NSRange getMarkedRange() override {
+        spargel_log_info("getMarkedRange");
+        return NSMakeRange(NSNotFound, 0);
+    }
+    void unmarkText() override { spargel_log_info("unmarkText"); }
+    NSArray<NSAttributedStringKey>* validAttributesForMarkedText() override {
+        spargel_log_info("validAttributesForMarkedText");
+        // return _valid;
+        return [NSArray array];
+    }
+    NSRange getSelectedRange() override {
+        spargel_log_info("getSelectedRange");
+        return NSMakeRange(_str.count(), 0);
+    }
+    void insertText(id string, NSRange replaced) override { spargel_log_info("insertText"); }
+    NSRect firstRectForCharacterRange(NSRange range, NSRangePointer actual) override {
+        spargel_log_info("firstRectForCharacterRange");
+        printf("range = (%lu, %lu)", static_cast<unsigned long>(range.location),
+               static_cast<unsigned long>(range.length));
+        if (actual != nullptr) {
+            printf(" actual = (%lu, %lu)", (unsigned long)(actual->location),
+                   (unsigned long)(actual->length));
+        }
+        putchar('\n');
+        if (actual != nullptr) {
+            return NSMakeRect(50 + _str.count() * 20, 50, 0, 20);
+        }
+        return NSMakeRect(50, 50, _str.count() * 20, 20);
+    }
+    NSAttributedString* attributedSubstringForProposedRange(NSRange range,
+                                                            NSRangePointer actual) override {
+        spargel_log_info("attributedSubstringForProposedRange");
+        return nil;
+    }
+    NSUInteger characterIndexForPoint(NSPoint point) override {
+        spargel_log_info("characterIndexForPoint");
+        return 0;
     }
 
 private:
@@ -310,7 +362,7 @@ private:
         return _glyph_cache[_glyph_cache.count() - 1];
     }
 
-    spargel::ui::window* _window;
+    spargel::ui::window_appkit* _window;
     spargel::resource::resource_manager* _manager;
     spargel::ui::TextSystem* _text_system;
     spargel::base::unique_ptr<Device> _device;
@@ -330,6 +382,7 @@ private:
     u32 _cur_col = 0;
     u32 _nxt_row = 0;
     bool _animating = false;
+    NSArray<NSString*>* _valid;
 };
 
 int main() {
@@ -340,7 +393,8 @@ int main() {
     auto window = platform->make_window(500, 500);
     window->set_title("Spargel Engine - GPU");
 
-    Renderer r(window.get(), resource_manager.get(), text_system.get());
+    Renderer r((spargel::ui::window_appkit*)window.get(), resource_manager.get(),
+               text_system.get());
 
     platform->start_loop();
     return 0;

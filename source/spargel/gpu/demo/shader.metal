@@ -42,3 +42,10 @@ struct UniformData {
     color.a *= color_texture.sample(texture_sampler, in.texture_coord).a;
     return color;
 }
+
+[[kernel]] void add_arrays(constant float const* inA [[buffer(0)]],
+                           constant float const* inB [[buffer(1)]],
+                           device float* result [[buffer(2)]],
+                           uint index [[thread_position_in_grid]]) {
+    result[index] = inA[index] + inB[index];
+}

@@ -244,22 +244,27 @@ namespace spargel::gpu {
 
     template <typename T, typename... Args>
     ObjectPtr<T> make_object(Args&&... args) {
-        T* ptr = static_cast<T*>(base::default_allocator()->alloc(sizeof(T)));
-        base::construct_at(ptr, base::forward<Args>(args)...);
-        return ObjectPtr<T>(ptr);
+        return ObjectPtr<T>(
+            base::default_allocator()->alloc_object<T>(base::forward<Args>(args)...));
     }
 
     template <typename T>
     void destroy_object(ObjectPtr<T> ptr) {
-        ptr->~T();
-        base::default_allocator()->free(ptr.get(), sizeof(T));
+        base::default_allocator()->free_object(ptr.get());
     }
 
     class ShaderLibrary {};
     class RenderPipeline {};
+    class ComputePipeline {
+    public:
+        virtual u32 maxGroupSize() = 0;
+    };
     class BindGroup {};
     class BindGroupLayout {};
-    class Buffer {};
+    class Buffer {
+    public:
+        virtual void* mapAddr() = 0;
+    };
     class Texture {
     public:
         virtual void updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
@@ -281,6 +286,19 @@ namespace spargel::gpu {
         virtual void draw(int vertex_start, int vertex_count) = 0;
         virtual void draw(int vertex_start, int vertex_count, int instance_start,
                           int instance_count) = 0;
+    };
+
+    struct DispatchSize {
+        u32 x;
+        u32 y;
+        u32 z;
+    };
+
+    class ComputePassEncoder {
+    public:
+        virtual void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) = 0;
+        virtual void setBuffer(ObjectPtr<Buffer> buffer, vertex_buffer_location const& loc) = 0;
+        virtual void dispatch(DispatchSize grid_size, DispatchSize group_size) = 0;
     };
 
     struct ClearColor {
@@ -306,8 +324,11 @@ namespace spargel::gpu {
         virtual ObjectPtr<RenderPassEncoder> beginRenderPass(
             RenderPassDescriptor const& descriptor) = 0;
         virtual void endRenderPass(ObjectPtr<RenderPassEncoder> encoder) = 0;
+        virtual ObjectPtr<ComputePassEncoder> beginComputePass() = 0;
+        virtual void endComputePass(ObjectPtr<ComputePassEncoder> encoder) = 0;
         virtual void present(ObjectPtr<Surface> surface) = 0;
         virtual void submit() = 0;
+        virtual void wait() = 0;
     };
     class CommandQueue {
     public:
@@ -438,6 +459,7 @@ namespace spargel::gpu {
         virtual void destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) = 0;
 
         virtual ObjectPtr<Buffer> createBuffer(base::span<u8> bytes) = 0;
+        virtual ObjectPtr<Buffer> createBuffer(u32 size) = 0;
         virtual void destroyBuffer(ObjectPtr<Buffer> buffer) = 0;
 
         // todo: format, 2d
@@ -446,6 +468,9 @@ namespace spargel::gpu {
 
         virtual ObjectPtr<CommandQueue> createCommandQueue() = 0;
         virtual void destroyCommandQueue(ObjectPtr<CommandQueue> queue) = 0;
+
+        virtual ObjectPtr<ComputePipeline> createComputePipeline(ObjectPtr<ShaderLibrary> library,
+                                                                 char const* entry) = 0;
 
     protected:
         explicit Device(DeviceKind k) : _kind{k} {}
@@ -508,3 +533,11 @@ namespace spargel::gpu {
 // Rasterizing a primitive begins by determining which squares of an integer grid in framebuffer
 // coordinates are occupied by the primitive, and assigning one or more depth values to each such
 // square.
+//
+// ### Metal
+//
+// The render pipeline linearly maps vertex positions from normalized device coordinates to viewport
+// coordinates by applying a viewport during the rasterization stage. It applies the transform first
+// and then rasterizes the primitive while clipping any fragments outside the scissor rectangle or
+// the render target’s extents.
+//

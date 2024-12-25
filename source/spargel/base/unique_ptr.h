@@ -1,6 +1,7 @@
 #pragma once
 
 #include <spargel/base/algorithm.h>
+#include <spargel/base/allocator.h>
 #include <spargel/base/meta.h>
 #include <spargel/base/object.h>
 #include <spargel/base/tag_invoke.h>
@@ -33,8 +34,7 @@ namespace spargel::base {
 
             ~unique_ptr() {
                 if (_ptr != nullptr) {
-                    destruct_at(_ptr);
-                    default_allocator()->free(_ptr, sizeof(T));
+                    default_allocator()->free_object(_ptr);
                 }
             }
 
@@ -63,9 +63,7 @@ namespace spargel::base {
 
     template <typename T, typename... Args>
     unique_ptr<T> make_unique(Args&&... args) {
-        T* ptr = static_cast<T*>(default_allocator()->alloc(sizeof(T)));
-        construct_at(ptr, forward<Args>(args)...);
-        return unique_ptr<T>(ptr);
+        return unique_ptr<T>(default_allocator()->alloc_object<T>(forward<Args>(args)...));
     }
 
 }  // namespace spargel::base

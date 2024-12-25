@@ -2,7 +2,6 @@
 
 VULKAN_LIBRARY_PROC(vkGetInstanceProcAddr)
 
-#undef VULKAN_LIBRARY_PROC
 #endif
 
 #if defined(VULKAN_GENERAL_PROC)
@@ -11,7 +10,6 @@ VULKAN_GENERAL_PROC(vkEnumerateInstanceLayerProperties)
 VULKAN_GENERAL_PROC(vkEnumerateInstanceExtensionProperties)
 VULKAN_GENERAL_PROC(vkCreateInstance)
 
-#undef VULKAN_GENERAL_PROC
 #endif
 
 #if defined(VULKAN_INSTANCE_PROC)
@@ -103,5 +101,4 @@ VULKAN_DEVICE_PROC(vkCmdClearColorImage)
 
 VULKAN_DEVICE_PROC(vkDeviceWaitIdle)
 
-#undef VULKAN_DEVICE_PROC
 #endif

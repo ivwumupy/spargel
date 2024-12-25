@@ -28,8 +28,7 @@ namespace spargel::base {
 
         template <typename T>
         T* registerTest(char const* name) {
-            T* ptr = static_cast<T*>(default_allocator()->alloc(sizeof(T)));
-            construct_at<T>(ptr);
+            T* ptr = default_allocator()->alloc_object<T>();
             _tests.push(name, ptr);
             return ptr;
         }

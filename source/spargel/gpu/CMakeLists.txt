@@ -15,19 +15,19 @@ spargel_add_library(
 # endif()
 
 if(${SPARGEL_GPU_ENABLE_METAL})
-  target_sources(gpu
-    PRIVATE
-      gpu_metal.mm
-  )
-  target_link_libraries(gpu PRIVATE ${FRAMEWORK_METAL})
+    target_sources(gpu
+        PRIVATE
+            gpu_metal.mm
+    )
+    target_link_libraries(gpu PRIVATE ${FRAMEWORK_METAL})
 endif()
 
 if(${SPARGEL_GPU_ENABLE_VULKAN})
-  target_sources(gpu
-    PRIVATE
-      #gpu_vulkan.cpp
-  )
-  target_link_libraries(gpu PRIVATE Vulkan::Headers)
+    target_sources(gpu
+        PRIVATE
+            #gpu_vulkan.cpp
+    )
+    target_link_libraries(gpu PRIVATE Vulkan::Headers)
 endif()
 
 add_subdirectory(demo)

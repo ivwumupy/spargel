@@ -186,19 +186,47 @@ namespace spargel::ui {
 
     base::unique_ptr<platform> make_platform();
 
-    class view {
+    class DrawCmd {};
+
+    class View;
+
+    /// A LayoutManager is owned by a View. It manages how the View's children should be laid out
+    /// within the View's content bounds.
+    ///
+    class LayoutManager {
     public:
-        view();
-        virtual ~view();
+        virtual ~LayoutManager() = default;
 
-        view* parent() { return _parent; }
-        base::span<view*> children();
+        /// layout the children of |view|
+        virtual void layout(View* view) = 0;
+    };
 
-        void add_child(view* v);
+    class View {
+    public:
+        View();
+        virtual ~View();
+
+        View* parent() { return _parent; }
+        base::span<View*> children();
+
+        void addChild(View* v) {
+            _children.push(v);
+            v->setParent(this);
+        }
+        void setParent(View* v) { _parent = v; }
+
+        void setLayoutManager();
+        void getLayoutManager();
+
+        void layout();
+
+        /// compute the preferred size of the view given constraint
+        void getPreferredSize();
 
     private:
-        view* _parent = nullptr;
-        base::vector<view*> _children;
+        View* _parent = nullptr;
+        base::vector<View*> _children;
+        base::unique_ptr<LayoutManager> _layout_manager;
     };
 
 }  // namespace spargel::ui

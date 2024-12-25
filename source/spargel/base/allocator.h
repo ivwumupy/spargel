@@ -2,6 +2,8 @@
 
 #include <spargel/base/base.h>
 #include <spargel/base/logging.h>
+#include <spargel/base/meta.h>
+#include <spargel/base/object.h>
 #include <spargel/base/types.h>
 
 // libc
@@ -21,6 +23,19 @@ namespace spargel::base {
         virtual void* resize(void* ptr, usize old_size, usize new_size) = 0;
         // requires: ptr != nullptr, size > 0
         virtual void free(void* ptr, usize size) = 0;
+
+        template <typename T, typename... Args>
+        T* alloc_object(Args&&... args) {
+            T* ptr = static_cast<T*>(alloc(sizeof(T)));
+            construct_at<T>(ptr, forward<Args>(args)...);
+            return ptr;
+        }
+
+        template <typename T>
+        void free_object(T* ptr) {
+            ptr->~T();
+            free(ptr, sizeof(T));
+        }
     };
 
     Allocator* default_allocator();

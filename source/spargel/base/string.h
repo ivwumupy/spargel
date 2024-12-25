@@ -1,7 +1,9 @@
 #pragma once
 
+#include <spargel/base/assert.h>
 #include <spargel/base/string_view.h>
 #include <spargel/base/types.h>
+#include <spargel/base/vector.h>
 
 namespace spargel::base {
 
@@ -43,4 +45,51 @@ namespace spargel::base {
 
     string string_concat(string const& str1, string const& str2);
 
+    class String {
+    public:
+        String() = default;
+
+        /// get the |i|-th byte
+        u8& operator[](usize i) { return _bytes[i]; }
+        u8 const& operator[](usize i) const { return _bytes[i]; }
+
+        span<u8> bytes() const { return _bytes.toSpan(); }
+
+        // get the unicode scalar containing the |i|-th byte
+        u32 getScalarAtByte(usize i) {
+            spargel_assert(i < _bytes.count());
+            u8 byte = _bytes[i];
+            if ((byte & 0b10000000) == 0) {
+                // 0xxxxxxx, single byte
+                return byte;
+            } else if ((byte & 0b11100000) == 0b1100000) {
+                // 110yyyyy, first byte of two byte
+                return (((u32)byte) << 8) | _bytes[i + 1];
+            } else if ((byte & 0b11110000) == 0b11100000) {
+                return 0;
+            } else if ((byte & 0b11111000) == 0b11110000) {
+                return 0;
+            }
+            spargel_panic_here();
+        }
+
+    private:
+        vector<u8> _bytes;
+    };
+
 }  // namespace spargel::base
+
+// # Unicode
+//
+// ## Glossary
+//
+// - code point: any value in the unicode codespace, i.e. the range of integers from 0 to 10ffff
+// - unicode scalar value; any unicode code point except high-surrogate and low-surrogate code
+// points, i.e. [0, d7ff] cup [e000, 10ffff]
+//
+// - utf-8 encoding form: the unicode encoding form that assigns each unicode scalar value to an
+// unsigned byte sequence of one to four bytes in length.
+//
+// - extended grapheme cluster: the text between extended grapheme cluster boundaries as specified
+// by unicode standard annex #29
+//

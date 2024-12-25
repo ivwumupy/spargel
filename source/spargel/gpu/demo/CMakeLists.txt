@@ -17,6 +17,18 @@ spargel_add_executable(
 )
 
 spargel_add_executable(
+    NAME demo_gpu_mac
+    PRIVATE demo_gpu_mac.mm
+    DEPS gpu resource ui
+)
+
+spargel_add_executable(
+    NAME demo_sum
+    PRIVATE demo_sum.cpp
+    DEPS gpu resource ui
+)
+
+spargel_add_executable(
     NAME demo_graph
     PRIVATE demo_graph.cpp
     DEPS gpu ui
@@ -87,4 +99,5 @@ if (SPARGEL_GPU_ENABLE_METAL)
             ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
     )
     add_dependencies(demo_gpu demo_gpu_metal_shaders)
+    add_dependencies(demo_gpu_mac demo_gpu_metal_shaders)
 endif ()

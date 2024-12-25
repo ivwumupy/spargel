@@ -7,12 +7,12 @@
 #include <spargel/ui/ui.h>
 #include <spargel/ui/ui_mac.h>
 
-// libc
+//
 #include <math.h>
 #include <stddef.h>
 #include <string.h>
 
-// platform
+//
 #import <AppKit/AppKit.h>
 #include <Carbon/Carbon.h>
 #include <CoreFoundation/CoreFoundation.h>
@@ -104,6 +104,54 @@
 - (BOOL)acceptsFirstResponder {
     return YES;
 }
+
+// protocol NSTextInputClient
+
+- (BOOL)hasMarkedText {
+    return _bridge->getTextDelegate()->hasMarkedText();
+}
+
+- (NSRange)markedRange {
+    return _bridge->getTextDelegate()->getMarkedRange();
+}
+
+- (NSRange)selectedRange {
+    return _bridge->getTextDelegate()->getSelectedRange();
+}
+
+- (void)setMarkedText:(id)string
+        selectedRange:(NSRange)selectedRange
+     replacementRange:(NSRange)replacementRange {
+    _bridge->getTextDelegate()->setMarkedText(string, selectedRange, replacementRange);
+}
+
+- (void)unmarkText {
+    _bridge->getTextDelegate()->unmarkText();
+}
+
+- (NSArray<NSAttributedStringKey>*)validAttributesForMarkedText {
+    return _bridge->getTextDelegate()->validAttributesForMarkedText();
+}
+
+// - (NSAttributedString *) attributedString {}
+
+- (NSAttributedString*)attributedSubstringForProposedRange:(NSRange)range
+                                               actualRange:(NSRangePointer)actualRange {
+    return _bridge->getTextDelegate()->attributedSubstringForProposedRange(range, actualRange);
+}
+
+- (void)insertText:(id)string replacementRange:(NSRange)replacementRange {
+    _bridge->getTextDelegate()->insertText(string, replacementRange);
+}
+
+- (NSUInteger)characterIndexForPoint:(NSPoint)point {
+    return _bridge->getTextDelegate()->characterIndexForPoint(point);
+}
+
+- (NSRect)firstRectForCharacterRange:(NSRange)range actualRange:(NSRangePointer)actualRange {
+    return _bridge->getTextDelegate()->firstRectForCharacterRange(range, actualRange);
+}
+
 @end
 
 @implementation SpargelWindowDelegate {
@@ -257,10 +305,19 @@ namespace spargel::ui {
 
         _view = [[SpargelMetalView alloc] initWithSpargelUIWindow:this metalLayer:_layer];
 
+        // auto _text_cursor = [[NSTextInsertionIndicator alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
+        // [_view addSubview:_text_cursor];
+
+        // _text_cursor.displayMode = NSTextInsertionIndicatorDisplayModeAutomatic;
+
         // strong reference
         _window.contentView = _view;
 
         [_window makeKeyAndOrderFront:nil];
+    }
+
+    void window_appkit::_enable_text_cursor() {
+        // _text_cursor.displayMode = NSTextInsertionIndicatorDisplayModeAutomatic;
     }
 
     window_appkit::~window_appkit() {
@@ -315,19 +372,30 @@ namespace spargel::ui {
 
     TextSystemAppKit::TextSystemAppKit() {
         // use system language
-        _font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 14, NULL);
+        // _font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 14, NULL);
+        static constexpr char const* font_name = "Times New Roman";
+        // static constexpr char const* font_name = "Apple Color Emoji";
+        auto name =
+            CFStringCreateWithCString(kCFAllocatorDefault, font_name, kCFStringEncodingUTF8);
+        _font = CTFontCreateWithName(name, 20, NULL);
+        CFRelease(name);
     }
 
     TextSystemAppKit::~TextSystemAppKit() { CFRelease(_font); }
+
+    constexpr float scale = 2;
 
     LineLayout TextSystemAppKit::layoutLine(base::string_view str) {
         auto cfstr = CFStringCreateWithBytes(kCFAllocatorDefault, (u8 const*)str.data(),
                                              str.length(), kCFStringEncodingUTF8, false);
 
-        void const* keys[] = {kCTFontAttributeName};
-        void const* values[] = {_font};
+        void const* keys[] = {kCTFontAttributeName, kCTLigatureAttributeName};
+        int val = 2;
+        auto number = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &val);
+        void const* values[] = {_font, number};
 
         auto dict = CFDictionaryCreate(kCFAllocatorDefault, keys, values, 1, NULL, NULL);
+        CFRelease(number);
 
         auto attr_str = CFAttributedStringCreate(kCFAllocatorDefault, cfstr, dict);
 
@@ -362,12 +430,12 @@ namespace spargel::ui {
             r.positions.reserve(count);
             r.positions.set_count(count);
             for (usize j = 0; j < count; j++) {
-                r.positions[j].x = points[j].x * 2;
-                r.positions[j].y = points[j].y * 2;
+                r.positions[j].x = points[j].x * scale;
+                r.positions[j].y = points[j].y * scale;
             }
 
             r.width =
-                CTRunGetTypographicBounds(run, CFRangeMake(0, count), NULL, NULL, NULL) * 2;
+                CTRunGetTypographicBounds(run, CFRangeMake(0, count), NULL, NULL, NULL) * scale;
 
             result.runs.push(base::move(r));
         }
@@ -389,12 +457,12 @@ namespace spargel::ui {
         u32 height = (u32)ceil(rect.size.height);
 
         // scaling
-        width *= 2;
-        height *= 2;
+        width *= scale;
+        height *= scale;
 
-        // ???
-        width += 1;
-        height += 1;
+        // for anti-aliasing
+        width += 2;
+        height += 2;
 
         Bitmap bitmap;
         bitmap.width = width;
@@ -402,31 +470,33 @@ namespace spargel::ui {
         bitmap.data.reserve(width *
                             height);  // only alpha. 8 bits per channel and 1 bytes per pixel
         bitmap.data.set_count(width * height);
-        memset(bitmap.data.data(), 0, width * height);
+        memset(bitmap.data.data(), 0x3f, width * height);
 
         auto color_space = CGColorSpaceCreateDeviceGray();
         auto ctx = CGBitmapContextCreate(bitmap.data.data(), width, height,
                                          8,      // bits per channel
                                          width,  // bytes per row
                                          color_space, kCGImageAlphaOnly);
-        CGContextTranslateCTM(ctx, -rect.origin.x * 2, -rect.origin.y * 2);
-        CGContextScaleCTM(ctx, 2, 2);
+        // for scale = 5, shift = 2
+        static constexpr float shift = 1.0;
+        CGContextTranslateCTM(ctx, -rect.origin.x * scale + shift, -rect.origin.y * scale + shift);
+        // scale does not change the translate part!!!
+        CGContextScaleCTM(ctx, scale, scale);
 
+        CGContextSetShouldAntialias(ctx, true);
+
+        // shift for anti-aliasing
         CGPoint point = CGPointMake(0, 0);
         CTFontDrawGlyphs(_font, glyphs, &point, 1, ctx);
-
-        auto image = CGBitmapContextCreateImage(ctx);
-
-        CFRelease(image);
 
         CFRelease(color_space);
         CGContextRelease(ctx);
 
         RasterResult result;
         result.bitmap = base::move(bitmap);
-        result.glyph_width = rect.size.width * 2;
-        result.glyph_height = rect.size.height * 2;
-        result.descent = rect.origin.y * 2;
+        result.glyph_width = rect.size.width * scale;
+        result.glyph_height = rect.size.height * scale;
+        result.descent = rect.origin.y * scale;
 
         return result;
     }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <spargel/base/platform.h>
 #include <spargel/base/unique_ptr.h>
 #include <spargel/base/vector.h>
 #include <spargel/config.h>
@@ -95,6 +96,7 @@ namespace spargel::gpu {
 
     private:
         VkSurfaceKHR _surface;
+        VkSwapchainKHR _swapchain;
     };
 
     class CommandQueueVulkan final : public CommandQueue {
@@ -142,29 +144,77 @@ namespace spargel::gpu {
     private:
     };
 
+    struct VulkanProcTable {
+#define VULKAN_PROC_DECL(name) PFN_##name name;
+#define VULKAN_LIBRARY_PROC(name) VULKAN_PROC_DECL(name)
+#define VULKAN_GENERAL_PROC(name) VULKAN_PROC_DECL(name)
+#define VULKAN_INSTANCE_PROC(name) VULKAN_PROC_DECL(name)
+#define VULKAN_DEVICE_PROC(name) VULKAN_PROC_DECL(name)
+#include <spargel/gpu/vulkan_procs.inc>
+#undef VULKAN_DEVICE_PROC
+#undef VULKAN_INSTANCE_PROC
+#undef VULKAN_GENERAL_PROC
+#undef VULKAN_LIBRARY_PROC
+#undef VULKAN_PROC_DECL
+    };
+
     class DeviceVulkan final : public Device {
     public:
         DeviceVulkan();
         ~DeviceVulkan() override;
 
+        // Device
         ObjectPtr<ShaderLibrary> createShaderLibrary(base::span<u8> bytes) override;
+        void destroyShaderLibrary(ObjectPtr<ShaderLibrary> library) override;
         ObjectPtr<RenderPipeline> createRenderPipeline(
             RenderPipelineDescriptor const& descriptor) override;
+        void destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
         ObjectPtr<Buffer> createBuffer(base::span<u8> bytes) override;
+        void destroyBuffer(ObjectPtr<Buffer> b) override;
         ObjectPtr<Surface> createSurface(ui::window* w) override;
-
         ObjectPtr<Texture> createTexture(u32 width, u32 height) override;
         void destroyTexture(ObjectPtr<Texture> texture) override;
-
-        void destroyShaderLibrary(ObjectPtr<ShaderLibrary> library) override;
-        void destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
-        void destroyBuffer(ObjectPtr<Buffer> b) override;
-
         ObjectPtr<CommandQueue> createCommandQueue() override;
         void destroyCommandQueue(ObjectPtr<CommandQueue> q) override;
 
     private:
+        void loadGeneralProcs();
+        void enumerateLayers();
+        void enumerateInstanceExtensions();
+        void selectLayers();
+        void selectInstanceExtensions();
+        void createInstance();
+        void loadInstanceProcs();
+        void createDebugMessenger();
+        void enumeratePhysicalDevices();
+        void queryPhysicalDeviceInfos();
+        void queryQueueFamilyProperties();
+
+        base::dynamic_library_handle* _library;
+        VulkanProcTable _procs;
+
+        base::vector<VkLayerProperties> _all_layers;
+        base::vector<VkExtensionProperties> _all_inst_exts;
+        base::vector<char const*> _use_layers;
+        base::vector<char const*> _use_inst_exts;
+        bool _has_portability_enumeration;
+        bool _has_debug_utils;
+
+        VkInstance _instance;
+        VkDebugUtilsMessengerEXT _debug_messenger;
+
+        base::vector<VkPhysicalDevice> _physical_devices;
+
+        struct PhysicalDeviceInfo {
+            VkPhysicalDeviceProperties props;
+            base::vector<VkQueueFamilyProperties> queue_family_props;
+        };
+        base::vector<PhysicalDeviceInfo> _physical_device_infos;
+
         VkDevice _device;
+
+        // todo: hook allocations
+        [[maybe_unused]] VkAllocationCallbacks _vkalloc;
     };
 
 }  // namespace spargel::gpu

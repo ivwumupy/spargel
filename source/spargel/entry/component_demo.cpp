@@ -22,9 +22,7 @@ private:
     spargel::base::unique_ptr<spargel::ui::window> _window;
 };
 
-extern "C" DEMO_EXPORT spargel::entry::component* _spargel_make_component(spargel::entry::launch_data* l) {
-    demo_component* ptr = static_cast<demo_component*>(
-        spargel::base::default_allocator()->alloc(sizeof(demo_component)));
-    spargel::base::construct_at<demo_component>(ptr, l);
-    return ptr;
+extern "C" DEMO_EXPORT spargel::entry::component* _spargel_make_component(
+    spargel::entry::launch_data* l) {
+    return spargel::base::default_allocator()->alloc_object<demo_component>(l);
 }

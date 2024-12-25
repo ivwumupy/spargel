@@ -10,7 +10,7 @@
 
 namespace spargel::gpu {
 
-    class ShaderLibraryMetal : public ShaderLibrary {
+    class ShaderLibraryMetal final : public ShaderLibrary {
     public:
         explicit ShaderLibraryMetal(dispatch_data_t data, id<MTLLibrary> library);
         ~ShaderLibraryMetal();
@@ -22,7 +22,7 @@ namespace spargel::gpu {
         id<MTLLibrary> _library;
     };
 
-    class RenderPipelineMetal : public RenderPipeline {
+    class RenderPipelineMetal final : public RenderPipeline {
     public:
         explicit RenderPipelineMetal(id<MTLFunction> vertex_function,
                                      id<MTLRenderPipelineState> pipeline);
@@ -35,10 +35,12 @@ namespace spargel::gpu {
         id<MTLRenderPipelineState> _pipeline;
     };
 
-    class BufferMetal : public Buffer {
+    class BufferMetal final : public Buffer {
     public:
         explicit BufferMetal(id<MTLBuffer> b);
         ~BufferMetal();
+
+        void* mapAddr() override { return _buffer.contents; }
 
         auto buffer() { return _buffer; }
 
@@ -111,6 +113,10 @@ namespace spargel::gpu {
         void present(ObjectPtr<Surface> surface) override;
         void submit() override;
 
+        ObjectPtr<ComputePassEncoder> beginComputePass() override;
+        void endComputePass(ObjectPtr<ComputePassEncoder> encoder) override;
+        void wait() override { [_cmdbuf waitUntilCompleted]; }
+
     private:
         id<MTLCommandBuffer> _cmdbuf;
     };
@@ -120,7 +126,7 @@ namespace spargel::gpu {
         // enocder is autoreleased
         explicit RenderPassEncoderMetal(id<MTLRenderCommandEncoder> encoder) : _encoder{encoder} {}
 
-        id<MTLCommandEncoder> encoder() { return _encoder; }
+        id<MTLRenderCommandEncoder> encoder() { return _encoder; }
 
         void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
         void setVertexBuffer(ObjectPtr<Buffer> buffer, vertex_buffer_location const& loc) override;
@@ -134,6 +140,50 @@ namespace spargel::gpu {
         id<MTLRenderCommandEncoder> _encoder;
     };
 
+    class ComputePipelineMetal final : public ComputePipeline {
+    public:
+        explicit ComputePipelineMetal(id<MTLFunction> func, id<MTLComputePipelineState> pipeline)
+            : _func{func}, _pipeline{pipeline} {}
+        ~ComputePipelineMetal() {
+            [_func release];
+            [_pipeline release];
+        }
+
+        u32 maxGroupSize() override { return _pipeline.maxTotalThreadsPerThreadgroup; }
+
+        auto pipeline() const { return _pipeline; }
+
+    private:
+        id<MTLFunction> _func;
+        id<MTLComputePipelineState> _pipeline;
+    };
+
+    class ComputePassEncoderMetal final : public ComputePassEncoder {
+    public:
+        explicit ComputePassEncoderMetal(id<MTLComputeCommandEncoder> encoder)
+            : _encoder{encoder} {}
+
+        void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) override {
+            [_encoder setComputePipelineState:pipeline.cast<ComputePipelineMetal>()->pipeline()];
+        }
+
+        void setBuffer(ObjectPtr<Buffer> buffer, vertex_buffer_location const& loc) override {
+            [_encoder setBuffer:buffer.cast<BufferMetal>()->buffer()
+                         offset:0
+                        atIndex:loc.apple.buffer_index];
+        }
+
+        void dispatch(DispatchSize grid_size, DispatchSize group_size) override {
+            [_encoder dispatchThreadgroups:MTLSizeMake(grid_size.x, grid_size.y, grid_size.z)
+                     threadsPerThreadgroup:MTLSizeMake(group_size.x, group_size.y, group_size.z)];
+        }
+
+        auto encoder() const { return _encoder; }
+
+    private:
+        id<MTLComputeCommandEncoder> _encoder;
+    };
+
     class DeviceMetal final : public Device {
     public:
         DeviceMetal();
@@ -143,6 +193,7 @@ namespace spargel::gpu {
         ObjectPtr<RenderPipeline> createRenderPipeline(
             RenderPipelineDescriptor const& descriptor) override;
         ObjectPtr<Buffer> createBuffer(base::span<u8> bytes) override;
+        ObjectPtr<Buffer> createBuffer(u32 size) override;
         ObjectPtr<Surface> createSurface(ui::window* w) override;
 
         ObjectPtr<Texture> createTexture(u32 width, u32 height) override;
@@ -154,6 +205,17 @@ namespace spargel::gpu {
 
         ObjectPtr<CommandQueue> createCommandQueue() override;
         void destroyCommandQueue(ObjectPtr<CommandQueue> q) override;
+
+        ObjectPtr<ComputePipeline> createComputePipeline(ObjectPtr<ShaderLibrary> library,
+                                                         char const* entry) override {
+            NSError* err;
+            auto func = [library.cast<ShaderLibraryMetal>()->library()
+                newFunctionWithName:[NSString stringWithUTF8String:entry]];
+            return make_object<ComputePipelineMetal>(
+                func, [_device newComputePipelineStateWithFunction:func error:&err]);
+        }
+
+        auto device() { return _device; }
 
     private:
         id<MTLDevice> _device;

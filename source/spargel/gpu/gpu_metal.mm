@@ -156,7 +156,8 @@ namespace spargel::gpu {
         desc.vertexFunction = vertex_function;
 
         for (usize i = 0; i < descriptor.color_attachments.count(); i++) {
-            desc.colorAttachments[i].pixelFormat = translatePixelFormat(descriptor.color_attachments[i].format);
+            desc.colorAttachments[i].pixelFormat =
+                translatePixelFormat(descriptor.color_attachments[i].format);
             desc.colorAttachments[i].blendingEnabled = descriptor.color_attachments[i].enable_blend;
             desc.colorAttachments[i].alphaBlendOperation = MTLBlendOperationAdd;
             desc.colorAttachments[i].rgbBlendOperation = MTLBlendOperationAdd;
@@ -194,6 +195,11 @@ namespace spargel::gpu {
         auto buf = [_device newBufferWithBytes:bytes.data()
                                         length:bytes.count()
                                        options:MTLResourceStorageModeShared];
+        return make_object<BufferMetal>(buf);
+    }
+
+    ObjectPtr<Buffer> DeviceMetal::createBuffer(u32 size) {
+        auto buf = [_device newBufferWithLength:size options:MTLResourceStorageModeShared];
         return make_object<BufferMetal>(buf);
     }
 
@@ -297,6 +303,16 @@ namespace spargel::gpu {
     }
 
     void CommandBufferMetal::submit() { [_cmdbuf commit]; }
+
+    ObjectPtr<ComputePassEncoder> CommandBufferMetal::beginComputePass() {
+        return make_object<ComputePassEncoderMetal>([_cmdbuf computeCommandEncoder]);
+    }
+
+    void CommandBufferMetal::endComputePass(ObjectPtr<ComputePassEncoder> e) {
+        auto encoder = e.cast<ComputePassEncoderMetal>();
+        [encoder->encoder() endEncoding];
+        destroy_object(encoder);
+    }
 
     void RenderPassEncoderMetal::setRenderPipeline(ObjectPtr<RenderPipeline> p) {
         [_encoder setRenderPipelineState:p.cast<RenderPipelineMetal>()->pipeline()];
