@@ -1,5 +1,20 @@
 # GPU
 
+## Compute Shader
+
+| DirectX      | Metal                 | Vulkan           | CUDA            | AMD                  |
+| ------------ | --------------------- | ---------------- | --------------- | -------------------- |
+| lane         | thread                | invocation       | thread          | thread               |
+| wave         | SIMD group (maybe 32) | subgroup         | warp (maybe 32) | wavefront (maybe 64) |
+| thread group | thread group          | local work group | thread block    | thread group         |
+
+-   `-[MTLComputePipelineState maxTotalThreadsPerThreadgroup]` is the maximum number of threads that one thread-group can hold, which depends on the GPU, the amount of registers and memory the compute kernel uses.
+-   `-[MTLComputePipelineState threadExecutionWidth]` is the number of threads the GPU executes simultaneously. So this is the size of a SIMD group.
+
+Warning: though `-[MTLComputePipelineState maxTotalThreadsPerThreadgroup]` is fixed for a created pipeline, it can differ for different pipeline, even pipelines with the same kernel!
+
+## xxx
+
 [Mapping](https://docs.vulkan.org/guide/latest/decoder_ring.html)
 
 | DirectX             | Metal                   | Vulkan             | WebGPU          |
@@ -28,11 +43,11 @@
 ## Metal
 
 You can synchronize resources with these mechanisms, which are in ascending scope order:
-- Memory barriers
-- Memory fences
-- Metal events
-- Metal shared events
 
+-   Memory barriers
+-   Memory fences
+-   Metal events
+-   Metal shared events
 
 ## Related
 

@@ -298,6 +298,8 @@ namespace spargel::gpu {
     public:
         virtual void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) = 0;
         virtual void setBuffer(ObjectPtr<Buffer> buffer, vertex_buffer_location const& loc) = 0;
+        // grid_size is the number of thread groups of the grid
+        // group_size is the number of threads of a thread group
         virtual void dispatch(DispatchSize grid_size, DispatchSize group_size) = 0;
     };
 

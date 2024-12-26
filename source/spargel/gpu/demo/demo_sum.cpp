@@ -29,7 +29,7 @@ int main() {
     encoder->setBuffer(buf1, {.apple = {.buffer_index = 0}});
     encoder->setBuffer(buf2, {.apple = {.buffer_index = 1}});
     encoder->setBuffer(buf3, {.apple = {.buffer_index = 2}});
-    encoder->dispatch({.x = 3, .y = 1, .z = 1}, {.x = max_size > 3 ? 3 : max_size, .y = 1, .z = 1});
+    encoder->dispatch({.x = 1, .y = 1, .z = 1}, {.x = max_size > 3 ? 3 : max_size, .y = 1, .z = 1});
     cmdbuf->endComputePass(encoder);
     cmdbuf->submit();
     cmdbuf->wait();

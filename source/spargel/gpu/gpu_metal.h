@@ -143,7 +143,9 @@ namespace spargel::gpu {
     class ComputePipelineMetal final : public ComputePipeline {
     public:
         explicit ComputePipelineMetal(id<MTLFunction> func, id<MTLComputePipelineState> pipeline)
-            : _func{func}, _pipeline{pipeline} {}
+            : _func{func}, _pipeline{pipeline} {
+            spargel_log_info("%lu", static_cast<unsigned long>(_pipeline.threadExecutionWidth));
+        }
         ~ComputePipelineMetal() {
             [_func release];
             [_pipeline release];
