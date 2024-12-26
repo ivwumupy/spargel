@@ -88,7 +88,8 @@ namespace spargel::gpu {
 
     class CommandQueueMetal final : public CommandQueue {
     public:
-        explicit CommandQueueMetal(id<MTLCommandQueue> queue) : _queue{queue} {}
+        explicit CommandQueueMetal(Device* device, id<MTLCommandQueue> queue)
+            : _device{device}, _queue{queue} {}
         ~CommandQueueMetal() { [_queue release]; }
 
         id<MTLCommandQueue> commandQueue() { return _queue; }
@@ -97,13 +98,15 @@ namespace spargel::gpu {
         void destroyCommandBuffer(ObjectPtr<CommandBuffer>) override;
 
     private:
+        Device* _device;
         id<MTLCommandQueue> _queue;
     };
 
     class CommandBufferMetal final : public CommandBuffer {
     public:
         // command buffer is autoreleased
-        explicit CommandBufferMetal(id<MTLCommandBuffer> cmdbuf) : _cmdbuf{cmdbuf} {}
+        explicit CommandBufferMetal(Device* device, id<MTLCommandBuffer> cmdbuf)
+            : _device{device}, _cmdbuf{cmdbuf} {}
 
         id<MTLCommandBuffer> commandBuffer() { return _cmdbuf; }
 
@@ -118,13 +121,15 @@ namespace spargel::gpu {
         void wait() override { [_cmdbuf waitUntilCompleted]; }
 
     private:
+        Device* _device;
         id<MTLCommandBuffer> _cmdbuf;
     };
 
     class RenderPassEncoderMetal final : public RenderPassEncoder {
     public:
         // enocder is autoreleased
-        explicit RenderPassEncoderMetal(id<MTLRenderCommandEncoder> encoder) : _encoder{encoder} {}
+        explicit RenderPassEncoderMetal(Device* device, id<MTLRenderCommandEncoder> encoder)
+            : RenderPassEncoder(device), _encoder{encoder} {}
 
         id<MTLRenderCommandEncoder> encoder() { return _encoder; }
 
@@ -135,6 +140,13 @@ namespace spargel::gpu {
         void draw(int vertex_start, int vertex_count) override;
         void draw(int vertex_start, int vertex_count, int instance_start,
                   int instance_count) override;
+
+        void setVertexBufferMetal(ObjectPtr<Buffer> buffer,
+                                  VertexBufferLocationMetal loc) override {
+            [_encoder setVertexBuffer:buffer.cast<BufferMetal>()->buffer()
+                               offset:0
+                              atIndex:loc.index];
+        }
 
     private:
         id<MTLRenderCommandEncoder> _encoder;

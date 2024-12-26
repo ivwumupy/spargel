@@ -7,22 +7,12 @@
 using namespace spargel::gpu;
 
 #define USE_VULKAN 1
+
 #if SPARGEL_IS_MACOS
 #define USE_METAL 1
 #else
 #define USE_METAL 0
 #endif
-
-#if USE_METAL
-#include <spargel/gpu/demo/shader.metallib.inc>
-#endif
-
-#if USE_VULKAN
-#include <spargel/gpu/demo/fragment_shader.spirv.inc>
-#include <spargel/gpu/demo/vertex_shader.spirv.inc>
-#endif
-
-#include <stdio.h>
 
 struct vertex_shader_info {
     static constexpr vertex_buffer_location position_buffer = {
@@ -86,7 +76,11 @@ public:
         : _window{window}, _manager{resource_manager}, _text_system{text_system} {
         _window->set_delegate(this);
 
+#if USE_VULKAN
+        _device = makeDevice(DeviceKind::vulkan);
+#elif USE_METAL
         _device = makeDevice(DeviceKind::metal);
+#endif
 
         _surface = _device->createSurface(_window);
 
@@ -185,7 +179,6 @@ public:
         for (usize r = 0; r < layout_result.runs.count(); r++) {
             auto& run = layout_result.runs[r];
             for (usize i = 0; i < run.glyphs.count(); i++) {
-                printf("%.1f ", run.positions[i].x);
                 auto& info = findOrInsert(run.glyphs[i]);
                 QuadData quad;
                 quad.origin.x = total_width + run.positions[i].x;
@@ -197,13 +190,15 @@ public:
                 quad.cell_origin.y = info.y + 1;
                 _vquads.push(quad);
             }
-            printf("\n");
             total_width += run.width;
         }
         // todo: use uniform
         float half_width = total_width / 2;
         for (usize i = 0; i < _vquads.count(); i++) {
             _vquads[i].origin.x -= half_width;
+        }
+        if (_vquads.empty()) {
+            return;
         }
         _quads = _device->createBuffer(
             spargel::base::make_span(_vquads.count() * sizeof(QuadData), (u8*)_vquads.data()));
@@ -221,7 +216,11 @@ public:
 
         encoder->setViewport({0, 0, _surface->width(), _surface->height(), 0, 1});
         encoder->setRenderPipeline(_pipeline);
-        encoder->setVertexBuffer(_positions, vertex_shader_info::position_buffer);
+        encoder->setVertexBuffer(_positions, []<typename T>(T& loc) constexpr {
+            if constexpr (spargel::gpu::isMetalConfig<T>()) {
+                loc.index = 0;
+            }
+        });
         encoder->setVertexBuffer(_uniforms, vertex_shader_info::uniform_buffer);
         encoder->setVertexBuffer(_quads, vertex_shader_info::quad_buffer);
         encoder->setTexture(_atlas);

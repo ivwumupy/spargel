@@ -122,8 +122,11 @@ namespace spargel::gpu {
         ObjectPtr<RenderPassEncoder> beginRenderPass(
             RenderPassDescriptor const& descriptor) override;
         void endRenderPass(ObjectPtr<RenderPassEncoder> encoder) override;
+        ObjectPtr<ComputePassEncoder> beginComputePass() override;
+        void endComputePass(ObjectPtr<ComputePassEncoder> encoder) override;
         void present(ObjectPtr<Surface> surface) override;
         void submit() override;
+        void wait() override;
 
     private:
         VkCommandBuffer _cmdbuf;
@@ -131,7 +134,7 @@ namespace spargel::gpu {
 
     class RenderPassEncoderVulkan final : public RenderPassEncoder {
     public:
-        explicit RenderPassEncoderVulkan() {}
+        explicit RenderPassEncoderVulkan(Device* device) : RenderPassEncoder(device) {}
 
         void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
         void setVertexBuffer(ObjectPtr<Buffer> buffer, vertex_buffer_location const& loc) override;
@@ -170,12 +173,15 @@ namespace spargel::gpu {
             RenderPipelineDescriptor const& descriptor) override;
         void destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
         ObjectPtr<Buffer> createBuffer(base::span<u8> bytes) override;
+        ObjectPtr<Buffer> createBuffer(u32 size) override;
         void destroyBuffer(ObjectPtr<Buffer> b) override;
         ObjectPtr<Surface> createSurface(ui::window* w) override;
         ObjectPtr<Texture> createTexture(u32 width, u32 height) override;
         void destroyTexture(ObjectPtr<Texture> texture) override;
         ObjectPtr<CommandQueue> createCommandQueue() override;
         void destroyCommandQueue(ObjectPtr<CommandQueue> q) override;
+        ObjectPtr<ComputePipeline> createComputePipeline(ObjectPtr<ShaderLibrary> library,
+                                                         char const* entry) override;
 
     private:
         void loadGeneralProcs();
@@ -188,7 +194,13 @@ namespace spargel::gpu {
         void createDebugMessenger();
         void enumeratePhysicalDevices();
         void queryPhysicalDeviceInfos();
-        void queryQueueFamilyProperties();
+        void queryQueueFamilyProperties(VkPhysicalDevice physical_device,
+                                        base::vector<VkQueueFamilyProperties>& families);
+        void selectPhysicalDevice();
+        void enumerateDeviceExtensions();
+        void selectDeviceExtensions();
+        void createDevice();
+        void loadDeviceProcs();
 
         base::dynamic_library_handle* _library;
         VulkanProcTable _procs;
@@ -206,10 +218,17 @@ namespace spargel::gpu {
         base::vector<VkPhysicalDevice> _physical_devices;
 
         struct PhysicalDeviceInfo {
-            VkPhysicalDeviceProperties props;
-            base::vector<VkQueueFamilyProperties> queue_family_props;
+            VkPhysicalDeviceProperties properties;
+            VkPhysicalDeviceFeatures features;
+            base::vector<VkQueueFamilyProperties> queue_families;
         };
         base::vector<PhysicalDeviceInfo> _physical_device_infos;
+
+        VkPhysicalDevice _physical_device;
+        u32 _queue_family_index;
+
+        base::vector<VkExtensionProperties> _all_dev_exts;
+        base::vector<char const*> _use_dev_exts;
 
         VkDevice _device;
 

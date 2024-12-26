@@ -25,7 +25,7 @@ endif()
 if(${SPARGEL_GPU_ENABLE_VULKAN})
     target_sources(gpu
         PRIVATE
-            #gpu_vulkan.cpp
+            gpu_vulkan.cpp
     )
     target_link_libraries(gpu PRIVATE Vulkan::Headers)
 endif()

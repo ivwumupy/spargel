@@ -33,11 +33,11 @@ namespace spargel::gpu {
             return VK_FALSE;
         }
 
-        float const vulkan_queue_priorities[64] = {
-            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        float const vulkan_queue_priorities[4] = {
+            1.0,
+            1.0,
+            1.0,
+            1.0,
         };
 
         constexpr char const* vulkan_library_name =
@@ -77,6 +77,12 @@ namespace spargel::gpu {
             createDebugMessenger();
         }
         enumeratePhysicalDevices();
+        queryPhysicalDeviceInfos();
+        selectPhysicalDevice();
+        enumerateDeviceExtensions();
+        selectDeviceExtensions();
+        createDevice();
+        loadDeviceProcs();
     }
 
     DeviceVulkan::~DeviceVulkan() { base::close_dynamic_library(_library); }
@@ -232,6 +238,7 @@ namespace spargel::gpu {
 #endif
     }
 
+    // We need at least Vulkan 1.1, as subgroups are available only from Vulkan 1.1.
     void DeviceVulkan::createInstance() {
         VkApplicationInfo app_info;
         app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -240,7 +247,7 @@ namespace spargel::gpu {
         app_info.applicationVersion = 0;
         app_info.pEngineName = "Spargel Engine";
         app_info.engineVersion = 0;
-        app_info.apiVersion = VK_API_VERSION_1_0;
+        app_info.apiVersion = VK_API_VERSION_1_1;
 
         VkInstanceCreateInfo info;
         info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -260,8 +267,7 @@ namespace spargel::gpu {
             info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
         }
 
-        VkInstance instance;
-        CHECK_VK_RESULT(_procs.vkCreateInstance(&info, nullptr, &instance));
+        CHECK_VK_RESULT(_procs.vkCreateInstance(&info, nullptr, &_instance));
     }
 
     void DeviceVulkan::loadInstanceProcs() {
@@ -308,11 +314,141 @@ namespace spargel::gpu {
         for (usize i = 0; i < count; i++) {
             auto physical_device = _physical_devices[i];
             auto& info = _physical_device_infos[i];
-            _procs.vkGetPhysicalDeviceProperties(physical_device, &info.props);
+            base::construct_at<PhysicalDeviceInfo>(&info);
+            _procs.vkGetPhysicalDeviceProperties(physical_device, &info.properties);
+            _procs.vkGetPhysicalDeviceFeatures(physical_device, &info.features);
+            queryQueueFamilyProperties(physical_device, info.queue_families);
         }
     }
 
-    void DeviceVulkan::queryQueueFamilyProperties() {}
+    void DeviceVulkan::queryQueueFamilyProperties(VkPhysicalDevice physical_device,
+                                                  base::vector<VkQueueFamilyProperties>& families) {
+        u32 count;
+        _procs.vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &count, nullptr);
+        families.reserve(count);
+        _procs.vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &count, families.data());
+        families.set_count(count);
+    }
+
+    void DeviceVulkan::selectPhysicalDevice() {
+        // Spec:
+        //
+        // The general expectation is that a physical device groups all queues of matching
+        // capabilities into a single family. However, while implementations should do this, it is
+        // possible that a physical device may return two separate queue families with the same
+        // capabilities.
+        //
+        //
+        // If an implementation exposes any queue family that supports graphics operations, at least
+        // one queue family of at least one physical device exposed by the implementation must
+        // support both graphics and compute operations.
+        //
+        //
+        // All commands that are allowed on a queue that supports transfer operations are also
+        // allowed on a queue that supports either graphics or compute operations. Thus, if the
+        // capabilities of a queue family include VK_QUEUE_GRAPHICS_BIT or VK_QUEUE_COMPUTE_BIT,
+        // then reporting the VK_QUEUE_TRANSFER_BIT capability separately for that queue family is
+        // optional.
+        //
+        //
+        // Not all physical devices will include WSI support. Within a physical device, not all
+        // queue families will support presentation.
+        //
+        //
+        // Discussion:
+        //
+        // We need one graphics queue. So there exists one queue family that supports both graphics
+        // and compute.
+        //
+        // For simplicity, we require that the queue also supports presentation.
+        //
+        // Checking for presentation support is deferred to surface creation.
+        //
+
+        static constexpr VkQueueFlags queue_flags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+
+        for (usize i = 0; i < _physical_devices.count(); i++) {
+            auto const& info = _physical_device_infos[i];
+            u32 graphics_family;
+            bool found = false;
+            for (usize j = 0; j < info.queue_families.count(); j++) {
+                if (info.queue_families[j].queueFlags & queue_flags) {
+                    graphics_family = j;
+                    found = true;
+                    break;
+                }
+            }
+            if (found) {
+                _physical_device = _physical_devices[i];
+                _queue_family_index = graphics_family;
+                return;
+            }
+        }
+        spargel_log_fatal("cannot find a good gpu");
+        spargel_panic_here();
+    }
+
+    void DeviceVulkan::enumerateDeviceExtensions() {
+        u32 count;
+        CHECK_VK_RESULT(_procs.vkEnumerateDeviceExtensionProperties(_physical_device, nullptr,
+                                                                    &count, nullptr));
+        _all_dev_exts.reserve(count);
+        CHECK_VK_RESULT(_procs.vkEnumerateDeviceExtensionProperties(_physical_device, nullptr,
+                                                                    &count, _all_dev_exts.data()));
+        _all_dev_exts.set_count(count);
+    }
+
+    void DeviceVulkan::selectDeviceExtensions() {
+        bool has_swapchain = false;
+
+        for (usize i = 0; i < _all_dev_exts.count(); i++) {
+            auto const& prop = _all_dev_exts[i];
+            if (strcmp(prop.extensionName, "VK_KHR_swapchain") == 0) {
+                _use_dev_exts.push("VK_KHR_swapchain");
+                has_swapchain = true;
+                spargel_log_info("use device extension VK_KHR_surface");
+            } else if (strcmp(prop.extensionName, "VK_KHR_portability_subset") == 0) {
+                _use_dev_exts.push("VK_KHR_portability_subset");
+                spargel_log_info("use device extension VK_KHR_portability_subset");
+            }
+        }
+
+        if (!has_swapchain) {
+            spargel_log_fatal("VK_KHR_swapchain is required");
+            spargel_panic_here();
+        }
+    }
+
+    void DeviceVulkan::createDevice() {
+        VkDeviceQueueCreateInfo queue_info;
+        queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queue_info.pNext = nullptr;
+        queue_info.flags = 0;
+        queue_info.queueFamilyIndex = _queue_family_index;
+        queue_info.queueCount = 1;
+        queue_info.pQueuePriorities = vulkan_queue_priorities;
+
+        VkDeviceCreateInfo info;
+        info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        info.pNext = nullptr;
+        info.flags = 0;
+        info.queueCreateInfoCount = 1;
+        info.pQueueCreateInfos = &queue_info;
+        info.enabledLayerCount = 0;
+        info.ppEnabledLayerNames = 0;
+        info.enabledExtensionCount = (u32)_use_dev_exts.count();
+        info.ppEnabledExtensionNames = _use_dev_exts.data();
+        info.pEnabledFeatures = 0;
+
+        CHECK_VK_RESULT(_procs.vkCreateDevice(_physical_device, &info, nullptr, &_device));
+    }
+
+    void DeviceVulkan::loadDeviceProcs() {
+        auto vkGetDeviceProcAddr = _procs.vkGetDeviceProcAddr;
+#define VULKAN_DEVICE_PROC(name) _procs.name = (PFN_##name)vkGetDeviceProcAddr(_device, #name);
+#include <spargel/gpu/vulkan_procs.inc>
+#undef VULKAN_DEVICE_PROC
+    }
 
     ObjectPtr<ShaderLibrary> DeviceVulkan::createShaderLibrary(base::span<u8> bytes) {
         return nullptr;
@@ -322,6 +458,7 @@ namespace spargel::gpu {
         return nullptr;
     }
     ObjectPtr<Buffer> DeviceVulkan::createBuffer(base::span<u8> bytes) { return nullptr; }
+    ObjectPtr<Buffer> DeviceVulkan::createBuffer(u32 size) { return nullptr; }
     ObjectPtr<Surface> DeviceVulkan::createSurface(ui::window* w) { return nullptr; }
 
     ObjectPtr<Texture> DeviceVulkan::createTexture(u32 width, u32 height) { return nullptr; }
@@ -334,159 +471,10 @@ namespace spargel::gpu {
     ObjectPtr<CommandQueue> DeviceVulkan::createCommandQueue() { return nullptr; }
     void DeviceVulkan::destroyCommandQueue(ObjectPtr<CommandQueue> q) {}
 
-    //         /* step 8. choose a physical device */
-    //         /**
-    //          * Spec:
-    //          *
-    //          * The general expectation is that a physical device groups all queues of matching
-    //          * capabilities into a single family. However, while implementations should do this,
-    //          it is
-    //          * possible that a physical device may return two separate queue families with the
-    //          same
-    //          * capabilities.
-    //          *
-    //          *
-    //          * If an implementation exposes any queue family that supports graphics operations,
-    //          at least
-    //          * one queue family of at least one physical device exposed by the implementation
-    //          must
-    //          * support both graphics and compute operations.
-    //          *
-    //          *
-    //          * All commands that are allowed on a queue that supports transfer operations are
-    //          also
-    //          * allowed on a queue that supports either graphics or compute operations. Thus, if
-    //          the
-    //          * capabilities of a queue family include VK_QUEUE_GRAPHICS_BIT or
-    //          VK_QUEUE_COMPUTE_BIT,
-    //          * then reporting the VK_QUEUE_TRANSFER_BIT capability separately for that queue
-    //          family is
-    //          * optional.
-    //          */
-    //         /**
-    //          * We need one graphics queue. So there exists one queue family that supports both
-    //          graphics
-    //          * and compute.
-    //          */
-
-    //         base::vector<VkQueueFamilyProperties> queue_families;
-
-    //         VkPhysicalDevice adapter;
-    //         ssize queue_family_index;
-
-    //         for (usize i = 0; i < adapters.count(); i++) {
-    //             queue_families.clear();
-
-    //             adapter = adapters[i];
-
-    //             VkPhysicalDeviceProperties prop;
-    //             procs->vkGetPhysicalDeviceProperties(adapter, &prop);
-    //             spargel_log_info("adapter # %zu %s", i, prop.deviceName);
-
-    //             /* step 8.1. check queue families */
-    //             /* We use only one queue family for now. */
-    //             {
-    //                 u32 count;
-    //                 procs->vkGetPhysicalDeviceQueueFamilyProperties(adapter, &count, 0);
-    //                 queue_families.reserve(count);
-    //                 procs->vkGetPhysicalDeviceQueueFamilyProperties(adapter, &count,
-    //                                                                 queue_families.data());
-    //                 queue_families.set_count(count);
-    //             }
-    //             queue_family_index = -1;
-    //             for (usize j = 0; j < queue_families.count(); j++) {
-    //                 VkQueueFamilyProperties* prop = &queue_families[j];
-    //                 /**
-    //                  * Spec:
-    //                  * Each queue family must support at least one queue.
-    //                  */
-    //                 /* advertising VK_QUEUEU_TRANSFER_BIT is optional */
-    //                 VkQueueFlags flags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
-    //                 if (prop->queueFlags & flags) {
-    //                     /* now check for presentation */
-    //                     /* todo: how ??? */
-    //                     queue_family_index = j;
-    //                     break;
-    //                 }
-    //             }
-    //             if (queue_family_index < 0) continue;
-
-    //             /* no more requirements */
-    //             break;
-    //         }
-
-    //         d->physical_device = adapter;
-    //         d->queue_family = queue_family_index;
-
-    //         /* step 9. enumerate device extensions */
-    //         all_exts.clear();
-    //         {
-    //             u32 count;
-    //             CHECK_VK_RESULT(procs->vkEnumerateDeviceExtensionProperties(adapter, 0, &count,
-    //             0)); all_exts.reserve(count); CHECK_VK_RESULT(
-    //                 procs->vkEnumerateDeviceExtensionProperties(adapter, 0, &count,
-    //                 all_exts.data()));
-    //             all_exts.set_count(count);
-    //         }
-    //         for (usize i = 0; i < all_exts.count(); i++) {
-    //             spargel_log_info("device extension #%zu = %s", i, all_exts[i].extensionName);
-    //         }
-
-    //         /* step 10. choose device extensions */
-
-    //         use_exts.clear();
-
-    //         bool has_swapchain = false;
-
-    //         for (usize i = 0; i < all_exts.count(); i++) {
-    //             struct VkExtensionProperties* prop = &all_exts[i];
-    //             if (strcmp(prop->extensionName, "VK_KHR_swapchain") == 0) {
-    //                 use_exts.push("VK_KHR_swapchain");
-    //                 has_swapchain = true;
-    //                 spargel_log_info("use instance extension VK_KHR_surface");
-    //             } else if (strcmp(prop->extensionName, "VK_KHR_portability_subset") == 0) {
-    //                 use_exts.push("VK_KHR_portability_subset");
-    //                 spargel_log_info("use instance extension VK_KHR_portability_subset");
-    //             }
-    //         }
-
-    //         if (!has_swapchain) {
-    //             spargel_log_fatal("VK_KHR_swapchain is required");
-    //             spargel_panic_here();
-    //         }
-
-    //         /* step 10. create device */
-
-    //         VkDevice dev;
-
-    //         {
-    //             VkDeviceQueueCreateInfo queue_info;
-    //             queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    //             queue_info.pNext = 0;
-    //             queue_info.flags = 0;
-    //             queue_info.queueFamilyIndex = queue_family_index;
-    //             queue_info.queueCount = 1;
-    //             queue_info.pQueuePriorities = vulkan_queue_priorities;
-
-    //             VkDeviceCreateInfo info;
-    //             info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    //             info.pNext = 0;
-    //             info.flags = 0;
-    //             info.queueCreateInfoCount = 1;
-    //             info.pQueueCreateInfos = &queue_info;
-    //             info.enabledLayerCount = 0;
-    //             info.ppEnabledLayerNames = 0;
-    //             info.enabledExtensionCount = use_exts.count();
-    //             info.ppEnabledExtensionNames = use_exts.data();
-    //             info.pEnabledFeatures = 0;
-
-    //             CHECK_VK_RESULT(procs->vkCreateDevice(adapter, &info, 0, &dev));
-    //             d->device = dev;
-    //         }
-
-    //         PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr = procs->vkGetDeviceProcAddr;
-    // #define VULKAN_DEVICE_PROC(name) procs->name = (PFN_##name)vkGetDeviceProcAddr(dev, #name);
-    // #include <spargel/gpu/vulkan_procs.inc>
+    ObjectPtr<ComputePipeline> DeviceVulkan::createComputePipeline(ObjectPtr<ShaderLibrary> library,
+                                                                   char const* entry) {
+        return nullptr;
+    }
 
     //         d->queue.backend = BACKEND_VULKAN;
 

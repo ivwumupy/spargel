@@ -225,7 +225,7 @@ namespace spargel::gpu {
     }
 
     ObjectPtr<CommandQueue> DeviceMetal::createCommandQueue() {
-        return make_object<CommandQueueMetal>([_device newCommandQueue]);
+        return make_object<CommandQueueMetal>(this, [_device newCommandQueue]);
     }
 
     void DeviceMetal::destroyCommandQueue(ObjectPtr<CommandQueue> q) {
@@ -268,7 +268,7 @@ namespace spargel::gpu {
     BufferMetal::~BufferMetal() { [_buffer release]; }
 
     ObjectPtr<CommandBuffer> CommandQueueMetal::createCommandBuffer() {
-        return make_object<CommandBufferMetal>([_queue commandBuffer]);
+        return make_object<CommandBufferMetal>(_device, [_queue commandBuffer]);
     }
 
     void CommandQueueMetal::destroyCommandBuffer(ObjectPtr<CommandBuffer> cmdbuf) {
@@ -289,7 +289,7 @@ namespace spargel::gpu {
             desc.colorAttachments[i].clearColor = MTLClearColorMake(c.r, c.g, c.b, c.a);
         }
         return make_object<RenderPassEncoderMetal>(
-            [_cmdbuf renderCommandEncoderWithDescriptor:desc]);
+            _device, [_cmdbuf renderCommandEncoderWithDescriptor:desc]);
     }
 
     void CommandBufferMetal::endRenderPass(ObjectPtr<RenderPassEncoder> e) {

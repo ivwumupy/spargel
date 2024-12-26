@@ -210,6 +210,23 @@ namespace spargel::gpu {
         } vulkan;
     };
 
+    struct VertexBufferLocationMetal {
+        static constexpr DeviceKind kind = DeviceKind::metal;
+
+        u32 index;
+    };
+
+    struct VertexBufferLocationVulkan {
+        static constexpr DeviceKind kind = DeviceKind::vulkan;
+
+        u32 index;
+    };
+
+    template <typename T>
+    inline consteval bool isMetalConfig() {
+        return T::kind == DeviceKind::metal;
+    }
+
     template <typename T>
     class ObjectPtr {
     public:
@@ -276,16 +293,33 @@ namespace spargel::gpu {
         virtual float width() = 0;
         virtual float height() = 0;
     };
+
+    class Device;
+
     class RenderPassEncoder {
     public:
+        RenderPassEncoder(Device* device) : _device{device} {}
+
         virtual void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) = 0;
         virtual void setVertexBuffer(ObjectPtr<Buffer> buffer,
                                      vertex_buffer_location const& loc) = 0;
+        template <typename F>
+        void setVertexBuffer(ObjectPtr<Buffer> buffer, F&& f);
+
         virtual void setTexture(ObjectPtr<Texture> texture) = 0;
         virtual void setViewport(Viewport viewport) = 0;
         virtual void draw(int vertex_start, int vertex_count) = 0;
         virtual void draw(int vertex_start, int vertex_count, int instance_start,
                           int instance_count) = 0;
+
+    protected:
+        virtual void setVertexBufferMetal(ObjectPtr<Buffer> buffer, VertexBufferLocationMetal loc) {
+        }
+        virtual void setVertexBufferVulkan(ObjectPtr<Buffer> buffer,
+                                           VertexBufferLocationVulkan loc) {}
+
+    private:
+        Device* _device;
     };
 
     struct DispatchSize {
@@ -480,6 +514,26 @@ namespace spargel::gpu {
     private:
         DeviceKind _kind;
     };
+
+    template <typename F>
+    void RenderPassEncoder::setVertexBuffer(ObjectPtr<Buffer> buffer, F&& f) {
+        switch (_device->kind()) {
+        case DeviceKind::metal: {
+            VertexBufferLocationMetal loc;
+            f(loc);
+            setVertexBufferMetal(buffer, loc);
+            break;
+        }
+        case DeviceKind::vulkan: {
+            VertexBufferLocationVulkan loc;
+            f(loc);
+            setVertexBufferVulkan(buffer, loc);
+            break;
+        }
+        default:
+            spargel_panic_here();
+        }
+    }
 
     base::unique_ptr<Device> makeDevice(DeviceKind kind);
 
