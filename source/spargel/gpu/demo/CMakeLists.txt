@@ -17,12 +17,6 @@ spargel_add_executable(
 )
 
 spargel_add_executable(
-    NAME demo_gpu_mac
-    PRIVATE demo_gpu_mac.mm
-    DEPS gpu resource ui
-)
-
-spargel_add_executable(
     NAME demo_sum
     PRIVATE demo_sum.cpp
     DEPS gpu resource ui
@@ -100,4 +94,40 @@ if (SPARGEL_GPU_ENABLE_METAL)
     )
     add_dependencies(demo_gpu demo_gpu_metal_shaders)
     add_dependencies(demo_gpu_mac demo_gpu_metal_shaders)
+endif ()
+
+if (SPARGEL_GPU_ENABLE_DIRECTX)
+    spargel_add_executable(
+        NAME demo_directx
+        PRIVATE demo_directx.cpp
+        DEPS base resource ui
+    )
+    target_link_libraries(demo_directx PRIVATE d3d12.lib dxgi.lib)
+
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/resources/shaders.vs.dxil
+        COMMAND
+            dxc ${CMAKE_CURRENT_SOURCE_DIR}/shaders.hlsl -T vs_6_0 -E VSMain -Fo ${CMAKE_CURRENT_BINARY_DIR}/resources/shaders.vs.dxil
+        DEPENDS shaders.hlsl
+    )
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/resources/shaders.ps.dxil
+        COMMAND
+            dxc ${CMAKE_CURRENT_SOURCE_DIR}/shaders.hlsl -T ps_6_0 -E PSMain -Fo ${CMAKE_CURRENT_BINARY_DIR}/resources/shaders.ps.dxil
+        DEPENDS shaders.hlsl
+    )
+    add_custom_target(demo_directx_shaders
+        DEPENDS
+            ${CMAKE_CURRENT_BINARY_DIR}/resources/shaders.vs.dxil
+            ${CMAKE_CURRENT_BINARY_DIR}/resources/shaders.ps.dxil
+    )
+    add_dependencies(demo_directx demo_directx_shaders)
+endif()
+
+if (SPARGEL_IS_MACOS)
+    spargel_add_executable(
+        NAME demo_gpu_mac
+        PRIVATE demo_gpu_mac.mm
+        DEPS gpu resource ui
+    )
 endif ()
