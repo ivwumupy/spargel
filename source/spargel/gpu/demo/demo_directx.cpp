@@ -1,10 +1,10 @@
-#include <combaseapi.h>
-#include <d3dcommon.h>
 #include <spargel/base/base.h>
 #include <spargel/base/logging.h>
 
 //
+#include <combaseapi.h>
 #include <d3d12.h>
+#include <d3dcommon.h>
 #include <dxgi1_3.h>
 #include <winerror.h>
 

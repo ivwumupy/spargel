@@ -69,6 +69,14 @@ if (SPARGEL_GPU_ENABLE_VULKAN)
     # add_dependencies(demo_gpu demo_gpu_vulkan_shaders)
 endif ()
 
+if (SPARGEL_IS_MACOS)
+    spargel_add_executable(
+        NAME demo_gpu_mac
+        PRIVATE demo_gpu_mac.mm
+        DEPS gpu resource ui
+    )
+endif ()
+
 if (SPARGEL_GPU_ENABLE_METAL)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shader.ir
@@ -123,11 +131,3 @@ if (SPARGEL_GPU_ENABLE_DIRECTX)
     )
     add_dependencies(demo_directx demo_directx_shaders)
 endif()
-
-if (SPARGEL_IS_MACOS)
-    spargel_add_executable(
-        NAME demo_gpu_mac
-        PRIVATE demo_gpu_mac.mm
-        DEPS gpu resource ui
-    )
-endif ()
