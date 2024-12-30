@@ -1,7 +1,13 @@
 #pragma once
 
+#include <spargel/base/bit_cast.h>
 #include <spargel/base/compiler.h>
+#include <spargel/base/meta.h>
+#include <spargel/base/tag_invoke.h>
 #include <spargel/base/types.h>
+
+//
+#include <string.h>
 
 // todo: now the code assumes little-endian
 // use `__builtin_bswap64` (gcc/clang) or `_byteswap_uint64` (msvc) to swap endian
@@ -11,7 +17,7 @@ namespace spargel::base {
     namespace __wyhash {
 
         // read three bytes
-        inline constexpr u64 wyread3(void const* data, u64 len) {
+        inline constexpr u64 wyread3(u8 const* data, u64 len) {
             auto p = static_cast<u8 const*>(data);
             u64 a = p[0];
             u64 b = p[len >> 1];
@@ -19,24 +25,32 @@ namespace spargel::base {
             return (a << 56) | (b << 32) | c;
         }
 
-        inline constexpr u64 wyread4(void const* data) {
-            u32 v;
-#if spargel_has_builtin(__builtin_memcpy)
-            __builtin_memcpy(&v, data, 4);
-#else
-#error unimplemented
-#endif
-            return v;
+        template <u64 k>
+        constexpr u64 read(u8 const* data) {
+            return data[k];
         }
 
-        inline constexpr u64 wyread8(void const* data) {
-            u64 v;
-#if spargel_has_builtin(__builtin_memcpy)
-            __builtin_memcpy(&v, data, 8);
-#else
-#error unimplemented
-#endif
-            return v;
+        inline constexpr u64 wyread4(u8 const* data) {
+            if consteval {
+                return (read<3>(data) << 24) | (read<2>(data) << 16) | (read<1>(data) << 8) |
+                       read<0>(data);
+            } else {
+                u32 v;
+                memcpy(&v, data, 4);
+                return v;
+            }
+        }
+
+        inline constexpr u64 wyread8(u8 const* data) {
+            if consteval {
+                return (read<7>(data) << 56) | (read<6>(data) << 48) | (read<5>(data) << 40) |
+                       (read<4>(data) << 32) | (read<3>(data) << 24) | (read<2>(data) << 16) |
+                       (read<1>(data) << 8) | read<0>(data);
+            } else {
+                u64 v;
+                memcpy(&v, data, 8);
+                return v;
+            }
         }
 
         inline constexpr bool protect_mode = false;
@@ -45,6 +59,11 @@ namespace spargel::base {
 #ifdef __SIZEOF_INT128__
             __uint128_t r = a;
             r *= b;
+            // under O1, this is
+            //   a single `mul` (x64)
+            //   one `mul` and one `umulh` (arm64)
+            //
+            // two more `xor`/`eor` in protect_mode
             if constexpr (protect_mode) {
                 a ^= (u64)r;
                 b ^= (u64)(r >> 64);
@@ -68,11 +87,11 @@ namespace spargel::base {
 
         inline constexpr u64 default_seed = 0xbdd89aa982704029;
 
-        inline constexpr u64 wyhash(void const* data, u64 len, u64 seed) {
+        inline constexpr u64 wyhash(u8 const* data, u64 len, u64 seed) {
             u64 a;
             u64 b;
 
-            auto p = static_cast<u8 const*>(data);
+            auto p = data;
 
             if (len <= 16) [[likely]] {
                 if (len >= 4) {
@@ -90,7 +109,7 @@ namespace spargel::base {
                 }
             } else {
                 u64 i = len;
-                if (i > 48) [[unlikely]] {
+                if (i > 48) {
                     u64 seed1 = seed;
                     u64 seed2 = seed;
                     do {
@@ -118,5 +137,67 @@ namespace spargel::base {
         }
 
     }  // namespace __wyhash
+
+    class HashRun {
+    public:
+        void combine(u8 v) {
+            u8 b[1];
+            memcpy(&v, b, 1);
+            _hash = __wyhash::wyhash(b, 1, _hash);
+        }
+        void combine(u16 v) {
+            u8 b[2];
+            memcpy(&v, b, 2);
+            _hash = __wyhash::wyhash(b, 2, _hash);
+        }
+        void combine(u32 v) {
+            u8 b[4];
+            memcpy(&v, b, 4);
+            _hash = __wyhash::wyhash(b, 4, _hash);
+        }
+        void combine(u64 v) {
+            u8 b[8];
+            memcpy(&v, b, 8);
+            _hash = __wyhash::wyhash(b, 8, _hash);
+        }
+
+        template <typename T>
+        void combine(T const& v);
+
+        void combine(u8 const* data, u64 len) { _hash = __wyhash::wyhash(data, len, _hash); }
+
+        u64 result() const { return _hash; }
+
+    private:
+        u64 _hash = __wyhash::default_seed;
+    };
+
+    class HashRun;
+
+    namespace __hash {
+        struct hash {
+            template <typename T>
+            constexpr void operator()(HashRun& run, T&& v) const {
+                tag_invoke(hash{}, run, forward<T>(v));
+            }
+            template <typename T>
+            constexpr u64 operator()(T&& v) const {
+                HashRun r;
+                (*this)(r, forward<T>(v));
+                return r.result();
+            }
+        };
+        inline constexpr void tag_invoke(hash, HashRun& r, u8 v) { r.combine(v); }
+        inline constexpr void tag_invoke(hash, HashRun& r, u16 v) { r.combine(v); }
+        inline constexpr void tag_invoke(hash, HashRun& r, u32 v) { r.combine(v); }
+        inline constexpr void tag_invoke(hash, HashRun& r, u64 v) { r.combine(v); }
+    }  // namespace __hash
+
+    inline constexpr __hash::hash hash{};
+
+    template <typename T>
+    void HashRun::combine(T const& v) {
+        hash(*this, v);
+    }
 
 }  // namespace spargel::base

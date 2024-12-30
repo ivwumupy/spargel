@@ -1,43 +1,54 @@
 #pragma once
 
 #include <spargel/base/assert.h>
+#include <spargel/base/hash.h>
 #include <spargel/base/string_view.h>
+#include <spargel/base/tag_invoke.h>
 #include <spargel/base/types.h>
 #include <spargel/base/vector.h>
 
 namespace spargel::base {
 
-    struct string {
-        string() = default;
+    namespace __string {
+        struct string {
+            string() = default;
 
-        string(string_view v);
+            string(string_view v);
 
-        string(string const& other);
-        string& operator=(string const& other);
+            string(string const& other);
+            string& operator=(string const& other);
 
-        ~string();
+            ~string();
 
-        char& operator[](usize i) { return _data[i]; }
-        char const& operator[](usize i) const { return _data[i]; }
+            char& operator[](usize i) { return _data[i]; }
+            char const& operator[](usize i) const { return _data[i]; }
 
-        usize length() const { return _length; }
-        char* begin() { return _data; }
-        char const* begin() const { return _data; }
-        char* end() { return _data + _length; }
-        char const* end() const { return _data + _length; }
-        char* data() { return _data; }
-        char const* data() const { return _data; }
-        string_view view() const { return string_view(_data, _data + _length); }
+            usize length() const { return _length; }
+            char* begin() { return _data; }
+            char const* begin() const { return _data; }
+            char* end() { return _data + _length; }
+            char const* end() const { return _data + _length; }
+            char* data() { return _data; }
+            char const* data() const { return _data; }
+            string_view view() const { return string_view(_data, _data + _length); }
 
-        friend bool operator==(string const& lhs, string const& rhs);
+            friend bool operator==(string const& lhs, string const& rhs);
 
-        friend string operator+(const string& lhs, const string& rhs);
+            friend string operator+(const string& lhs, const string& rhs);
 
-        friend string operator+(const string& s, char ch);
+            friend string operator+(const string& s, char ch);
 
-        usize _length = 0;
-        char* _data = nullptr;
-    };
+            friend void tag_invoke(tag<hash>, HashRun& r, string const& s) {
+                r.combine((u8 const*)s._data, s._length);
+            }
+
+            usize _length = 0;
+            char* _data = nullptr;
+        };
+
+    }  // namespace __string
+
+    using __string::string;
 
     string string_from_cstr(char const* str);
 

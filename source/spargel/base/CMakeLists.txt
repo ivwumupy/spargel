@@ -89,3 +89,11 @@ spargel_add_executable(
     DEPS
         base
 )
+
+spargel_add_executable(
+    NAME hash_test
+    PRIVATE
+        hash_test.cpp
+    DEPS
+        base
+)
