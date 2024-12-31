@@ -35,9 +35,9 @@
 
 namespace spargel::gpu {
 
-    class ShaderLibraryVulkan : public ShaderLibrary {
+    class ShaderLibraryVulkan final : public ShaderLibrary {
     public:
-        explicit ShaderLibraryVulkan();
+        explicit ShaderLibraryVulkan(VkShaderModule shader) : _library{shader} {}
         ~ShaderLibraryVulkan();
 
         auto library() const { return _library; }
@@ -76,7 +76,7 @@ namespace spargel::gpu {
         auto texture() const { return _texture; }
 
         void updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
-                          base::span<u8> bytes) override;
+                          base::span<base::Byte> bytes) override;
 
     private:
         VkImage _texture;
@@ -137,7 +137,9 @@ namespace spargel::gpu {
         explicit RenderPassEncoderVulkan(Device* device) : RenderPassEncoder(device) {}
 
         void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
-        void setVertexBuffer(ObjectPtr<Buffer> buffer, vertex_buffer_location const& loc) override;
+        void setVertexBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override;
+        void setFragmentBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override {
+        }
         void setTexture(ObjectPtr<Texture> texture) override;
         void setViewport(Viewport viewport) override;
         void draw(int vertex_start, int vertex_count) override;
@@ -172,8 +174,8 @@ namespace spargel::gpu {
         ObjectPtr<RenderPipeline> createRenderPipeline(
             RenderPipelineDescriptor const& descriptor) override;
         void destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
-        ObjectPtr<Buffer> createBuffer(base::span<u8> bytes) override;
-        ObjectPtr<Buffer> createBuffer(u32 size) override;
+        ObjectPtr<Buffer> createBuffer(BufferUsage usage, base::span<u8> bytes) override;
+        ObjectPtr<Buffer> createBuffer(BufferUsage usage, u32 size) override;
         void destroyBuffer(ObjectPtr<Buffer> b) override;
         ObjectPtr<Surface> createSurface(ui::window* w) override;
         ObjectPtr<Texture> createTexture(u32 width, u32 height) override;
@@ -201,6 +203,8 @@ namespace spargel::gpu {
         void selectDeviceExtensions();
         void createDevice();
         void loadDeviceProcs();
+        void getQueue();
+        void queryMemoryInfo();
 
         base::dynamic_library_handle* _library;
         VulkanProcTable _procs;
@@ -231,6 +235,9 @@ namespace spargel::gpu {
         base::vector<char const*> _use_dev_exts;
 
         VkDevice _device;
+        VkQueue _queue;
+
+        VkPhysicalDeviceMemoryProperties _memory_props;
 
         // todo: hook allocations
         [[maybe_unused]] VkAllocationCallbacks _vkalloc;

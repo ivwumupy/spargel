@@ -26,15 +26,15 @@ using namespace spargel::gpu;
 #include <stdio.h>
 
 struct vertex_shader_info {
-    static constexpr vertex_buffer_location position_buffer = {
+    static constexpr VertexBufferLocation position_buffer = {
         .apple = {0},
         .vulkan = {0},
     };
-    static constexpr vertex_buffer_location quad_buffer = {
+    static constexpr VertexBufferLocation quad_buffer = {
         .apple = {1},
         .vulkan = {1},
     };
-    static constexpr vertex_buffer_location uniform_buffer = {
+    static constexpr VertexBufferLocation uniform_buffer = {
         .apple = {2},
         .vulkan = {2},
     };
@@ -108,12 +108,13 @@ public:
         builder.addColorAttachment(TextureFormat::bgra8_unorm, true);
         _pipeline = builder.build(_device.get());
 
-        _positions =
-            _device->createBuffer(spargel::base::make_span<u8>(sizeof(positions), (u8*)positions));
+        _positions = _device->createBuffer(
+            BufferUsage::vertex, spargel::base::make_span<u8>(sizeof(positions), (u8*)positions));
 
         _uniform_data.viewport.width = _surface->width();
         _uniform_data.viewport.height = _surface->height();
         _uniforms = _device->createBuffer(
+            BufferUsage::uniform,
             spargel::base::make_span(sizeof(_uniform_data), (u8*)&_uniform_data));
 
         _queue = _device->createCommandQueue();
@@ -208,6 +209,7 @@ public:
             _vquads[i].origin.x -= half_width;
         }
         _quads = _device->createBuffer(
+            BufferUsage::storage,
             spargel::base::make_span(_vquads.count() * sizeof(QuadData), (u8*)_vquads.data()));
 
         auto texture = _surface->nextTexture();
@@ -346,7 +348,8 @@ private:
         u32 y = _cur_row;
         _glyph_cache.push(id, x, y, bitmap.width, bitmap.height, raster.glyph_width,
                           raster.glyph_height, raster.descent);
-        _atlas->updateRegion(x, y, bitmap.width, bitmap.height, bitmap.width, bitmap.data.toSpan());
+        _atlas->updateRegion(x, y, bitmap.width, bitmap.height, bitmap.width,
+                             bitmap.data.toSpan().asBytes());
 
         // for (usize i = 0; i < bitmap.height; i++) {
         //     for (usize j = 0; j < bitmap.width; j++) {

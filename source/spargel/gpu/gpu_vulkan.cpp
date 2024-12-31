@@ -30,6 +30,9 @@ namespace spargel::gpu {
             VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
             VkDebugUtilsMessengerCallbackDataEXT const* data, void* user_data) {
             fprintf(stderr, "validator: %s\n", data->pMessage);
+            if (severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+                spargel_panic_here();
+            }
             return VK_FALSE;
         }
 
@@ -53,6 +56,23 @@ namespace spargel::gpu {
 #error unimplemented
 #endif
             ;
+
+        VkBufferUsageFlags translateBufferUsage(BufferUsage usage) {
+            VkBufferUsageFlags flags = 0;
+#define _TRANSLATE(x, y)             \
+    if (usage.has(BufferUsage::x)) { \
+        flags |= y;                  \
+    }
+            _TRANSLATE(copy_src, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+            _TRANSLATE(copy_dst, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            _TRANSLATE(index, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+            _TRANSLATE(vertex, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+            _TRANSLATE(uniform, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+            _TRANSLATE(storage, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+            _TRANSLATE(indirect, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+#undef _TRANSLATE
+            return flags;
+        }
 
     }  // namespace
 
@@ -83,6 +103,8 @@ namespace spargel::gpu {
         selectDeviceExtensions();
         createDevice();
         loadDeviceProcs();
+        getQueue();
+        queryMemoryInfo();
     }
 
     DeviceVulkan::~DeviceVulkan() { base::close_dynamic_library(_library); }
@@ -450,15 +472,122 @@ namespace spargel::gpu {
 #undef VULKAN_DEVICE_PROC
     }
 
+    void DeviceVulkan::getQueue() {
+        _procs.vkGetDeviceQueue(_device, _queue_family_index, 0, &_queue);
+    }
+
+    void DeviceVulkan::queryMemoryInfo() {
+        _procs.vkGetPhysicalDeviceMemoryProperties(_physical_device, &_memory_props);
+        for (u32 i = 0; i < _memory_props.memoryHeapCount; i++) {
+            auto const& heap = _memory_props.memoryHeaps[i];
+            spargel_log_info("memory heap [%u] : flags = %u, size = %llu", i, heap.flags,
+                             heap.size);
+        }
+        for (u32 i = 0; i < _memory_props.memoryTypeCount; i++) {
+            auto const& type = _memory_props.memoryTypes[i];
+            spargel_log_info("memory type [%u] : flags = %u, heap = %u", i, type.propertyFlags,
+                             type.heapIndex);
+        }
+
+        // The memory heap flags is either 0 or VK_MEMORY_HEAP_DEVICE_LOCAL_BIT.
+        //
+        // General situation:
+        //
+        // NVIDIA:
+        //   (4090 Super)
+        //   Heap 0: device local
+        //     Type 0: device local
+        //     Type 1: device local, host visible, host coherent
+        //   Heap 1:
+        //     Type 0:
+        //     Type 1: host visible, host coherent
+        //     Type 2: host visible, host coherent, host cached
+        //
+        //   (3050 Laptop)
+        //   Heap 0: device local
+        //     Type 0: device local
+        //   Heap 1:
+        //     Type 0:
+        //     Type 1: host visible, host coherent
+        //     Type 2: host visible, host coherent, host cached
+        //   Heap 2:
+        //     Type 0: device local, host visible, host coherent
+        //
+        // AMD:
+        //   (RX 6900 XT)
+        //   Heap 0: device local
+        //     Type 0: device local
+        //     Type 1: device local, amd specific
+        //     Type 2: device local
+        //     Type 3: device local, amd specific
+        //   Heap 1:
+        //     Type 0: host visible, host coherent
+        //     Type 1: host visible, host coherent, host cached
+        //     Type 2: host visible, host coherent, amd specific
+        //     Type 3: host visible, host coherent, host cached, amd specific
+        //     Type 4: host visible, host coherent
+        //     Type 5: host visible, host coherent, host cached
+        //     Type 6: host visible, host coherent, amd specific
+        //     Type 7: host visible, host coherent, host cached, amd specific
+        //   Heap 2: device local
+        //     Type 0: device local, host visible, host coherent
+        //     Type 1: device local, host visible, host coherent, amd specific
+        //     Type 2: device local, host visible, host coherent
+        //     Type 3: device local, host visible, host coherent, amd specific
+    }
+
     ObjectPtr<ShaderLibrary> DeviceVulkan::createShaderLibrary(base::span<u8> bytes) {
-        return nullptr;
+        VkShaderModuleCreateInfo info;
+        info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        info.pNext = nullptr;
+        info.flags = 0;
+        info.codeSize = bytes.count();
+        info.pCode = (u32 const*)bytes.data();
+
+        VkShaderModule shader;
+        CHECK_VK_RESULT(_procs.vkCreateShaderModule(_device, &info, nullptr, &shader));
+        return make_object<ShaderLibraryVulkan>(shader);
     }
     ObjectPtr<RenderPipeline> DeviceVulkan::createRenderPipeline(
         RenderPipelineDescriptor const& descriptor) {
         return nullptr;
     }
-    ObjectPtr<Buffer> DeviceVulkan::createBuffer(base::span<u8> bytes) { return nullptr; }
-    ObjectPtr<Buffer> DeviceVulkan::createBuffer(u32 size) { return nullptr; }
+
+    //
+    // VulkanMemoryAllocator:
+    // - BlockVector indexed by memoryType
+    // - A BlockVector is a sequence of MemoryBlock. It represents memory blocks allocated for a
+    //   specific memory type.
+    // - A MemoryBlock is simply a VkDeviceMemory, i.e. an allocation. So we should have at most 4096 blocks.
+
+    ObjectPtr<Buffer> DeviceVulkan::createBuffer(BufferUsage usage, base::span<u8> bytes) {
+        // Step 1. Create the buffer object.
+
+        VkBufferCreateInfo buffer_info;
+        buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        buffer_info.pNext = nullptr;
+        // TODO: sparse
+        buffer_info.flags = 0;
+        buffer_info.size = bytes.count();
+        buffer_info.usage = translateBufferUsage(usage);
+        buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        buffer_info.queueFamilyIndexCount = 0;
+        buffer_info.pQueueFamilyIndices = nullptr;
+
+        VkBuffer buffer;
+        CHECK_VK_RESULT(_procs.vkCreateBuffer(_device, &buffer_info, nullptr, &buffer));
+
+        // Step 2. Memory requirements
+
+        VkMemoryRequirements reqs;
+        _procs.vkGetBufferMemoryRequirements(_device, buffer, &reqs);
+
+        spargel_log_info("allowed memory types for buffer: %u", reqs.memoryTypeBits);
+
+        return nullptr;
+    }
+
+    ObjectPtr<Buffer> DeviceVulkan::createBuffer(BufferUsage usage, u32 size) { return nullptr; }
     ObjectPtr<Surface> DeviceVulkan::createSurface(ui::window* w) { return nullptr; }
 
     ObjectPtr<Texture> DeviceVulkan::createTexture(u32 width, u32 height) { return nullptr; }

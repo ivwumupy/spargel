@@ -11,16 +11,21 @@ static constexpr float arr2[] = {4.0, 5.0, 6.0};
 
 int main() {
     auto resource_manager = resource::make_relative_manager();
-    auto device = gpu::makeDevice(gpu::DeviceKind::metal);
+    // auto device = gpu::makeDevice(gpu::DeviceKind::metal);
+    auto device = gpu::makeDevice(gpu::DeviceKind::vulkan);
+
+    auto buf1 = device->createBuffer(gpu::BufferUsage::storage,
+                                     base::make_span<u8>(sizeof(arr1), (u8*)&arr1));
+    auto buf2 = device->createBuffer(gpu::BufferUsage::storage,
+                                     base::make_span<u8>(sizeof(arr2), (u8*)&arr2));
+    auto buf3 =
+        device->createBuffer(gpu::BufferUsage::storage | gpu::BufferUsage::map_read, sizeof(arr1));
+
     auto blob = resource_manager->open(resource::resource_id("shader.metallib"));
     auto library = device->createShaderLibrary(blob->getSpan());
     auto pipeline = device->createComputePipeline(library, "add_arrays");
     auto max_size = pipeline->maxGroupSize();
     spargel_log_info("maxGroupSize = %u", max_size);
-
-    auto buf1 = device->createBuffer(base::make_span<u8>(sizeof(arr1), (u8*)&arr1));
-    auto buf2 = device->createBuffer(base::make_span<u8>(sizeof(arr2), (u8*)&arr2));
-    auto buf3 = device->createBuffer(sizeof(arr1));
 
     auto queue = device->createCommandQueue();
     auto cmdbuf = queue->createCommandBuffer();

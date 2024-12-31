@@ -49,3 +49,43 @@ struct UniformData {
                            uint index [[thread_position_in_grid]]) {
     result[index] = inA[index] + inB[index];
 }
+
+struct TileVertexData {
+    float2 position [[attribute(0)]];
+    float4 color [[attribute(1)]];
+};
+
+struct TileRasterData {
+    float4 position [[position]];
+    float4 color;
+};
+
+[[vertex]] TileRasterData tiles_vertex(uint vertex_id [[vertex_id]],
+                                       TileVertexData in [[stage_in]],
+                                       constant UniformData& uniform [[buffer(2)]]) {
+    float2 pixel_position = in.position;
+
+    TileRasterData out;
+    out.position = float4(0.0, 0.0, 0.0, 1.0);
+    out.position.xy = pixel_position / (uniform.viewport / 2.0);
+    out.color = in.color;
+    return out;
+}
+
+struct TileControl {
+    uint batch;
+};
+
+struct TileFragData {
+    atomic<uint> count;
+};
+
+[[fragment]] float4 tiles_fragment(TileRasterData in [[stage_in]],
+                                   constant TileControl& control [[buffer(0)]],
+                                   device TileFragData& data [[buffer(1)]]) {
+    uint count = atomic_fetch_add_explicit(&data.count, 1, memory_order_relaxed);
+    if (count > control.batch) {
+        return float4(0.0, 0.0, 0.0, 1.0);
+    }
+    return in.color;
+}

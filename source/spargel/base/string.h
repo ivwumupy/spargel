@@ -9,7 +9,7 @@
 
 namespace spargel::base {
 
-    namespace __string {
+    namespace _string {
         struct string {
             string() = default;
 
@@ -48,7 +48,7 @@ namespace spargel::base {
 
     }  // namespace __string
 
-    using __string::string;
+    using _string::string;
 
     string string_from_cstr(char const* str);
 

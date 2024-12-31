@@ -92,9 +92,9 @@ namespace spargel::base {
 
 }  // namespace spargel::base
 
-void* operator new(usize size, usize align) noexcept;
-void* operator new[](usize size, usize align) noexcept;
-void operator delete(void* ptr, usize size, usize align) noexcept;
-void operator delete[](void* ptr, usize size, usize align) noexcept;
+// void* operator new(usize size, usize align) noexcept;
+// void* operator new[](usize size, usize align) noexcept;
+// void operator delete(void* ptr, usize size, usize align) noexcept;
+// void operator delete[](void* ptr, usize size, usize align) noexcept;
 
 void* operator new(usize size, usize align, spargel::base::Allocator* alloc) noexcept;

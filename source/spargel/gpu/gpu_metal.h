@@ -56,7 +56,7 @@ namespace spargel::gpu {
         auto texture() const { return _texture; }
 
         void updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
-                          base::span<u8> bytes) override;
+                          base::span<base::Byte> bytes) override;
 
     private:
         id<MTLTexture> _texture;
@@ -134,19 +134,17 @@ namespace spargel::gpu {
         id<MTLRenderCommandEncoder> encoder() { return _encoder; }
 
         void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
-        void setVertexBuffer(ObjectPtr<Buffer> buffer, vertex_buffer_location const& loc) override;
+        void setVertexBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override;
+        void setFragmentBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override {
+            [_encoder setFragmentBuffer:buffer.cast<BufferMetal>()->buffer()
+                                 offset:0
+                                atIndex:loc.apple.buffer_index];
+        }
         void setTexture(ObjectPtr<Texture> texture) override;
         void setViewport(Viewport viewport) override;
         void draw(int vertex_start, int vertex_count) override;
         void draw(int vertex_start, int vertex_count, int instance_start,
                   int instance_count) override;
-
-        void setVertexBufferMetal(ObjectPtr<Buffer> buffer,
-                                  VertexBufferLocationMetal loc) override {
-            [_encoder setVertexBuffer:buffer.cast<BufferMetal>()->buffer()
-                               offset:0
-                              atIndex:loc.index];
-        }
 
     private:
         id<MTLRenderCommandEncoder> _encoder;
@@ -181,7 +179,7 @@ namespace spargel::gpu {
             [_encoder setComputePipelineState:pipeline.cast<ComputePipelineMetal>()->pipeline()];
         }
 
-        void setBuffer(ObjectPtr<Buffer> buffer, vertex_buffer_location const& loc) override {
+        void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override {
             [_encoder setBuffer:buffer.cast<BufferMetal>()->buffer()
                          offset:0
                         atIndex:loc.apple.buffer_index];
@@ -206,8 +204,8 @@ namespace spargel::gpu {
         ObjectPtr<ShaderLibrary> createShaderLibrary(base::span<u8> bytes) override;
         ObjectPtr<RenderPipeline> createRenderPipeline(
             RenderPipelineDescriptor const& descriptor) override;
-        ObjectPtr<Buffer> createBuffer(base::span<u8> bytes) override;
-        ObjectPtr<Buffer> createBuffer(u32 size) override;
+        ObjectPtr<Buffer> createBuffer(BufferUsage usage, base::span<u8> bytes) override;
+        ObjectPtr<Buffer> createBuffer(BufferUsage usage, u32 size) override;
         ObjectPtr<Surface> createSurface(ui::window* w) override;
 
         ObjectPtr<Texture> createTexture(u32 width, u32 height) override;

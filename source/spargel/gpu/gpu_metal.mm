@@ -47,9 +47,9 @@ namespace spargel::gpu {
         MTLVertexStepFunction translateStepMode(VertexStepMode mode) {
             using enum VertexStepMode;
             switch (mode) {
-            case Vertex:
+            case vertex:
                 return MTLVertexStepFunctionPerVertex;
-            case Instance:
+            case instance:
                 return MTLVertexStepFunctionPerInstance;
             }
         }
@@ -191,14 +191,15 @@ namespace spargel::gpu {
         return make_object<RenderPipelineMetal>(vertex_function, state);
     }
 
-    ObjectPtr<Buffer> DeviceMetal::createBuffer(base::span<u8> bytes) {
+    ObjectPtr<Buffer> DeviceMetal::createBuffer([[maybe_unused]] BufferUsage usage,
+                                                base::span<u8> bytes) {
         auto buf = [_device newBufferWithBytes:bytes.data()
                                         length:bytes.count()
                                        options:MTLResourceStorageModeShared];
         return make_object<BufferMetal>(buf);
     }
 
-    ObjectPtr<Buffer> DeviceMetal::createBuffer(u32 size) {
+    ObjectPtr<Buffer> DeviceMetal::createBuffer([[maybe_unused]] BufferUsage usage, u32 size) {
         auto buf = [_device newBufferWithLength:size options:MTLResourceStorageModeShared];
         return make_object<BufferMetal>(buf);
     }
@@ -318,7 +319,7 @@ namespace spargel::gpu {
         [_encoder setRenderPipelineState:p.cast<RenderPipelineMetal>()->pipeline()];
     }
     void RenderPassEncoderMetal::setVertexBuffer(ObjectPtr<Buffer> b,
-                                                 vertex_buffer_location const& loc) {
+                                                 VertexBufferLocation const& loc) {
         [_encoder setVertexBuffer:b.cast<BufferMetal>()->buffer()
                            offset:0
                           atIndex:loc.apple.buffer_index];
@@ -345,7 +346,7 @@ namespace spargel::gpu {
     }
 
     void TextureMetal::updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
-                                    base::span<u8> bytes) {
+                                    base::span<base::Byte> bytes) {
         [_texture replaceRegion:MTLRegionMake2D(x, y, width, height)
                     mipmapLevel:0
                       withBytes:bytes.data()

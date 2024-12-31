@@ -97,3 +97,19 @@ spargel_add_executable(
     DEPS
         base
 )
+
+spargel_add_executable(
+    NAME tagged_union_test
+    PRIVATE
+        tagged_union_test.cpp
+    DEPS
+        base
+)
+
+spargel_add_executable(
+    NAME sum_type_test
+    PRIVATE
+        sum_type_test.cpp
+    DEPS
+        base
+)

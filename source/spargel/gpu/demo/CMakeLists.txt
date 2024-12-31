@@ -23,6 +23,12 @@ spargel_add_executable(
 )
 
 spargel_add_executable(
+    NAME demo_tiles
+    PRIVATE demo_tiles.cpp
+    DEPS gpu resource ui
+)
+
+spargel_add_executable(
     NAME demo_graph
     PRIVATE demo_graph.cpp
     DEPS gpu ui
@@ -102,6 +108,7 @@ if (SPARGEL_GPU_ENABLE_METAL)
     )
     add_dependencies(demo_gpu demo_gpu_metal_shaders)
     add_dependencies(demo_gpu_mac demo_gpu_metal_shaders)
+    add_dependencies(demo_tiles demo_gpu_metal_shaders)
 endif ()
 
 if (SPARGEL_GPU_ENABLE_DIRECTX)

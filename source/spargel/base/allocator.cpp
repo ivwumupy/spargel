@@ -22,6 +22,10 @@ void operator delete[](void* ptr, usize size, usize align) noexcept {
     spargel::base::default_allocator()->free(ptr, size);
 }
 
+void* operator new(usize size, usize align, spargel::base::Allocator* alloc) noexcept {
+    return alloc->alloc(size);
+}
+
 namespace spargel::base {
 
     Allocator* default_allocator() { return libc_allocator::instance(); }

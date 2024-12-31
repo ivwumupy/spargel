@@ -6,7 +6,7 @@
 
 namespace spargel::base {
 
-    namespace __string {
+    namespace _string {
         string::string(string_view v) {
             _length = v.length();
             if (_length > 0) {
@@ -59,7 +59,7 @@ namespace spargel::base {
             return str;
         }
 
-    }  // namespace __string
+    }  // namespace _string
 
     string string_from_cstr(char const* str) {
         usize len = strlen(str);

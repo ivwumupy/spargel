@@ -6,6 +6,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// cpp std
+#include <cstddef> // std::byte
+
 using ssize = ptrdiff_t;
 using usize = size_t;
 
@@ -27,3 +30,7 @@ using f16 = _Float16;
 #endif
 using f32 = float;
 using f64 = double;
+
+namespace spargel::base {
+    using Byte = std::byte;
+}

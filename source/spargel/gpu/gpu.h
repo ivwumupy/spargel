@@ -5,6 +5,7 @@
 #include <spargel/base/object.h>
 #include <spargel/base/span.h>
 #include <spargel/base/string_view.h>
+#include <spargel/base/types.h>
 #include <spargel/base/unique_ptr.h>
 #include <spargel/base/vector.h>
 
@@ -86,12 +87,6 @@ namespace spargel::gpu {
     };
 
     /// @brief the front-facing orientation
-    ///
-    /// directx:
-    /// https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_rasterizer_desc
-    /// metal: https://developer.apple.com/documentation/metal/mtlwinding
-    /// vulkan: https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkFrontFace.html
-    ///
     enum class Orientation {
         /// @brief clockwise triangles are front-facing
         clockwise,
@@ -100,12 +95,6 @@ namespace spargel::gpu {
     };
 
     /// @brief geometric primitive type for rendering
-    ///
-    /// directx:
-    /// https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_primitive_topology_type
-    /// metal: https://developer.apple.com/documentation/metal/mtlprimitivetopologyclass
-    /// vulkan: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPrimitiveTopology.html
-    ///
     enum class PrimitiveKind {
         point,
         line,
@@ -113,18 +102,11 @@ namespace spargel::gpu {
     };
 
     /// @brief the rate of fetching vertex attributes
-    ///
-    /// directx:
-    /// https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_input_classification
-    /// metal: https://developer.apple.com/documentation/metal/mtlvertexstepfunction
-    /// vulkan:
-    /// https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkVertexInputRate.html
-    ///
     enum class VertexStepMode {
         /// @brief attributes are fetched per vertex
-        Vertex,
+        vertex,
         /// @brief attributes are fetched per instance
-        Instance,
+        instance,
     };
 
     enum class VertexAttributeFormat {
@@ -192,6 +174,42 @@ namespace spargel::gpu {
         always,
     };
 
+    // enum class BufferUsage {
+    //     copy_src,
+    //     copy_dst,
+    //     index,
+    //     indirect,
+    //     vertex,
+    // };
+
+    struct BufferUsage {
+        struct BufferUsageImpl {
+            u32 value;
+            constexpr operator BufferUsage() const { return BufferUsage(value); }
+            constexpr BufferUsageImpl operator|(BufferUsageImpl other) const {
+                return BufferUsageImpl(value | other.value);
+            }
+        };
+
+        static constexpr auto map_read = BufferUsageImpl(1 << 0);
+        static constexpr auto map_write = BufferUsageImpl(1 << 1);
+        static constexpr auto copy_src = BufferUsageImpl(1 << 2);
+        static constexpr auto copy_dst = BufferUsageImpl(1 << 3);
+        static constexpr auto index = BufferUsageImpl(1 << 4);
+        static constexpr auto vertex = BufferUsageImpl(1 << 5);
+        static constexpr auto uniform = BufferUsageImpl(1 << 5);
+        static constexpr auto storage = BufferUsageImpl(1 << 6);
+        static constexpr auto indirect = BufferUsageImpl(1 << 7);
+
+        constexpr bool has(BufferUsage usage) const { return (value & usage.value) != 0; }
+
+        constexpr BufferUsage operator|(BufferUsage other) const {
+            return BufferUsage(value | other.value);
+        }
+
+        u32 value;
+    };
+
     struct Viewport {
         float x;
         float y;
@@ -201,7 +219,7 @@ namespace spargel::gpu {
         float z_far;
     };
 
-    struct vertex_buffer_location {
+    struct VertexBufferLocation {
         struct {
             int buffer_index;
         } apple;
@@ -209,23 +227,6 @@ namespace spargel::gpu {
             int vertex_buffer_index;
         } vulkan;
     };
-
-    struct VertexBufferLocationMetal {
-        static constexpr DeviceKind kind = DeviceKind::metal;
-
-        u32 index;
-    };
-
-    struct VertexBufferLocationVulkan {
-        static constexpr DeviceKind kind = DeviceKind::vulkan;
-
-        u32 index;
-    };
-
-    template <typename T>
-    inline consteval bool isMetalConfig() {
-        return T::kind == DeviceKind::metal;
-    }
 
     template <typename T>
     class ObjectPtr {
@@ -285,7 +286,7 @@ namespace spargel::gpu {
     class Texture {
     public:
         virtual void updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
-                                  base::span<u8> bytes) = 0;
+                                  base::span<base::Byte> bytes) = 0;
     };
     class Surface {
     public:
@@ -301,10 +302,9 @@ namespace spargel::gpu {
         RenderPassEncoder(Device* device) : _device{device} {}
 
         virtual void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) = 0;
-        virtual void setVertexBuffer(ObjectPtr<Buffer> buffer,
-                                     vertex_buffer_location const& loc) = 0;
-        template <typename F>
-        void setVertexBuffer(ObjectPtr<Buffer> buffer, F&& f);
+        virtual void setVertexBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) = 0;
+        virtual void setFragmentBuffer(ObjectPtr<Buffer> buffer,
+                                       VertexBufferLocation const& loc) = 0;
 
         virtual void setTexture(ObjectPtr<Texture> texture) = 0;
         virtual void setViewport(Viewport viewport) = 0;
@@ -312,14 +312,8 @@ namespace spargel::gpu {
         virtual void draw(int vertex_start, int vertex_count, int instance_start,
                           int instance_count) = 0;
 
-    protected:
-        virtual void setVertexBufferMetal(ObjectPtr<Buffer> buffer, VertexBufferLocationMetal loc) {
-        }
-        virtual void setVertexBufferVulkan(ObjectPtr<Buffer> buffer,
-                                           VertexBufferLocationVulkan loc) {}
-
     private:
-        Device* _device;
+        [[maybe_unused]] Device* _device;
     };
 
     struct DispatchSize {
@@ -331,7 +325,7 @@ namespace spargel::gpu {
     class ComputePassEncoder {
     public:
         virtual void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) = 0;
-        virtual void setBuffer(ObjectPtr<Buffer> buffer, vertex_buffer_location const& loc) = 0;
+        virtual void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) = 0;
         // grid_size is the number of thread groups of the grid
         // group_size is the number of threads of a thread group
         virtual void dispatch(DispatchSize grid_size, DispatchSize group_size) = 0;
@@ -418,13 +412,6 @@ namespace spargel::gpu {
     };
 
     /// @brief description of one vertex buffer
-    ///
-    /// directx:
-    /// https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_input_layout_desc
-    /// metal: https://developer.apple.com/documentation/metal/mtlvertexdescriptor
-    /// vulkan:
-    /// https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkPipelineVertexInputStateCreateInfo.html
-    ///
     struct VertexBufferDescriptor {
         /// @brief the number of bytes between consecutive elements in the buffer
         ///
@@ -494,8 +481,8 @@ namespace spargel::gpu {
         virtual void destroyShaderLibrary(ObjectPtr<ShaderLibrary> library) = 0;
         virtual void destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) = 0;
 
-        virtual ObjectPtr<Buffer> createBuffer(base::span<u8> bytes) = 0;
-        virtual ObjectPtr<Buffer> createBuffer(u32 size) = 0;
+        virtual ObjectPtr<Buffer> createBuffer(BufferUsage usage, base::span<u8> bytes) = 0;
+        virtual ObjectPtr<Buffer> createBuffer(BufferUsage usage, u32 size) = 0;
         virtual void destroyBuffer(ObjectPtr<Buffer> buffer) = 0;
 
         // todo: format, 2d
@@ -515,26 +502,6 @@ namespace spargel::gpu {
         DeviceKind _kind;
     };
 
-    template <typename F>
-    void RenderPassEncoder::setVertexBuffer(ObjectPtr<Buffer> buffer, F&& f) {
-        switch (_device->kind()) {
-        case DeviceKind::metal: {
-            VertexBufferLocationMetal loc;
-            f(loc);
-            setVertexBufferMetal(buffer, loc);
-            break;
-        }
-        case DeviceKind::vulkan: {
-            VertexBufferLocationVulkan loc;
-            f(loc);
-            setVertexBufferVulkan(buffer, loc);
-            break;
-        }
-        default:
-            spargel_panic_here();
-        }
-    }
-
     base::unique_ptr<Device> makeDevice(DeviceKind kind);
 
     class RenderPipelineBuilder {
@@ -548,7 +515,7 @@ namespace spargel::gpu {
             _desc.fragment_shader.library = library;
             _desc.fragment_shader.entry = entry;
         }
-        void addVertexBuffer(usize stride) { _vertex_buffers.push(stride, VertexStepMode::Vertex); }
+        void addVertexBuffer(usize stride) { _vertex_buffers.push(stride, VertexStepMode::vertex); }
         void addVertexBuffer(usize stride, VertexStepMode step_mode) {
             _vertex_buffers.push(stride, step_mode);
         }
@@ -572,6 +539,59 @@ namespace spargel::gpu {
         base::vector<VertexBufferDescriptor> _vertex_buffers;
         base::vector<VertexAttributeDescriptor> _vertex_attributes;
         base::vector<ColorAttachmentDescriptor> _color_attachments;
+    };
+
+    // This is the allocator for device memory.
+    //
+    // The maximal memory allocation count (maxMemoryAllocationCount) returned by Vulkan drivers is
+    // still 4096 on half of the devices. So we should have few allocations of large device memory
+    // blocks, and then suballocate from these blocks. It's then our task to handle memory
+    // fragmentation.
+    //
+    // Two algorithms:
+    // - Bump allocator.
+    // - TLSF (two-level seggregated fit) allocator.
+    //
+    class DeviceMemoryAllocator {
+    public:
+    private:
+    };
+
+    // The TLSF Allocator
+    //
+    // One instance manages a sequence of memory blocks, which are binned into a two levels.
+    //
+    // The number of (first level) bins is `bin_count`. Each bin contains `subbin_count` many
+    // (second level) sub-bins. Every sub-bin contains a sequence of memory blocks, organized as a
+    // free-list.
+    //
+    // Suppose the i-th (first level) bin is for memory blocks with size in [a, b).
+    // Let delta be ceil((b - a) / subbin_count).
+    // Then the j-th sub-bin is for blocks with size in [a + j * delta, a + (j + 1) * delta).
+    //
+    // We maintain two lookup structures:
+    // - The first one is a bitset indicating whether each bin contains free memory blocks.
+    // - The second one is a bitset for every bin, indicating which sub-bins contains free blocks.
+    //
+    // It remains to have a good choice of (first level) bins. A common approach is to associate
+    // [2^i, 2^(i+1)) with the i-th bin. Zero-sized allocations are special handled. However, this
+    // is not ideal for small sized bins.
+    //
+    // Therefore, we use the following ranges:
+    // - 0-th bin: [2^0, 2^linear_bits)
+    // - 1-th bin: [2^linear_bits, 2^(linear_bits + 1))
+    // - 2-th bin: ...
+    //
+    // Then delta for sub-bins in the 0-th bin is (2^linear_bits - 1) / subbin_count, which is
+    // about 3.9.
+    //
+    // Note: We would like 2^linear_bits to be divisible by subbin_count. So we take subbin_count to
+    // be a power of 2. Moreover, we require that subbin_count <= 2^(linear_bits - 2) so that delta
+    // >= 4.
+    //
+    class TLSFAllocator {
+        static constexpr int linear_bits = 7;
+        static constexpr int subbin_count = 1 << 5;
     };
 
 }  // namespace spargel::gpu

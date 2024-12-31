@@ -10,7 +10,7 @@
 @interface SpargelApplicationDelegate : NSObject <NSApplicationDelegate>
 @end
 
-@interface SpargelMetalView : NSView //<NSTextInputClient>  // temp hack
+@interface SpargelMetalView : NSView  //<NSTextInputClient>  // temp hack
 @end
 
 @interface SpargelWindowDelegate : NSObject <NSWindowDelegate>
@@ -89,7 +89,7 @@ namespace spargel::ui {
         float _drawable_height;
         bool _animating = true;
 
-        NSTextInsertionIndicator* _text_cursor;
+        [[maybe_unused]] NSTextInsertionIndicator* _text_cursor;
 
         TextInputDelegate* _text_delegate = nullptr;
     };

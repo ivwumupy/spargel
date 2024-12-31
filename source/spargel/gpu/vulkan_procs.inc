@@ -47,6 +47,7 @@ VULKAN_INSTANCE_PROC(vkGetPhysicalDeviceSurfaceSupportKHR)
 VULKAN_INSTANCE_PROC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
 VULKAN_INSTANCE_PROC(vkGetPhysicalDeviceSurfaceFormatsKHR)
 VULKAN_INSTANCE_PROC(vkGetPhysicalDeviceSurfacePresentModesKHR)
+VULKAN_INSTANCE_PROC(vkGetPhysicalDeviceMemoryProperties)
 
 #undef VULKAN_INSTANCE_PROC
 #endif
@@ -100,5 +101,8 @@ VULKAN_DEVICE_PROC(vkCmdEndRenderPass)
 VULKAN_DEVICE_PROC(vkCmdClearColorImage)
 
 VULKAN_DEVICE_PROC(vkDeviceWaitIdle)
+
+VULKAN_DEVICE_PROC(vkCreateBuffer)
+VULKAN_DEVICE_PROC(vkGetBufferMemoryRequirements)
 
 #endif
