@@ -50,6 +50,20 @@ struct UniformData {
     result[index] = inA[index] + inB[index];
 }
 
+struct SumArgs {
+    constant uint& count [[id(0)]];
+    constant float const* in1 [[id(1)]];
+    constant float const* in2 [[id(2)]];
+    device float* result [[id(3)]];
+};
+
+[[kernel]] void add_arrays_argbuf(uint index [[thread_position_in_grid]],
+                                  device SumArgs& args [[buffer(0)]]) {
+    if (index < args.count) {
+        args.result[index] = args.in1[index] + args.in2[index];
+    }
+}
+
 struct TileVertexData {
     float2 position [[attribute(0)]];
     float4 color [[attribute(1)]];

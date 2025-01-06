@@ -153,15 +153,13 @@ namespace spargel::gpu {
     class ComputePipelineMetal final : public ComputePipeline {
     public:
         explicit ComputePipelineMetal(id<MTLFunction> func, id<MTLComputePipelineState> pipeline)
-            : _func{func}, _pipeline{pipeline} {
-            spargel_log_info("%lu", static_cast<unsigned long>(_pipeline.threadExecutionWidth));
-        }
+            : _func{func}, _pipeline{pipeline} {}
         ~ComputePipelineMetal() {
             [_func release];
             [_pipeline release];
         }
 
-        u32 maxGroupSize() override { return _pipeline.maxTotalThreadsPerThreadgroup; }
+        // u32 maxGroupSize() override { return _pipeline.maxTotalThreadsPerThreadgroup; }
 
         auto pipeline() const { return _pipeline; }
 
@@ -178,13 +176,12 @@ namespace spargel::gpu {
         void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) override {
             [_encoder setComputePipelineState:pipeline.cast<ComputePipelineMetal>()->pipeline()];
         }
-
+        void setBindGroup(u32 index, ObjectPtr<BindGroup> group) override {}
         void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override {
             [_encoder setBuffer:buffer.cast<BufferMetal>()->buffer()
                          offset:0
                         atIndex:loc.apple.buffer_index];
         }
-
         void dispatch(DispatchSize grid_size, DispatchSize group_size) override {
             [_encoder dispatchThreadgroups:MTLSizeMake(grid_size.x, grid_size.y, grid_size.z)
                      threadsPerThreadgroup:MTLSizeMake(group_size.x, group_size.y, group_size.z)];
@@ -195,6 +192,8 @@ namespace spargel::gpu {
     private:
         id<MTLComputeCommandEncoder> _encoder;
     };
+
+    class BindGroupLayoutMetal final : public BindGroupLayout {};
 
     class DeviceMetal final : public Device {
     public:
@@ -218,13 +217,21 @@ namespace spargel::gpu {
         ObjectPtr<CommandQueue> createCommandQueue() override;
         void destroyCommandQueue(ObjectPtr<CommandQueue> q) override;
 
-        ObjectPtr<ComputePipeline> createComputePipeline(ObjectPtr<ShaderLibrary> library,
-                                                         char const* entry) override {
+        ObjectPtr<ComputePipeline> createComputePipeline(
+            ShaderFunction f, base::span<ObjectPtr<BindGroupLayout>> layouts) override {
             NSError* err;
-            auto func = [library.cast<ShaderLibraryMetal>()->library()
-                newFunctionWithName:[NSString stringWithUTF8String:entry]];
+            auto func = [f.library.cast<ShaderLibraryMetal>()->library()
+                newFunctionWithName:[NSString stringWithUTF8String:f.entry]];
             return make_object<ComputePipelineMetal>(
                 func, [_device newComputePipelineStateWithFunction:func error:&err]);
+        }
+
+        ObjectPtr<BindGroupLayout> createBindGroupLayout(ShaderStage stage,
+                                                         base::span<BindEntry> entries) override {
+            return make_object<BindGroupLayoutMetal>();
+        }
+        ObjectPtr<BindGroup> createBindGroup(ObjectPtr<BindGroupLayout> layout) override {
+            return nullptr;
         }
 
         auto device() { return _device; }

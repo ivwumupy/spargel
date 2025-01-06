@@ -1,3 +1,5 @@
+#include <spargel/base/base.h>
+#include <spargel/base/logging.h>
 #include <spargel/config.h>
 #include <spargel/gpu/gpu.h>
 
@@ -26,6 +28,8 @@ namespace spargel::gpu {
             return make_device_vulkan();
 #endif
         default:
+            spargel_log_fatal("unknown gpu backend");
+            spargel_panic_here();
             return nullptr;
         }
     }

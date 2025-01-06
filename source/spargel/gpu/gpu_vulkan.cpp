@@ -74,11 +74,39 @@ namespace spargel::gpu {
             return flags;
         }
 
+        VkShaderStageFlags translateShaderStage(ShaderStage stage) {
+            VkShaderStageFlags flags = 0;
+#define _TRANSLATE(x, y)             \
+    if (stage.has(ShaderStage::x)) { \
+        flags |= y;                  \
+    }
+            _TRANSLATE(vertex, VK_SHADER_STAGE_VERTEX_BIT);
+            _TRANSLATE(fragment, VK_SHADER_STAGE_FRAGMENT_BIT);
+            _TRANSLATE(compute, VK_SHADER_STAGE_COMPUTE_BIT);
+#undef _TRANSLATE
+            return flags;
+        }
+
+        VkDescriptorType translateBindEntryKind(BindEntryKind kind) {
+            switch (kind) {
+            case BindEntryKind::uniform_buffer:
+                return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            case BindEntryKind::storage_buffer:
+                return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            case BindEntryKind::sample_texture:
+                return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            case BindEntryKind::storage_texture:
+                return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            default:
+                spargel_panic_here();
+            }
+        }
+
     }  // namespace
 
     base::unique_ptr<Device> make_device_vulkan() { return base::make_unique<DeviceVulkan>(); }
 
-    DeviceVulkan::DeviceVulkan() : Device(DeviceKind::vulkan) {
+    DeviceVulkan::DeviceVulkan() : Device(DeviceKind::vulkan), _device_alloc(this) {
         _library = base::open_dynamic_library(vulkan_library_name);
         if (_library == nullptr) {
             spargel_log_fatal("cannot load vulkan loader");
@@ -269,7 +297,7 @@ namespace spargel::gpu {
         app_info.applicationVersion = 0;
         app_info.pEngineName = "Spargel Engine";
         app_info.engineVersion = 0;
-        app_info.apiVersion = VK_API_VERSION_1_1;
+        app_info.apiVersion = VK_API_VERSION_1_2;
 
         VkInstanceCreateInfo info;
         info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -493,6 +521,23 @@ namespace spargel::gpu {
         //
         // General situation:
         //
+        // Case 1: unified
+        //   One device local heap. All memory types are device local and host visible.
+        //
+        // Case 2: separated
+        //   One device local heap, the memory types of which are not host visible.
+        //   Another heap for host visible memory.
+        //
+        //   It is possible (and more common) that there is another device local heap that exposes
+        //   host visible memory. The size is 256MB (AMD). Larger values require hardware
+        //   configuration (resizable bar), which is not popular.
+        //
+        // Case 3: weird (AMD integrated, old) (new hardware belongs to case 2)
+        //   One heap for host visible memory.
+        //   Another device local heap (256MB) with both host visible and non host visible.
+        //
+        // Examples:
+        //
         // NVIDIA:
         //   (4090 Super)
         //   Heap 0: device local
@@ -553,12 +598,12 @@ namespace spargel::gpu {
         return nullptr;
     }
 
-    //
     // VulkanMemoryAllocator:
     // - BlockVector indexed by memoryType
     // - A BlockVector is a sequence of MemoryBlock. It represents memory blocks allocated for a
     //   specific memory type.
-    // - A MemoryBlock is simply a VkDeviceMemory, i.e. an allocation. So we should have at most 4096 blocks.
+    // - A MemoryBlock is simply a VkDeviceMemory, i.e. an allocation. So we should have at most
+    // 4096 blocks.
 
     ObjectPtr<Buffer> DeviceVulkan::createBuffer(BufferUsage usage, base::span<u8> bytes) {
         // Step 1. Create the buffer object.
@@ -597,13 +642,149 @@ namespace spargel::gpu {
     void DeviceVulkan::destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) {}
     void DeviceVulkan::destroyBuffer(ObjectPtr<Buffer> b) {}
 
-    ObjectPtr<CommandQueue> DeviceVulkan::createCommandQueue() { return nullptr; }
+    ObjectPtr<CommandQueue> DeviceVulkan::createCommandQueue() {
+        return make_object<CommandQueueVulkan>(_queue, this);
+    }
     void DeviceVulkan::destroyCommandQueue(ObjectPtr<CommandQueue> q) {}
 
-    ObjectPtr<ComputePipeline> DeviceVulkan::createComputePipeline(ObjectPtr<ShaderLibrary> library,
-                                                                   char const* entry) {
+    ObjectPtr<ComputePipeline> DeviceVulkan::createComputePipeline(
+        ShaderFunction func, base::span<ObjectPtr<BindGroupLayout>> layouts) {
+        base::vector<VkDescriptorSetLayout> set_layouts;
+        set_layouts.reserve(layouts.count());
+        set_layouts.set_count(layouts.count());
+        for (usize i = 0; i < layouts.count(); i++) {
+            set_layouts[i] = layouts[i].cast<BindGroupLayoutVulkan>()->layout();
+        }
+
+        VkPipelineLayoutCreateInfo layout_info;
+        layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        layout_info.pNext = nullptr;
+        layout_info.flags = 0;
+        layout_info.setLayoutCount = (u32)set_layouts.count();
+        layout_info.pSetLayouts = set_layouts.data();
+        layout_info.pushConstantRangeCount = 0;
+        layout_info.pPushConstantRanges = nullptr;
+
+        VkPipelineLayout layout;
+        CHECK_VK_RESULT(_procs.vkCreatePipelineLayout(_device, &layout_info, nullptr, &layout));
+
+        VkComputePipelineCreateInfo info;
+        info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+        info.pNext = nullptr;
+        info.flags = 0;
+        info.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        info.stage.pNext = nullptr;
+        info.stage.flags = 0;
+        info.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+        info.stage.module = func.library.cast<ShaderLibraryVulkan>()->library();
+        info.stage.pName = func.entry;
+        info.stage.pSpecializationInfo = nullptr;
+        info.layout = layout;
+        info.basePipelineHandle = nullptr;
+        info.basePipelineIndex = 0;
+
+        VkPipeline pipeline;
+        CHECK_VK_RESULT(_procs.vkCreateComputePipelines(_device, /* cache = */ nullptr, 1, &info,
+                                                        nullptr, &pipeline));
+        return make_object<ComputePipelineVulkan>(pipeline, layout);
+    }
+
+    ObjectPtr<BindGroupLayout> DeviceVulkan::createBindGroupLayout(ShaderStage stage,
+                                                                   base::span<BindEntry> entries) {
+        auto stage_flag = translateShaderStage(stage);
+        base::vector<VkDescriptorSetLayoutBinding> bindings;
+        bindings.reserve(entries.count());
+        bindings.set_count(entries.count());
+        for (usize i = 0; i < entries.count(); i++) {
+            auto const& entry = entries[i];
+            auto& binding = bindings[i];
+            binding.binding = entry.binding;
+            binding.descriptorType = translateBindEntryKind(entry.kind);
+            binding.descriptorCount = 1;
+            binding.stageFlags = stage_flag;
+            binding.pImmutableSamplers = nullptr;
+        }
+
+        VkDescriptorSetLayoutCreateInfo info;
+        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        info.pNext = nullptr;
+        info.flags = 0;
+        info.bindingCount = bindings.count();
+        info.pBindings = bindings.data();
+
+        VkDescriptorSetLayout layout;
+        CHECK_VK_RESULT(_procs.vkCreateDescriptorSetLayout(_device, &info, nullptr, &layout));
+
+        return make_object<BindGroupLayoutVulkan>(layout);
+    }
+
+    CommandQueueVulkan::CommandQueueVulkan(VkQueue queue, DeviceVulkan* device)
+        : _device{device}, _procs{device->getProcTable()}, _queue{queue} {
+        createCommandPool();
+    }
+
+    ObjectPtr<CommandBuffer> CommandQueueVulkan::createCommandBuffer() {
+        VkCommandBufferAllocateInfo info;
+        info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        info.pNext = nullptr;
+        info.commandPool = _pool;
+        info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        info.commandBufferCount = 1;
+
+        VkCommandBuffer buffer;
+        CHECK_VK_RESULT(_procs->vkAllocateCommandBuffers(_device->device(), &info, &buffer));
+        return make_object<CommandBufferVulkan>(_device, buffer);
+    }
+
+    void CommandQueueVulkan::destroyCommandBuffer(ObjectPtr<CommandBuffer>) {}
+
+    void CommandQueueVulkan::createCommandPool() {
+        VkCommandPoolCreateInfo info;
+        info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        info.pNext = nullptr;
+        info.flags = 0;
+        info.queueFamilyIndex = _device->getQueueFamilyIndex();
+
+        CHECK_VK_RESULT(_procs->vkCreateCommandPool(_device->device(), &info, nullptr, &_pool));
+    }
+
+    CommandBufferVulkan::CommandBufferVulkan(DeviceVulkan* device, VkCommandBuffer cmdbuf)
+        : _device{device}, _procs{device->getProcTable()}, _cmdbuf{cmdbuf} {
+        beginCommandBuffer();
+    }
+
+    ObjectPtr<RenderPassEncoder> CommandBufferVulkan::beginRenderPass(
+        RenderPassDescriptor const& descriptor) {
         return nullptr;
     }
+    void CommandBufferVulkan::endRenderPass(ObjectPtr<RenderPassEncoder> encoder) {}
+    ObjectPtr<ComputePassEncoder> CommandBufferVulkan::beginComputePass() {
+        return make_object<ComputePassEncoderVulkan>(_device, _cmdbuf);
+    }
+    void CommandBufferVulkan::endComputePass(ObjectPtr<ComputePassEncoder> encoder) {}
+    void CommandBufferVulkan::present(ObjectPtr<Surface> surface) {}
+    void CommandBufferVulkan::submit() {}
+    void CommandBufferVulkan::wait() {}
+
+    void CommandBufferVulkan::beginCommandBuffer() {
+        VkCommandBufferBeginInfo info;
+        info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        info.pNext = nullptr;
+        info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        info.pInheritanceInfo = nullptr;
+        CHECK_VK_RESULT(_procs->vkBeginCommandBuffer(_cmdbuf, &info));
+    }
+
+    ComputePassEncoderVulkan::ComputePassEncoderVulkan(DeviceVulkan* device, VkCommandBuffer cmdbuf)
+        : _device{device}, _procs{device->getProcTable()}, _cmdbuf{cmdbuf} {}
+
+    void ComputePassEncoderVulkan::setComputePipeline(ObjectPtr<ComputePipeline> pipeline) {
+        _procs->vkCmdBindPipeline(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE,
+                                  pipeline.cast<ComputePipelineVulkan>()->pipeline());
+    }
+    void ComputePassEncoderVulkan::setBuffer(ObjectPtr<Buffer> buffer,
+                                             VertexBufferLocation const& loc) {}
+    void ComputePassEncoderVulkan::dispatch(DispatchSize grid_size, DispatchSize group_size) {}
 
     //         d->queue.backend = BACKEND_VULKAN;
 

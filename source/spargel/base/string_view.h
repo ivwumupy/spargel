@@ -2,6 +2,9 @@
 
 #include <spargel/base/types.h>
 
+//
+#include <string.h>
+
 namespace spargel::base {
 
     class string_view {
@@ -15,6 +18,11 @@ namespace spargel::base {
         constexpr usize length() const { return _end - _begin; }
         constexpr char const* begin() const { return _begin; }
         constexpr char const* data() const { return _begin; }
+
+        friend bool operator==(string_view const& lhs, string_view const& rhs) {
+            if (lhs.length() != rhs.length()) return false;
+            return memcmp(lhs._begin, rhs._begin, lhs.length()) == 0;
+        }
 
     private:
         char const* _begin = nullptr;

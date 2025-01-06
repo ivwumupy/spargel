@@ -1,6 +1,7 @@
 #pragma once
 
 #include <spargel/base/allocator.h>
+#include <spargel/base/intrinsic.h>
 #include <spargel/base/meta.h>
 #include <spargel/base/object.h>
 #include <spargel/base/span.h>
@@ -36,6 +37,7 @@ namespace spargel::gpu {
         directx,
         metal,
         vulkan,
+        unknown,
     };
 
     // notes:
@@ -72,11 +74,6 @@ namespace spargel::gpu {
     //
 
     /// @brief triangles with particular facing will not be drawn
-    ///
-    /// directx: https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_cull_mode
-    /// metal: https://developer.apple.com/documentation/metal/mtlcullmode
-    /// vulkan: https://registry.khronos.org/vulkan/specs/latest/man/html/VkCullModeFlagBits.html
-    ///
     enum class CullMode {
         /// @brief no triangles are discarded
         none,
@@ -174,14 +171,6 @@ namespace spargel::gpu {
         always,
     };
 
-    // enum class BufferUsage {
-    //     copy_src,
-    //     copy_dst,
-    //     index,
-    //     indirect,
-    //     vertex,
-    // };
-
     struct BufferUsage {
         struct BufferUsageImpl {
             u32 value;
@@ -275,7 +264,7 @@ namespace spargel::gpu {
     class RenderPipeline {};
     class ComputePipeline {
     public:
-        virtual u32 maxGroupSize() = 0;
+        // virtual u32 maxGroupSize() = 0;
     };
     class BindGroup {};
     class BindGroupLayout {};
@@ -325,6 +314,7 @@ namespace spargel::gpu {
     class ComputePassEncoder {
     public:
         virtual void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) = 0;
+        virtual void setBindGroup(u32 index, ObjectPtr<BindGroup> group) = 0;
         virtual void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) = 0;
         // grid_size is the number of thread groups of the grid
         // group_size is the number of threads of a thread group
@@ -375,30 +365,23 @@ namespace spargel::gpu {
         char const* entry;
     };
 
-    /// @brief
-    ///
-    /// directx:
-    /// https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_input_element_desc
-    /// metal: https://developer.apple.com/documentation/metal/mtlvertexattributedescriptor
-    /// vulkan:
-    /// https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkVertexInputAttributeDescription.html
-    ///
+    /// @brief description of one vertex attribute
     struct VertexAttributeDescriptor {
         /// @brief index of the vertex buffer where the data of the attribute is fetched
         u32 buffer;
 
         /// @brief the location of the vertex attribute
         ///
-        /// this is called input element in directx.
+        /// This is called input element in directx.
         ///
-        /// synatx in shaders:
+        /// Synatx in shaders:
         /// - glsl: `layout (location = 0) in vec3 position;`
         /// - msl: `float3 position [[attribute(0)]];`
         /// - hlsl: this is specified via semantic name and semantic index.
         ///
-        /// note:
-        /// - both dawn and wgpu use dummy SemanticName, and use SemanticIndex for location.
-        /// - dawn chooses "TEXCOORD", and wgpu/naga uses "LOC".
+        /// Note:
+        /// - Both dawn and wgpu use dummy SemanticName, and use SemanticIndex for location.
+        /// - Dawn chooses "TEXCOORD", and wgpu/naga uses "LOC".
         /// - SPIRV-Cross uses "TEXCOORD" by default, and provides the options for remapping.
         /// - dxc relies on user declaration `[[vk::location(0)]]`.
         ///
@@ -414,14 +397,6 @@ namespace spargel::gpu {
     /// @brief description of one vertex buffer
     struct VertexBufferDescriptor {
         /// @brief the number of bytes between consecutive elements in the buffer
-        ///
-        /// directx:
-        /// https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_vertex_buffer_view
-        /// metal:
-        /// https://developer.apple.com/documentation/metal/mtlvertexbufferlayoutdescriptor/1515441-stride
-        /// vulkan:
-        /// https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkVertexInputBindingDescription.html
-        ///
         usize stride;
 
         /// @brief the rate of fetching vertex attributes
@@ -435,14 +410,40 @@ namespace spargel::gpu {
         bool enable_blend = false;
     };
 
+    struct ShaderStage {
+        struct ShaderStageImpl {
+            constexpr operator ShaderStage() const { return ShaderStage(value); }
+            u32 value;
+        };
+        static constexpr auto vertex = ShaderStageImpl(0b1);
+        static constexpr auto fragment = ShaderStageImpl(0b10);
+        static constexpr auto compute = ShaderStageImpl(0b100);
+        constexpr bool has(ShaderStage usage) const { return (value & usage.value) != 0; }
+        u32 value;
+    };
+
+    enum class BindEntryKind {
+        uniform_buffer,
+        storage_buffer,
+        sample_texture,
+        storage_texture,
+    };
+
+    /// @brief one entry of a bind group
+    struct BindEntry {
+        /// @brief the unique identifier of this entry
+        ///
+        /// Syntax in shaders:
+        /// - glsl: `location (set = 0, binding = 1) ...`
+        /// - msl: `struct ArgBuf { float* buf [[id(1)]]; };`
+        ///
+        u32 binding;
+
+        /// @brief the kind of this entry
+        BindEntryKind kind;
+    };
+
     /// @brief description of a render pipeline
-    ///
-    /// directx:
-    /// https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_graphics_pipeline_state_desc
-    /// metal: https://developer.apple.com/documentation/metal/mtlrenderpipelinedescriptor
-    /// vulkan:
-    /// https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkGraphicsPipelineCreateInfo.html
-    ///
     struct RenderPipelineDescriptor {
         /// @brief the geometric primitive for this render pipeline
         PrimitiveKind primitive = PrimitiveKind::triangle;
@@ -466,6 +467,14 @@ namespace spargel::gpu {
         ShaderFunction fragment_shader;
 
         base::span<ColorAttachmentDescriptor> color_attachments;
+    };
+
+    /// @brief The description of a compute pipeline.
+    ///
+    /// Most information should be automatically generated using reflection.
+    ///
+    struct ComputePipelineDescriptor {
+        ShaderFunction shader;
     };
 
     class Device {
@@ -492,8 +501,16 @@ namespace spargel::gpu {
         virtual ObjectPtr<CommandQueue> createCommandQueue() = 0;
         virtual void destroyCommandQueue(ObjectPtr<CommandQueue> queue) = 0;
 
-        virtual ObjectPtr<ComputePipeline> createComputePipeline(ObjectPtr<ShaderLibrary> library,
-                                                                 char const* entry) = 0;
+        virtual ObjectPtr<ComputePipeline> createComputePipeline(
+            ShaderFunction func, base::span<ObjectPtr<BindGroupLayout>> layouts) = 0;
+
+        /// @brief create a bind group layout object
+        /// @param stage the stage where the layout is used
+        /// @param entries the entries of the layout
+        virtual ObjectPtr<BindGroupLayout> createBindGroupLayout(ShaderStage stage,
+                                                                 base::span<BindEntry> entries) = 0;
+
+        virtual ObjectPtr<BindGroup> createBindGroup(ObjectPtr<BindGroupLayout> layout) = 0;
 
     protected:
         explicit Device(DeviceKind k) : _kind{k} {}
@@ -541,6 +558,20 @@ namespace spargel::gpu {
         base::vector<ColorAttachmentDescriptor> _color_attachments;
     };
 
+    class BindGroupLayoutBuilder {
+    public:
+        void setStage(ShaderStage stage) { _stage = stage; }
+        void addEntry(u32 binding, BindEntryKind kind) { _entries.push(binding, kind); }
+
+        ObjectPtr<BindGroupLayout> build(Device* _device) {
+            return _device->createBindGroupLayout(_stage, _entries.toSpan());
+        }
+
+    private:
+        ShaderStage _stage;
+        base::vector<BindEntry> _entries;
+    };
+
     // This is the allocator for device memory.
     //
     // The maximal memory allocation count (maxMemoryAllocationCount) returned by Vulkan drivers is
@@ -552,10 +583,6 @@ namespace spargel::gpu {
     // - Bump allocator.
     // - TLSF (two-level seggregated fit) allocator.
     //
-    class DeviceMemoryAllocator {
-    public:
-    private:
-    };
 
     // The TLSF Allocator
     //
@@ -589,9 +616,41 @@ namespace spargel::gpu {
     // be a power of 2. Moreover, we require that subbin_count <= 2^(linear_bits - 2) so that delta
     // >= 4.
     //
+    //
+    // size   | [2^0, 2^8) | [2^8, 2^9) | [2^9, 2^10) | ...
+    // bin_id |     0      |      1     |       2     | ...
+    //
     class TLSFAllocator {
-        static constexpr int linear_bits = 7;
-        static constexpr int subbin_count = 1 << 5;
+        static constexpr u8 linear_bits = 8;
+        static constexpr u8 subbin_bits = 5;
+        static constexpr u8 subbin_count = 1 << subbin_bits;
+
+    public:
+        TLSFAllocator() = default;
+
+    private:
+        struct BinResult {
+            u8 bin_id;
+            u8 subbin_id;
+        };
+
+        // BinResult binDown(usize size) {
+        //     spargel_assert(size > 0);
+
+        //     u8 bin_id;
+        //     if (size < (1 << linear_bits)) {
+        //         bin_id = 0;
+        //     } else {
+        //         bin_id = base::GetMostSignificantBit(size) - (linear_bits - 1);
+        //     }
+        //     u8 subbin_id = size >> (bin_id - subbin_bits);
+        //     return {bin_id, subbin_id};
+        // }
+
+        // BinResult binUp(usize size) {}
+
+        // u64 _first_bitset = 0;
+        // u64 _second_bitsets[subbin_count] = {0};
     };
 
 }  // namespace spargel::gpu

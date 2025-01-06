@@ -35,6 +35,22 @@
 
 namespace spargel::gpu {
 
+    class DeviceVulkan;
+
+    struct VulkanProcTable {
+#define VULKAN_PROC_DECL(name) PFN_##name name;
+#define VULKAN_LIBRARY_PROC(name) VULKAN_PROC_DECL(name)
+#define VULKAN_GENERAL_PROC(name) VULKAN_PROC_DECL(name)
+#define VULKAN_INSTANCE_PROC(name) VULKAN_PROC_DECL(name)
+#define VULKAN_DEVICE_PROC(name) VULKAN_PROC_DECL(name)
+#include <spargel/gpu/vulkan_procs.inc>
+#undef VULKAN_DEVICE_PROC
+#undef VULKAN_INSTANCE_PROC
+#undef VULKAN_GENERAL_PROC
+#undef VULKAN_LIBRARY_PROC
+#undef VULKAN_PROC_DECL
+    };
+
     class ShaderLibraryVulkan final : public ShaderLibrary {
     public:
         explicit ShaderLibraryVulkan(VkShaderModule shader) : _library{shader} {}
@@ -46,7 +62,7 @@ namespace spargel::gpu {
         VkShaderModule _library;
     };
 
-    class RenderPipelineVulkan : public RenderPipeline {
+    class RenderPipelineVulkan final : public RenderPipeline {
     public:
         explicit RenderPipelineVulkan();
         ~RenderPipelineVulkan();
@@ -55,6 +71,19 @@ namespace spargel::gpu {
 
     private:
         VkPipeline _pipeline;
+    };
+
+    class ComputePipelineVulkan final : public ComputePipeline {
+    public:
+        ComputePipelineVulkan(VkPipeline pipeline, VkPipelineLayout layout)
+            : _pipeline{pipeline}, _layout{layout} {}
+
+        auto pipeline() const { return _pipeline; }
+        auto layout() const { return _layout; }
+
+    private:
+        VkPipeline _pipeline;
+        VkPipelineLayout _layout;
     };
 
     class BufferVulkan : public Buffer {
@@ -101,7 +130,7 @@ namespace spargel::gpu {
 
     class CommandQueueVulkan final : public CommandQueue {
     public:
-        explicit CommandQueueVulkan(VkQueue queue) : _queue{queue} {}
+        explicit CommandQueueVulkan(VkQueue queue, DeviceVulkan* device);
         ~CommandQueueVulkan() {}
 
         auto commandQueue() { return _queue; }
@@ -110,12 +139,17 @@ namespace spargel::gpu {
         void destroyCommandBuffer(ObjectPtr<CommandBuffer>) override;
 
     private:
+        void createCommandPool();
+
+        DeviceVulkan* _device;
+        VulkanProcTable const* _procs;
         VkQueue _queue;
+        VkCommandPool _pool;
     };
 
     class CommandBufferVulkan final : public CommandBuffer {
     public:
-        explicit CommandBufferVulkan(VkCommandBuffer cmdbuf) : _cmdbuf{cmdbuf} {}
+        CommandBufferVulkan(DeviceVulkan* device, VkCommandBuffer cmdbuf);
 
         auto commandBuffer() { return _cmdbuf; }
 
@@ -129,6 +163,10 @@ namespace spargel::gpu {
         void wait() override;
 
     private:
+        void beginCommandBuffer();
+
+        DeviceVulkan* _device;
+        VulkanProcTable const* _procs;
         VkCommandBuffer _cmdbuf;
     };
 
@@ -149,18 +187,47 @@ namespace spargel::gpu {
     private:
     };
 
-    struct VulkanProcTable {
-#define VULKAN_PROC_DECL(name) PFN_##name name;
-#define VULKAN_LIBRARY_PROC(name) VULKAN_PROC_DECL(name)
-#define VULKAN_GENERAL_PROC(name) VULKAN_PROC_DECL(name)
-#define VULKAN_INSTANCE_PROC(name) VULKAN_PROC_DECL(name)
-#define VULKAN_DEVICE_PROC(name) VULKAN_PROC_DECL(name)
-#include <spargel/gpu/vulkan_procs.inc>
-#undef VULKAN_DEVICE_PROC
-#undef VULKAN_INSTANCE_PROC
-#undef VULKAN_GENERAL_PROC
-#undef VULKAN_LIBRARY_PROC
-#undef VULKAN_PROC_DECL
+    class ComputePassEncoderVulkan final : public ComputePassEncoder {
+    public:
+        ComputePassEncoderVulkan(DeviceVulkan* device, VkCommandBuffer cmdbuf);
+
+        void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) override;
+        void setBindGroup(u32 index, ObjectPtr<BindGroup> group) override {}
+        void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override;
+        void dispatch(DispatchSize grid_size, DispatchSize group_size) override;
+
+    private:
+        DeviceVulkan* _device;
+        VulkanProcTable const* _procs;
+        VkCommandBuffer _cmdbuf;
+    };
+
+    // One DeviceMemoryBlock corresponds to one VkDeviceMemory, i.e. one allocation.
+    class DeviceMemoryBlock {
+    public:
+        explicit DeviceMemoryBlock(VkDeviceMemory memory) : _memory{memory} {}
+
+    private:
+        VkDeviceMemory _memory;
+    };
+
+    class BindGroupLayoutVulkan final : public BindGroupLayout {
+    public:
+        explicit BindGroupLayoutVulkan(VkDescriptorSetLayout layout) : _layout{layout} {}
+
+        auto layout() const { return _layout; }
+
+    private:
+        VkDescriptorSetLayout _layout;
+    };
+
+    class DeviceMemoryAllocatorVulkan {
+    public:
+        explicit DeviceMemoryAllocatorVulkan(DeviceVulkan* device) : _device{device} {}
+
+    private:
+        DeviceVulkan* _device;
+        base::vector<DeviceMemoryBlock> _blocks;
     };
 
     class DeviceVulkan final : public Device {
@@ -182,8 +249,18 @@ namespace spargel::gpu {
         void destroyTexture(ObjectPtr<Texture> texture) override;
         ObjectPtr<CommandQueue> createCommandQueue() override;
         void destroyCommandQueue(ObjectPtr<CommandQueue> q) override;
-        ObjectPtr<ComputePipeline> createComputePipeline(ObjectPtr<ShaderLibrary> library,
-                                                         char const* entry) override;
+        ObjectPtr<ComputePipeline> createComputePipeline(
+            ShaderFunction func, base::span<ObjectPtr<BindGroupLayout>> layouts) override;
+
+        ObjectPtr<BindGroupLayout> createBindGroupLayout(ShaderStage stage,
+                                                         base::span<BindEntry> entries) override;
+        ObjectPtr<BindGroup> createBindGroup(ObjectPtr<BindGroupLayout> layout) override {
+            return nullptr;
+        }
+
+        auto device() const { return _device; }
+        u32 getQueueFamilyIndex() const { return _queue_family_index; }
+        VulkanProcTable const* getProcTable() const { return &_procs; }
 
     private:
         void loadGeneralProcs();
@@ -238,6 +315,8 @@ namespace spargel::gpu {
         VkQueue _queue;
 
         VkPhysicalDeviceMemoryProperties _memory_props;
+
+        DeviceMemoryAllocatorVulkan _device_alloc;
 
         // todo: hook allocations
         [[maybe_unused]] VkAllocationCallbacks _vkalloc;

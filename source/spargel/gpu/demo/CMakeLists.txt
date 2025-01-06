@@ -36,43 +36,48 @@ spargel_add_executable(
 
 if (SPARGEL_GPU_ENABLE_VULKAN)
     add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/vertex_shader.spirv
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/resources/vertex_shader.spirv
         COMMAND
             Vulkan::glslangValidator
                 -S vert # stage
                 --target-env vulkan1.2
-                -o ${CMAKE_CURRENT_BINARY_DIR}/vertex_shader.spirv
+                -o ${CMAKE_CURRENT_BINARY_DIR}/resources/vertex_shader.spirv
                 ${CMAKE_CURRENT_SOURCE_DIR}/vertex_shader.glsl
         DEPENDS vertex_shader.glsl
     )
     add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/vertex_shader.spirv.inc
-        COMMAND
-            xxd -i -n demo_gpu_vulkan_vertex_code ${CMAKE_CURRENT_BINARY_DIR}/vertex_shader.spirv ${CMAKE_CURRENT_BINARY_DIR}/vertex_shader.spirv.inc
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/vertex_shader.spirv
-    )
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/fragment_shader.spirv
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/resources/fragment_shader.spirv
         COMMAND
             Vulkan::glslangValidator
                 -S frag # stage
                 --target-env vulkan1.2
-                -o ${CMAKE_CURRENT_BINARY_DIR}/fragment_shader.spirv
+                -o ${CMAKE_CURRENT_BINARY_DIR}/resources/fragment_shader.spirv
                 ${CMAKE_CURRENT_SOURCE_DIR}/fragment_shader.glsl
         DEPENDS fragment_shader.glsl
     )
     add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/fragment_shader.spirv.inc
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/resources/demo_sum.spirv
         COMMAND
-            xxd -i -n demo_gpu_vulkan_fragment_code ${CMAKE_CURRENT_BINARY_DIR}/fragment_shader.spirv ${CMAKE_CURRENT_BINARY_DIR}/fragment_shader.spirv.inc
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/fragment_shader.spirv
+            Vulkan::glslangValidator
+                -S comp # stage
+                --target-env vulkan1.2
+                --entry-point add_arrays
+                --source-entrypoint main
+                -o ${CMAKE_CURRENT_BINARY_DIR}/resources/demo_sum.spirv
+                ${CMAKE_CURRENT_SOURCE_DIR}/demo_sum.glsl
+        DEPENDS demo_sum.glsl
     )
     add_custom_target(demo_gpu_vulkan_shaders
         DEPENDS
-            ${CMAKE_CURRENT_BINARY_DIR}/vertex_shader.spirv.inc
-            ${CMAKE_CURRENT_BINARY_DIR}/fragment_shader.spirv.inc
+            ${CMAKE_CURRENT_BINARY_DIR}/resources/vertex_shader.spirv
+            ${CMAKE_CURRENT_BINARY_DIR}/resources/fragment_shader.spirv
     )
-    # add_dependencies(demo_gpu demo_gpu_vulkan_shaders)
+    add_custom_target(demo_sum_vulkan_shaders
+        DEPENDS
+            ${CMAKE_CURRENT_BINARY_DIR}/resources/demo_sum.spirv
+    )
+    add_dependencies(demo_gpu demo_gpu_vulkan_shaders)
+    add_dependencies(demo_sum demo_sum_vulkan_shaders)
 endif ()
 
 if (SPARGEL_IS_MACOS)

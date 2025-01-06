@@ -105,4 +105,12 @@ VULKAN_DEVICE_PROC(vkDeviceWaitIdle)
 VULKAN_DEVICE_PROC(vkCreateBuffer)
 VULKAN_DEVICE_PROC(vkGetBufferMemoryRequirements)
 
+VULKAN_DEVICE_PROC(vkCreateComputePipelines)
+
+VULKAN_DEVICE_PROC(vkCreateDescriptorSetLayout)
+
+VULKAN_DEVICE_PROC(vkCreatePipelineLayout)
+
+VULKAN_DEVICE_PROC(vkCmdBindPipeline);
+
 #endif

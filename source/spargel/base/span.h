@@ -18,6 +18,9 @@ namespace spargel::base {
         constexpr usize count() const { return _end - _begin; }
         constexpr T const* data() const { return _begin; }
 
+        constexpr T const* begin() const { return _begin; }
+        constexpr T const* end() const { return _end; }
+
         constexpr span<Byte> asBytes() const {
             return span<Byte>(reinterpret_cast<Byte const*>(_begin),
                               reinterpret_cast<Byte const*>(_end));
