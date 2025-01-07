@@ -358,4 +358,8 @@ namespace spargel::gpu {
         [_encoder setBuffer:group->buffer() offset:0 atIndex:group->program()->getBufferId(index)];
     }
 
+    void ComputePassEncoderMetal::setComputePipeline2(ObjectPtr<ComputePipeline2> pipeline) {
+        [_encoder setComputePipelineState:pipeline.cast<ComputePipeline2Metal>()->pipeline()];
+    }
+
 }  // namespace spargel::gpu

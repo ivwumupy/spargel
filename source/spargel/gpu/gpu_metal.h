@@ -1,5 +1,6 @@
 #pragma once
 
+#include <spargel/base/assert.h>
 #include <spargel/base/unique_ptr.h>
 #include <spargel/base/vector.h>
 #include <spargel/gpu/gpu.h>
@@ -150,7 +151,7 @@ namespace spargel::gpu {
         explicit ComputePipelineMetal(id<MTLFunction> func, id<MTLComputePipelineState> pipeline)
             : _func{func}, _pipeline{pipeline} {}
         ~ComputePipelineMetal() {
-            // [_func release];
+            [_func release];
             [_pipeline release];
         }
 
@@ -171,6 +172,7 @@ namespace spargel::gpu {
         void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) override {
             [_encoder setComputePipelineState:pipeline.cast<ComputePipelineMetal>()->pipeline()];
         }
+        void setComputePipeline2(ObjectPtr<ComputePipeline2> pipeline) override;
         // `index` is the index in the `PipelineProgram`.
         void setBindGroup(u32 index, ObjectPtr<BindGroup> group) override;
         void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override {
@@ -213,31 +215,31 @@ namespace spargel::gpu {
         u32 buffer_id;
     };
 
-    class PipelineProgramMetal final : public PipelineProgram {
+    class ComputePipeline2Metal final : public ComputePipeline2 {
     public:
-        PipelineProgramMetal(ShaderFunction compute, base::span<PipelineArgumentGroup> groups) {
+        ComputePipeline2Metal(id<MTLFunction> func, id<MTLComputePipelineState> pipeline,
+                              base::span<PipelineArgumentGroup> groups)
+            : _func{func}, _pipeline{pipeline} {
             for (usize i = 0; i < groups.count(); i++) {
                 auto const& group = groups[i];
                 if (group.stage.has(ShaderStage::compute)) {
-                    _compute_groups.push(i, group.loc.metal.buffer_id);
-                    for (auto const& arg : group.args) {
-                        _compute_args.push(i, group.loc.metal.buffer_id, arg.id, arg.kind);
+                    _compute_groups.push(i, group.location.metal.buffer_id);
+                    for (auto const& arg : group.arguments) {
+                        _compute_args.push(i, group.location.metal.buffer_id, arg.id, arg.kind);
                     }
                 }
             }
-            auto lib = compute.library.cast<ShaderLibraryMetal>();
-            _compute_func =
-                [lib->library() newFunctionWithName:[NSString stringWithUTF8String:compute.entry]];
         }
 
         // Get the MTLFunction which contains the `id`-th argument group.
         id<MTLFunction> getFunction(u32 id) {
-            for (auto const& group : _compute_groups) {
-                if (group.id == id) {
-                    return _compute_func;
-                }
-            }
-            return nullptr;
+            return _func;
+            // for (auto const& group : _compute_groups) {
+            //     if (group.id == id) {
+            //         return _func;
+            //     }
+            // }
+            // return nullptr;
         }
 
         // Get the buffer id of the argument group of index `id`.
@@ -250,10 +252,12 @@ namespace spargel::gpu {
             spargel_panic_here();
         }
 
-        auto compute() const { return _compute_func; }
+        auto function() const { return _func; }
+        auto pipeline() const { return _pipeline; }
 
     private:
-        id<MTLFunction> _compute_func;
+        id<MTLFunction> _func;
+        id<MTLComputePipelineState> _pipeline;
         base::vector<ArgumentGroupInfoMetal> _compute_groups;
         base::vector<ArgumentInfoMetal> _compute_args;
     };
@@ -261,7 +265,7 @@ namespace spargel::gpu {
     class BindGroupMetal final : public BindGroup {
     public:
         BindGroupMetal(id<MTLBuffer> buffer, id<MTLArgumentEncoder> encoder,
-                       PipelineProgramMetal* program)
+                       ComputePipeline2Metal* program)
             : _buffer{buffer}, _encoder{encoder}, _program{program} {}
 
         // `id` is the index of the buffer in this group.
@@ -276,7 +280,7 @@ namespace spargel::gpu {
         // The argument buffer.
         id<MTLBuffer> _buffer;
         id<MTLArgumentEncoder> _encoder;
-        PipelineProgramMetal* _program;
+        ComputePipeline2Metal* _program;
     };
 
     class DeviceMetal final : public Device {
@@ -306,16 +310,17 @@ namespace spargel::gpu {
             NSError* err;
             auto func = [f.library.cast<ShaderLibraryMetal>()->library()
                 newFunctionWithName:[NSString stringWithUTF8String:f.entry]];
+            spargel_assert(func != nullptr);
             return make_object<ComputePipelineMetal>(
                 func, [_device newComputePipelineStateWithFunction:func error:&err]);
         }
-        ObjectPtr<ComputePipeline> createComputePipeline2(
-            ObjectPtr<PipelineProgram> program) override {
-            NSError* err;
-            auto func = program.cast<PipelineProgramMetal>()->compute();
-            return make_object<ComputePipelineMetal>(
-                func, [_device newComputePipelineStateWithFunction:func error:&err]);
-        }
+        // ObjectPtr<ComputePipeline> createComputePipeline2(
+        //     ObjectPtr<ComputePipeline2> program) override {
+        //     NSError* err;
+        //     auto func = program.cast<ComputePipeline2Metal>()->compute();
+        //     return make_object<ComputePipelineMetal>(
+        //         func, [_device newComputePipelineStateWithFunction:func error:&err]);
+        // }
 
         ObjectPtr<BindGroupLayout> createBindGroupLayout(ShaderStage stage,
                                                          base::span<BindEntry> entries) override {
@@ -325,20 +330,29 @@ namespace spargel::gpu {
             return nullptr;
         }
 
-        ObjectPtr<PipelineProgram> createPipelineProgram(
-            PipelineProgramDescriptor const& desc) override {
-            return make_object<PipelineProgramMetal>(desc.compute, desc.groups);
+        ObjectPtr<ComputePipeline2> createComputePipeline2(
+            ComputePipeline2Descriptor const& desc) override {
+            auto lib = desc.compute.library.cast<ShaderLibraryMetal>();
+            auto func = [lib->library()
+                newFunctionWithName:[NSString stringWithUTF8String:desc.compute.entry]];
+            spargel_assert(func != nullptr);
+            NSError* err;
+            auto pipeline = [_device newComputePipelineStateWithFunction:func error:&err];
+            spargel_assert(pipeline != nullptr);
+            return make_object<ComputePipeline2Metal>(func, pipeline, desc.groups);
         }
 
         // `id` is the index of the argument group in the program.
-        ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<PipelineProgram> p, u32 id) override {
-            auto program = p.cast<PipelineProgramMetal>();
-            auto func = program->getFunction(id);
-            auto encoder = [func newArgumentEncoderWithBufferIndex:program->getBufferId(id)];
+        ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<ComputePipeline2> p, u32 id) override {
+            auto pipeline = p.cast<ComputePipeline2Metal>();
+            auto func = pipeline->getFunction(id);
+            auto encoder = [func newArgumentEncoderWithBufferIndex:pipeline->getBufferId(id)];
+            spargel_assert(encoder != nullptr);
             auto buffer = [_device newBufferWithLength:encoder.encodedLength
                                                options:MTLResourceStorageModeShared];
+            spargel_assert(buffer != nullptr);
             [encoder setArgumentBuffer:buffer offset:0];
-            return make_object<BindGroupMetal>(buffer, encoder, program.get());
+            return make_object<BindGroupMetal>(buffer, encoder, pipeline.get());
         }
 
         auto device() { return _device; }

@@ -86,15 +86,22 @@ namespace spargel::gpu {
         VkPipelineLayout _layout;
     };
 
-    class BufferVulkan : public Buffer {
+    class BufferVulkan final : public Buffer {
     public:
-        explicit BufferVulkan();
-        ~BufferVulkan();
+        BufferVulkan(DeviceVulkan* device, VkBuffer buffer, usize offset, usize size);
+        ~BufferVulkan() {}
 
         auto buffer() { return _buffer; }
 
+        void* mapAddr();
+
     private:
+        DeviceVulkan* _device;
+        VulkanProcTable const* _procs;
         VkBuffer _buffer;
+        usize _offset;
+        usize _size;
+        void* _addr;
     };
 
     class TextureVulkan final : public Texture {
@@ -149,7 +156,8 @@ namespace spargel::gpu {
 
     class CommandBufferVulkan final : public CommandBuffer {
     public:
-        CommandBufferVulkan(DeviceVulkan* device, VkCommandBuffer cmdbuf);
+        CommandBufferVulkan(DeviceVulkan* device, CommandQueueVulkan* queue,
+                            VkCommandBuffer cmdbuf);
 
         auto commandBuffer() { return _cmdbuf; }
 
@@ -164,10 +172,14 @@ namespace spargel::gpu {
 
     private:
         void beginCommandBuffer();
+        void endCommandBuffer();
+        void createFence();
 
         DeviceVulkan* _device;
+        CommandQueueVulkan* _queue;
         VulkanProcTable const* _procs;
         VkCommandBuffer _cmdbuf;
+        VkFence _fence;
     };
 
     class RenderPassEncoderVulkan final : public RenderPassEncoder {
@@ -192,6 +204,7 @@ namespace spargel::gpu {
         ComputePassEncoderVulkan(DeviceVulkan* device, VkCommandBuffer cmdbuf);
 
         void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) override;
+        void setComputePipeline2(ObjectPtr<ComputePipeline2> pipeline) override;
         void setBindGroup(u32 index, ObjectPtr<BindGroup> group) override;
         void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override;
         void dispatch(DispatchSize grid_size, DispatchSize group_size) override;
@@ -213,16 +226,81 @@ namespace spargel::gpu {
         VkDescriptorSetLayout _layout;
     };
 
+    class ComputePipeline2Vulkan;
+
     class BindGroupVulkan final : public BindGroup {
     public:
-        explicit BindGroupVulkan(VkDescriptorSet set) {}
+        BindGroupVulkan(VkDescriptorSet set, DeviceVulkan* device, ComputePipeline2Vulkan* pipeline,
+                        u32 id);
 
-        void setBuffer(u32 id, ObjectPtr<Buffer> buffer) override {}
+        void setBuffer(u32 id, ObjectPtr<Buffer> buffer) override;
 
         auto getDescriptorSet() const { return _set; }
 
+        auto pipeline() const { return _pipeline; }
+
     private:
         VkDescriptorSet _set;
+        DeviceVulkan* _device;
+        VulkanProcTable const* _procs;
+        ComputePipeline2Vulkan* _pipeline;
+        u32 _id;
+    };
+
+    struct ArgumentInfoVulkan {
+        // The index of the group in the program.
+        u32 id;
+        // The index of the argument in the group.
+        u32 binding;
+        BindEntryKind kind;
+    };
+
+    struct ArgumentGroupInfoVulkan {
+        // The index of the group in the program.
+        u32 id;
+        // The index of the group in shader.
+        u32 set_id;
+    };
+
+    class ComputePipeline2Vulkan final : public ComputePipeline2 {
+    public:
+        ComputePipeline2Vulkan(DeviceVulkan* device, ShaderFunction compute,
+                               base::span<PipelineArgumentGroup> groups);
+
+        auto layout() const { return _layout; }
+        auto pipeline() const { return _pipeline; }
+
+        ObjectPtr<BindGroupVulkan> createBindGroup2(u32 id);
+
+        u32 getSetId(u32 id) {
+            for (usize i = 0; i < _groups.count(); i++) {
+                if (_groups[i].id == id) {
+                    return _groups[i].set_id;
+                }
+            }
+            spargel_panic_here();
+        }
+
+        // `id` is the abstract index.
+        VkDescriptorType getDescriptorType(u32 id, u32 binding);
+
+    private:
+        void createDescriptorSetLayouts(base::span<PipelineArgumentGroup> groups);
+        void createPipelineLayout();
+        void createPipeline(ShaderFunction compute);
+
+        DeviceVulkan* _device;
+        VulkanProcTable const* _procs;
+
+        base::vector<ArgumentGroupInfoVulkan> _groups;
+        base::vector<ArgumentInfoVulkan> _args;
+
+        base::vector<VkDescriptorSetLayoutBinding> _bindings;
+
+        base::vector<VkDescriptorSetLayout> _dset_layouts;
+
+        VkPipelineLayout _layout;
+        VkPipeline _pipeline;
     };
 
     // // One DeviceMemoryBlock corresponds to one VkDeviceMemory, i.e. one allocation.
@@ -263,10 +341,10 @@ namespace spargel::gpu {
         void destroyCommandQueue(ObjectPtr<CommandQueue> q) override;
         ObjectPtr<ComputePipeline> createComputePipeline(
             ShaderFunction func, base::span<ObjectPtr<BindGroupLayout>> layouts) override;
-        ObjectPtr<ComputePipeline> createComputePipeline2(
-            ObjectPtr<PipelineProgram> program) override {
-            return nullptr;
-        }
+        // ObjectPtr<ComputePipeline> createComputePipeline2(
+        //     ObjectPtr<ComputePipeline2> program) override {
+        //     return nullptr;
+        // }
 
         ObjectPtr<BindGroupLayout> createBindGroupLayout(ShaderStage stage,
                                                          base::span<BindEntry> entries) override;
@@ -274,18 +352,21 @@ namespace spargel::gpu {
             return nullptr;
         }
 
-        ObjectPtr<PipelineProgram> createPipelineProgram(
-            PipelineProgramDescriptor const& desc) override {
-            return nullptr;
+        ObjectPtr<ComputePipeline2> createComputePipeline2(
+            ComputePipeline2Descriptor const& desc) override {
+            return make_object<ComputePipeline2Vulkan>(this, desc.compute, desc.groups);
         }
 
-        ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<PipelineProgram> layout, u32 id) override {
-            return nullptr;
-        }
+        ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<ComputePipeline2> p, u32 id) override;
 
         auto device() const { return _device; }
         u32 getQueueFamilyIndex() const { return _queue_family_index; }
         VulkanProcTable const* getProcTable() const { return &_procs; }
+
+        VkDescriptorPool getDescriptorPool() const { return _dpool; }
+
+        VkDeviceMemory getMemoryPool() const { return _memory_pool; }
+        void* getPoolAddr() const { return _pool_addr; }
 
     private:
         void loadGeneralProcs();
@@ -307,6 +388,9 @@ namespace spargel::gpu {
         void loadDeviceProcs();
         void getQueue();
         void queryMemoryInfo();
+        void createDescriptorPool();
+        void createMemoryPool();
+        usize allocateMemory(usize size, usize align);
 
         base::dynamic_library_handle* _library;
         VulkanProcTable _procs;
@@ -339,7 +423,17 @@ namespace spargel::gpu {
         VkDevice _device;
         VkQueue _queue;
 
+        VkDescriptorPool _dpool;
+
         VkPhysicalDeviceMemoryProperties _memory_props;
+
+        // TODO:
+        u32 _memory_type;  // unified memory
+
+        static constexpr usize pool_size = 1024 * 1024;  // 1MB
+        VkDeviceMemory _memory_pool;
+        usize _pool_offset = 0;
+        void* _pool_addr;
 
         // DeviceMemoryAllocatorVulkan _device_alloc;
 

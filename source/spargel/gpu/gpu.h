@@ -24,7 +24,7 @@ namespace spargel::gpu {
     class ComputePassEncoder;
     class ComputePipeline;
     class Device;
-    class PipelineProgram;
+    class ComputePipeline2;
     class RenderPassEncoder;
     class RenderPipeline;
     class ShaderLibrary;
@@ -248,6 +248,9 @@ namespace spargel::gpu {
         static constexpr auto fragment = ShaderStageImpl(0b10);
         static constexpr auto compute = ShaderStageImpl(0b100);
         constexpr bool has(ShaderStage usage) const { return (value & usage.value) != 0; }
+        friend constexpr bool operator==(ShaderStage lhs, ShaderStage rhs) {
+            return lhs.value == rhs.value;
+        }
         u32 value;
     };
 
@@ -416,8 +419,8 @@ namespace spargel::gpu {
     struct PipelineArgumentGroup {
         /// @brief stage where this group of arguments is used
         ShaderStage stage;
-        GroupLocation loc;
-        base::span<PipelineArgument> args;
+        GroupLocation location;
+        base::span<PipelineArgument> arguments;
     };
 
     struct PipelinePart {
@@ -425,8 +428,7 @@ namespace spargel::gpu {
         ShaderFunction func;
     };
 
-    struct PipelineProgramDescriptor {
-        ShaderStage stage;
+    struct ComputePipeline2Descriptor {
         ShaderFunction compute;
         base::span<PipelineArgumentGroup> groups;
     };
@@ -466,6 +468,7 @@ namespace spargel::gpu {
     class ComputePassEncoder {
     public:
         virtual void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) = 0;
+        virtual void setComputePipeline2(ObjectPtr<ComputePipeline2> pipeline) = 0;
         virtual void setBindGroup(u32 index, ObjectPtr<BindGroup> group) = 0;
         virtual void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) = 0;
         // grid_size is the number of thread groups of the grid
@@ -506,8 +509,8 @@ namespace spargel::gpu {
 
         virtual ObjectPtr<ComputePipeline> createComputePipeline(
             ShaderFunction func, base::span<ObjectPtr<BindGroupLayout>> layouts) = 0;
-        virtual ObjectPtr<ComputePipeline> createComputePipeline2(
-            ObjectPtr<PipelineProgram> program) = 0;
+        // virtual ObjectPtr<ComputePipeline> createComputePipeline2(
+        //     ObjectPtr<ComputePipeline2> program) = 0;
 
         /// @brief create a bind group layout object
         /// @param stage the stage where the layout is used
@@ -517,10 +520,10 @@ namespace spargel::gpu {
 
         virtual ObjectPtr<BindGroup> createBindGroup(ObjectPtr<BindGroupLayout> layout) = 0;
 
-        virtual ObjectPtr<PipelineProgram> createPipelineProgram(
-            PipelineProgramDescriptor const& desc) = 0;
-        /// Create a bind group for the id-th argument group in the layout.
-        virtual ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<PipelineProgram> program,
+        virtual ObjectPtr<ComputePipeline2> createComputePipeline2(
+            ComputePipeline2Descriptor const& desc) = 0;
+        /// Create a bind group for the `id`-th argument group of the pipeline.
+        virtual ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<ComputePipeline2> pipeline,
                                                       u32 id) = 0;
 
     protected:
@@ -535,7 +538,7 @@ namespace spargel::gpu {
     /// A pipeline can be viewed abstractly as a function. Then pipeline layout is the description
     /// of its arguments.
     ///
-    class PipelineProgram {};
+    class ComputePipeline2 {};
 
     class RenderPassEncoder {
     public:

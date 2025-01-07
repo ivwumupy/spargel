@@ -108,11 +108,22 @@ VULKAN_DEVICE_PROC(vkGetBufferMemoryRequirements)
 VULKAN_DEVICE_PROC(vkCreateComputePipelines)
 
 VULKAN_DEVICE_PROC(vkCreateDescriptorSetLayout)
+VULKAN_DEVICE_PROC(vkCreateDescriptorPool)
+VULKAN_DEVICE_PROC(vkAllocateDescriptorSets)
+VULKAN_DEVICE_PROC(vkUpdateDescriptorSets)
 
 VULKAN_DEVICE_PROC(vkCreatePipelineLayout)
 
 VULKAN_DEVICE_PROC(vkCmdBindPipeline)
 
 VULKAN_DEVICE_PROC(vkCmdBindDescriptorSets)
+
+VULKAN_DEVICE_PROC(vkAllocateMemory)
+VULKAN_DEVICE_PROC(vkMapMemory)
+
+VULKAN_DEVICE_PROC(vkBindBufferMemory)
+
+VULKAN_DEVICE_PROC(vkCmdDispatch)
+
 
 #endif

@@ -42,8 +42,9 @@ int main(int argc, char* argv[]) {
     }
     auto library = device->createShaderLibrary(blob->getSpan());
 
-    auto program = device->createPipelineProgram({
-        .stage = gpu::ShaderStage::compute,
+    spargel_log_info("shader library loaded");
+
+    auto pipeline = device->createComputePipeline2({
         .compute =
             {
                 .library = library,
@@ -53,8 +54,8 @@ int main(int argc, char* argv[]) {
             {
                 {
                     .stage = gpu::ShaderStage::compute,
-                    .loc = {.metal = {0}},
-                    .args =
+                    .location = {.metal = {/* buffer id */ 0}, .vulkan = {/* set id */ 0}},
+                    .arguments =
                         {
                             {.id = 0, .kind = gpu::BindEntryKind::uniform_buffer},
                             {.id = 1, .kind = gpu::BindEntryKind::storage_buffer},
@@ -65,11 +66,15 @@ int main(int argc, char* argv[]) {
             },
     });
 
-    auto bind_group = device->createBindGroup2(program, 0);
+    spargel_log_info("pipeline created");
+
+    auto bind_group = device->createBindGroup2(pipeline, 0);
     bind_group->setBuffer(0, buf0);
     bind_group->setBuffer(1, buf1);
     bind_group->setBuffer(2, buf2);
     bind_group->setBuffer(3, buf3);
+
+    spargel_log_info("bind group prepared");
 
     // gpu::BindGroupLayoutBuilder builder;
     // builder.setStage(gpu::ShaderStage::compute);
@@ -80,7 +85,7 @@ int main(int argc, char* argv[]) {
     // auto layout = builder.build(device.get());
 
     // auto pipeline = device->createComputePipeline({library, "add_arrays"}, {layout});
-    auto pipeline = device->createComputePipeline2(program);
+    // auto pipeline = device->createComputePipeline2(program);
     // auto max_size = pipeline->maxGroupSize();
     // spargel_log_info("maxGroupSize = %u", max_size);
 
@@ -88,7 +93,7 @@ int main(int argc, char* argv[]) {
 
     auto cmdbuf = queue->createCommandBuffer();
     auto encoder = cmdbuf->beginComputePass();
-    encoder->setComputePipeline(pipeline);
+    encoder->setComputePipeline2(pipeline);
     encoder->useBuffer(buf0, false);
     encoder->useBuffer(buf1, false);
     encoder->useBuffer(buf2, false);
@@ -102,6 +107,7 @@ int main(int argc, char* argv[]) {
     cmdbuf->endComputePass(encoder);
     cmdbuf->submit();
     cmdbuf->wait();
+    spargel_log_info("computation done!");
     float* result = (float*)buf3->mapAddr();
     for (int i = 0; i < 3; i++) {
         printf("%.1f ", result[i]);

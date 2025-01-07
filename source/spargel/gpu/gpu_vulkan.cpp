@@ -3,6 +3,7 @@
 #include <spargel/base/logging.h>
 #include <spargel/base/object.h>
 #include <spargel/base/platform.h>
+#include <spargel/base/types.h>
 #include <spargel/base/vector.h>
 #include <spargel/config.h>
 #include <spargel/gpu/gpu_vulkan.h>
@@ -133,6 +134,8 @@ namespace spargel::gpu {
         loadDeviceProcs();
         getQueue();
         queryMemoryInfo();
+        createDescriptorPool();
+        createMemoryPool();
     }
 
     DeviceVulkan::~DeviceVulkan() { base::close_dynamic_library(_library); }
@@ -517,6 +520,22 @@ namespace spargel::gpu {
                              type.heapIndex);
         }
 
+        bool found = false;
+        for (u32 i = 0; i < _memory_props.memoryTypeCount; i++) {
+            auto const& type = _memory_props.memoryTypes[i];
+            // auto const& heap = _memory_props.memoryHeaps[type.heapIndex];
+            if ((type.propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) &&
+                (type.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) &&
+                (type.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+                found = true;
+                _memory_type = i;
+                break;
+            }
+        }
+
+        spargel_assert(found);
+        spargel_log_info("chosen memory type = %u", _memory_type);
+
         // The memory heap flags is either 0 or VK_MEMORY_HEAP_DEVICE_LOCAL_BIT.
         //
         // General situation:
@@ -599,6 +618,27 @@ namespace spargel::gpu {
         return nullptr;
     }
 
+    void DeviceVulkan::createMemoryPool() {
+        VkMemoryAllocateInfo info;
+        info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        info.pNext = nullptr;
+        info.allocationSize = pool_size;
+        info.memoryTypeIndex = _memory_type;
+
+        CHECK_VK_RESULT(_procs.vkAllocateMemory(_device, &info, nullptr, &_memory_pool));
+        CHECK_VK_RESULT(_procs.vkMapMemory(_device, _memory_pool, 0, pool_size, 0, &_pool_addr));
+    }
+
+    usize DeviceVulkan::allocateMemory(usize size, usize align) {
+        spargel_log_info("current offset = %zu, request size = %zu, request align = %zu",
+                         _pool_offset, size, align);
+        usize addr = (_pool_offset + align - 1) & (-align);
+        spargel_log_info("adjusted offset = %zu", addr);
+        spargel_assert(addr + size < pool_size);
+        _pool_offset = addr + size;
+        return addr;
+    }
+
     // VulkanMemoryAllocator:
     // - BlockVector indexed by memoryType
     // - A BlockVector is a sequence of MemoryBlock. It represents memory blocks allocated for a
@@ -607,6 +647,13 @@ namespace spargel::gpu {
     // 4096 blocks.
 
     ObjectPtr<Buffer> DeviceVulkan::createBuffer(BufferUsage usage, base::span<u8> bytes) {
+        auto b = createBuffer(usage, bytes.count());
+        auto addr = b->mapAddr();
+        memcpy(addr, bytes.data(), bytes.count());
+        return b;
+    }
+
+    ObjectPtr<Buffer> DeviceVulkan::createBuffer(BufferUsage usage, u32 size) {
         // Step 1. Create the buffer object.
 
         VkBufferCreateInfo buffer_info;
@@ -614,7 +661,7 @@ namespace spargel::gpu {
         buffer_info.pNext = nullptr;
         // TODO: sparse
         buffer_info.flags = 0;
-        buffer_info.size = bytes.count();
+        buffer_info.size = size;
         buffer_info.usage = translateBufferUsage(usage);
         buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         buffer_info.queueFamilyIndexCount = 0;
@@ -630,10 +677,14 @@ namespace spargel::gpu {
 
         spargel_log_info("allowed memory types for buffer: %u", reqs.memoryTypeBits);
 
-        return nullptr;
-    }
+        spargel_assert(reqs.memoryTypeBits & _memory_type);
 
-    ObjectPtr<Buffer> DeviceVulkan::createBuffer(BufferUsage usage, u32 size) { return nullptr; }
+        auto offset = allocateMemory(reqs.size, reqs.alignment);
+
+        _procs.vkBindBufferMemory(_device, buffer, _memory_pool, offset);
+
+        return make_object<BufferVulkan>(this, buffer, offset, size);
+    }
 
     ObjectPtr<Surface> DeviceVulkan::createSurface(ui::window* w) { return nullptr; }
 
@@ -724,6 +775,29 @@ namespace spargel::gpu {
         return make_object<BindGroupLayoutVulkan>(layout);
     }
 
+    void DeviceVulkan::createDescriptorPool() {
+        VkDescriptorPoolSize sizes[4];
+        sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        sizes[0].descriptorCount = 128;
+        sizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        sizes[1].descriptorCount = 128;
+        sizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        sizes[2].descriptorCount = 128;
+        sizes[3].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        sizes[3].descriptorCount = 128;
+
+        VkDescriptorPoolCreateInfo info;
+        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        info.pNext = nullptr;
+        info.flags = 0;
+        // TODO
+        info.maxSets = 128;
+        info.poolSizeCount = 4;
+        info.pPoolSizes = sizes;
+
+        CHECK_VK_RESULT(_procs.vkCreateDescriptorPool(_device, &info, nullptr, &_dpool));
+    }
+
     CommandQueueVulkan::CommandQueueVulkan(VkQueue queue, DeviceVulkan* device)
         : _device{device}, _procs{device->getProcTable()}, _queue{queue} {
         createCommandPool();
@@ -739,7 +813,7 @@ namespace spargel::gpu {
 
         VkCommandBuffer buffer;
         CHECK_VK_RESULT(_procs->vkAllocateCommandBuffers(_device->device(), &info, &buffer));
-        return make_object<CommandBufferVulkan>(_device, buffer);
+        return make_object<CommandBufferVulkan>(_device, this, buffer);
     }
 
     void CommandQueueVulkan::destroyCommandBuffer(ObjectPtr<CommandBuffer>) {}
@@ -754,8 +828,10 @@ namespace spargel::gpu {
         CHECK_VK_RESULT(_procs->vkCreateCommandPool(_device->device(), &info, nullptr, &_pool));
     }
 
-    CommandBufferVulkan::CommandBufferVulkan(DeviceVulkan* device, VkCommandBuffer cmdbuf)
-        : _device{device}, _procs{device->getProcTable()}, _cmdbuf{cmdbuf} {
+    CommandBufferVulkan::CommandBufferVulkan(DeviceVulkan* device, CommandQueueVulkan* queue,
+                                             VkCommandBuffer cmdbuf)
+        : _device{device}, _queue{queue}, _procs{device->getProcTable()}, _cmdbuf{cmdbuf} {
+        createFence();
         beginCommandBuffer();
     }
 
@@ -774,9 +850,28 @@ namespace spargel::gpu {
 
     void CommandBufferVulkan::present(ObjectPtr<Surface> surface) {}
 
-    void CommandBufferVulkan::submit() {}
+    void CommandBufferVulkan::submit() {
+        endCommandBuffer();
 
-    void CommandBufferVulkan::wait() {}
+        VkSubmitInfo info;
+        info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        info.pNext = 0;
+        info.waitSemaphoreCount = 0;
+        info.pWaitSemaphores = 0;
+        VkPipelineStageFlags stage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        info.pWaitDstStageMask = &stage;
+        info.commandBufferCount = 1;
+        info.pCommandBuffers = &_cmdbuf;
+        info.signalSemaphoreCount = 0;
+        info.pSignalSemaphores = nullptr;
+        CHECK_VK_RESULT(_procs->vkQueueSubmit(_queue->commandQueue(), 1, &info, _fence));
+    }
+
+    void CommandBufferVulkan::wait() {
+        CHECK_VK_RESULT(
+            _procs->vkWaitForFences(_device->device(), 1, &_fence, VK_TRUE, UINT64_MAX));
+        // _procs->vkDeviceWaitIdle(_device->device());
+    }
 
     void CommandBufferVulkan::beginCommandBuffer() {
         VkCommandBufferBeginInfo info;
@@ -785,6 +880,18 @@ namespace spargel::gpu {
         info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         info.pInheritanceInfo = nullptr;
         CHECK_VK_RESULT(_procs->vkBeginCommandBuffer(_cmdbuf, &info));
+    }
+
+    void CommandBufferVulkan::endCommandBuffer() {
+        CHECK_VK_RESULT(_procs->vkEndCommandBuffer(_cmdbuf));
+    }
+
+    void CommandBufferVulkan::createFence() {
+        VkFenceCreateInfo info;
+        info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        info.pNext = 0;
+        info.flags = 0;
+        CHECK_VK_RESULT(_procs->vkCreateFence(_device->device(), &info, 0, &_fence));
     }
 
     ComputePassEncoderVulkan::ComputePassEncoderVulkan(DeviceVulkan* device, VkCommandBuffer cmdbuf)
@@ -797,6 +904,135 @@ namespace spargel::gpu {
                                   pipeline.cast<ComputePipelineVulkan>()->pipeline());
     }
 
+    ComputePipeline2Vulkan::ComputePipeline2Vulkan(DeviceVulkan* device, ShaderFunction compute,
+                                                   base::span<PipelineArgumentGroup> groups)
+        : _device{device}, _procs{device->getProcTable()} {
+        createDescriptorSetLayouts(groups);
+        createPipelineLayout();
+        createPipeline(compute);
+    }
+
+    void ComputePipeline2Vulkan::createDescriptorSetLayouts(
+        base::span<PipelineArgumentGroup> groups) {
+        VkDescriptorSetLayoutCreateInfo info;
+        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        info.pNext = nullptr;
+        info.flags = 0;
+
+        base::vector<VkDescriptorSetLayoutBinding> bindings;
+
+        // validate shader stage
+        for (usize i = 0; i < groups.count(); i++) {
+            auto const& group = groups[i];
+            spargel_assert(group.stage == ShaderStage::compute);
+        }
+
+        u32 max_loc = 0;
+        for (usize i = 0; i < groups.count(); i++) {
+            auto const& group = groups[i];
+            auto id = group.location.vulkan.set_id;
+            _groups.push(i, id);
+            if (id > max_loc) {
+                max_loc = id;
+            }
+        }
+
+        spargel_log_info("max_loc = %u", max_loc);
+
+        // starting from zero
+        _dset_layouts.reserve(max_loc + 1);
+        _dset_layouts.set_count(max_loc + 1);
+
+        for (usize i = 0; i < groups.count(); i++) {
+            auto const& group = groups[i];
+
+            bindings.clear();
+            for (usize j = 0; j < group.arguments.count(); j++) {
+                auto const& arg = group.arguments[j];
+                bindings.push(/* binding = */ arg.id,
+                              /* descriptorType = */ translateBindEntryKind(arg.kind),
+                              /* descriptorCount = */ 1,
+                              /* stageFlags = */ VK_SHADER_STAGE_COMPUTE_BIT,
+                              /* pImmutableSamplers = */ nullptr);
+                _args.push(i, arg.id, arg.kind);
+            }
+
+            info.bindingCount = (u32)bindings.count();
+            info.pBindings = bindings.data();
+
+            VkDescriptorSetLayout layout;
+            CHECK_VK_RESULT(
+                _procs->vkCreateDescriptorSetLayout(_device->device(), &info, nullptr, &layout));
+            _dset_layouts[group.location.vulkan.set_id] = layout;
+        }
+    }
+
+    void ComputePipeline2Vulkan::createPipelineLayout() {
+        VkPipelineLayoutCreateInfo layout_info;
+        layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        layout_info.pNext = nullptr;
+        layout_info.flags = 0;
+        layout_info.setLayoutCount = (u32)_dset_layouts.count();
+        layout_info.pSetLayouts = _dset_layouts.data();
+        layout_info.pushConstantRangeCount = 0;
+        layout_info.pPushConstantRanges = nullptr;
+
+        CHECK_VK_RESULT(
+            _procs->vkCreatePipelineLayout(_device->device(), &layout_info, nullptr, &_layout));
+        spargel_log_info("pipeline layout created");
+    }
+
+    void ComputePipeline2Vulkan::createPipeline(ShaderFunction compute) {
+        VkComputePipelineCreateInfo info;
+        info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+        info.pNext = nullptr;
+        info.flags = 0;
+        info.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        info.stage.pNext = nullptr;
+        info.stage.flags = 0;
+        info.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+        info.stage.module = compute.library.cast<ShaderLibraryVulkan>()->library();
+        info.stage.pName = compute.entry;
+        info.stage.pSpecializationInfo = nullptr;
+        info.layout = _layout;
+        info.basePipelineHandle = nullptr;
+        info.basePipelineIndex = 0;
+
+        CHECK_VK_RESULT(_procs->vkCreateComputePipelines(
+            _device->device(), /* pipelineCache = */ nullptr,
+            /* createInfoCount = */ 1, &info, nullptr, &_pipeline));
+    }
+
+    ObjectPtr<BindGroup> DeviceVulkan::createBindGroup2(ObjectPtr<ComputePipeline2> p, u32 id) {
+        return p.cast<ComputePipeline2Vulkan>()->createBindGroup2(id);
+    }
+
+    ObjectPtr<BindGroupVulkan> ComputePipeline2Vulkan::createBindGroup2(u32 id) {
+        auto set_id = getSetId(id);
+        auto set_layout = _dset_layouts[set_id];
+
+        VkDescriptorSetAllocateInfo alloc_info;
+        alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        alloc_info.pNext = nullptr;
+        alloc_info.descriptorPool = _device->getDescriptorPool();
+        alloc_info.descriptorSetCount = 1;
+        alloc_info.pSetLayouts = &set_layout;
+
+        VkDescriptorSet dset;
+        CHECK_VK_RESULT(_procs->vkAllocateDescriptorSets(_device->device(), &alloc_info, &dset));
+
+        return make_object<BindGroupVulkan>(dset, _device, this, id);
+    }
+
+    VkDescriptorType ComputePipeline2Vulkan::getDescriptorType(u32 id, u32 binding) {
+        for (usize i = 0; i < _args.count(); i++) {
+            if (_args[i].id == id && _args[i].binding == binding) {
+                return translateBindEntryKind(_args[i].kind);
+            }
+        }
+        spargel_panic_here();
+    }
+
     // Spec:
     //
     // Each of the pDescriptorSets must be compatible with the pipeline layout specified by layout.
@@ -804,17 +1040,64 @@ namespace spargel::gpu {
     // subsequent bound pipeline commands with that pipeline type, as defined in the Pipeline Layout
     // Compatibility section.
     //
-    void ComputePassEncoderVulkan::setBindGroup(u32 index, ObjectPtr<BindGroup> group) {
-        VkDescriptorSet sets[1] = {group.cast<BindGroupVulkan>()->getDescriptorSet()};
+    void ComputePassEncoderVulkan::setBindGroup(u32 index, ObjectPtr<BindGroup> g) {
+        auto group = g.cast<BindGroupVulkan>();
+        VkDescriptorSet sets[1] = {group->getDescriptorSet()};
         // TODO: where to get pipeline layout
         _procs->vkCmdBindDescriptorSets(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE,
-                                        /* pipeline layout */ nullptr, index, 1, sets, 0, nullptr);
+                                        group->pipeline()->layout(), index, 1, sets, 0, nullptr);
     }
 
     void ComputePassEncoderVulkan::setBuffer(ObjectPtr<Buffer> buffer,
                                              VertexBufferLocation const& loc) {}
 
-    void ComputePassEncoderVulkan::dispatch(DispatchSize grid_size, DispatchSize group_size) {}
+    void ComputePassEncoderVulkan::setComputePipeline2(ObjectPtr<ComputePipeline2> pipeline) {
+        _procs->vkCmdBindPipeline(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE,
+                                  pipeline.cast<ComputePipeline2Vulkan>()->pipeline());
+    }
+
+    void ComputePassEncoderVulkan::dispatch(DispatchSize grid_size, DispatchSize group_size) {
+        _procs->vkCmdDispatch(_cmdbuf, grid_size.x, grid_size.y, grid_size.z);
+    }
+
+    BufferVulkan::BufferVulkan(DeviceVulkan* device, VkBuffer buffer, usize offset, usize size)
+        : _device{device},
+          _procs{device->getProcTable()},
+          _buffer{buffer},
+          _offset{offset},
+          _size{size} {
+        _addr = static_cast<void*>(static_cast<base::Byte*>(device->getPoolAddr()) + offset);
+    }
+
+    void* BufferVulkan::mapAddr() { return _addr; }
+
+    BindGroupVulkan::BindGroupVulkan(VkDescriptorSet set, DeviceVulkan* device,
+                                     ComputePipeline2Vulkan* pipeline, u32 id)
+        : _set{set},
+          _device{device},
+          _procs{device->getProcTable()},
+          _pipeline{pipeline},
+          _id{id} {}
+
+    void BindGroupVulkan::setBuffer(u32 id, ObjectPtr<Buffer> buffer) {
+        VkDescriptorBufferInfo info;
+        info.buffer = buffer.cast<BufferVulkan>()->buffer();
+        info.offset = 0;
+        info.range = VK_WHOLE_SIZE;
+
+        VkWriteDescriptorSet write;
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.pNext = nullptr;
+        write.dstSet = _set;
+        write.dstBinding = id;
+        write.dstArrayElement = 0;
+        write.descriptorCount = 1;
+        write.descriptorType = _pipeline->getDescriptorType(_id, id);
+        write.pImageInfo = nullptr;
+        write.pBufferInfo = &info;
+        write.pTexelBufferView = nullptr;
+        _procs->vkUpdateDescriptorSets(_device->device(), 1, &write, 0, nullptr);
+    }
 
     //         d->queue.backend = BACKEND_VULKAN;
 
