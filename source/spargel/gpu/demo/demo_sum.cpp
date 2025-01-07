@@ -42,15 +42,45 @@ int main(int argc, char* argv[]) {
     }
     auto library = device->createShaderLibrary(blob->getSpan());
 
-    gpu::BindGroupLayoutBuilder builder;
-    builder.setStage(gpu::ShaderStage::compute);
-    builder.addEntry(0, gpu::BindEntryKind::uniform_buffer);  // control
-    builder.addEntry(1, gpu::BindEntryKind::storage_buffer);  // in1
-    builder.addEntry(2, gpu::BindEntryKind::storage_buffer);  // in2
-    builder.addEntry(3, gpu::BindEntryKind::storage_buffer);  // result
-    auto layout = builder.build(device.get());
+    auto program = device->createPipelineProgram({
+        .stage = gpu::ShaderStage::compute,
+        .compute =
+            {
+                .library = library,
+                .entry = "add_arrays",
+            },
+        .groups =
+            {
+                {
+                    .stage = gpu::ShaderStage::compute,
+                    .loc = {.metal = {0}},
+                    .args =
+                        {
+                            {.id = 0, .kind = gpu::BindEntryKind::uniform_buffer},
+                            {.id = 1, .kind = gpu::BindEntryKind::storage_buffer},
+                            {.id = 2, .kind = gpu::BindEntryKind::storage_buffer},
+                            {.id = 3, .kind = gpu::BindEntryKind::storage_buffer},
+                        },
+                },
+            },
+    });
 
-    auto pipeline = device->createComputePipeline({library, "add_arrays"}, {layout});
+    auto bind_group = device->createBindGroup2(program, 0);
+    bind_group->setBuffer(0, buf0);
+    bind_group->setBuffer(1, buf1);
+    bind_group->setBuffer(2, buf2);
+    bind_group->setBuffer(3, buf3);
+
+    // gpu::BindGroupLayoutBuilder builder;
+    // builder.setStage(gpu::ShaderStage::compute);
+    // builder.addEntry(0, gpu::BindEntryKind::uniform_buffer);  // control
+    // builder.addEntry(1, gpu::BindEntryKind::storage_buffer);  // in1
+    // builder.addEntry(2, gpu::BindEntryKind::storage_buffer);  // in2
+    // builder.addEntry(3, gpu::BindEntryKind::storage_buffer);  // result
+    // auto layout = builder.build(device.get());
+
+    // auto pipeline = device->createComputePipeline({library, "add_arrays"}, {layout});
+    auto pipeline = device->createComputePipeline2(program);
     // auto max_size = pipeline->maxGroupSize();
     // spargel_log_info("maxGroupSize = %u", max_size);
 
@@ -59,11 +89,15 @@ int main(int argc, char* argv[]) {
     auto cmdbuf = queue->createCommandBuffer();
     auto encoder = cmdbuf->beginComputePass();
     encoder->setComputePipeline(pipeline);
-    spargel_log_info("pipeline set!");
-    encoder->setBuffer(buf0, {.apple = {.buffer_index = 0}});
-    encoder->setBuffer(buf1, {.apple = {.buffer_index = 1}});
-    encoder->setBuffer(buf2, {.apple = {.buffer_index = 2}});
-    encoder->setBuffer(buf3, {.apple = {.buffer_index = 3}});
+    encoder->useBuffer(buf0, false);
+    encoder->useBuffer(buf1, false);
+    encoder->useBuffer(buf2, false);
+    encoder->useBuffer(buf3, true);
+    encoder->setBindGroup(0, bind_group);
+    // encoder->setBuffer(buf0, {.apple = {.buffer_index = 0}});
+    // encoder->setBuffer(buf1, {.apple = {.buffer_index = 1}});
+    // encoder->setBuffer(buf2, {.apple = {.buffer_index = 2}});
+    // encoder->setBuffer(buf3, {.apple = {.buffer_index = 3}});
     encoder->dispatch({.x = 1, .y = 1, .z = 1}, {.x = 64, .y = 1, .z = 1});
     cmdbuf->endComputePass(encoder);
     cmdbuf->submit();

@@ -14,7 +14,71 @@ namespace spargel::ui {
     class window;
 }
 
+// forward declarations
 namespace spargel::gpu {
+    class BindGroup;
+    class BindGroupLayout;
+    class Buffer;
+    class CommandBuffer;
+    class CommandQueue;
+    class ComputePassEncoder;
+    class ComputePipeline;
+    class Device;
+    class PipelineProgram;
+    class RenderPassEncoder;
+    class RenderPipeline;
+    class ShaderLibrary;
+    class Surface;
+    class Texture;
+}  // namespace spargel::gpu
+
+namespace spargel::gpu {
+
+    // dummy wrapper for gpu objects
+    template <typename T>
+    class ObjectPtr {
+    public:
+        ObjectPtr() = default;
+        ObjectPtr(nullptr_t) {}
+
+        template <typename U>
+            requires(base::is_convertible<U*, T*>)
+        explicit ObjectPtr(U* ptr) : _ptr{ptr} {}
+
+        template <typename U>
+            requires(base::is_convertible<U*, T*>)
+        ObjectPtr(ObjectPtr<U> const ptr) : _ptr{ptr.get()} {}
+
+        T* operator->() { return _ptr; }
+        T const* operator->() const { return _ptr; }
+
+        T* get() const { return _ptr; }
+
+        template <typename U>
+        ObjectPtr<U> cast() {
+            return ObjectPtr<U>(static_cast<U*>(_ptr));
+        }
+        template <typename U>
+        ObjectPtr<U> const cast() const {
+            return ObjectPtr<U>(static_cast<U*>(_ptr));
+        }
+
+    private:
+        T* _ptr = nullptr;
+    };
+
+    template <typename T, typename... Args>
+    ObjectPtr<T> make_object(Args&&... args) {
+        return ObjectPtr<T>(
+            base::default_allocator()->alloc_object<T>(base::forward<Args>(args)...));
+    }
+
+    template <typename T>
+    void destroy_object(ObjectPtr<T> ptr) {
+        base::default_allocator()->free_object(ptr.get());
+    }
+
+    // Enums
 
     enum class TextureFormat {
         a8_unorm,
@@ -39,39 +103,6 @@ namespace spargel::gpu {
         vulkan,
         unknown,
     };
-
-    // notes:
-    //
-    // msl = metal shading language specification
-    //
-    // [msl, v3.2, p84]
-    // an address space attribute specifies the region of memory from where buffer memory objects
-    // are allocated. these attributes describe disjoint address spaces:
-    // - device
-    // - constant
-    // - thread
-    // - threadgroup
-    // - threadgroup_imageblock
-    // - ray_data
-    // - object_data
-    // all arguments to a graphics or kernel function that are a pointer or reference to a type
-    // needs to be declared with an address space attribute.
-    //
-    // the address space for a variable at program scope needs to be `constant`.
-    //
-    // [msl, v3.2, p98]
-    // arguments to graphics and kernel functions can be any of the following:
-    // - device buffer: a pointer or reference to any data type in the device address space
-    // - constant buffer: a pointer or reference to any data type in the constant address space
-    // - ...
-    //
-    // [msl, v3.2, p99]
-    // for each argument, an attribute can be optionally specified to identify the location of a
-    // buffer, texture, or sampler to use for this argument type.
-    // - device and constant buffers: `[[buffer(index)]]`
-    // - textures (including texture buffers): `[[texture(index)]]`
-    // - samplers: `[[sampler(index)]]`
-    //
 
     /// @brief triangles with particular facing will not be drawn
     enum class CullMode {
@@ -171,6 +202,15 @@ namespace spargel::gpu {
         always,
     };
 
+    enum class BindEntryKind {
+        uniform_buffer,
+        storage_buffer,
+        sample_texture,
+        storage_texture,
+    };
+
+    // Bitflags
+
     struct BufferUsage {
         struct BufferUsageImpl {
             u32 value;
@@ -199,6 +239,20 @@ namespace spargel::gpu {
         u32 value;
     };
 
+    struct ShaderStage {
+        struct ShaderStageImpl {
+            constexpr operator ShaderStage() const { return ShaderStage(value); }
+            u32 value;
+        };
+        static constexpr auto vertex = ShaderStageImpl(0b1);
+        static constexpr auto fragment = ShaderStageImpl(0b10);
+        static constexpr auto compute = ShaderStageImpl(0b100);
+        constexpr bool has(ShaderStage usage) const { return (value & usage.value) != 0; }
+        u32 value;
+    };
+
+    // Structs
+
     struct Viewport {
         float x;
         float y;
@@ -217,92 +271,11 @@ namespace spargel::gpu {
         } vulkan;
     };
 
-    template <typename T>
-    class ObjectPtr {
-    public:
-        ObjectPtr() = default;
-        ObjectPtr(nullptr_t) {}
-
-        template <typename U>
-            requires(base::is_convertible<U*, T*>)
-        explicit ObjectPtr(U* ptr) : _ptr{ptr} {}
-
-        template <typename U>
-            requires(base::is_convertible<U*, T*>)
-        ObjectPtr(ObjectPtr<U> const ptr) : _ptr{ptr.get()} {}
-
-        T* operator->() { return _ptr; }
-        T const* operator->() const { return _ptr; }
-
-        T* get() const { return _ptr; }
-
-        template <typename U>
-        ObjectPtr<U> cast() {
-            return ObjectPtr<U>(static_cast<U*>(_ptr));
-        }
-        template <typename U>
-        ObjectPtr<U> const cast() const {
-            return ObjectPtr<U>(static_cast<U*>(_ptr));
-        }
-
-    private:
-        T* _ptr = nullptr;
-    };
-
-    template <typename T, typename... Args>
-    ObjectPtr<T> make_object(Args&&... args) {
-        return ObjectPtr<T>(
-            base::default_allocator()->alloc_object<T>(base::forward<Args>(args)...));
-    }
-
-    template <typename T>
-    void destroy_object(ObjectPtr<T> ptr) {
-        base::default_allocator()->free_object(ptr.get());
-    }
-
-    class ShaderLibrary {};
-    class RenderPipeline {};
-    class ComputePipeline {
-    public:
-        // virtual u32 maxGroupSize() = 0;
-    };
-    class BindGroup {};
-    class BindGroupLayout {};
-    class Buffer {
-    public:
-        virtual void* mapAddr() = 0;
-    };
-    class Texture {
-    public:
-        virtual void updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
-                                  base::span<base::Byte> bytes) = 0;
-    };
-    class Surface {
-    public:
-        virtual ObjectPtr<Texture> nextTexture() = 0;
-        virtual float width() = 0;
-        virtual float height() = 0;
-    };
-
-    class Device;
-
-    class RenderPassEncoder {
-    public:
-        RenderPassEncoder(Device* device) : _device{device} {}
-
-        virtual void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) = 0;
-        virtual void setVertexBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) = 0;
-        virtual void setFragmentBuffer(ObjectPtr<Buffer> buffer,
-                                       VertexBufferLocation const& loc) = 0;
-
-        virtual void setTexture(ObjectPtr<Texture> texture) = 0;
-        virtual void setViewport(Viewport viewport) = 0;
-        virtual void draw(int vertex_start, int vertex_count) = 0;
-        virtual void draw(int vertex_start, int vertex_count, int instance_start,
-                          int instance_count) = 0;
-
-    private:
-        [[maybe_unused]] Device* _device;
+    struct ClearColor {
+        float r;
+        float g;
+        float b;
+        float a;
     };
 
     struct DispatchSize {
@@ -311,58 +284,29 @@ namespace spargel::gpu {
         u32 z;
     };
 
-    class ComputePassEncoder {
-    public:
-        virtual void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) = 0;
-        virtual void setBindGroup(u32 index, ObjectPtr<BindGroup> group) = 0;
-        virtual void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) = 0;
-        // grid_size is the number of thread groups of the grid
-        // group_size is the number of threads of a thread group
-        virtual void dispatch(DispatchSize grid_size, DispatchSize group_size) = 0;
-    };
-
-    struct ClearColor {
-        float r;
-        float g;
-        float b;
-        float a;
-    };
-
-    struct ColorAttachmentBindDescriptor {
-        ObjectPtr<Texture> texture;
-        LoadAction load = LoadAction::clear;
-        StoreAction store = StoreAction::store;
-        ClearColor clear_color;
-    };
-
-    struct RenderPassDescriptor {
-        base::span<ColorAttachmentBindDescriptor> color_attachments;
-    };
-
-    class CommandBuffer {
-    public:
-        virtual ObjectPtr<RenderPassEncoder> beginRenderPass(
-            RenderPassDescriptor const& descriptor) = 0;
-        virtual void endRenderPass(ObjectPtr<RenderPassEncoder> encoder) = 0;
-        virtual ObjectPtr<ComputePassEncoder> beginComputePass() = 0;
-        virtual void endComputePass(ObjectPtr<ComputePassEncoder> encoder) = 0;
-        virtual void present(ObjectPtr<Surface> surface) = 0;
-        virtual void submit() = 0;
-        virtual void wait() = 0;
-    };
-    class CommandQueue {
-    public:
-        virtual ObjectPtr<CommandBuffer> createCommandBuffer() = 0;
-        virtual void destroyCommandBuffer(ObjectPtr<CommandBuffer>) = 0;
-    };
-
-    struct ShaderLibraryDescriptor {
-        base::span<u8> bytes;
-    };
-
     struct ShaderFunction {
         ObjectPtr<ShaderLibrary> library;
         char const* entry;
+    };
+
+    /// @brief one entry of a bind group
+    struct BindEntry {
+        /// @brief the unique identifier of this entry
+        ///
+        /// Syntax in shaders:
+        /// - glsl: `location (set = 0, binding = 1) ...`
+        /// - msl: `struct ArgBuf { float* buf [[id(1)]]; };`
+        ///
+        u32 binding;
+
+        /// @brief the kind of this entry
+        BindEntryKind kind;
+    };
+
+    // Descriptors
+
+    struct ShaderLibraryDescriptor {
+        base::span<u8> bytes;
     };
 
     /// @brief description of one vertex attribute
@@ -405,42 +349,28 @@ namespace spargel::gpu {
         // TODO: step rate is not supported by vulkan.
     };
 
+    struct ColorAttachmentBindDescriptor {
+        ObjectPtr<Texture> texture;
+        LoadAction load = LoadAction::clear;
+        StoreAction store = StoreAction::store;
+        ClearColor clear_color;
+    };
+
     struct ColorAttachmentDescriptor {
         TextureFormat format;
         bool enable_blend = false;
     };
 
-    struct ShaderStage {
-        struct ShaderStageImpl {
-            constexpr operator ShaderStage() const { return ShaderStage(value); }
-            u32 value;
-        };
-        static constexpr auto vertex = ShaderStageImpl(0b1);
-        static constexpr auto fragment = ShaderStageImpl(0b10);
-        static constexpr auto compute = ShaderStageImpl(0b100);
-        constexpr bool has(ShaderStage usage) const { return (value & usage.value) != 0; }
-        u32 value;
+    /// @brief The description of a compute pipeline.
+    ///
+    /// Most information should be automatically generated using reflection.
+    ///
+    struct ComputePipelineDescriptor {
+        ShaderFunction shader;
     };
 
-    enum class BindEntryKind {
-        uniform_buffer,
-        storage_buffer,
-        sample_texture,
-        storage_texture,
-    };
-
-    /// @brief one entry of a bind group
-    struct BindEntry {
-        /// @brief the unique identifier of this entry
-        ///
-        /// Syntax in shaders:
-        /// - glsl: `location (set = 0, binding = 1) ...`
-        /// - msl: `struct ArgBuf { float* buf [[id(1)]]; };`
-        ///
-        u32 binding;
-
-        /// @brief the kind of this entry
-        BindEntryKind kind;
+    struct RenderPassDescriptor {
+        base::span<ColorAttachmentBindDescriptor> color_attachments;
     };
 
     /// @brief description of a render pipeline
@@ -469,12 +399,85 @@ namespace spargel::gpu {
         base::span<ColorAttachmentDescriptor> color_attachments;
     };
 
-    /// @brief The description of a compute pipeline.
-    ///
-    /// Most information should be automatically generated using reflection.
-    ///
-    struct ComputePipelineDescriptor {
-        ShaderFunction shader;
+    struct PipelineArgument {
+        u32 id;
+        BindEntryKind kind;
+    };
+
+    struct GroupLocation {
+        struct {
+            u32 buffer_id;
+        } metal;
+        struct {
+            u32 set_id;
+        } vulkan;
+    };
+
+    struct PipelineArgumentGroup {
+        /// @brief stage where this group of arguments is used
+        ShaderStage stage;
+        GroupLocation loc;
+        base::span<PipelineArgument> args;
+    };
+
+    struct PipelinePart {
+        ShaderStage stage;
+        ShaderFunction func;
+    };
+
+    struct PipelineProgramDescriptor {
+        ShaderStage stage;
+        ShaderFunction compute;
+        base::span<PipelineArgumentGroup> groups;
+    };
+
+    // Interfaces
+
+    class BindGroup {
+    public:
+        virtual void setBuffer(u32 id, ObjectPtr<Buffer> buffer) = 0;
+    };
+
+    class BindGroupLayout {};
+
+    class Buffer {
+    public:
+        virtual void* mapAddr() = 0;
+    };
+
+    class CommandBuffer {
+    public:
+        virtual ObjectPtr<RenderPassEncoder> beginRenderPass(
+            RenderPassDescriptor const& descriptor) = 0;
+        virtual void endRenderPass(ObjectPtr<RenderPassEncoder> encoder) = 0;
+        virtual ObjectPtr<ComputePassEncoder> beginComputePass() = 0;
+        virtual void endComputePass(ObjectPtr<ComputePassEncoder> encoder) = 0;
+        virtual void present(ObjectPtr<Surface> surface) = 0;
+        virtual void submit() = 0;
+        virtual void wait() = 0;
+    };
+
+    class CommandQueue {
+    public:
+        virtual ObjectPtr<CommandBuffer> createCommandBuffer() = 0;
+        virtual void destroyCommandBuffer(ObjectPtr<CommandBuffer>) = 0;
+    };
+
+    class ComputePassEncoder {
+    public:
+        virtual void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) = 0;
+        virtual void setBindGroup(u32 index, ObjectPtr<BindGroup> group) = 0;
+        virtual void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) = 0;
+        // grid_size is the number of thread groups of the grid
+        // group_size is the number of threads of a thread group
+        virtual void dispatch(DispatchSize grid_size, DispatchSize group_size) = 0;
+
+        virtual void useBuffer(ObjectPtr<Buffer> buffer, bool write) = 0;
+    };
+
+    class ComputePipeline {
+    public:
+        // virtual u32 maxGroupSize() = 0;
     };
 
     class Device {
@@ -503,6 +506,8 @@ namespace spargel::gpu {
 
         virtual ObjectPtr<ComputePipeline> createComputePipeline(
             ShaderFunction func, base::span<ObjectPtr<BindGroupLayout>> layouts) = 0;
+        virtual ObjectPtr<ComputePipeline> createComputePipeline2(
+            ObjectPtr<PipelineProgram> program) = 0;
 
         /// @brief create a bind group layout object
         /// @param stage the stage where the layout is used
@@ -512,6 +517,12 @@ namespace spargel::gpu {
 
         virtual ObjectPtr<BindGroup> createBindGroup(ObjectPtr<BindGroupLayout> layout) = 0;
 
+        virtual ObjectPtr<PipelineProgram> createPipelineProgram(
+            PipelineProgramDescriptor const& desc) = 0;
+        /// Create a bind group for the id-th argument group in the layout.
+        virtual ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<PipelineProgram> program,
+                                                      u32 id) = 0;
+
     protected:
         explicit Device(DeviceKind k) : _kind{k} {}
 
@@ -519,7 +530,61 @@ namespace spargel::gpu {
         DeviceKind _kind;
     };
 
+    /// PipelineLayout describes the signature of a pipeline.
+    ///
+    /// A pipeline can be viewed abstractly as a function. Then pipeline layout is the description
+    /// of its arguments.
+    ///
+    class PipelineProgram {};
+
+    class RenderPassEncoder {
+    public:
+        virtual void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) = 0;
+        virtual void setVertexBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) = 0;
+        virtual void setFragmentBuffer(ObjectPtr<Buffer> buffer,
+                                       VertexBufferLocation const& loc) = 0;
+
+        virtual void setTexture(ObjectPtr<Texture> texture) = 0;
+        virtual void setViewport(Viewport viewport) = 0;
+        virtual void draw(int vertex_start, int vertex_count) = 0;
+        virtual void draw(int vertex_start, int vertex_count, int instance_start,
+                          int instance_count) = 0;
+    };
+
+    class RenderPipeline {};
+
+    class ShaderLibrary {};
+
+    class Surface {
+    public:
+        virtual ObjectPtr<Texture> nextTexture() = 0;
+        virtual float width() = 0;
+        virtual float height() = 0;
+    };
+
+    class Texture {
+    public:
+        virtual void updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
+                                  base::span<base::Byte> bytes) = 0;
+    };
+
     base::unique_ptr<Device> makeDevice(DeviceKind kind);
+
+    // Helpers
+
+    class BindGroupLayoutBuilder {
+    public:
+        void setStage(ShaderStage stage) { _stage = stage; }
+        void addEntry(u32 binding, BindEntryKind kind) { _entries.push(binding, kind); }
+
+        ObjectPtr<BindGroupLayout> build(Device* _device) {
+            return _device->createBindGroupLayout(_stage, _entries.toSpan());
+        }
+
+    private:
+        ShaderStage _stage;
+        base::vector<BindEntry> _entries;
+    };
 
     class RenderPipelineBuilder {
     public:
@@ -556,20 +621,6 @@ namespace spargel::gpu {
         base::vector<VertexBufferDescriptor> _vertex_buffers;
         base::vector<VertexAttributeDescriptor> _vertex_attributes;
         base::vector<ColorAttachmentDescriptor> _color_attachments;
-    };
-
-    class BindGroupLayoutBuilder {
-    public:
-        void setStage(ShaderStage stage) { _stage = stage; }
-        void addEntry(u32 binding, BindEntryKind kind) { _entries.push(binding, kind); }
-
-        ObjectPtr<BindGroupLayout> build(Device* _device) {
-            return _device->createBindGroupLayout(_stage, _entries.toSpan());
-        }
-
-    private:
-        ShaderStage _stage;
-        base::vector<BindEntry> _entries;
     };
 
     // This is the allocator for device memory.
@@ -675,4 +726,37 @@ namespace spargel::gpu {
 // coordinates by applying a viewport during the rasterization stage. It applies the transform first
 // and then rasterizes the primitive while clipping any fragments outside the scissor rectangle or
 // the render target’s extents.
+//
+
+// Notes:
+//
+// msl = metal shading language specification
+//
+// [msl, v3.2, p84]
+// an address space attribute specifies the region of memory from where buffer memory objects
+// are allocated. these attributes describe disjoint address spaces:
+// - device
+// - constant
+// - thread
+// - threadgroup
+// - threadgroup_imageblock
+// - ray_data
+// - object_data
+// all arguments to a graphics or kernel function that are a pointer or reference to a type
+// needs to be declared with an address space attribute.
+//
+// the address space for a variable at program scope needs to be `constant`.
+//
+// [msl, v3.2, p98]
+// arguments to graphics and kernel functions can be any of the following:
+// - device buffer: a pointer or reference to any data type in the device address space
+// - constant buffer: a pointer or reference to any data type in the constant address space
+// - ...
+//
+// [msl, v3.2, p99]
+// for each argument, an attribute can be optionally specified to identify the location of a
+// buffer, texture, or sampler to use for this argument type.
+// - device and constant buffers: `[[buffer(index)]]`
+// - textures (including texture buffers): `[[texture(index)]]`
+// - samplers: `[[sampler(index)]]`
 //

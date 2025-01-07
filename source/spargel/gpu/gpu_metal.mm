@@ -226,7 +226,7 @@ namespace spargel::gpu {
     }
 
     ObjectPtr<CommandQueue> DeviceMetal::createCommandQueue() {
-        return make_object<CommandQueueMetal>(this, [_device newCommandQueue]);
+        return make_object<CommandQueueMetal>([_device newCommandQueue]);
     }
 
     void DeviceMetal::destroyCommandQueue(ObjectPtr<CommandQueue> q) {
@@ -269,7 +269,7 @@ namespace spargel::gpu {
     BufferMetal::~BufferMetal() { [_buffer release]; }
 
     ObjectPtr<CommandBuffer> CommandQueueMetal::createCommandBuffer() {
-        return make_object<CommandBufferMetal>(_device, [_queue commandBuffer]);
+        return make_object<CommandBufferMetal>([_queue commandBuffer]);
     }
 
     void CommandQueueMetal::destroyCommandBuffer(ObjectPtr<CommandBuffer> cmdbuf) {
@@ -290,7 +290,7 @@ namespace spargel::gpu {
             desc.colorAttachments[i].clearColor = MTLClearColorMake(c.r, c.g, c.b, c.a);
         }
         return make_object<RenderPassEncoderMetal>(
-            _device, [_cmdbuf renderCommandEncoderWithDescriptor:desc]);
+            [_cmdbuf renderCommandEncoderWithDescriptor:desc]);
     }
 
     void CommandBufferMetal::endRenderPass(ObjectPtr<RenderPassEncoder> e) {
@@ -351,6 +351,11 @@ namespace spargel::gpu {
                     mipmapLevel:0
                       withBytes:bytes.data()
                     bytesPerRow:bytes_per_row];
+    }
+
+    void ComputePassEncoderMetal::setBindGroup(u32 index, ObjectPtr<BindGroup> g) {
+        auto group = g.cast<BindGroupMetal>();
+        [_encoder setBuffer:group->buffer() offset:0 atIndex:group->program()->getBufferId(index)];
     }
 
 }  // namespace spargel::gpu

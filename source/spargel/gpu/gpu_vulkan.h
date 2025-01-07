@@ -172,7 +172,7 @@ namespace spargel::gpu {
 
     class RenderPassEncoderVulkan final : public RenderPassEncoder {
     public:
-        explicit RenderPassEncoderVulkan(Device* device) : RenderPassEncoder(device) {}
+        explicit RenderPassEncoderVulkan() {}
 
         void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
         void setVertexBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override;
@@ -192,23 +192,15 @@ namespace spargel::gpu {
         ComputePassEncoderVulkan(DeviceVulkan* device, VkCommandBuffer cmdbuf);
 
         void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) override;
-        void setBindGroup(u32 index, ObjectPtr<BindGroup> group) override {}
+        void setBindGroup(u32 index, ObjectPtr<BindGroup> group) override;
         void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override;
         void dispatch(DispatchSize grid_size, DispatchSize group_size) override;
+        void useBuffer(ObjectPtr<Buffer> buffer, bool write) override {}
 
     private:
-        DeviceVulkan* _device;
+        // DeviceVulkan* _device;
         VulkanProcTable const* _procs;
         VkCommandBuffer _cmdbuf;
-    };
-
-    // One DeviceMemoryBlock corresponds to one VkDeviceMemory, i.e. one allocation.
-    class DeviceMemoryBlock {
-    public:
-        explicit DeviceMemoryBlock(VkDeviceMemory memory) : _memory{memory} {}
-
-    private:
-        VkDeviceMemory _memory;
     };
 
     class BindGroupLayoutVulkan final : public BindGroupLayout {
@@ -221,14 +213,34 @@ namespace spargel::gpu {
         VkDescriptorSetLayout _layout;
     };
 
-    class DeviceMemoryAllocatorVulkan {
+    class BindGroupVulkan final : public BindGroup {
     public:
-        explicit DeviceMemoryAllocatorVulkan(DeviceVulkan* device) : _device{device} {}
+        explicit BindGroupVulkan(VkDescriptorSet set) {}
+
+        void setBuffer(u32 id, ObjectPtr<Buffer> buffer) override {}
+
+        auto getDescriptorSet() const { return _set; }
 
     private:
-        DeviceVulkan* _device;
-        base::vector<DeviceMemoryBlock> _blocks;
+        VkDescriptorSet _set;
     };
+
+    // // One DeviceMemoryBlock corresponds to one VkDeviceMemory, i.e. one allocation.
+    // class DeviceMemoryBlock {
+    // public:
+    //     explicit DeviceMemoryBlock(VkDeviceMemory memory) : _memory{memory} {}
+
+    // private:
+    //     VkDeviceMemory _memory;
+    // };
+    // class DeviceMemoryAllocatorVulkan {
+    // public:
+    //     explicit DeviceMemoryAllocatorVulkan(DeviceVulkan* device) : _device{device} {}
+
+    // private:
+    //     DeviceVulkan* _device;
+    //     base::vector<DeviceMemoryBlock> _blocks;
+    // };
 
     class DeviceVulkan final : public Device {
     public:
@@ -251,10 +263,23 @@ namespace spargel::gpu {
         void destroyCommandQueue(ObjectPtr<CommandQueue> q) override;
         ObjectPtr<ComputePipeline> createComputePipeline(
             ShaderFunction func, base::span<ObjectPtr<BindGroupLayout>> layouts) override;
+        ObjectPtr<ComputePipeline> createComputePipeline2(
+            ObjectPtr<PipelineProgram> program) override {
+            return nullptr;
+        }
 
         ObjectPtr<BindGroupLayout> createBindGroupLayout(ShaderStage stage,
                                                          base::span<BindEntry> entries) override;
         ObjectPtr<BindGroup> createBindGroup(ObjectPtr<BindGroupLayout> layout) override {
+            return nullptr;
+        }
+
+        ObjectPtr<PipelineProgram> createPipelineProgram(
+            PipelineProgramDescriptor const& desc) override {
+            return nullptr;
+        }
+
+        ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<PipelineProgram> layout, u32 id) override {
             return nullptr;
         }
 
@@ -316,7 +341,7 @@ namespace spargel::gpu {
 
         VkPhysicalDeviceMemoryProperties _memory_props;
 
-        DeviceMemoryAllocatorVulkan _device_alloc;
+        // DeviceMemoryAllocatorVulkan _device_alloc;
 
         // todo: hook allocations
         [[maybe_unused]] VkAllocationCallbacks _vkalloc;

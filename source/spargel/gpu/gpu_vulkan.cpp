@@ -106,7 +106,7 @@ namespace spargel::gpu {
 
     base::unique_ptr<Device> make_device_vulkan() { return base::make_unique<DeviceVulkan>(); }
 
-    DeviceVulkan::DeviceVulkan() : Device(DeviceKind::vulkan), _device_alloc(this) {
+    DeviceVulkan::DeviceVulkan() : Device(DeviceKind::vulkan) {
         _library = base::open_dynamic_library(vulkan_library_name);
         if (_library == nullptr) {
             spargel_log_fatal("cannot load vulkan loader");
@@ -593,6 +593,7 @@ namespace spargel::gpu {
         CHECK_VK_RESULT(_procs.vkCreateShaderModule(_device, &info, nullptr, &shader));
         return make_object<ShaderLibraryVulkan>(shader);
     }
+
     ObjectPtr<RenderPipeline> DeviceVulkan::createRenderPipeline(
         RenderPipelineDescriptor const& descriptor) {
         return nullptr;
@@ -633,18 +634,23 @@ namespace spargel::gpu {
     }
 
     ObjectPtr<Buffer> DeviceVulkan::createBuffer(BufferUsage usage, u32 size) { return nullptr; }
+
     ObjectPtr<Surface> DeviceVulkan::createSurface(ui::window* w) { return nullptr; }
 
     ObjectPtr<Texture> DeviceVulkan::createTexture(u32 width, u32 height) { return nullptr; }
+
     void DeviceVulkan::destroyTexture(ObjectPtr<Texture> texture) {}
 
     void DeviceVulkan::destroyShaderLibrary(ObjectPtr<ShaderLibrary> library) {}
+
     void DeviceVulkan::destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) {}
+
     void DeviceVulkan::destroyBuffer(ObjectPtr<Buffer> b) {}
 
     ObjectPtr<CommandQueue> DeviceVulkan::createCommandQueue() {
         return make_object<CommandQueueVulkan>(_queue, this);
     }
+
     void DeviceVulkan::destroyCommandQueue(ObjectPtr<CommandQueue> q) {}
 
     ObjectPtr<ComputePipeline> DeviceVulkan::createComputePipeline(
@@ -757,13 +763,19 @@ namespace spargel::gpu {
         RenderPassDescriptor const& descriptor) {
         return nullptr;
     }
+
     void CommandBufferVulkan::endRenderPass(ObjectPtr<RenderPassEncoder> encoder) {}
+
     ObjectPtr<ComputePassEncoder> CommandBufferVulkan::beginComputePass() {
         return make_object<ComputePassEncoderVulkan>(_device, _cmdbuf);
     }
+
     void CommandBufferVulkan::endComputePass(ObjectPtr<ComputePassEncoder> encoder) {}
+
     void CommandBufferVulkan::present(ObjectPtr<Surface> surface) {}
+
     void CommandBufferVulkan::submit() {}
+
     void CommandBufferVulkan::wait() {}
 
     void CommandBufferVulkan::beginCommandBuffer() {
@@ -776,14 +788,32 @@ namespace spargel::gpu {
     }
 
     ComputePassEncoderVulkan::ComputePassEncoderVulkan(DeviceVulkan* device, VkCommandBuffer cmdbuf)
-        : _device{device}, _procs{device->getProcTable()}, _cmdbuf{cmdbuf} {}
+        : /* _device{device}, */
+          _procs{device->getProcTable()},
+          _cmdbuf{cmdbuf} {}
 
     void ComputePassEncoderVulkan::setComputePipeline(ObjectPtr<ComputePipeline> pipeline) {
         _procs->vkCmdBindPipeline(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE,
                                   pipeline.cast<ComputePipelineVulkan>()->pipeline());
     }
+
+    // Spec:
+    //
+    // Each of the pDescriptorSets must be compatible with the pipeline layout specified by layout.
+    // The layout used to program the bindings must also be compatible with the pipeline used in
+    // subsequent bound pipeline commands with that pipeline type, as defined in the Pipeline Layout
+    // Compatibility section.
+    //
+    void ComputePassEncoderVulkan::setBindGroup(u32 index, ObjectPtr<BindGroup> group) {
+        VkDescriptorSet sets[1] = {group.cast<BindGroupVulkan>()->getDescriptorSet()};
+        // TODO: where to get pipeline layout
+        _procs->vkCmdBindDescriptorSets(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE,
+                                        /* pipeline layout */ nullptr, index, 1, sets, 0, nullptr);
+    }
+
     void ComputePassEncoderVulkan::setBuffer(ObjectPtr<Buffer> buffer,
                                              VertexBufferLocation const& loc) {}
+
     void ComputePassEncoderVulkan::dispatch(DispatchSize grid_size, DispatchSize group_size) {}
 
     //         d->queue.backend = BACKEND_VULKAN;

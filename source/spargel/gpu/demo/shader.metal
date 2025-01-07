@@ -43,7 +43,7 @@ struct UniformData {
     return color;
 }
 
-[[kernel]] void add_arrays(constant float const* inA [[buffer(0)]],
+[[kernel]] void add_arrays_old(constant float const* inA [[buffer(0)]],
                            constant float const* inB [[buffer(1)]],
                            device float* result [[buffer(2)]],
                            uint index [[thread_position_in_grid]]) {
@@ -57,7 +57,7 @@ struct SumArgs {
     device float* result [[id(3)]];
 };
 
-[[kernel]] void add_arrays_argbuf(uint index [[thread_position_in_grid]],
+[[kernel]] void add_arrays(uint index [[thread_position_in_grid]],
                                   device SumArgs& args [[buffer(0)]]) {
     if (index < args.count) {
         args.result[index] = args.in1[index] + args.in2[index];

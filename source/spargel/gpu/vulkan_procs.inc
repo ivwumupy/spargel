@@ -111,6 +111,8 @@ VULKAN_DEVICE_PROC(vkCreateDescriptorSetLayout)
 
 VULKAN_DEVICE_PROC(vkCreatePipelineLayout)
 
-VULKAN_DEVICE_PROC(vkCmdBindPipeline);
+VULKAN_DEVICE_PROC(vkCmdBindPipeline)
+
+VULKAN_DEVICE_PROC(vkCmdBindDescriptorSets)
 
 #endif

@@ -88,8 +88,7 @@ namespace spargel::gpu {
 
     class CommandQueueMetal final : public CommandQueue {
     public:
-        explicit CommandQueueMetal(Device* device, id<MTLCommandQueue> queue)
-            : _device{device}, _queue{queue} {}
+        explicit CommandQueueMetal(id<MTLCommandQueue> queue) : _queue{queue} {}
         ~CommandQueueMetal() { [_queue release]; }
 
         id<MTLCommandQueue> commandQueue() { return _queue; }
@@ -98,15 +97,13 @@ namespace spargel::gpu {
         void destroyCommandBuffer(ObjectPtr<CommandBuffer>) override;
 
     private:
-        Device* _device;
         id<MTLCommandQueue> _queue;
     };
 
     class CommandBufferMetal final : public CommandBuffer {
     public:
         // command buffer is autoreleased
-        explicit CommandBufferMetal(Device* device, id<MTLCommandBuffer> cmdbuf)
-            : _device{device}, _cmdbuf{cmdbuf} {}
+        explicit CommandBufferMetal(id<MTLCommandBuffer> cmdbuf) : _cmdbuf{cmdbuf} {}
 
         id<MTLCommandBuffer> commandBuffer() { return _cmdbuf; }
 
@@ -121,15 +118,13 @@ namespace spargel::gpu {
         void wait() override { [_cmdbuf waitUntilCompleted]; }
 
     private:
-        Device* _device;
         id<MTLCommandBuffer> _cmdbuf;
     };
 
     class RenderPassEncoderMetal final : public RenderPassEncoder {
     public:
         // enocder is autoreleased
-        explicit RenderPassEncoderMetal(Device* device, id<MTLRenderCommandEncoder> encoder)
-            : RenderPassEncoder(device), _encoder{encoder} {}
+        explicit RenderPassEncoderMetal(id<MTLRenderCommandEncoder> encoder) : _encoder{encoder} {}
 
         id<MTLRenderCommandEncoder> encoder() { return _encoder; }
 
@@ -155,7 +150,7 @@ namespace spargel::gpu {
         explicit ComputePipelineMetal(id<MTLFunction> func, id<MTLComputePipelineState> pipeline)
             : _func{func}, _pipeline{pipeline} {}
         ~ComputePipelineMetal() {
-            [_func release];
+            // [_func release];
             [_pipeline release];
         }
 
@@ -176,7 +171,8 @@ namespace spargel::gpu {
         void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) override {
             [_encoder setComputePipelineState:pipeline.cast<ComputePipelineMetal>()->pipeline()];
         }
-        void setBindGroup(u32 index, ObjectPtr<BindGroup> group) override {}
+        // `index` is the index in the `PipelineProgram`.
+        void setBindGroup(u32 index, ObjectPtr<BindGroup> group) override;
         void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override {
             [_encoder setBuffer:buffer.cast<BufferMetal>()->buffer()
                          offset:0
@@ -187,6 +183,11 @@ namespace spargel::gpu {
                      threadsPerThreadgroup:MTLSizeMake(group_size.x, group_size.y, group_size.z)];
         }
 
+        void useBuffer(ObjectPtr<Buffer> buffer, bool write) override {
+            [_encoder useResource:buffer.cast<BufferMetal>()->buffer()
+                            usage:(write ? MTLResourceUsageWrite : MTLResourceUsageRead)];
+        }
+
         auto encoder() const { return _encoder; }
 
     private:
@@ -194,6 +195,89 @@ namespace spargel::gpu {
     };
 
     class BindGroupLayoutMetal final : public BindGroupLayout {};
+
+    struct ArgumentInfoMetal {
+        // The index of the group in the program.
+        u32 id;
+        // The index of the group in shader.
+        u32 buffer_id;
+        // The index of the argument in the group.
+        u32 binding;
+        BindEntryKind kind;
+    };
+
+    struct ArgumentGroupInfoMetal {
+        // The index of the group in the program.
+        u32 id;
+        // The index of the group in shader.
+        u32 buffer_id;
+    };
+
+    class PipelineProgramMetal final : public PipelineProgram {
+    public:
+        PipelineProgramMetal(ShaderFunction compute, base::span<PipelineArgumentGroup> groups) {
+            for (usize i = 0; i < groups.count(); i++) {
+                auto const& group = groups[i];
+                if (group.stage.has(ShaderStage::compute)) {
+                    _compute_groups.push(i, group.loc.metal.buffer_id);
+                    for (auto const& arg : group.args) {
+                        _compute_args.push(i, group.loc.metal.buffer_id, arg.id, arg.kind);
+                    }
+                }
+            }
+            auto lib = compute.library.cast<ShaderLibraryMetal>();
+            _compute_func =
+                [lib->library() newFunctionWithName:[NSString stringWithUTF8String:compute.entry]];
+        }
+
+        // Get the MTLFunction which contains the `id`-th argument group.
+        id<MTLFunction> getFunction(u32 id) {
+            for (auto const& group : _compute_groups) {
+                if (group.id == id) {
+                    return _compute_func;
+                }
+            }
+            return nullptr;
+        }
+
+        // Get the buffer id of the argument group of index `id`.
+        u32 getBufferId(u32 id) {
+            for (auto const& group : _compute_groups) {
+                if (group.id == id) {
+                    return group.buffer_id;
+                }
+            }
+            spargel_panic_here();
+        }
+
+        auto compute() const { return _compute_func; }
+
+    private:
+        id<MTLFunction> _compute_func;
+        base::vector<ArgumentGroupInfoMetal> _compute_groups;
+        base::vector<ArgumentInfoMetal> _compute_args;
+    };
+
+    class BindGroupMetal final : public BindGroup {
+    public:
+        BindGroupMetal(id<MTLBuffer> buffer, id<MTLArgumentEncoder> encoder,
+                       PipelineProgramMetal* program)
+            : _buffer{buffer}, _encoder{encoder}, _program{program} {}
+
+        // `id` is the index of the buffer in this group.
+        void setBuffer(u32 id, ObjectPtr<Buffer> buffer) override {
+            [_encoder setBuffer:buffer.cast<BufferMetal>()->buffer() offset:0 atIndex:id];
+        }
+
+        auto buffer() const { return _buffer; }
+        auto program() const { return _program; }
+
+    private:
+        // The argument buffer.
+        id<MTLBuffer> _buffer;
+        id<MTLArgumentEncoder> _encoder;
+        PipelineProgramMetal* _program;
+    };
 
     class DeviceMetal final : public Device {
     public:
@@ -225,6 +309,13 @@ namespace spargel::gpu {
             return make_object<ComputePipelineMetal>(
                 func, [_device newComputePipelineStateWithFunction:func error:&err]);
         }
+        ObjectPtr<ComputePipeline> createComputePipeline2(
+            ObjectPtr<PipelineProgram> program) override {
+            NSError* err;
+            auto func = program.cast<PipelineProgramMetal>()->compute();
+            return make_object<ComputePipelineMetal>(
+                func, [_device newComputePipelineStateWithFunction:func error:&err]);
+        }
 
         ObjectPtr<BindGroupLayout> createBindGroupLayout(ShaderStage stage,
                                                          base::span<BindEntry> entries) override {
@@ -232,6 +323,22 @@ namespace spargel::gpu {
         }
         ObjectPtr<BindGroup> createBindGroup(ObjectPtr<BindGroupLayout> layout) override {
             return nullptr;
+        }
+
+        ObjectPtr<PipelineProgram> createPipelineProgram(
+            PipelineProgramDescriptor const& desc) override {
+            return make_object<PipelineProgramMetal>(desc.compute, desc.groups);
+        }
+
+        // `id` is the index of the argument group in the program.
+        ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<PipelineProgram> p, u32 id) override {
+            auto program = p.cast<PipelineProgramMetal>();
+            auto func = program->getFunction(id);
+            auto encoder = [func newArgumentEncoderWithBufferIndex:program->getBufferId(id)];
+            auto buffer = [_device newBufferWithLength:encoder.encodedLength
+                                               options:MTLResourceStorageModeShared];
+            [encoder setArgumentBuffer:buffer offset:0];
+            return make_object<BindGroupMetal>(buffer, encoder, program.get());
         }
 
         auto device() { return _device; }
