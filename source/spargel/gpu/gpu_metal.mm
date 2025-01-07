@@ -98,6 +98,18 @@ namespace spargel::gpu {
             }
         }
 
+        MTLResourceUsage translateBufferAccess(BufferAccess access) {
+            MTLResourceUsage result = 0;
+#define _TRANSLATE(x, y)               \
+    if (access.has(BufferAccess::x)) { \
+        result |= y;                   \
+    }
+            _TRANSLATE(read, MTLResourceUsageRead);
+            _TRANSLATE(write, MTLResourceUsageWrite);
+#undef _TRANSLATE
+            return result;
+        }
+
     }  // namespace
 
     base::unique_ptr<Device> make_device_metal() { return base::make_unique<DeviceMetal>(); }
@@ -360,6 +372,11 @@ namespace spargel::gpu {
 
     void ComputePassEncoderMetal::setComputePipeline2(ObjectPtr<ComputePipeline2> pipeline) {
         [_encoder setComputePipelineState:pipeline.cast<ComputePipeline2Metal>()->pipeline()];
+    }
+
+    void ComputePassEncoderMetal::useBuffer(ObjectPtr<Buffer> buffer, BufferAccess access) {
+        [_encoder useResource:buffer.cast<BufferMetal>()->buffer()
+                        usage:translateBufferAccess(access)];
     }
 
 }  // namespace spargel::gpu

@@ -94,10 +94,10 @@ int main(int argc, char* argv[]) {
     auto cmdbuf = queue->createCommandBuffer();
     auto encoder = cmdbuf->beginComputePass();
     encoder->setComputePipeline2(pipeline);
-    encoder->useBuffer(buf0, false);
-    encoder->useBuffer(buf1, false);
-    encoder->useBuffer(buf2, false);
-    encoder->useBuffer(buf3, true);
+    encoder->useBuffer(buf0, gpu::BufferAccess::read);
+    encoder->useBuffer(buf1, gpu::BufferAccess::read);
+    encoder->useBuffer(buf2, gpu::BufferAccess::read);
+    encoder->useBuffer(buf3, gpu::BufferAccess::write);
     encoder->setBindGroup(0, bind_group);
     // encoder->setBuffer(buf0, {.apple = {.buffer_index = 0}});
     // encoder->setBuffer(buf1, {.apple = {.buffer_index = 1}});

@@ -185,10 +185,7 @@ namespace spargel::gpu {
                      threadsPerThreadgroup:MTLSizeMake(group_size.x, group_size.y, group_size.z)];
         }
 
-        void useBuffer(ObjectPtr<Buffer> buffer, bool write) override {
-            [_encoder useResource:buffer.cast<BufferMetal>()->buffer()
-                            usage:(write ? MTLResourceUsageWrite : MTLResourceUsageRead)];
-        }
+        void useBuffer(ObjectPtr<Buffer> buffer, BufferAccess access) override;
 
         auto encoder() const { return _encoder; }
 

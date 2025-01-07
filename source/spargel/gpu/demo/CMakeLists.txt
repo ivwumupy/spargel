@@ -23,6 +23,12 @@ spargel_add_executable(
 )
 
 spargel_add_executable(
+    NAME demo_sort
+    PRIVATE demo_sort.cpp
+    DEPS gpu resource ui
+)
+
+spargel_add_executable(
     NAME demo_tiles
     PRIVATE demo_tiles.cpp
     DEPS gpu resource ui
@@ -67,6 +73,18 @@ if (SPARGEL_GPU_ENABLE_VULKAN)
                 ${CMAKE_CURRENT_SOURCE_DIR}/demo_sum.glsl
         DEPENDS demo_sum.glsl
     )
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/resources/demo_sort.spirv
+        COMMAND
+            Vulkan::glslangValidator
+                -S comp # stage
+                --target-env vulkan1.2
+                --entry-point bitonic_sort
+                --source-entrypoint main
+                -o ${CMAKE_CURRENT_BINARY_DIR}/resources/demo_sort.spirv
+                ${CMAKE_CURRENT_SOURCE_DIR}/demo_sort.glsl
+        DEPENDS demo_sort.glsl
+    )
     add_custom_target(demo_gpu_vulkan_shaders
         DEPENDS
             ${CMAKE_CURRENT_BINARY_DIR}/resources/vertex_shader.spirv
@@ -76,8 +94,13 @@ if (SPARGEL_GPU_ENABLE_VULKAN)
         DEPENDS
             ${CMAKE_CURRENT_BINARY_DIR}/resources/demo_sum.spirv
     )
+    add_custom_target(demo_sort_vulkan_shaders
+        DEPENDS
+            ${CMAKE_CURRENT_BINARY_DIR}/resources/demo_sort.spirv
+    )
     add_dependencies(demo_gpu demo_gpu_vulkan_shaders)
     add_dependencies(demo_sum demo_sum_vulkan_shaders)
+    add_dependencies(demo_sort demo_sort_vulkan_shaders)
 endif ()
 
 if (SPARGEL_IS_MACOS)
@@ -114,6 +137,7 @@ if (SPARGEL_GPU_ENABLE_METAL)
     add_dependencies(demo_gpu demo_gpu_metal_shaders)
     add_dependencies(demo_gpu_mac demo_gpu_metal_shaders)
     add_dependencies(demo_tiles demo_gpu_metal_shaders)
+    add_dependencies(demo_sort demo_gpu_metal_shaders)
 endif ()
 
 if (SPARGEL_GPU_ENABLE_DIRECTX)

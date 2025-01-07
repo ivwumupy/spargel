@@ -208,7 +208,7 @@ namespace spargel::gpu {
         void setBindGroup(u32 index, ObjectPtr<BindGroup> group) override;
         void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override;
         void dispatch(DispatchSize grid_size, DispatchSize group_size) override;
-        void useBuffer(ObjectPtr<Buffer> buffer, bool write) override {}
+        void useBuffer(ObjectPtr<Buffer> buffer, BufferAccess access) override {}
 
     private:
         // DeviceVulkan* _device;

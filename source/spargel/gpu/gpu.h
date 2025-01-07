@@ -254,6 +254,21 @@ namespace spargel::gpu {
         u32 value;
     };
 
+    struct BufferAccess {
+        struct BufferAccessImpl {
+            constexpr operator BufferAccess() const { return BufferAccess(value); }
+            u32 value;
+        };
+        static constexpr auto read = BufferAccessImpl(0b1);
+        static constexpr auto write = BufferAccessImpl(0b10);
+        static constexpr auto read_write = BufferAccessImpl(0b11);
+        constexpr bool has(BufferAccess access) const { return (value & access.value) != 0; }
+        friend constexpr bool operator==(BufferAccess lhs, BufferAccess rhs) {
+            return lhs.value == rhs.value;
+        }
+        u32 value;
+    };
+
     // Structs
 
     struct Viewport {
@@ -475,7 +490,7 @@ namespace spargel::gpu {
         // group_size is the number of threads of a thread group
         virtual void dispatch(DispatchSize grid_size, DispatchSize group_size) = 0;
 
-        virtual void useBuffer(ObjectPtr<Buffer> buffer, bool write) = 0;
+        virtual void useBuffer(ObjectPtr<Buffer> buffer, BufferAccess access) = 0;
     };
 
     class ComputePipeline {
