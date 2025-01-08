@@ -33,11 +33,31 @@
 #include <vulkan/vulkan_win32.h>
 #endif
 
+// forward declarations
+namespace spargel::gpu {
+    class BindGroupVulkan;
+    class BindGroupLayoutVulkan;
+    class BufferVulkan;
+    class CommandBufferVulkan;
+    class CommandQueueVulkan;
+    class ComputePassEncoderVulkan;
+    class ComputePipelineVulkan;
+    class DeviceVulkan;
+    class ComputePipeline2Vulkan;
+    class RenderPassEncoderVulkan;
+    class RenderPipelineVulkan;
+    class ShaderLibraryVulkan;
+    class SurfaceVulkan;
+    class TextureVulkan;
+}  // namespace spargel::gpu
+
 namespace spargel::gpu {
 
-    class DeviceVulkan;
-
     struct VulkanProcTable {
+        void loadGeneralProcs(base::dynamic_library_handle* library);
+        void loadInstanceProcs(VkInstance instance);
+        void loadDeviceProcs(VkDevice device);
+
 #define VULKAN_PROC_DECL(name) PFN_##name name;
 #define VULKAN_LIBRARY_PROC(name) VULKAN_PROC_DECL(name)
 #define VULKAN_GENERAL_PROC(name) VULKAN_PROC_DECL(name)
@@ -54,7 +74,7 @@ namespace spargel::gpu {
     class ShaderLibraryVulkan final : public ShaderLibrary {
     public:
         explicit ShaderLibraryVulkan(VkShaderModule shader) : _library{shader} {}
-        ~ShaderLibraryVulkan();
+        ~ShaderLibraryVulkan() {}
 
         auto library() const { return _library; }
 
@@ -91,7 +111,7 @@ namespace spargel::gpu {
         BufferVulkan(DeviceVulkan* device, VkBuffer buffer, usize offset, usize size);
         ~BufferVulkan() {}
 
-        auto buffer() { return _buffer; }
+        auto buffer() const { return _buffer; }
 
         void* mapAddr();
 
@@ -137,7 +157,7 @@ namespace spargel::gpu {
 
     class CommandQueueVulkan final : public CommandQueue {
     public:
-        explicit CommandQueueVulkan(VkQueue queue, DeviceVulkan* device);
+        CommandQueueVulkan(VkQueue queue, DeviceVulkan* device);
         ~CommandQueueVulkan() {}
 
         auto commandQueue() { return _queue; }
@@ -158,6 +178,7 @@ namespace spargel::gpu {
     public:
         CommandBufferVulkan(DeviceVulkan* device, CommandQueueVulkan* queue,
                             VkCommandBuffer cmdbuf);
+        ~CommandBufferVulkan() {}
 
         auto commandBuffer() { return _cmdbuf; }
 
@@ -341,10 +362,6 @@ namespace spargel::gpu {
         void destroyCommandQueue(ObjectPtr<CommandQueue> q) override;
         ObjectPtr<ComputePipeline> createComputePipeline(
             ShaderFunction func, base::span<ObjectPtr<BindGroupLayout>> layouts) override;
-        // ObjectPtr<ComputePipeline> createComputePipeline2(
-        //     ObjectPtr<ComputePipeline2> program) override {
-        //     return nullptr;
-        // }
 
         ObjectPtr<BindGroupLayout> createBindGroupLayout(ShaderStage stage,
                                                          base::span<BindEntry> entries) override;
@@ -363,29 +380,34 @@ namespace spargel::gpu {
         u32 getQueueFamilyIndex() const { return _queue_family_index; }
         VulkanProcTable const* getProcTable() const { return &_procs; }
 
+        VkInstance getVkInstance() const { return _instance; }
+        VkPhysicalDevice getVkPhysicalDevice() const { return _physical_device; }
+        VkDevice getVkDevice() const { return _device; }
+
         VkDescriptorPool getDescriptorPool() const { return _dpool; }
 
         VkDeviceMemory getMemoryPool() const { return _memory_pool; }
         void* getPoolAddr() const { return _pool_addr; }
 
     private:
-        void loadGeneralProcs();
-        void enumerateLayers();
-        void enumerateInstanceExtensions();
-        void selectLayers();
-        void selectInstanceExtensions();
+        friend class InstanceBuilder;
+        friend class PhysicalDeviceBuilder;
+        friend class DeviceBuilder;
+
+        struct InstanceExtensions {
+            bool debug_utils;
+            bool portability_enumeration;
+        };
+
+        // info for the selected physical device
+        struct PhysicalDeviceInfo {
+            u32 max_memory_allocation_count;
+        };
+
         void createInstance();
-        void loadInstanceProcs();
         void createDebugMessenger();
-        void enumeratePhysicalDevices();
-        void queryPhysicalDeviceInfos();
-        void queryQueueFamilyProperties(VkPhysicalDevice physical_device,
-                                        base::vector<VkQueueFamilyProperties>& families);
         void selectPhysicalDevice();
-        void enumerateDeviceExtensions();
-        void selectDeviceExtensions();
         void createDevice();
-        void loadDeviceProcs();
         void getQueue();
         void queryMemoryInfo();
         void createDescriptorPool();
@@ -395,30 +417,15 @@ namespace spargel::gpu {
         base::dynamic_library_handle* _library;
         VulkanProcTable _procs;
 
-        base::vector<VkLayerProperties> _all_layers;
-        base::vector<VkExtensionProperties> _all_inst_exts;
-        base::vector<char const*> _use_layers;
-        base::vector<char const*> _use_inst_exts;
-        bool _has_portability_enumeration;
-        bool _has_debug_utils;
+        InstanceExtensions _instance_extensions;
 
         VkInstance _instance;
         VkDebugUtilsMessengerEXT _debug_messenger;
 
-        base::vector<VkPhysicalDevice> _physical_devices;
-
-        struct PhysicalDeviceInfo {
-            VkPhysicalDeviceProperties properties;
-            VkPhysicalDeviceFeatures features;
-            base::vector<VkQueueFamilyProperties> queue_families;
-        };
-        base::vector<PhysicalDeviceInfo> _physical_device_infos;
-
         VkPhysicalDevice _physical_device;
-        u32 _queue_family_index;
+        PhysicalDeviceInfo _physical_device_info;
 
-        base::vector<VkExtensionProperties> _all_dev_exts;
-        base::vector<char const*> _use_dev_exts;
+        u32 _queue_family_index = 0;
 
         VkDevice _device;
         VkQueue _queue;
@@ -434,8 +441,6 @@ namespace spargel::gpu {
         VkDeviceMemory _memory_pool;
         usize _pool_offset = 0;
         void* _pool_addr;
-
-        // DeviceMemoryAllocatorVulkan _device_alloc;
 
         // todo: hook allocations
         [[maybe_unused]] VkAllocationCallbacks _vkalloc;

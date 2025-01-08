@@ -27,7 +27,7 @@ namespace spargel::gpu {
 
     namespace {
 
-        VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_messenger_callback(
+        VKAPI_ATTR VkBool32 VKAPI_CALL onDebugUtilsMessage(
             VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
             VkDebugUtilsMessengerCallbackDataEXT const* data, void* user_data) {
             fprintf(stderr, "validator: %s\n", data->pMessage);
@@ -107,31 +107,485 @@ namespace spargel::gpu {
 
     base::unique_ptr<Device> make_device_vulkan() { return base::make_unique<DeviceVulkan>(); }
 
+    void VulkanProcTable::loadGeneralProcs(base::dynamic_library_handle* library) {
+        // Use `this->` to avoid accidental collision with <vulkan/vulkan.h>.
+        this->vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(
+            base::get_proc_address(library, "vkGetInstanceProcAddr"));
+#define VULKAN_GENERAL_PROC(name) \
+    this->name = reinterpret_cast<PFN_##name>(this->vkGetInstanceProcAddr(nullptr, #name));
+#include <spargel/gpu/vulkan_procs.inc>
+#undef VULKAN_GENERAL_PROC
+    }
+
+    void VulkanProcTable::loadInstanceProcs(VkInstance instance) {
+#define VULKAN_INSTANCE_PROC(name) \
+    this->name = reinterpret_cast<PFN_##name>(this->vkGetInstanceProcAddr(instance, #name));
+#include <spargel/gpu/vulkan_procs.inc>
+#undef VULKAN_INSTANCE_PROC
+    }
+
+    void VulkanProcTable::loadDeviceProcs(VkDevice device) {
+#define VULKAN_DEVICE_PROC(name) \
+    this->name = reinterpret_cast<PFN_##name>(this->vkGetDeviceProcAddr(device, #name));
+#include <spargel/gpu/vulkan_procs.inc>
+#undef VULKAN_DEVICE_PROC
+    }
+
+    class InstanceBuilder {
+    public:
+        InstanceBuilder(DeviceVulkan* ctx) : _ctx{ctx}, _procs{ctx->getProcTable()} {
+            // VK_KHR_portability_enumeration
+            //
+            // This extension allows applications to control whether devices that expose the
+            // VK_KHR_portability_subset extension are included in the results of physical device
+            // enumeration. Since devices which support the VK_KHR_portability_subset extension are
+            // not fully conformant Vulkan implementations, the Vulkan loader does not report those
+            // devices unless the application explicitly asks for them. This prevents applications
+            // which may not be aware of non-conformant devices from accidentally using them, as any
+            // device which supports the VK_KHR_portability_subset extension mandates that the
+            // extension must be enabled if that device is used.
+            //
+            addExtension("VK_KHR_portability_enumeration", false, &_has_portability_enumeration);
+        }
+
+        InstanceBuilder& addLayer(char const* name) {
+            _want_layers.push(name, true, nullptr);
+            return *this;
+        }
+        InstanceBuilder& addLayer(char const* name, bool required, bool* enabled) {
+            _want_layers.push(name, required, enabled);
+            return *this;
+        }
+        InstanceBuilder& addExtension(char const* name) {
+            _want_exts.push(name, false, nullptr);
+            return *this;
+        }
+        InstanceBuilder& addExtension(char const* name, bool required, bool* enabled) {
+            _want_exts.push(name, required, enabled);
+            return *this;
+        }
+
+        void build() {
+            enumerateLayers();
+            enumerateExtensions();
+            selectLayers();
+            selectExtensions();
+            createInstance();
+
+            _ctx->_instance = _instance;
+            _ctx->_instance_extensions.portability_enumeration = _has_portability_enumeration;
+        }
+
+    private:
+        struct LayerRequest {
+            char const* name;
+            bool required;
+            bool* enabled;
+        };
+        struct ExtensionRequest {
+            char const* name;
+            bool required;
+            bool* enabled;
+        };
+
+        void enumerateLayers() {
+            u32 count;
+            CHECK_VK_RESULT(_procs->vkEnumerateInstanceLayerProperties(&count, nullptr));
+            _layers.reserve(count);
+            CHECK_VK_RESULT(_procs->vkEnumerateInstanceLayerProperties(&count, _layers.data()));
+            _layers.set_count(count);
+        }
+
+        void enumerateExtensions() {
+            // When pLayerName parameter is NULL, only extensions provided by the Vulkan
+            // implementation or by implicitly enabled layers are returned. When pLayerName is the
+            // name of a layer, the instance extensions provided by that layer are returned.
+
+            u32 count;
+            CHECK_VK_RESULT(_procs->vkEnumerateInstanceExtensionProperties(
+                /* pLayerName = */ nullptr, &count, nullptr));
+            _exts.reserve(count);
+            CHECK_VK_RESULT(_procs->vkEnumerateInstanceExtensionProperties(
+                /* pLayerName = */ nullptr, &count, _exts.data()));
+            _exts.set_count(count);
+        }
+
+        void selectLayers() {
+            for (usize i = 0; i < _want_layers.count(); i++) {
+                auto const& req = _want_layers[i];
+                bool found = false;
+                for (usize j = 0; j < _layers.count(); j++) {
+                    if (strcmp(_layers[j].layerName, req.name) == 0) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    _use_layers.push(req.name);
+                    spargel_log_info("using layer %s", req.name);
+                } else if (req.required) {
+                    spargel_log_fatal("layer %s is required but cannot be found", req.name);
+                    spargel_panic_here();
+                }
+                if (req.enabled != nullptr) {
+                    *(req.enabled) = found;
+                }
+            }
+        }
+
+        void selectExtensions() {
+            for (usize i = 0; i < _want_exts.count(); i++) {
+                auto const& req = _want_exts[i];
+                bool found = false;
+                for (usize j = 0; j < _exts.count(); j++) {
+                    if (strcmp(_exts[j].extensionName, req.name) == 0) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    _use_exts.push(req.name);
+                    spargel_log_info("using extension %s", req.name);
+                } else if (req.required) {
+                    spargel_log_fatal("extension %s is required but cannot be found", req.name);
+                    spargel_panic_here();
+                }
+                if (req.enabled != nullptr) {
+                    *(req.enabled) = found;
+                }
+            }
+        }
+
+        void createInstance() {
+            VkApplicationInfo app_info;
+            app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+            app_info.pNext = nullptr;
+            app_info.pApplicationName = nullptr;
+            app_info.applicationVersion = 0;
+            app_info.pEngineName = "Spargel Engine";
+            app_info.engineVersion = 0;
+            // We need at least Vulkan 1.1, as subgroups are available only from Vulkan 1.1.
+            app_info.apiVersion = VK_API_VERSION_1_2;
+
+            VkInstanceCreateInfo info;
+            info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+            info.pNext = nullptr;
+            info.flags = 0;
+            info.pApplicationInfo = &app_info;
+            info.enabledLayerCount = (u32)_use_layers.count();
+            info.ppEnabledLayerNames = _use_layers.data();
+            info.enabledExtensionCount = (u32)_use_exts.count();
+            info.ppEnabledExtensionNames = _use_exts.data();
+
+            // VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR specifies that the instance will
+            // enumerate available Vulkan Portability-compliant physical devices and groups in
+            // addition to the Vulkan physical devices and groups that are enumerated by default.
+            //
+            if (_has_portability_enumeration) {
+                info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+            }
+
+            CHECK_VK_RESULT(_procs->vkCreateInstance(&info, nullptr, &_instance));
+        }
+
+        DeviceVulkan* _ctx;
+        VulkanProcTable const* _procs;
+        base::vector<VkLayerProperties> _layers;
+        base::vector<VkExtensionProperties> _exts;
+        base::vector<LayerRequest> _want_layers;
+        base::vector<ExtensionRequest> _want_exts;
+        base::vector<char const*> _use_layers;
+        base::vector<char const*> _use_exts;
+        bool _has_portability_enumeration = false;
+        VkInstance _instance;
+    };
+
+    class PhysicalDeviceBuilder {
+    public:
+        PhysicalDeviceBuilder(DeviceVulkan* ctx)
+            : _ctx{ctx}, _procs{ctx->getProcTable()}, _instance{ctx->getVkInstance()} {}
+
+        void build() {
+            enumeratePhysicalDevices();
+            queryPhysicalDeviceProperties();
+            queryPhysicalDeviceFeatures();
+            choosePhysicalDevice();
+            spargel_log_info("chosing physical device %zu : %s", _index,
+                             _physical_device_properties[_index].deviceName);
+            fillInfo();
+        }
+
+    private:
+        void enumeratePhysicalDevices() {
+            u32 count;
+            CHECK_VK_RESULT(_procs->vkEnumeratePhysicalDevices(_instance, &count, nullptr));
+            _physical_devices.reserve(count);
+            CHECK_VK_RESULT(
+                _procs->vkEnumeratePhysicalDevices(_instance, &count, _physical_devices.data()));
+            _physical_devices.set_count(count);
+            _count = count;
+        }
+
+        void queryPhysicalDeviceProperties() {
+            _physical_device_properties.reserve(_count);
+            _physical_device_properties.set_count(_count);
+            for (usize i = 0; i < _count; i++) {
+                _procs->vkGetPhysicalDeviceProperties(_physical_devices[i],
+                                                      &_physical_device_properties[i]);
+            }
+        }
+
+        void queryPhysicalDeviceFeatures() {
+            _physical_device_features.reserve(_count);
+            _physical_device_features.set_count(_count);
+            for (usize i = 0; i < _count; i++) {
+                _procs->vkGetPhysicalDeviceFeatures(_physical_devices[i],
+                                                    &_physical_device_features[i]);
+            }
+        }
+
+        // How to choose a good physical device?
+        // 0. TODO: If the user has a preference, use it.
+        // 1. Otherwise, filter out all devices with required features.
+        // 2. Sort the devices.
+        // 2.1. Discrete > Integrated
+        // 2.2. TODO: Sort by memory.
+        //
+        // TODO: When to check presentation support?
+        //
+        void choosePhysicalDevice() {
+            if (tryWithType(VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)) return;
+            if (tryWithType(VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)) return;
+            spargel_log_fatal("cannot find suitable gpu");
+            spargel_panic_here();
+        }
+
+        bool tryWithType(VkPhysicalDeviceType type) {
+            for (usize i = 0; i < _physical_device_properties.count(); i++) {
+                auto const& prop = _physical_device_properties[i];
+                if (prop.deviceType == type) {
+                    _index = i;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        void fillInfo() {
+            _ctx->_physical_device = _physical_devices[_index];
+            _ctx->_physical_device_info.max_memory_allocation_count =
+                _physical_device_properties[_index].limits.maxMemoryAllocationCount;
+        }
+
+        DeviceVulkan* _ctx;
+        VulkanProcTable const* _procs;
+        VkInstance _instance;
+        // number of physical devices
+        usize _count;
+        base::vector<VkPhysicalDevice> _physical_devices;
+        base::vector<VkPhysicalDeviceProperties> _physical_device_properties;
+        base::vector<VkPhysicalDeviceFeatures> _physical_device_features;
+        usize _index = 0;
+    };
+
+    class DeviceBuilder {
+    public:
+        DeviceBuilder(DeviceVulkan* ctx)
+            : _ctx{ctx},
+              _procs{ctx->getProcTable()},
+              _instance{ctx->getVkInstance()},
+              _physical_device{ctx->getVkPhysicalDevice()} {}
+
+        void build() {
+            enumerateExtensions();
+            selectExtensions();
+            queryQueueFamilyProperties();
+            selectQueues();
+            createDevice();
+            _ctx->_device = _device;
+            _ctx->_queue_family_index = _queue_family_index;
+        }
+
+        DeviceBuilder& addExtension(char const* name) {
+            _want_exts.push(name, false, nullptr);
+            return *this;
+        }
+        DeviceBuilder& addExtension(char const* name, bool required, bool* enabled) {
+            _want_exts.push(name, required, enabled);
+            return *this;
+        }
+
+    private:
+        struct ExtensionRequest {
+            char const* name;
+            bool required;
+            bool* enabled;
+        };
+
+        void enumerateExtensions() {
+            u32 count;
+            CHECK_VK_RESULT(_procs->vkEnumerateDeviceExtensionProperties(_physical_device, nullptr,
+                                                                         &count, nullptr));
+            _exts.reserve(count);
+            CHECK_VK_RESULT(_procs->vkEnumerateDeviceExtensionProperties(_physical_device, nullptr,
+                                                                         &count, _exts.data()));
+            _exts.set_count(count);
+        }
+
+        void selectExtensions() {
+            for (usize i = 0; i < _want_exts.count(); i++) {
+                auto const& req = _want_exts[i];
+                bool found = false;
+                for (usize j = 0; j < _exts.count(); j++) {
+                    if (strcmp(_exts[j].extensionName, req.name) == 0) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    _use_exts.push(req.name);
+                    spargel_log_info("using extension %s", req.name);
+                } else if (req.required) {
+                    spargel_log_fatal("extension %s is required but cannot be found", req.name);
+                    spargel_panic_here();
+                }
+                if (req.enabled != nullptr) {
+                    *(req.enabled) = found;
+                }
+            }
+        }
+
+        void queryQueueFamilyProperties() {
+            u32 count;
+            _procs->vkGetPhysicalDeviceQueueFamilyProperties(_physical_device, &count, nullptr);
+            _queue_families.reserve(count);
+            _procs->vkGetPhysicalDeviceQueueFamilyProperties(_physical_device, &count,
+                                                             _queue_families.data());
+            _queue_families.set_count(count);
+        }
+
+        // How to select queue families?
+        //
+        // Spec:
+        //
+        // The general expectation is that a physical device groups all queues of matching
+        // capabilities into a single family. However, while implementations should do this, it
+        // is possible that a physical device may return two separate queue families with the
+        // same capabilities.
+        //
+        //
+        // If an implementation exposes any queue family that supports graphics operations, at
+        // least one queue family of at least one physical device exposed by the implementation
+        // must support both graphics and compute operations.
+        //
+        //
+        // All commands that are allowed on a queue that supports transfer operations are also
+        // allowed on a queue that supports either graphics or compute operations. Thus, if the
+        // capabilities of a queue family include VK_QUEUE_GRAPHICS_BIT or VK_QUEUE_COMPUTE_BIT,
+        // then reporting the VK_QUEUE_TRANSFER_BIT capability separately for that queue family
+        // is optional.
+        //
+        //
+        // Not all physical devices will include WSI support. Within a physical device, not all
+        // queue families will support presentation.
+        //
+        //
+        // Discussion:
+        //
+        // We need one graphics queue. So we can choose the family that supports both graphics and
+        // compute.
+        //
+        // For simplicity, we require that the queue also supports presentation.
+        //
+        // TODO: async compute and multi-queue
+        //
+        void selectQueues() {
+            spargel_log_info("queue families: %zu", _queue_families.count());
+
+            static constexpr VkQueueFlags queue_flags =
+                VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+
+            bool found = false;
+            for (usize i = 0; i < _queue_families.count(); i++) {
+                auto const& prop = _queue_families[i];
+                if (prop.queueFlags & queue_flags) {
+                    found = true;
+                    _queue_family_index = (u32)i;
+                    break;
+                }
+            }
+
+            if (!found) {
+                spargel_log_fatal("cannot find a suitable queue family");
+                spargel_panic_here();
+            }
+
+            _queue_info_count = 1;
+
+            _queue_infos[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            _queue_infos[0].pNext = nullptr;
+            _queue_infos[0].flags = 0;
+            _queue_infos[0].queueFamilyIndex = _queue_family_index;
+            _queue_infos[0].queueCount = 1;
+            _queue_infos[0].pQueuePriorities = vulkan_queue_priorities;
+
+            spargel_log_info("chosing queue family %u", _queue_family_index);
+        }
+
+        void createDevice() {
+            VkDeviceCreateInfo info;
+            info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+            info.pNext = nullptr;
+            info.flags = 0;
+            info.queueCreateInfoCount = _queue_info_count;
+            info.pQueueCreateInfos = _queue_infos;
+            info.enabledLayerCount = 0;
+            info.ppEnabledLayerNames = 0;
+            info.enabledExtensionCount = (u32)_use_exts.count();
+            info.ppEnabledExtensionNames = _use_exts.data();
+            info.pEnabledFeatures = 0;
+
+            CHECK_VK_RESULT(_procs->vkCreateDevice(_physical_device, &info, nullptr, &_device));
+        }
+
+        DeviceVulkan* _ctx;
+        VulkanProcTable const* _procs;
+        VkInstance _instance;
+        VkPhysicalDevice _physical_device;
+
+        base::vector<VkExtensionProperties> _exts;
+        base::vector<ExtensionRequest> _want_exts;
+        base::vector<char const*> _use_exts;
+
+        base::vector<VkQueueFamilyProperties> _queue_families;
+
+        VkDeviceQueueCreateInfo _queue_infos[4];
+        u32 _queue_info_count = 0;
+
+        u32 _queue_family_index = 0;
+
+        VkDevice _device;
+    };
+
     DeviceVulkan::DeviceVulkan() : Device(DeviceKind::vulkan) {
         _library = base::open_dynamic_library(vulkan_library_name);
         if (_library == nullptr) {
-            spargel_log_fatal("cannot load vulkan loader");
+            spargel_log_fatal("Cannot load the Vulkan loader.");
             spargel_panic_here();
         }
-        _procs.vkGetInstanceProcAddr =
-            (PFN_vkGetInstanceProcAddr)base::get_proc_address(_library, "vkGetInstanceProcAddr");
-        loadGeneralProcs();
-        enumerateLayers();
-        enumerateInstanceExtensions();
-        selectLayers();
-        selectInstanceExtensions();
+
+        _procs.loadGeneralProcs(_library);
         createInstance();
-        loadInstanceProcs();
-        if (_has_debug_utils) {
+        _procs.loadInstanceProcs(_instance);
+
+        if (_instance_extensions.debug_utils) {
             createDebugMessenger();
         }
-        enumeratePhysicalDevices();
-        queryPhysicalDeviceInfos();
+
         selectPhysicalDevice();
-        enumerateDeviceExtensions();
-        selectDeviceExtensions();
         createDevice();
-        loadDeviceProcs();
+        _procs.loadDeviceProcs(_device);
+
         getQueue();
         queryMemoryInfo();
         createDescriptorPool();
@@ -140,195 +594,25 @@ namespace spargel::gpu {
 
     DeviceVulkan::~DeviceVulkan() { base::close_dynamic_library(_library); }
 
-    void DeviceVulkan::loadGeneralProcs() {
-        auto vkGetInstanceProcAddr = _procs.vkGetInstanceProcAddr;
-#define VULKAN_GENERAL_PROC(name) _procs.name = (PFN_##name)vkGetInstanceProcAddr(nullptr, #name);
-#include <spargel/gpu/vulkan_procs.inc>
-#undef VULKAN_GENERAL_PROC
-    }
-
-    void DeviceVulkan::enumerateLayers() {
-        u32 count;
-        CHECK_VK_RESULT(_procs.vkEnumerateInstanceLayerProperties(&count, nullptr));
-        _all_layers.reserve(count);
-        CHECK_VK_RESULT(_procs.vkEnumerateInstanceLayerProperties(&count, _all_layers.data()));
-        _all_layers.set_count(count);
-    }
-    void DeviceVulkan::enumerateInstanceExtensions() {
-        // When pLayerName parameter is NULL, only extensions provided by the Vulkan
-        // implementation or by implicitly enabled layers are returned. When pLayerName is the
-        // name of a layer, the instance extensions provided by that layer are returned.
-
-        u32 count;
-        CHECK_VK_RESULT(_procs.vkEnumerateInstanceExtensionProperties(
-            /* pLayerName = */ nullptr, &count, nullptr));
-        _all_inst_exts.reserve(count);
-        CHECK_VK_RESULT(_procs.vkEnumerateInstanceExtensionProperties(
-            /* pLayerName = */ nullptr, &count, _all_inst_exts.data()));
-        _all_inst_exts.set_count(count);
-    }
-    void DeviceVulkan::selectLayers() {
-        // VK_LAYER_KHRONOS_validation
-        for (usize i = 0; i < _all_layers.count(); i++) {
-            if (strcmp(_all_layers[i].layerName, "VK_LAYER_KHRONOS_validation") == 0) {
-                _use_layers.push("VK_LAYER_KHRONOS_validation");
-                spargel_log_info("use layer VK_LAYER_KHRONOS_validation");
-            }
-        }
-    }
-    void DeviceVulkan::selectInstanceExtensions() {
-        // VK_KHR_surface (required);
-        // VK_KHR_portability_enumeration (if exists);
-        // VK_EXT_debug_utils (debug);
-        // VK_EXT_metal_surface (platform);
-        //
-
-        // VK_KHR_portability_enumeration
-        //
-        // This extension allows applications to control whether devices that expose the
-        // VK_KHR_portability_subset extension are included in the results of physical device
-        // enumeration. Since devices which support the VK_KHR_portability_subset extension are
-        // not fully conformant Vulkan implementations, the Vulkan loader does not report those
-        // devices unless the application explicitly asks for them. This prevents applications
-        // which may not be aware of non-conformant devices from accidentally using them, as any
-        // device which supports the VK_KHR_portability_subset extension mandates that the
-        // extension must be enabled if that device is used.
-        //
-
-        bool has_surface = false;
-#if SPARGEL_IS_ANDROID
-        bool has_android_surface = false;
-#endif
-#if SPARGEL_IS_LINUX
-        bool has_xcb_surface = false;
-        bool has_wayland_surface = false;
-#endif
-#if SPARGEL_IS_MACOS
-        bool has_metal_surface = false;
-#endif
-#if SPARGEL_IS_WINDOWS
-        bool has_win32_surface = false;
-#endif
-        for (usize i = 0; i < _all_inst_exts.count(); i++) {
-            char const* name = _all_inst_exts[i].extensionName;
-            if (strcmp(name, "VK_KHR_surface") == 0) {
-                _use_inst_exts.push("VK_KHR_surface");
-                has_surface = true;
-                spargel_log_info("use instance extension VK_KHR_surface");
-            } else if (strcmp(name, "VK_KHR_portability_enumeration") == 0) {
-                _use_inst_exts.push("VK_KHR_portability_enumeration");
-                _has_portability_enumeration = true;
-                spargel_log_info("use instance extension VK_KHR_portability_enumeration");
-            } else if (strcmp(name, "VK_EXT_debug_utils") == 0) {
-                _use_inst_exts.push("VK_EXT_debug_utils");
-                _has_debug_utils = true;
-                spargel_log_info("use instance extension VK_EXT_debug_utils");
-            }
-#if SPARGEL_IS_ANDROID
-            else if (strcmp(name, "VK_KHR_android_surface") == 0) {
-                _use_inst_exts.push("VK_KHR_android_surface");
-                has_android_surface = true;
-                spargel_log_info("use instance extension VK_KHR_android_surface");
-            }
-#endif
-#if SPARGEL_IS_LINUX
-            else if (strcmp(name, "VK_KHR_xcb_surface") == 0) {
-                _use_inst_exts.push("VK_KHR_xcb_surface");
-                has_xcb_surface = true;
-                spargel_log_info("use instance extension VK_KHR_xcb_surface");
-            } else if (strcmp(name, "VK_KHR_wayland_surface") == 0) {
-                _use_inst_exts.push("VK_KHR_wayland_surface");
-                has_wayland_surface = true;
-                spargel_log_info("use instance extension VK_KHR_wayland_surface");
-            }
-#endif
-#if SPARGEL_IS_MACOS
-            else if (strcmp(name, "VK_EXT_metal_surface") == 0) {
-                _use_inst_exts.push("VK_EXT_metal_surface");
-                has_metal_surface = true;
-                spargel_log_info("use instance extension VK_EXT_metal_surface");
-            }
-#endif
-#if SPARGEL_IS_WINDOWS
-            else if (strcmp(name, "VK_KHR_win32_surface") == 0) {
-                _use_inst_exts.push("VK_KHR_win32_surface");
-                has_win32_surface = true;
-                spargel_log_info("use instance extension VK_KHR_win32_surface");
-            }
-#endif
-        }
-        if (!has_surface) {
-            spargel_log_fatal("VK_KHR_surface is required");
-            spargel_panic_here();
-        }
-#if SPARGEL_IS_ANDROID
-        if (!has_android_surface) {
-            spargel_log_fatal("VK_KHR_android_surface is required");
-            spargel_panic_here();
-        }
-#endif
-#if SPARGEL_IS_LINUX
-        if (!has_xcb_surface) {
-            spargel_log_fatal("VK_KHR_xcb_surface is required");
-            spargel_panic_here();
-        }
-        // if (!has_wayland_surface) {
-        //     spargel_log_fatal("VK_KHR_wayland_surface is required");
-        //     spargel_panic_here();
-        // }
-#endif
-#if SPARGEL_IS_MACOS
-        if (!has_metal_surface) {
-            spargel_log_fatal("VK_EXT_metal_surface is required");
-            spargel_panic_here();
-        }
-#endif
-#if SPARGEL_IS_WINDOWS
-        if (!has_win32_surface) {
-            spargel_log_fatal("VK_KHR_win32_surface is required");
-            spargel_panic_here();
-        }
-#endif
-    }
-
-    // We need at least Vulkan 1.1, as subgroups are available only from Vulkan 1.1.
     void DeviceVulkan::createInstance() {
-        VkApplicationInfo app_info;
-        app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        app_info.pNext = nullptr;
-        app_info.pApplicationName = nullptr;
-        app_info.applicationVersion = 0;
-        app_info.pEngineName = "Spargel Engine";
-        app_info.engineVersion = 0;
-        app_info.apiVersion = VK_API_VERSION_1_2;
-
-        VkInstanceCreateInfo info;
-        info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        info.pNext = nullptr;
-        info.flags = 0;
-        info.pApplicationInfo = &app_info;
-        info.enabledLayerCount = (u32)_use_layers.count();
-        info.ppEnabledLayerNames = _use_layers.data();
-        info.enabledExtensionCount = (u32)_use_inst_exts.count();
-        info.ppEnabledExtensionNames = _use_inst_exts.data();
-
-        // VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR specifies that the instance will
-        // enumerate available Vulkan Portability-compliant physical devices and groups in
-        // addition to the Vulkan physical devices and groups that are enumerated by default.
-        //
-        if (_has_portability_enumeration) {
-            info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-        }
-
-        CHECK_VK_RESULT(_procs.vkCreateInstance(&info, nullptr, &_instance));
-    }
-
-    void DeviceVulkan::loadInstanceProcs() {
-        auto vkGetInstanceProcAddr = _procs.vkGetInstanceProcAddr;
-#define VULKAN_INSTANCE_PROC(name) \
-    _procs.name = (PFN_##name)vkGetInstanceProcAddr(_instance, #name);
-#include <spargel/gpu/vulkan_procs.inc>
-#undef VULKAN_INSTANCE_PROC
+        InstanceBuilder(this)
+            .addLayer("VK_LAYER_KHRONOS_validation")
+            .addExtension("VK_KHR_surface", true, nullptr)
+            .addExtension("VK_EXT_debug_utils", false, &_instance_extensions.debug_utils)
+#if SPARGEL_IS_ANDROID
+            .addExtension("VK_KHR_android_surface", true, nullptr)
+#endif
+#if SPARGEL_IS_LINUX
+            .addExtension("VK_KHR_wayland_surface", true, nullptr)
+            .addExtension("VK_KHR_xcb_surface", true, nullptr)
+#endif
+#if SPARGEL_IS_MACOS
+            .addExtension("VK_EXT_metal_surface", true, nullptr)
+#endif
+#if SPARGEL_IS_WINDOWS
+            .addExtension("VK_KHR_win32_surface", true, nullptr)
+#endif
+            .build();
     }
 
     void DeviceVulkan::createDebugMessenger() {
@@ -344,163 +628,22 @@ namespace spargel::gpu {
         info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
                            VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                            VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        info.pfnUserCallback = vulkan_debug_messenger_callback;
+        info.pfnUserCallback = onDebugUtilsMessage;
         info.pUserData = nullptr;
 
         CHECK_VK_RESULT(
             _procs.vkCreateDebugUtilsMessengerEXT(_instance, &info, nullptr, &_debug_messenger));
     }
 
-    void DeviceVulkan::enumeratePhysicalDevices() {
-        u32 count;
-        CHECK_VK_RESULT(_procs.vkEnumeratePhysicalDevices(_instance, &count, nullptr));
-        _physical_devices.reserve(count);
-        CHECK_VK_RESULT(
-            _procs.vkEnumeratePhysicalDevices(_instance, &count, _physical_devices.data()));
-        _physical_devices.set_count(count);
-    }
-
-    void DeviceVulkan::queryPhysicalDeviceInfos() {
-        auto count = _physical_devices.count();
-        _physical_device_infos.reserve(count);
-        _physical_device_infos.set_count(count);
-        for (usize i = 0; i < count; i++) {
-            auto physical_device = _physical_devices[i];
-            auto& info = _physical_device_infos[i];
-            base::construct_at<PhysicalDeviceInfo>(&info);
-            _procs.vkGetPhysicalDeviceProperties(physical_device, &info.properties);
-            _procs.vkGetPhysicalDeviceFeatures(physical_device, &info.features);
-            queryQueueFamilyProperties(physical_device, info.queue_families);
-        }
-    }
-
-    void DeviceVulkan::queryQueueFamilyProperties(VkPhysicalDevice physical_device,
-                                                  base::vector<VkQueueFamilyProperties>& families) {
-        u32 count;
-        _procs.vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &count, nullptr);
-        families.reserve(count);
-        _procs.vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &count, families.data());
-        families.set_count(count);
-    }
-
-    void DeviceVulkan::selectPhysicalDevice() {
-        // Spec:
-        //
-        // The general expectation is that a physical device groups all queues of matching
-        // capabilities into a single family. However, while implementations should do this, it is
-        // possible that a physical device may return two separate queue families with the same
-        // capabilities.
-        //
-        //
-        // If an implementation exposes any queue family that supports graphics operations, at least
-        // one queue family of at least one physical device exposed by the implementation must
-        // support both graphics and compute operations.
-        //
-        //
-        // All commands that are allowed on a queue that supports transfer operations are also
-        // allowed on a queue that supports either graphics or compute operations. Thus, if the
-        // capabilities of a queue family include VK_QUEUE_GRAPHICS_BIT or VK_QUEUE_COMPUTE_BIT,
-        // then reporting the VK_QUEUE_TRANSFER_BIT capability separately for that queue family is
-        // optional.
-        //
-        //
-        // Not all physical devices will include WSI support. Within a physical device, not all
-        // queue families will support presentation.
-        //
-        //
-        // Discussion:
-        //
-        // We need one graphics queue. So there exists one queue family that supports both graphics
-        // and compute.
-        //
-        // For simplicity, we require that the queue also supports presentation.
-        //
-        // Checking for presentation support is deferred to surface creation.
-        //
-
-        static constexpr VkQueueFlags queue_flags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
-
-        for (usize i = 0; i < _physical_devices.count(); i++) {
-            auto const& info = _physical_device_infos[i];
-            u32 graphics_family;
-            bool found = false;
-            for (usize j = 0; j < info.queue_families.count(); j++) {
-                if (info.queue_families[j].queueFlags & queue_flags) {
-                    graphics_family = j;
-                    found = true;
-                    break;
-                }
-            }
-            if (found) {
-                _physical_device = _physical_devices[i];
-                _queue_family_index = graphics_family;
-                return;
-            }
-        }
-        spargel_log_fatal("cannot find a good gpu");
-        spargel_panic_here();
-    }
-
-    void DeviceVulkan::enumerateDeviceExtensions() {
-        u32 count;
-        CHECK_VK_RESULT(_procs.vkEnumerateDeviceExtensionProperties(_physical_device, nullptr,
-                                                                    &count, nullptr));
-        _all_dev_exts.reserve(count);
-        CHECK_VK_RESULT(_procs.vkEnumerateDeviceExtensionProperties(_physical_device, nullptr,
-                                                                    &count, _all_dev_exts.data()));
-        _all_dev_exts.set_count(count);
-    }
-
-    void DeviceVulkan::selectDeviceExtensions() {
-        bool has_swapchain = false;
-
-        for (usize i = 0; i < _all_dev_exts.count(); i++) {
-            auto const& prop = _all_dev_exts[i];
-            if (strcmp(prop.extensionName, "VK_KHR_swapchain") == 0) {
-                _use_dev_exts.push("VK_KHR_swapchain");
-                has_swapchain = true;
-                spargel_log_info("use device extension VK_KHR_surface");
-            } else if (strcmp(prop.extensionName, "VK_KHR_portability_subset") == 0) {
-                _use_dev_exts.push("VK_KHR_portability_subset");
-                spargel_log_info("use device extension VK_KHR_portability_subset");
-            }
-        }
-
-        if (!has_swapchain) {
-            spargel_log_fatal("VK_KHR_swapchain is required");
-            spargel_panic_here();
-        }
-    }
+    void DeviceVulkan::selectPhysicalDevice() { PhysicalDeviceBuilder(this).build(); }
 
     void DeviceVulkan::createDevice() {
-        VkDeviceQueueCreateInfo queue_info;
-        queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queue_info.pNext = nullptr;
-        queue_info.flags = 0;
-        queue_info.queueFamilyIndex = _queue_family_index;
-        queue_info.queueCount = 1;
-        queue_info.pQueuePriorities = vulkan_queue_priorities;
-
-        VkDeviceCreateInfo info;
-        info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        info.pNext = nullptr;
-        info.flags = 0;
-        info.queueCreateInfoCount = 1;
-        info.pQueueCreateInfos = &queue_info;
-        info.enabledLayerCount = 0;
-        info.ppEnabledLayerNames = 0;
-        info.enabledExtensionCount = (u32)_use_dev_exts.count();
-        info.ppEnabledExtensionNames = _use_dev_exts.data();
-        info.pEnabledFeatures = 0;
-
-        CHECK_VK_RESULT(_procs.vkCreateDevice(_physical_device, &info, nullptr, &_device));
-    }
-
-    void DeviceVulkan::loadDeviceProcs() {
-        auto vkGetDeviceProcAddr = _procs.vkGetDeviceProcAddr;
-#define VULKAN_DEVICE_PROC(name) _procs.name = (PFN_##name)vkGetDeviceProcAddr(_device, #name);
-#include <spargel/gpu/vulkan_procs.inc>
-#undef VULKAN_DEVICE_PROC
+        auto builder = DeviceBuilder(this);
+        builder.addExtension("VK_KHR_swapchain", true, nullptr);
+        if (_instance_extensions.portability_enumeration) {
+            builder.addExtension("VK_KHR_portability_subset", true, nullptr);
+        }
+        builder.build();
     }
 
     void DeviceVulkan::getQueue() {
@@ -547,9 +690,9 @@ namespace spargel::gpu {
         //   One device local heap, the memory types of which are not host visible.
         //   Another heap for host visible memory.
         //
-        //   It is possible (and more common) that there is another device local heap that exposes
-        //   host visible memory. The size is 256MB (AMD). Larger values require hardware
-        //   configuration (resizable bar), which is not popular.
+        //   It is possible (and more common) that there is another device local heap that
+        //   exposes host visible memory. The size is 256MB (AMD). Larger values require
+        //   hardware configuration (resizable bar), which is not popular.
         //
         // Case 3: weird (AMD integrated, old) (new hardware belongs to case 2)
         //   One heap for host visible memory.
@@ -1035,10 +1178,10 @@ namespace spargel::gpu {
 
     // Spec:
     //
-    // Each of the pDescriptorSets must be compatible with the pipeline layout specified by layout.
-    // The layout used to program the bindings must also be compatible with the pipeline used in
-    // subsequent bound pipeline commands with that pipeline type, as defined in the Pipeline Layout
-    // Compatibility section.
+    // Each of the pDescriptorSets must be compatible with the pipeline layout specified by
+    // layout. The layout used to program the bindings must also be compatible with the pipeline
+    // used in subsequent bound pipeline commands with that pipeline type, as defined in the
+    // Pipeline Layout Compatibility section.
     //
     void ComputePassEncoderVulkan::setBindGroup(u32 index, ObjectPtr<BindGroup> g) {
         auto group = g.cast<BindGroupVulkan>();
@@ -1206,7 +1349,8 @@ namespace spargel::gpu {
     //         info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     //         info.commandBufferCount = 1;
     //         CHECK_VK_RESULT(
-    //             d->procs.vkAllocateCommandBuffers(d->device, &info, &cmdbuf->command_buffer));
+    //             d->procs.vkAllocateCommandBuffers(d->device, &info,
+    //             &cmdbuf->command_buffer));
 
     //         cmdbuf->queue = q->queue;
 
@@ -1214,18 +1358,21 @@ namespace spargel::gpu {
     //         return RESULT_SUCCESS;
     //     }
 
-    //     void vulkan_destroy_command_buffer(device_id device, command_buffer_id command_buffer) {
+    //     void vulkan_destroy_command_buffer(device_id device, command_buffer_id
+    //     command_buffer) {
     //         cast_object(vulkan_command_buffer, c, command_buffer);
     //         dealloc_object(vulkan_command_buffer, c);
     //     }
 
-    //     void vulkan_reset_command_buffer(device_id device, command_buffer_id command_buffer) {
+    //     void vulkan_reset_command_buffer(device_id device, command_buffer_id command_buffer)
+    //     {
     //         cast_object(vulkan_device, d, device);
     //         cast_object(vulkan_command_buffer, c, command_buffer);
     //         CHECK_VK_RESULT(d->procs.vkResetCommandBuffer(c->command_buffer, 0));
     //     }
 
-    //     int vulkan_create_surface(device_id device, struct surface_descriptor const* descriptor,
+    //     int vulkan_create_surface(device_id device, struct surface_descriptor const*
+    //     descriptor,
     //                               surface_id* surface) {
     //         cast_object(vulkan_device, d, device);
     //         alloc_object(vulkan_surface, s);
@@ -1238,7 +1385,8 @@ namespace spargel::gpu {
     //         info.pNext = 0;
     //         info.flags = 0;
     //         info.window = (ANativeWindow*)wh.android.window;
-    //         CHECK_VK_RESULT(d->procs.vkCreateAndroidSurfaceKHR(d->instance, &info, 0, &surf));
+    //         CHECK_VK_RESULT(d->procs.vkCreateAndroidSurfaceKHR(d->instance, &info, 0,
+    //         &surf));
     // #endif
     // #if SPARGEL_IS_LINUX /* todo: wayland */
     //         VkXcbSurfaceCreateInfoKHR info;
@@ -1304,8 +1452,8 @@ namespace spargel::gpu {
     //         {
     //             u32 count;
     //             CHECK_VK_RESULT(procs->vkGetPhysicalDeviceSurfaceFormatsKHR(d->physical_device,
-    //                                                                         sf->surface, &count,
-    //                                                                         0));
+    //                                                                         sf->surface,
+    //                                                                         &count, 0));
     //             formats.reserve(count);
     //             CHECK_VK_RESULT(procs->vkGetPhysicalDeviceSurfaceFormatsKHR(
     //                 d->physical_device, sf->surface, &count, formats.data()));
@@ -1343,14 +1491,16 @@ namespace spargel::gpu {
     //         info.clipped = VK_TRUE;
     //         info.oldSwapchain = 0;
 
-    //         CHECK_VK_RESULT(procs->vkCreateSwapchainKHR(d->device, &info, 0, &sw->swapchain));
+    //         CHECK_VK_RESULT(procs->vkCreateSwapchainKHR(d->device, &info, 0,
+    //         &sw->swapchain));
 
     //         {
     //             u32 count;
-    //             CHECK_VK_RESULT(procs->vkGetSwapchainImagesKHR(d->device, sw->swapchain, &count,
-    //             0)); sw->images.reserve(count); sw->image_views.reserve(count);
+    //             CHECK_VK_RESULT(procs->vkGetSwapchainImagesKHR(d->device, sw->swapchain,
+    //             &count, 0)); sw->images.reserve(count); sw->image_views.reserve(count);
     //             sw->framebuffers.reserve(count);
-    //             CHECK_VK_RESULT(procs->vkGetSwapchainImagesKHR(d->device, sw->swapchain, &count,
+    //             CHECK_VK_RESULT(procs->vkGetSwapchainImagesKHR(d->device, sw->swapchain,
+    //             &count,
     //                                                            sw->images.data()));
     //             sw->images.set_count(count);
     //             sw->image_views.set_count(count);
@@ -1449,7 +1599,8 @@ namespace spargel::gpu {
     //             for (usize i = 0; i < image_count; i++) {
     //                 info.pAttachments = &sw->image_views[i];
     //                 CHECK_VK_RESULT(
-    //                     procs->vkCreateFramebuffer(d->device, &info, 0, &sw->framebuffers[i]));
+    //                     procs->vkCreateFramebuffer(d->device, &info, 0,
+    //                     &sw->framebuffers[i]));
     //             }
     //         }
 
@@ -1468,7 +1619,8 @@ namespace spargel::gpu {
     //             info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     //             info.pNext = 0;
     //             info.flags = 0;
-    //             CHECK_VK_RESULT(procs->vkCreateFence(d->device, &info, 0, &sw->image_available));
+    //             CHECK_VK_RESULT(procs->vkCreateFence(d->device, &info, 0,
+    //             &sw->image_available));
     //         }
     //         {
     //             VkSemaphoreCreateInfo info;
@@ -1500,7 +1652,8 @@ namespace spargel::gpu {
     //         dealloc_object(vulkan_swapchain, s);
     //     }
 
-    //     int vulkan_acquire_image(device_id device, struct acquire_descriptor const* descriptor,
+    //     int vulkan_acquire_image(device_id device, struct acquire_descriptor const*
+    //     descriptor,
     //                              presentable_id* presentable) {
     //         cast_object(vulkan_device, d, device);
     //         cast_object(vulkan_swapchain, s, descriptor->swapchain);
@@ -1508,20 +1661,21 @@ namespace spargel::gpu {
     //         /**
     //          * Spec:
     //          *
-    //          * After acquiring a presentable image and before modifying it, the application must
-    //          use a
+    //          * After acquiring a presentable image and before modifying it, the application
+    //          must use a
     //          * synchronization primitive to ensure that the presentation engine has finished
     //          reading
     //          * from the image.
     //          *
-    //          * The presentation engine may not have finished reading from the image at the time
-    //          it is
-    //          * acquired, so the application must use semaphore and/or fence to ensure that the
-    //          image
+    //          * The presentation engine may not have finished reading from the image at the
+    //          time it is
+    //          * acquired, so the application must use semaphore and/or fence to ensure that
+    //          the image
     //          * layout and contents are not modified until the presentation engine reads have
     //          completed.
     //          */
-    //         int result = d->procs.vkAcquireNextImageKHR(d->device, s->swapchain, UINT64_MAX, 0,
+    //         int result = d->procs.vkAcquireNextImageKHR(d->device, s->swapchain, UINT64_MAX,
+    //         0,
     //                                                     s->image_available,
     //                                                     &s->presentable.index);
     //         if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
@@ -1617,17 +1771,18 @@ namespace spargel::gpu {
     //     /**
     //      * Spec:
     //      *
-    //      * Calls to vkQueuePresentKHR may block, but must return in finite time. The processing
-    //      of
-    //      * the presentation happens in issue order with other queue operations, but semaphores
-    //      must
+    //      * Calls to vkQueuePresentKHR may block, but must return in finite time. The
+    //      processing of
+    //      * the presentation happens in issue order with other queue operations, but
+    //      semaphores must
     //      * be used to ensure that prior rendering and other commands in the specified queue
     //      complete
     //      * before the presentation begins. The presentation command itself does not delay
     //      processing
     //      * of subsequent commands on the queue. However, presentation requests sent to a
     //      particular
-    //      * queue are always performed in order. Exact presentation timing is controlled by the
+    //      * queue are always performed in order. Exact presentation timing is controlled by
+    //      the
     //      * semantics of the presentation engine and native platform in use.
     //      */
     //     {
