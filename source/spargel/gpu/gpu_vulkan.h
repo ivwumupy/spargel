@@ -1,5 +1,6 @@
 #pragma once
 
+#include <spargel/base/hash_map.h>
 #include <spargel/base/platform.h>
 #include <spargel/base/unique_ptr.h>
 #include <spargel/base/vector.h>
@@ -340,6 +341,31 @@ namespace spargel::gpu {
     //     DeviceVulkan* _device;
     //     base::vector<DeviceMemoryBlock> _blocks;
     // };
+
+    struct DescriptorSetShape {
+        friend constexpr bool operator==(DescriptorSetShape const& lhs,
+                                         DescriptorSetShape const& rhs) {
+            return (lhs.uniform_buffer_count == rhs.uniform_buffer_count) &&
+                   (lhs.storage_buffer_count == rhs.storage_buffer_count) &&
+                   (lhs.sampled_texture_count == rhs.sampled_texture_count) &&
+                   (lhs.storage_texture_count == rhs.storage_texture_count);
+        }
+
+        u32 uniform_buffer_count;
+        u32 storage_buffer_count;
+        u32 sampled_texture_count;
+        u32 storage_texture_count;
+    };
+
+    class ShapedDescriptorAllocator {
+    public:
+    };
+
+    class DescriptorAllocator {
+    public:
+    private:
+        base::HashMap<DescriptorSetShape, ShapedDescriptorAllocator> _suballocs;
+    };
 
     class DeviceVulkan final : public Device {
     public:

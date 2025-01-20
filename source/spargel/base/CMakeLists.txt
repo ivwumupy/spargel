@@ -113,3 +113,35 @@ spargel_add_executable(
     DEPS
         base
 )
+
+spargel_add_executable(
+    NAME inline_array_test
+    PRIVATE
+        inline_array_test.cpp
+    DEPS
+        base
+)
+
+spargel_add_executable(
+    NAME optional_test
+    PRIVATE
+        optional_test.cpp
+    DEPS
+        base
+)
+
+spargel_add_executable(
+    NAME array_storage_test
+    PRIVATE
+        array_storage_test.cpp
+    DEPS
+        base
+)
+
+spargel_add_executable(
+    NAME hash_map_test
+    PRIVATE
+        hash_map_test.cpp
+    DEPS
+        base
+)

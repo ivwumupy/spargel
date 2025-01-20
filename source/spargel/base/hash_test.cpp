@@ -4,8 +4,8 @@
 #include <spargel/base/string.h>
 
 constexpr u8 data[] = {0, 1, 2, 3, 4, 5};
-constexpr u64 result =
-    spargel::base::__wyhash::wyhash(data, sizeof(data), spargel::base::__wyhash::default_seed);
+// constexpr u64 result =
+//     spargel::base::__wyhash::wyhash(data, sizeof(data), spargel::base::__wyhash::default_seed);
 
 struct Foo {
     u8 x;
@@ -25,7 +25,7 @@ int main() {
     spargel::base::hash(r, spargel::base::get_executable_path());
     spargel_log_info("%llu", r.result());
     spargel_log_info("%llu", spargel::base::hash(spargel::base::get_executable_path()));
-    spargel_log_info("%llu", result);
+    // spargel_log_info("%llu", result);
 
     Foo f;
     f.x = 1;

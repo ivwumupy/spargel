@@ -14,14 +14,14 @@ using namespace spargel::gpu;
 #define USE_METAL 0
 #endif
 
-#if USE_METAL
-#include <spargel/gpu/demo/shader.metallib.inc>
-#endif
+// #if USE_METAL
+// #include <spargel/gpu/demo/shader.metallib.inc>
+// #endif
 
-#if USE_VULKAN
-#include <spargel/gpu/demo/fragment_shader.spirv.inc>
-#include <spargel/gpu/demo/vertex_shader.spirv.inc>
-#endif
+// #if USE_VULKAN
+// #include <spargel/gpu/demo/fragment_shader.spirv.inc>
+// #include <spargel/gpu/demo/vertex_shader.spirv.inc>
+// #endif
 
 #include <stdio.h>
 

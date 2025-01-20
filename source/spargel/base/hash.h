@@ -16,8 +16,7 @@ namespace spargel::base {
 
     namespace __wyhash {
 
-        // read three bytes
-        inline constexpr u64 wyread3(u8 const* data, u64 len) {
+        inline u64 wyread3(u8 const* data, u64 len) {
             auto p = static_cast<u8 const*>(data);
             u64 a = p[0];
             u64 b = p[len >> 1];
@@ -25,37 +24,21 @@ namespace spargel::base {
             return (a << 56) | (b << 32) | c;
         }
 
-        template <u64 k>
-        constexpr u64 read(u8 const* data) {
-            return data[k];
+        inline u64 wyread4(u8 const* data) {
+            u32 v;
+            memcpy(&v, data, 4);
+            return v;
         }
 
-        inline constexpr u64 wyread4(u8 const* data) {
-            if consteval {
-                return (read<3>(data) << 24) | (read<2>(data) << 16) | (read<1>(data) << 8) |
-                       read<0>(data);
-            } else {
-                u32 v;
-                memcpy(&v, data, 4);
-                return v;
-            }
-        }
-
-        inline constexpr u64 wyread8(u8 const* data) {
-            if consteval {
-                return (read<7>(data) << 56) | (read<6>(data) << 48) | (read<5>(data) << 40) |
-                       (read<4>(data) << 32) | (read<3>(data) << 24) | (read<2>(data) << 16) |
-                       (read<1>(data) << 8) | read<0>(data);
-            } else {
-                u64 v;
-                memcpy(&v, data, 8);
-                return v;
-            }
+        inline u64 wyread8(u8 const* data) {
+            u64 v;
+            memcpy(&v, data, 8);
+            return v;
         }
 
         inline constexpr bool protect_mode = false;
 
-        inline constexpr void wymul(u64& a, u64& b) {
+        inline void wymul(u64& a, u64& b) {
 #ifdef __SIZEOF_INT128__
             __uint128_t r = a;
             r *= b;
@@ -64,7 +47,7 @@ namespace spargel::base {
             //   one `mul` and one `umulh` (arm64)
             //
             // two more `xor`/`eor` in protect_mode
-            if constexpr (protect_mode) {
+            if (protect_mode) {
                 a ^= (u64)r;
                 b ^= (u64)(r >> 64);
             } else {
@@ -76,7 +59,7 @@ namespace spargel::base {
 #endif
         }
 
-        inline constexpr u64 wymix(u64 a, u64 b) {
+        inline u64 wymix(u64 a, u64 b) {
             wymul(a, b);
             return a ^ b;
         }
@@ -87,7 +70,7 @@ namespace spargel::base {
 
         inline constexpr u64 default_seed = 0xbdd89aa982704029;
 
-        inline constexpr u64 wyhash(u8 const* data, u64 len, u64 seed) {
+        inline u64 wyhash(u8 const* data, u64 len, u64 seed) {
             u64 a;
             u64 b;
 
@@ -142,37 +125,35 @@ namespace spargel::base {
     public:
         void combine(u8 v) {
             u8 b[1];
-            memcpy(&v, b, 1);
+            memcpy(b, &v, 1);
             _hash = __wyhash::wyhash(b, 1, _hash);
         }
         void combine(u16 v) {
             u8 b[2];
-            memcpy(&v, b, 2);
+            memcpy(b, &v, 2);
             _hash = __wyhash::wyhash(b, 2, _hash);
         }
         void combine(u32 v) {
             u8 b[4];
-            memcpy(&v, b, 4);
+            memcpy(b, &v, 4);
             _hash = __wyhash::wyhash(b, 4, _hash);
         }
         void combine(u64 v) {
             u8 b[8];
-            memcpy(&v, b, 8);
+            memcpy(b, &v, 8);
             _hash = __wyhash::wyhash(b, 8, _hash);
         }
 
+        void combine(u8 const* data, u64 len) { _hash = __wyhash::wyhash(data, len, _hash); }
+
         template <typename T>
         void combine(T const& v);
-
-        void combine(u8 const* data, u64 len) { _hash = __wyhash::wyhash(data, len, _hash); }
 
         u64 result() const { return _hash; }
 
     private:
         u64 _hash = __wyhash::default_seed;
     };
-
-    class HashRun;
 
     namespace __hash {
         struct hash {
@@ -191,6 +172,16 @@ namespace spargel::base {
         inline constexpr void tag_invoke(hash, HashRun& r, u16 v) { r.combine(v); }
         inline constexpr void tag_invoke(hash, HashRun& r, u32 v) { r.combine(v); }
         inline constexpr void tag_invoke(hash, HashRun& r, u64 v) { r.combine(v); }
+        inline constexpr void tag_invoke(hash, HashRun& r, i8 v) { r.combine(bitCast<i8, u8>(v)); }
+        inline constexpr void tag_invoke(hash, HashRun& r, i16 v) {
+            r.combine(bitCast<i16, u16>(v));
+        }
+        inline constexpr void tag_invoke(hash, HashRun& r, i32 v) {
+            r.combine(bitCast<i32, u32>(v));
+        }
+        inline constexpr void tag_invoke(hash, HashRun& r, i64 v) {
+            r.combine(bitCast<i64, u64>(v));
+        }
     }  // namespace __hash
 
     inline constexpr __hash::hash hash{};

@@ -1,0 +1,180 @@
+#pragma once
+
+#include <spargel/base/algorithm.h>
+#include <spargel/base/array_storage.h>
+#include <spargel/base/assert.h>
+#include <spargel/base/hash.h>
+#include <spargel/base/meta.h>
+#include <spargel/base/tag_invoke.h>
+#include <spargel/base/vector.h>
+
+namespace spargel::base {
+
+    namespace _hash_map {
+
+        // HashMap
+        //
+        // `K` is the type of keys, which should be trivially copyable.
+        //
+        template <typename K, typename T>
+        class HashMap {
+        public:
+            HashMap(Allocator* alloc)
+                : _status(alloc), _keys(alloc), _values(alloc), _alloc{alloc} {
+                spargel_assert(alloc != nullptr);
+            }
+
+            HashMap(HashMap const& other)
+                : _alloc{other._alloc}, _keys(other._keys), _values(other._values) {}
+            HashMap& operator=(HashMap const& other) {
+                spargel_assert(_alloc == other._alloc);
+
+                HashMap tmp(other);
+                swap(*this, tmp);
+                return *this;
+            }
+
+            HashMap(HashMap&& other) : _alloc{other._alloc} { swap(*this, other); }
+            HashMap& operator=(HashMap&& other) {
+                spargel_assert(_alloc == other._alloc);
+
+                HashMap tmp(move(other));
+                swap(*this, tmp);
+                return *this;
+            }
+
+            ~HashMap() { destructItems(); }
+
+            T* get(K const& key) {
+                auto result = findSlot(key);
+                if (result.has_key) {
+                    return &_values[result.index];
+                }
+                return nullptr;
+            }
+
+            template <typename... Args>
+            void set(K const& key, Args&&... args) {
+                ensureSpace();
+
+                FindResult r = findSlot(key);
+                if (r.has_key) {
+                    destruct_at(_values.getPtr(r.index));
+                    construct_at(_values.getPtr(r.index), forward<Args>(args)...);
+                } else {
+                    _status[r.index] = SlotStatus::used;
+                    construct_at(_keys.getPtr(r.index), key);
+                    construct_at(_values.getPtr(r.index), forward<Args>(args)...);
+                }
+
+                _count++;
+            }
+
+            usize count() const { return _count; }
+
+            friend void tag_invoke(tag<swap>, HashMap& lhs, HashMap& rhs) {
+                spargel_assert(lhs._alloc == rhs._alloc);
+
+                swap(lhs._keys, rhs._keys);
+                swap(lhs._values, rhs._values);
+            }
+
+        private:
+            enum class SlotStatus {
+                free,
+                used,
+            };
+
+            struct FindResult {
+                bool has_key;
+                usize index;
+            };
+
+            void grow() {
+                usize new_cap = nextCapacity();
+
+                base::vector<SlotStatus> new_status(_alloc);
+                base::ArrayStorage<K> new_keys(new_cap, _alloc);
+                base::ArrayStorage<T> new_values(new_cap, _alloc);
+                new_status.reserve(new_cap);
+                new_status.set_count(new_cap);
+                for (usize i = 0; i < new_cap; i++) {
+                    new_status[i] = SlotStatus::free;
+                }
+
+                for (usize i = 0; i < _capacity; i++) {
+                    if (_status[i] == SlotStatus::used) {
+                        usize new_i = findFreeSlot(_keys[i], new_cap, new_status);
+
+                        new_status[new_i] = SlotStatus::used;
+                        construct_at(new_keys.getPtr(new_i), move(_keys[i]));
+                        construct_at(new_values.getPtr(new_i), move(_values[i]));
+                    }
+                }
+
+                destructItems();
+
+                _capacity = new_cap;
+                swap(_status, new_status);
+                swap(_keys, new_keys);
+                swap(_values, new_values);
+            }
+
+            usize findFreeSlot(K const& key, usize cap, vector<SlotStatus> status) {
+                spargel_assert(cap > 0);
+
+                u64 h = hash(key);
+                usize i = h % cap;
+                while (true) {
+                    if (status[i] == SlotStatus::free) {
+                        return i;
+                    }
+                    i = (i + 1) % cap;
+                }
+            }
+
+            FindResult findSlot(K const& key) {
+                if (_capacity == 0) {
+                    return FindResult(false, 0);
+                }
+
+                u64 h = hash(key);
+                usize i = h % _capacity;
+                while (true) {
+                    if ((_status[i] == SlotStatus::used) && (_keys[i] == key)) {
+                        return FindResult(true, i);
+                    } else if (_status[i] == SlotStatus::free) {
+                        return FindResult(false, i);
+                    }
+                    i = (i + 1) % _capacity;
+                }
+            }
+
+            void destructItems() {
+                for (usize i = 0; i < _capacity; i++) {
+                    if (_status[i] == SlotStatus::used) {
+                        destruct_at(_keys.getPtr(i));
+                        destruct_at(_values.getPtr(i));
+                    }
+                }
+            }
+
+            bool needToGrow() const { return (_capacity * 3 / 4) <= _count; }
+            usize nextCapacity() const { return _capacity == 0 ? 8 : _capacity * 2; }
+            void ensureSpace() {
+                if (needToGrow()) grow();
+            }
+
+            usize _capacity = 0;
+            usize _count = 0;
+            base::vector<SlotStatus> _status;
+            base::ArrayStorage<K> _keys;
+            base::ArrayStorage<T> _values;
+            Allocator* _alloc;
+        };
+
+    }  // namespace _hash_map
+
+    using _hash_map::HashMap;
+
+}  // namespace spargel::base
