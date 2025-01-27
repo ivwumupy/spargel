@@ -10,6 +10,6 @@ namespace spargel::base {
         return readlink("/proc/self/exe", buf, buf_size);
     }
 
-    void print_backtrace() { printf("<unknown backtrace>\n"); }
+    void PrintBacktrace() { printf("<unknown backtrace>\n"); }
 
 }  // namespace spargel::base

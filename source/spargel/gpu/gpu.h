@@ -23,10 +23,11 @@ namespace spargel::gpu {
     class CommandQueue;
     class ComputePassEncoder;
     class ComputePipeline;
-    class Device;
     class ComputePipeline2;
+    class Device;
     class RenderPassEncoder;
     class RenderPipeline;
+    class RenderPipeline2;
     class ShaderLibrary;
     class Surface;
     class Texture;
@@ -448,6 +449,33 @@ namespace spargel::gpu {
         base::span<PipelineArgumentGroup> groups;
     };
 
+    struct RenderPipeline2Descriptor {
+        /// @brief the geometric primitive for this render pipeline
+        PrimitiveKind primitive = PrimitiveKind::triangle;
+
+        /// @brief the orientation of front-facing triangles
+        Orientation front_face = Orientation::counter_clockwise;
+
+        /// @brief which triangles to discard
+        CullMode cull = CullMode::none;
+
+        /// @brief the vertex function
+        ShaderFunction vertex_shader;
+
+        /// @brief the vertex buffers used in this pipeline
+        base::span<VertexBufferDescriptor> vertex_buffers;
+
+        /// @brief the vertex attributes used in this pipeline
+        base::span<VertexAttributeDescriptor> vertex_attributes;
+
+        /// @brief the fragment function
+        ShaderFunction fragment_shader;
+
+        base::span<ColorAttachmentDescriptor> color_attachments;
+
+        base::span<PipelineArgumentGroup> groups;
+    };
+
     // Interfaces
 
     class BindGroup {
@@ -537,8 +565,12 @@ namespace spargel::gpu {
 
         virtual ObjectPtr<ComputePipeline2> createComputePipeline2(
             ComputePipeline2Descriptor const& desc) = 0;
+        virtual ObjectPtr<RenderPipeline2> createRenderPipeline2(
+            RenderPipeline2Descriptor const& desc) = 0;
         /// Create a bind group for the `id`-th argument group of the pipeline.
         virtual ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<ComputePipeline2> pipeline,
+                                                      u32 id) = 0;
+        virtual ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<RenderPipeline2> pipeline,
                                                       u32 id) = 0;
 
     protected:
@@ -553,7 +585,9 @@ namespace spargel::gpu {
     /// A pipeline can be viewed abstractly as a function. Then pipeline layout is the description
     /// of its arguments.
     ///
+
     class ComputePipeline2 {};
+    class RenderPipeline2 {};
 
     class RenderPassEncoder {
     public:

@@ -70,6 +70,17 @@ namespace spargel::base {
                 _count++;
             }
 
+            template <typename... Args>
+            T& getOrConstruct(K const& key, Args&&... args) {
+                FindResult result = findSlot(key);
+                if (!result.has_key) {
+                    _status[result.index] = SlotStatus::used;
+                    construct_at(_keys.getPtr(result.index), key);
+                    construct_at(_values.getPtr(result.index), forward<Args>(args)...);
+                }
+                return *_values.getPtr(result.index);
+            }
+
             usize count() const { return _count; }
 
             friend void tag_invoke(tag<swap>, HashMap& lhs, HashMap& rhs) {

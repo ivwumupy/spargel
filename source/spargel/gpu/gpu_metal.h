@@ -259,6 +259,61 @@ namespace spargel::gpu {
         base::vector<ArgumentInfoMetal> _compute_args;
     };
 
+    class RenderPipeline2Metal final : public RenderPipeline2 {
+    public:
+        RenderPipeline2Metal(id<MTLFunction> vert_func, id<MTLFunction> frag_func,
+                             id<MTLRenderPipelineState> pipeline,
+                             base::span<PipelineArgumentGroup> groups)
+            : _vert_func{vert_func}, _frag_func{frag_func}, _pipeline{pipeline} {
+            for (usize i = 0; i < groups.count(); i++) {
+                auto const& group = groups[i];
+                if (group.stage.has(ShaderStage::vertex)) {
+                    _vert_groups.push(i, group.location.metal.buffer_id);
+                    for (auto const& arg : group.arguments) {
+                        _vert_args.push(i, group.location.metal.buffer_id, arg.id, arg.kind);
+                    }
+                }
+                if (group.stage.has(ShaderStage::fragment)) {
+                    _frag_groups.push(i, group.location.metal.buffer_id);
+                    for (auto const& arg : group.arguments) {
+                        _frag_args.push(i, group.location.metal.buffer_id, arg.id, arg.kind);
+                    }
+                }
+            }
+        }
+
+        // Get the MTLFunction which contains the `id`-th argument group.
+        id<MTLFunction> getFunction(u32 id) {
+            for (auto const& group : _vert_groups) {
+                if (group.id == id) {
+                    return _vert_func;
+                }
+            }
+            for (auto const& group : _frag_groups) {
+                if (group.id == id) {
+                    return _frag_func;
+                }
+            }
+            return nullptr;
+        }
+
+        auto pipeline() const { return _pipeline; }
+
+        auto vertexFunction() const { return _vert_func; }
+        auto fragmentFunction() const { return _frag_func; }
+
+    private:
+        id<MTLFunction> _vert_func;
+        id<MTLFunction> _frag_func;
+        id<MTLRenderPipelineState> _pipeline;
+
+        base::vector<ArgumentGroupInfoMetal> _vert_groups;
+        base::vector<ArgumentInfoMetal> _vert_args;
+
+        base::vector<ArgumentGroupInfoMetal> _frag_groups;
+        base::vector<ArgumentInfoMetal> _frag_args;
+    };
+
     class BindGroupMetal final : public BindGroup {
     public:
         BindGroupMetal(id<MTLBuffer> buffer, id<MTLArgumentEncoder> encoder,
@@ -339,6 +394,9 @@ namespace spargel::gpu {
             return make_object<ComputePipeline2Metal>(func, pipeline, desc.groups);
         }
 
+        ObjectPtr<RenderPipeline2> createRenderPipeline2(
+            RenderPipeline2Descriptor const& desc) override;
+
         // `id` is the index of the argument group in the program.
         ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<ComputePipeline2> p, u32 id) override {
             auto pipeline = p.cast<ComputePipeline2Metal>();
@@ -350,6 +408,10 @@ namespace spargel::gpu {
             spargel_assert(buffer != nullptr);
             [encoder setArgumentBuffer:buffer offset:0];
             return make_object<BindGroupMetal>(buffer, encoder, pipeline.get());
+        }
+
+        ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<RenderPipeline2> p, u32 id) override {
+            return nullptr;
         }
 
         auto device() { return _device; }

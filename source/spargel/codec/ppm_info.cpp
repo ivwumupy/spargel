@@ -20,7 +20,5 @@ int main(int argc, char* argv[]) {
 
     spargel::codec::destroy_image(image);
 
-    spargel::base::check_leak();
-    spargel::base::check_leak();
     return 0;
 }

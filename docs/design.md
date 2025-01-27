@@ -68,11 +68,11 @@ struct RasterInput
     position: vec3(float)
     color: vec4(float)
 
-@shader(stage = vertex)
+@shader(stage: vertex)
 def vertex_shader(@shader.input input: VertexInput,
                   @shader.vertex_id vid: uint,
                   @shader.instance_id iid: uint,
-                  @shader.binding(group = 0, location = 0) viewport: &float2)
+                  @shader.binding(group: 0, location: 0) viewport: &float2)
     var pos = input.position / ( viewport / 2.0 )
     RasterInput { // position: &mut vec3(float), color: &mut vec4(float)
         position = vec3(float)(pos)

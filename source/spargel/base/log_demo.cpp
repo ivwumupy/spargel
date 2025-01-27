@@ -1,4 +1,3 @@
-#include <spargel/base/base.h>
 #include <spargel/base/logging.h>
 
 int main() {
@@ -7,8 +6,5 @@ int main() {
     spargel_log_warn("hello with %s", "warn");
     spargel_log_error("hello");
     spargel_log_fatal("a fatal message");
-
-    spargel::base::report_allocation();
-    spargel::base::check_leak();
     return 0;
 }

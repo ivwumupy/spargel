@@ -117,11 +117,11 @@ namespace spargel::gpu {
         void* mapAddr();
 
     private:
-        DeviceVulkan* _device;
+        [[maybe_unused]] DeviceVulkan* _device;
         VulkanProcTable const* _procs;
-        VkBuffer _buffer;
-        usize _offset;
-        usize _size;
+        [[maybe_unused]] VkBuffer _buffer;
+        [[maybe_unused]] usize _offset;
+        [[maybe_unused]] usize _size;
         void* _addr;
     };
 
@@ -355,15 +355,38 @@ namespace spargel::gpu {
         u32 storage_buffer_count;
         u32 sampled_texture_count;
         u32 storage_texture_count;
+
+        friend void tag_invoke(base::tag<base::hash>, base::HashRun& run,
+                               DescriptorSetShape const& shape) {
+            run.combine(shape.uniform_buffer_count);
+            run.combine(shape.storage_buffer_count);
+            run.combine(shape.sampled_texture_count);
+            run.combine(shape.storage_texture_count);
+        }
     };
 
     class ShapedDescriptorAllocator {
     public:
+        ShapedDescriptorAllocator(DeviceVulkan* device, DescriptorSetShape const& shape);
+
+    private:
+        void createLayout();
+
+        [[maybe_unused]] DeviceVulkan* _device;
+        VulkanProcTable const* _procs;
+        [[maybe_unused]] VkDescriptorPool _pool;
+        [[maybe_unused]] VkDescriptorSetLayout _layout;
     };
 
     class DescriptorAllocator {
     public:
+        DescriptorAllocator(DeviceVulkan* device);
+
+        VkDescriptorSet allocate(DescriptorSetShape const& shape);
+
     private:
+        DeviceVulkan* _device;
+        VulkanProcTable const* _procs;
         base::HashMap<DescriptorSetShape, ShapedDescriptorAllocator> _suballocs;
     };
 
@@ -401,6 +424,15 @@ namespace spargel::gpu {
         }
 
         ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<ComputePipeline2> p, u32 id) override;
+
+        ObjectPtr<RenderPipeline2> createRenderPipeline2(
+            RenderPipeline2Descriptor const& desc) override {
+            return nullptr;
+        }
+
+        ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<RenderPipeline2> p, u32 id) override {
+            return nullptr;
+        }
 
         auto device() const { return _device; }
         u32 getQueueFamilyIndex() const { return _queue_family_index; }
@@ -457,6 +489,7 @@ namespace spargel::gpu {
         VkQueue _queue;
 
         VkDescriptorPool _dpool;
+        DescriptorAllocator _dalloc;
 
         VkPhysicalDeviceMemoryProperties _memory_props;
 

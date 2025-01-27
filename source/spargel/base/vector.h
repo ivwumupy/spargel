@@ -3,7 +3,6 @@
 #include <spargel/base/algorithm.h>
 #include <spargel/base/allocator.h>
 #include <spargel/base/assert.h>
-#include <spargel/base/base.h>
 #include <spargel/base/logging.h>
 #include <spargel/base/meta.h>
 #include <spargel/base/object.h>
@@ -123,7 +122,7 @@ namespace spargel::base {
             void grow(usize need) {
                 usize old_count = count();
                 auto new_capacity = next_capacity(need);
-                T* new_begin = static_cast<T*>(_alloc->alloc(sizeof(T) * new_capacity));
+                T* new_begin = static_cast<T*>(_alloc->allocate(sizeof(T) * new_capacity));
                 if (_begin != nullptr) [[likely]] {
 #if spargel_has_builtin(__is_trivially_relocatable)
                     if constexpr (__is_trivially_relocatable(T)) {
@@ -155,7 +154,7 @@ namespace spargel::base {
             }
 
             void allocate(usize capacity) {
-                _begin = static_cast<T*>(_alloc->alloc(sizeof(T) * capacity));
+                _begin = static_cast<T*>(_alloc->allocate(sizeof(T) * capacity));
                 _end = _begin;
                 _capacity = _begin + capacity;
             }

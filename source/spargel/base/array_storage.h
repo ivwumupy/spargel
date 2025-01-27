@@ -2,7 +2,6 @@
 
 #include <spargel/base/algorithm.h>
 #include <spargel/base/allocator.h>
-#include <spargel/base/base.h>
 #include <spargel/base/meta.h>
 #include <spargel/base/tag_invoke.h>
 #include <spargel/base/types.h>
@@ -23,7 +22,7 @@ namespace spargel::base {
             ArrayStorage(Allocator* alloc) : _alloc{alloc} {}
 
             ArrayStorage(usize count, Allocator* alloc) : _count{count}, _alloc{alloc} {
-                _data = static_cast<Byte*>(_alloc->alloc(_count * sizeof(T)));
+                _data = static_cast<Byte*>(_alloc->allocate(_count * sizeof(T)));
             }
 
             ArrayStorage(ArrayStorage const&) = delete;

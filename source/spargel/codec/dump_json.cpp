@@ -60,7 +60,7 @@ static void read_file(char const* path, struct file* f) {
     FILE* file = fopen(path, "rb");
     fseek(file, 0, SEEK_END);
     ssize len = ftell(file);
-    char* data = (char*)spargel::base::allocate(len, spargel::base::ALLOCATION_CODEC);
+    char* data = (char*)spargel::base::default_allocator()->allocate(len);
     fseek(file, 0, SEEK_SET);
     fread(data, len, 1, file);
     // data[len] = 0;
@@ -78,11 +78,8 @@ int main(int argc, char* argv[]) {
 
     dump_json_value(&value);
 
-    spargel::base::deallocate(f.data, f.length, spargel::base::ALLOCATION_CODEC);
+    spargel::base::default_allocator()->free(f.data, f.length);
 
     spargel::codec::json_value_deinit(&value);
-
-    spargel::base::report_allocation();
-    spargel::base::check_leak();
     return result;
 }

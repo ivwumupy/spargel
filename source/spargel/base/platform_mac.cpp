@@ -59,7 +59,7 @@ namespace spargel::base {
 #define MAX_STACK_TRACES 128
 #define MAX_SYMBOL_SIZE 255
 
-    void print_backtrace() {
+    void PrintBacktrace() {
         void* entries[MAX_STACK_TRACES] = {};
         int count = backtrace(entries, MAX_STACK_TRACES);
         char symbol_buf[MAX_SYMBOL_SIZE + 1] = {};

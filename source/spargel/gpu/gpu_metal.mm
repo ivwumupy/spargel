@@ -1,4 +1,3 @@
-#include <spargel/base/base.h>
 #include <spargel/base/unique_ptr.h>
 #include <spargel/gpu/gpu_metal.h>
 #include <spargel/ui/ui.h>
@@ -377,6 +376,70 @@ namespace spargel::gpu {
     void ComputePassEncoderMetal::useBuffer(ObjectPtr<Buffer> buffer, BufferAccess access) {
         [_encoder useResource:buffer.cast<BufferMetal>()->buffer()
                         usage:translateBufferAccess(access)];
+    }
+
+    ObjectPtr<RenderPipeline2> DeviceMetal::createRenderPipeline2(
+        RenderPipeline2Descriptor const& descriptor) {
+        auto desc = [[MTLRenderPipelineDescriptor alloc] init];
+
+        auto vertex_library = descriptor.vertex_shader.library.cast<ShaderLibraryMetal>();
+        auto vertex_entry = descriptor.vertex_shader.entry;
+
+        auto vertex_function = [vertex_library->library()
+            newFunctionWithName:[NSString stringWithUTF8String:vertex_entry]];
+
+        auto vertex_descriptor = [MTLVertexDescriptor vertexDescriptor];
+
+        for (ssize i = 0; i < descriptor.vertex_buffers.count(); i++) {
+            vertex_descriptor.layouts[i].stepFunction =
+                translateStepMode(descriptor.vertex_buffers[i].step_mode);
+            vertex_descriptor.layouts[i].stride = descriptor.vertex_buffers[i].stride;
+        }
+
+        for (ssize i = 0; i < descriptor.vertex_attributes.count(); i++) {
+            vertex_descriptor.attributes[i].format =
+                translateVertexFormat(descriptor.vertex_attributes[i].format);
+            vertex_descriptor.attributes[i].offset = descriptor.vertex_attributes[i].offset;
+            // TODO: fix
+            vertex_descriptor.attributes[i].bufferIndex = descriptor.vertex_attributes[i].buffer;
+        }
+
+        desc.vertexFunction = vertex_function;
+
+        for (usize i = 0; i < descriptor.color_attachments.count(); i++) {
+            desc.colorAttachments[i].pixelFormat =
+                translatePixelFormat(descriptor.color_attachments[i].format);
+            desc.colorAttachments[i].blendingEnabled = descriptor.color_attachments[i].enable_blend;
+            desc.colorAttachments[i].alphaBlendOperation = MTLBlendOperationAdd;
+            desc.colorAttachments[i].rgbBlendOperation = MTLBlendOperationAdd;
+            desc.colorAttachments[i].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+            desc.colorAttachments[i].sourceAlphaBlendFactor = MTLBlendFactorOne;
+            desc.colorAttachments[i].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+            desc.colorAttachments[i].destinationAlphaBlendFactor = MTLBlendFactorOne;
+        }
+
+        desc.vertexDescriptor = vertex_descriptor;
+        desc.inputPrimitiveTopology = translatePrimitiveType(descriptor.primitive);
+
+        auto frag_library = descriptor.fragment_shader.library.cast<ShaderLibraryMetal>();
+        auto frag_entry = descriptor.fragment_shader.entry;
+
+        auto frag_function = [frag_library->library()
+            newFunctionWithName:[NSString stringWithUTF8String:frag_entry]];
+
+        for (MTLAttribute* attr in frag_function.stageInputAttributes) {
+            NSLog(@"%@", attr);
+        }
+
+        desc.fragmentFunction = frag_function;
+
+        NSError* error;
+
+        auto state = [_device newRenderPipelineStateWithDescriptor:desc error:&error];
+
+        [desc release];
+
+        return make_object<RenderPipeline2Metal>(vertex_function, frag_function, state, descriptor.groups);
     }
 
 }  // namespace spargel::gpu

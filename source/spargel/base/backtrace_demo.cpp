@@ -1,6 +1,6 @@
-#include <spargel/base/base.h>
+#include <spargel/base/backtrace.h>
 
-static void foo() { spargel::base::print_backtrace(); }
+void foo() { spargel::base::PrintBacktrace(); }
 
 int main() {
     foo();

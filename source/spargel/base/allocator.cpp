@@ -5,14 +5,12 @@
 #include <stdlib.h>
 
 void* operator new(usize size, usize align) noexcept {
-    return spargel::base::default_allocator()->alloc(size);
+    return spargel::base::default_allocator()->allocate(size);
 }
 
 void* operator new[](usize size, usize align) noexcept {
-    return spargel::base::default_allocator()->alloc(size);
+    return spargel::base::default_allocator()->allocate(size);
 }
-
-// void* operator new(usize count, void* ptr) noexcept { return ptr; }
 
 void operator delete(void* ptr, usize size, usize align) noexcept {
     spargel::base::default_allocator()->free(ptr, size);
@@ -23,7 +21,7 @@ void operator delete[](void* ptr, usize size, usize align) noexcept {
 }
 
 void* operator new(usize size, usize align, spargel::base::Allocator* alloc) noexcept {
-    return alloc->alloc(size);
+    return alloc->allocate(size);
 }
 
 namespace spargel::base {
@@ -35,7 +33,7 @@ namespace spargel::base {
         return &inst;
     }
 
-    void* libc_allocator::alloc(usize size) {
+    void* libc_allocator::allocate(usize size) {
         spargel_assert(size > 0);
         return ::malloc(size);
     }

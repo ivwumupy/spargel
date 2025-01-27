@@ -1,4 +1,5 @@
-#include <spargel/base/base.h>
+#include <spargel/base/allocator.h>
+#include <spargel/base/types.h>
 #include <spargel/codec/codec.h>
 #include <spargel/codec/cursor.h>
 
@@ -22,13 +23,13 @@ namespace spargel::codec {
         }
         rewind(file);
 
-        char* ptr = (char*)spargel::base::allocate(len, spargel::base::ALLOCATION_CODEC);
+        char* ptr = (char*)base::default_allocator()->allocate(len);
         if (!ptr) {
             fclose(file);
             return false;
         }
         if (fread(ptr, len, 1, file) != 1) {
-            spargel::base::deallocate(ptr, len, spargel::base::ALLOCATION_CODEC);
+            base::default_allocator()->free(ptr, len);
             fclose(file);
             return false;
         }
@@ -131,8 +132,8 @@ namespace spargel::codec {
             goto free_data;
         }
 
-        parser.pixels = (struct color4*)spargel::base::allocate(
-            sizeof(struct color4) * parser.width * parser.height, spargel::base::ALLOCATION_CODEC);
+        parser.pixels = (struct color4*)base::default_allocator()->allocate(
+            sizeof(struct color4) * parser.width * parser.height);
         if (!parser.pixels) {
             result = DECODE_FAILED;
             goto free_data;
@@ -150,7 +151,7 @@ namespace spargel::codec {
         result = DECODE_SUCCESS;
 
     free_data:
-        spargel::base::deallocate(data, size, spargel::base::ALLOCATION_CODEC);
+        base::default_allocator()->free(data, size);
         return result;
     }
 

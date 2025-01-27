@@ -1,5 +1,4 @@
 #include <spargel/base/assert.h>
-#include <spargel/base/base.h>
 #include <spargel/base/logging.h>
 #include <spargel/base/object.h>
 #include <spargel/base/platform.h>
@@ -571,7 +570,7 @@ namespace spargel::gpu {
         VkDevice _device;
     };
 
-    DeviceVulkan::DeviceVulkan() : Device(DeviceKind::vulkan) {
+    DeviceVulkan::DeviceVulkan() : Device(DeviceKind::vulkan), _dalloc(this) {
         _library = base::open_dynamic_library(vulkan_library_name);
         if (_library == nullptr) {
             spargel_log_fatal("Cannot load the Vulkan loader.");
@@ -1244,6 +1243,22 @@ namespace spargel::gpu {
         write.pTexelBufferView = nullptr;
         _procs->vkUpdateDescriptorSets(_device->device(), 1, &write, 0, nullptr);
     }
+
+    DescriptorAllocator::DescriptorAllocator(DeviceVulkan* device)
+        : _device{device}, _procs{device->getProcTable()}, _suballocs(base::default_allocator()) {}
+
+    VkDescriptorSet DescriptorAllocator::allocate(DescriptorSetShape const& shape) {
+        [[maybe_unused]] auto& suballoc = _suballocs.getOrConstruct(shape, _device, shape);
+        return nullptr;
+    }
+
+    ShapedDescriptorAllocator::ShapedDescriptorAllocator(DeviceVulkan* device,
+                                                         DescriptorSetShape const& shape)
+        : _device{device}, _procs{device->getProcTable()} {
+        createLayout();
+    }
+
+    void ShapedDescriptorAllocator::createLayout() {}
 
     //         d->queue.backend = BACKEND_VULKAN;
 

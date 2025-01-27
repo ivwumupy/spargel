@@ -1,6 +1,5 @@
 #pragma once
 
-#include <spargel/base/base.h>
 #include <spargel/base/span.h>
 #include <spargel/base/string_view.h>
 #include <spargel/base/unique_ptr.h>

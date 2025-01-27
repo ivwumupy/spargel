@@ -2,7 +2,7 @@ spargel_add_library(
     NAME base
     PRIVATE
         allocator.cpp
-        base.cpp
+        panic.cpp
         platform.cpp
         string.cpp
         logging.cpp
