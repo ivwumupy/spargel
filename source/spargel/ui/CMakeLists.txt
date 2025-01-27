@@ -6,6 +6,7 @@ spargel_add_library(
     PRIVATE_ANDROID
         ui_android.cpp
     PRIVATE_LINUX
+        text_linux.cpp
         ui_xcb.cpp
     PRIVATE_MACOS
         ui_mac.mm

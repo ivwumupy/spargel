@@ -4,6 +4,9 @@
 #include <spargel/resource/resource.h>
 #include <spargel/ui/ui.h>
 
+// libc
+#include <stdlib.h>
+
 using namespace spargel::gpu;
 
 #define USE_VULKAN 0

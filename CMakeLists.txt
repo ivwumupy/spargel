@@ -94,6 +94,12 @@ if (SPARGEL_IS_ANDROID)
   find_package(game-activity REQUIRED CONFIG)
 endif ()
 
+if (SPARGEL_IS_LINUX)
+  find_package(Freetype REQUIRED)
+  include_directories(${FREETYPE_INCLUDE_DIRS})
+  link_libraries(${FREETYPE_LIBRARIES})
+endif ()
+
 if (SPARGEL_IS_MACOS)
     find_library(FRAMEWORK_APP_KIT AppKit REQUIRED)
     find_library(FRAMEWORK_METAL Metal REQUIRED)

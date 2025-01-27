@@ -132,7 +132,7 @@ namespace spargel::resource {
 #error unimplemented
 #endif  // SPARGEL_IS_POSIX
 
-#else  // SPARGEL_FILE_MMAP
+#else   // SPARGEL_FILE_MMAP
 
     void directory_resource::close() {
         fclose(_fp);
@@ -157,7 +157,7 @@ namespace spargel::resource {
         fseek(fp, 0, SEEK_SET);
         return new directory_resource(size, fp);
     }
-#endif
+#endif  // SPARGEL_FILE_MMAP
 
     base::string directory_resource_manager::_real_path(const resource_id& id) {
         base::string root = _root_path.length() == 0 ? base::string(".") : _root_path;

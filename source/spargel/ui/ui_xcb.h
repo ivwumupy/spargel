@@ -1,6 +1,7 @@
 #pragma once
 
 #include <spargel/base/vector.h>
+#include <spargel/ui/text_linux.h>
 #include <spargel/ui/ui.h>
 
 /* xcb */
@@ -20,7 +21,10 @@ namespace spargel::ui {
         void start_loop() override;
 
         base::unique_ptr<window> make_window(u32 width, u32 height) override;
-        base::unique_ptr<TextSystem> createTextSystem() override { return nullptr; }
+
+        base::unique_ptr<TextSystem> createTextSystem() override {
+            return base::make_unique<TextSystemLinux>();
+        }
 
     private:
         xcb_connection_t* _connection;
