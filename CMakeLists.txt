@@ -112,3 +112,6 @@ add_subdirectory(source)
 if (SPARGEL_IS_ANDROID)
   set_target_properties(${SPARGEL_ANDROID_TARGET} PROPERTIES OUTPUT_NAME spargeldemo)
 endif ()
+
+
+include(thrid_test.cmake)

@@ -1,6 +1,9 @@
+# tmp
+*.tmp
+tmp*
+
 # IDE
 *.swp
-*.tmp
 .idea
 .vs
 .vscode
