@@ -60,9 +60,11 @@ endif()
 
 spargel_add_option(SPARGEL_ENABLE_COVERAGE "enable coverge" OFF)
 spargel_add_option(SPARGEL_ENABLE_ASSERT "enable assert()" ON)
-spargel_add_option(SPARGEL_ENABLE_LOG_ANSI_COLOR "enable ANSI color for loggin" OFF)
+spargel_add_option(SPARGEL_ENABLE_LOG_ANSI_COLOR "enable ANSI color for logging" OFF)
+spargel_add_option(SPARGEL_ENABLE_OPENGL "enable OpenGL backend" ON)
 spargel_add_option(SPARGEL_ENABLE_SANITIZER_ADDRESS "enable asan" ON)
 spargel_add_option(SPARGEL_FILE_MMAP "enable mmap for file reading" ON)
+spargel_add_option(SPARGEL_GIT_USE_SSH "use ssh for git remote operations" OFF)
 spargel_add_option(SPARGEL_GPU_ENABLE_DIRECTX "enable directx backend" ${SPARGEL_GPU_ENABLE_DIRECTX_DEFAULT})
 spargel_add_option(SPARGEL_GPU_ENABLE_METAL "enable metal backend" ${SPARGEL_GPU_ENABLE_METAL_DEFAULT})
 spargel_add_option(SPARGEL_GPU_ENABLE_VULKAN "enable vulkan backend" ON)
@@ -81,6 +83,35 @@ if (SPARGEL_IS_WINDOWS)
 endif ()
 
 #### External Libraries ####
+
+include(FetchContent)
+
+if (SPARGEL_ENABLE_OPENGL)
+
+  if (SPARGEL_GIT_USE_SSH)
+    set(GLAD_GIT_URL git@github.com:Dav1dde/glad.git)
+  else ()
+    set(GLAD_GIT_URL https://github.com/Dav1dde/glad.git)
+  endif ()
+
+  FetchContent_Declare(
+    glad
+    GIT_REPOSITORY ${GLAD_GIT_URL}
+    GIT_TAG        v2.0.8
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+  )
+
+  FetchContent_GetProperties(glad)
+  if (NOT glad_POPULATED)
+    message("Fetching glad")
+    FetchContent_MakeAvailable(glad)
+
+    add_subdirectory("${glad_SOURCE_DIR}/cmake" glad_cmake)
+    glad_add_library(glad REPRODUCIBLE EXCLUDE_FROM_ALL LOADER API gl:core=3.3 EXTENSIONS)
+  endif ()
+
+endif ()
 
 if (SPARGEL_GPU_ENABLE_VULKAN)
   if (SPARGEL_IS_ANDROID)
@@ -112,6 +143,3 @@ add_subdirectory(source)
 if (SPARGEL_IS_ANDROID)
   set_target_properties(${SPARGEL_ANDROID_TARGET} PROPERTIES OUTPUT_NAME spargeldemo)
 endif ()
-
-
-include(thrid_test.cmake)
