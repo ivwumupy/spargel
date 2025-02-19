@@ -12,136 +12,57 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CTest)
 include(AddSpargel)
 
-#### System Detection ####
+##------------------
+## System Detection
+##------------------
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL Android)
-  set(SPARGEL_IS_ANDROID YES CACHE BOOL "")
+    set(SPARGEL_IS_ANDROID YES CACHE BOOL "")
 else()
-  set(SPARGEL_IS_ANDROID NO CACHE BOOL "")
+    set(SPARGEL_IS_ANDROID NO CACHE BOOL "")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
-  set(SPARGEL_IS_MACOS YES CACHE BOOL "")
+    set(SPARGEL_IS_MACOS YES CACHE BOOL "")
 else()
-  set(SPARGEL_IS_MACOS NO CACHE BOOL "")
+    set(SPARGEL_IS_MACOS NO CACHE BOOL "")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
-  set(SPARGEL_IS_LINUX YES CACHE BOOL "")
+    set(SPARGEL_IS_LINUX YES CACHE BOOL "")
 else()
-  set(SPARGEL_IS_LINUX NO CACHE BOOL "")
+    set(SPARGEL_IS_LINUX NO CACHE BOOL "")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL Windows)
-  set(SPARGEL_IS_WINDOWS YES CACHE BOOL "")
+    set(SPARGEL_IS_WINDOWS YES CACHE BOOL "")
 else()
-  set(SPARGEL_IS_WINDOWS NO CACHE BOOL "")
+    set(SPARGEL_IS_WINDOWS NO CACHE BOOL "")
 endif()
 
-#### UI ####
+##---------
+## Options
+##---------
 
-spargel_add_option(SPARGEL_UI_DUMMY "nogui" ON)
+include(SpargelOptions)
 
-#### GPU Backend ####
+##--------------
+## Dependencies
+##--------------
 
-if(SPARGEL_IS_WINDOWS)
-  set(SPARGEL_GPU_ENABLE_DIRECTX_DEFAULT ON)
-else()
-  set(SPARGEL_GPU_ENABLE_DIRECTX_DEFAULT OFF)
-endif()
+include(SpargelDependencies)
 
-if(SPARGEL_IS_MACOS)
-  set(SPARGEL_GPU_ENABLE_METAL_DEFAULT ON)
-else()
-  set(SPARGEL_GPU_ENABLE_METAL_DEFAULT OFF)
-endif()
-
-#### Spargel Options ####
-
-spargel_add_option(SPARGEL_ENABLE_COVERAGE "enable coverge" OFF)
-spargel_add_option(SPARGEL_ENABLE_ASSERT "enable assert()" ON)
-spargel_add_option(SPARGEL_ENABLE_LOG_ANSI_COLOR "enable ANSI color for logging" OFF)
-spargel_add_option(SPARGEL_ENABLE_OPENGL "enable OpenGL backend" ON)
-spargel_add_option(SPARGEL_ENABLE_SANITIZER_ADDRESS "enable asan" ON)
-spargel_add_option(SPARGEL_FILE_MMAP "enable mmap for file reading" ON)
-spargel_add_option(SPARGEL_GIT_USE_SSH "use ssh for git remote operations" OFF)
-spargel_add_option(SPARGEL_GPU_ENABLE_DIRECTX "enable directx backend" ${SPARGEL_GPU_ENABLE_DIRECTX_DEFAULT})
-spargel_add_option(SPARGEL_GPU_ENABLE_METAL "enable metal backend" ${SPARGEL_GPU_ENABLE_METAL_DEFAULT})
-spargel_add_option(SPARGEL_GPU_ENABLE_VULKAN "enable vulkan backend" ON)
-spargel_add_option(SPARGEL_TRACE_ALLOCATION "trace allocation" ON)
-
-spargel_add_option(SPARGEL_ENABLE_THIRD_PARTY "enable third-party libraries" OFF)
-
-#### Platform Specific Options ####
+##------
+## Misc
+##------
 
 if (SPARGEL_IS_ANDROID)
-  set(SPARGEL_ANDROID_TARGET simple_entry_demo CACHE STRING "the target to be built" )
-  message(STATUS "Android build target: ${SPARGEL_ANDROID_TARGET}")
+    set_target_properties(${SPARGEL_ANDROID_TARGET} PROPERTIES OUTPUT_NAME spargeldemo)
 endif ()
 
-if (SPARGEL_IS_WINDOWS)
-  set(SPARGEL_VS_BUILD_TYPE Debug CACHE STRING "Visual Studio build type")
-  message(STATUS "Visual Studio build type: ${SPARGEL_VS_BUILD_TYPE}")
-endif ()
-
-#### External Libraries ####
-
-include(FetchContent)
-
-if (SPARGEL_ENABLE_OPENGL)
-
-  if (SPARGEL_GIT_USE_SSH)
-    set(GLAD_GIT_URL git@github.com:Dav1dde/glad.git)
-  else ()
-    set(GLAD_GIT_URL https://github.com/Dav1dde/glad.git)
-  endif ()
-
-  FetchContent_Declare(
-    glad
-    GIT_REPOSITORY ${GLAD_GIT_URL}
-    GIT_TAG        v2.0.8
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
-  )
-
-  FetchContent_GetProperties(glad)
-  if (NOT glad_POPULATED)
-    message("Fetching glad")
-    FetchContent_MakeAvailable(glad)
-
-    add_subdirectory("${glad_SOURCE_DIR}/cmake" glad_cmake)
-    glad_add_library(glad REPRODUCIBLE EXCLUDE_FROM_ALL LOADER API gl:core=3.3 EXTENSIONS)
-  endif ()
-
-endif ()
-
-if (SPARGEL_GPU_ENABLE_VULKAN)
-  if (SPARGEL_IS_ANDROID)
-    find_package(Vulkan REQUIRED)
-  else ()
-    find_package(Vulkan REQUIRED glslangValidator)
-  endif ()
-endif ()
-
-if (SPARGEL_IS_ANDROID)
-  find_package(game-activity REQUIRED CONFIG)
-endif ()
-
-if (SPARGEL_IS_LINUX)
-  find_package(Freetype REQUIRED)
-  include_directories(${FREETYPE_INCLUDE_DIRS})
-  link_libraries(${FREETYPE_LIBRARIES})
-endif ()
-
-if (SPARGEL_IS_MACOS)
-    find_library(FRAMEWORK_APP_KIT AppKit REQUIRED)
-    find_library(FRAMEWORK_METAL Metal REQUIRED)
-    find_library(FRAMEWORK_QUARTZ_CORE QuartzCore REQUIRED)
-endif ()
+##---------
+## Sources
+##---------
 
 add_subdirectory(games)
 add_subdirectory(source)
-
-if (SPARGEL_IS_ANDROID)
-  set_target_properties(${SPARGEL_ANDROID_TARGET} PROPERTIES OUTPUT_NAME spargeldemo)
-endif ()

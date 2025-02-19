@@ -116,7 +116,7 @@ if (SPARGEL_IS_MACOS)
     )
 endif ()
 
-if (SPARGEL_GPU_ENABLE_METAL)
+if (SPARGEL_ENABLE_METAL)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shader.ir
         COMMAND

@@ -14,7 +14,7 @@ spargel_add_library(
 #   )
 # endif()
 
-if(${SPARGEL_GPU_ENABLE_METAL})
+if(${SPARGEL_ENABLE_METAL})
     target_sources(gpu
         PRIVATE
             gpu_metal.mm
