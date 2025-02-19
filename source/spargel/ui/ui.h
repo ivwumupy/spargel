@@ -103,6 +103,9 @@ namespace spargel::ui {
 
         /// @brief a keyboard event is received
         virtual void on_keyboard(keyboard_event& e) {}
+
+        /// User has moved the mouse with left button pressed.
+        virtual void onMouseDragged(float dx, float dy) {}
     };
 
     class window {

@@ -32,7 +32,7 @@ namespace spargel::base {
                 return *this;
             }
 
-            vector(vector&& other) { swap(*this, other); }
+            vector(vector&& other) : _alloc{other._alloc} { swap(*this, other); }
             vector& operator=(vector&& other) {
                 vector tmp(move(other));
                 swap(*this, tmp);
@@ -97,6 +97,8 @@ namespace spargel::base {
             T const* end() const { return _end; }
 
             span<T> toSpan() const { return span<T>(_begin, _end); }
+
+            Allocator* getAllocator() { return _alloc; }
 
             friend void tag_invoke(tag<swap>, vector& lhs, vector& rhs) {
                 // todo: how to compare allocator?

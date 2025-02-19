@@ -29,6 +29,7 @@
 @implementation SpargelMetalView {
     CADisplayLink* _link;
     CAMetalLayer* _layer;
+    NSTrackingArea* _tracking;
     spargel::ui::window_appkit* _bridge;
 }
 - (instancetype)initWithSpargelUIWindow:(spargel::ui::window_appkit*)w
@@ -36,9 +37,31 @@
     [super init];
     _bridge = w;
     _layer = layer;
+    _tracking = nil;
     self.layer = _layer;
     self.wantsLayer = YES;  // layer-hosting view
     return self;
+}
+- (void)recreateTrackingArea {
+    if (_tracking != nil) {
+        [self removeTrackingArea:_tracking];
+        [_tracking release];
+    }
+
+    NSTrackingAreaOptions options = (NSTrackingActiveAlways | NSTrackingInVisibleRect |
+                                     NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved);
+
+    _tracking = [[NSTrackingArea alloc] initWithRect:[self bounds]
+                                             options:options
+                                               owner:self
+                                            userInfo:nil];
+    [self addTrackingArea:_tracking];
+}
+- (void)mouseMoved:(NSEvent*)event {
+    spargel_log_info("mouse moved");
+}
+- (void)mouseDragged:(NSEvent*)event {
+    _bridge->_bridgeMouseDragged(event.deltaX, event.deltaY);
 }
 - (void)viewDidMoveToWindow {
     [super viewDidMoveToWindow];
@@ -305,7 +328,8 @@ namespace spargel::ui {
 
         _view = [[SpargelMetalView alloc] initWithSpargelUIWindow:this metalLayer:_layer];
 
-        // auto _text_cursor = [[NSTextInsertionIndicator alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
+        // auto _text_cursor = [[NSTextInsertionIndicator alloc] initWithFrame:NSMakeRect(0, 0, 0,
+        // 0)];
         // [_view addSubview:_text_cursor];
 
         // _text_cursor.displayMode = NSTextInsertionIndicatorDisplayModeAutomatic;
@@ -367,6 +391,12 @@ namespace spargel::ui {
                 spargel_panic_here();
             }
             delegate()->on_keyboard(e);
+        }
+    }
+
+    void window_appkit::_bridgeMouseDragged(float dx, float dy) {
+        if (delegate() != nullptr) {
+            delegate()->onMouseDragged(dx, dy);
         }
     }
 

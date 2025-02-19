@@ -41,8 +41,9 @@ namespace spargel::base {
 
             bool hasValue() const { return _status == Status::value; }
 
-            T& value() { return *getPtr(); }
-            T const& value() const { return *getPtr(); }
+            T& value() & { return *getPtr(); }
+            T const& value() const& { return *getPtr(); }
+            T&& value() && { return move(*getPtr()); }
 
             friend void tag_invoke(tag<swap>, Optional& lhs, Optional& rhs) {
                 if (lhs.hasValue() && rhs.hasValue()) {

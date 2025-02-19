@@ -75,6 +75,8 @@ namespace spargel::ui {
 
         void _bridge_key_down(int key, NSEventType type);
 
+        void _bridgeMouseDragged(float dx, float dy);
+
         void _enable_text_cursor();
 
         void setTextDelegate(TextInputDelegate* delegate) { _text_delegate = delegate; }

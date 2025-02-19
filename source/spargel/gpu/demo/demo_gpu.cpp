@@ -6,7 +6,7 @@
 
 using namespace spargel::gpu;
 
-#define USE_VULKAN 1
+#define USE_VULKAN 0
 
 #if SPARGEL_IS_MACOS
 #define USE_METAL 1

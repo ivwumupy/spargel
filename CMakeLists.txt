@@ -70,6 +70,8 @@ spargel_add_option(SPARGEL_GPU_ENABLE_METAL "enable metal backend" ${SPARGEL_GPU
 spargel_add_option(SPARGEL_GPU_ENABLE_VULKAN "enable vulkan backend" ON)
 spargel_add_option(SPARGEL_TRACE_ALLOCATION "trace allocation" ON)
 
+spargel_add_option(SPARGEL_ENABLE_THIRD_PARTY "enable third-party libraries" OFF)
+
 #### Platform Specific Options ####
 
 if (SPARGEL_IS_ANDROID)
