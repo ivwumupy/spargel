@@ -13,9 +13,6 @@
 #include <string.h>
 #include <time.h>
 
-/* xcb */
-#include <xcb/xcb.h>
-
 namespace spargel::ui {
 
     base::unique_ptr<platform> make_platform_xcb() { return base::make_unique<platform_xcb>(); }
@@ -25,16 +22,28 @@ namespace spargel::ui {
          * Open the connection to the X server.
          * Use the DISPLAY environment variable as the default display name.
          */
-        _connection = xcb_connect(NULL, NULL);
+        _display = XOpenDisplay(NULL);
+        spargel_log_debug("X display opened");
+
+        _connection = XGetXCBConnection(_display);
+        spargel_log_debug("XCB connection established");
 
         /* Get the first screen */
         _screen = xcb_setup_roots_iterator(xcb_get_setup(_connection)).data;
 
-        spargel_log_debug("Information of XCB screen %d:", _screen->root);
-        spargel_log_debug("  width:\t%d", _screen->width_in_pixels);
-        spargel_log_debug("  height:\t%d", _screen->height_in_pixels);
-        spargel_log_debug("  white pixel:\t%08x", _screen->white_pixel);
-        spargel_log_debug("  black pixel:\t%08x", _screen->black_pixel);
+        spargel_log_info("Information of XCB screen %d:", _screen->root);
+        spargel_log_info("  width:\t%d", _screen->width_in_pixels);
+        spargel_log_info("  height:\t%d", _screen->height_in_pixels);
+        spargel_log_info("  white pixel:\t%08x", _screen->white_pixel);
+        spargel_log_info("  black pixel:\t%08x", _screen->black_pixel);
+
+#if SPARGEL_ENABLE_OPENGL
+        _visual_info = nullptr;
+
+        int glx_major, glx_minor;
+        glXQueryVersion(_display, &glx_major, &glx_minor);
+        spargel_log_info("GLX version: %d.%d", glx_major, glx_minor);
+#endif
 
         xcb_intern_atom_cookie_t cookie;
         xcb_intern_atom_reply_t* reply;
@@ -50,7 +59,14 @@ namespace spargel::ui {
         free(reply);
     }
 
-    platform_xcb::~platform_xcb() { xcb_disconnect(_connection); }
+    platform_xcb::~platform_xcb() {
+        XFree(_visual_info);
+
+        // should not do this
+        // xcb_disconnect(_connection);
+
+        XCloseDisplay(_display);
+    }
 
     const float FPS = 60;
     const unsigned int SECOND_NS = 1000000000U;
@@ -155,16 +171,55 @@ namespace spargel::ui {
     base::unique_ptr<window> platform_xcb::make_window(u32 width, u32 height) {
         xcb_window_t id = xcb_generate_id(_connection);
 
-        u32 mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-        u32 values[2] = {_screen->white_pixel, XCB_EVENT_MASK_EXPOSURE};
+#if SPARGEL_ENABLE_OPENGL
+        if (!_visual_info) {
+            static int attribs[] = {GLX_RENDER_TYPE,
+                                    GLX_RGBA_BIT,
+                                    GLX_RED_SIZE,
+                                    8,
+                                    GLX_GREEN_SIZE,
+                                    8,
+                                    GLX_BLUE_SIZE,
+                                    8,
+                                    GLX_ALPHA_SIZE,
+                                    8,
+                                    GLX_DEPTH_SIZE,
+                                    24,
+                                    GLX_STENCIL_SIZE,
+                                    8,
+                                    GLX_DOUBLEBUFFER,
+                                    True,
+                                    None};
 
-        xcb_create_window(_connection, XCB_COPY_FROM_PARENT, /* depth*/
-                          id, _screen->root,                 /* parent window */
-                          0, 0,                              /* x, y */
-                          width, height,                     /* width, height */
-                          10,                                /* border width */
-                          XCB_WINDOW_CLASS_INPUT_OUTPUT,     /* class */
-                          _screen->root_visual,              /* visual */
+            _visual_info = glXChooseVisual(_display, 0, attribs);
+            if (_visual_info) {
+                spargel_log_info("selected visual 0x%lx for GLX", _visual_info->visualid);
+            } else {
+                spargel_log_fatal("cannot find appropriate visual for GLX");
+                spargel_panic_here();
+            }
+        }
+
+        xcb_visualid_t visual_id = _visual_info->visualid;
+        uint8_t depth = _visual_info->depth;
+
+#else
+        xcb_visualid_t visual_id = _screen->root_visual;
+        uint8_t depth = XCB_COPY_FROM_PARENT;
+#endif
+
+        u32 mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+        u32 values[2] = {_screen->black_pixel, XCB_EVENT_MASK_EXPOSURE};
+
+        spargel_log_debug("creating X window %d", id);
+
+        xcb_create_window(_connection, depth,            /* depth*/
+                          id, _screen->root,             /* parent window */
+                          0, 0,                          /* x, y */
+                          width, height,                 /* width, height */
+                          0,                             /* border width */
+                          XCB_WINDOW_CLASS_INPUT_OUTPUT, /* class */
+                          visual_id,                     /* visual */
                           mask, values);
 
         xcb_change_property(_connection, XCB_PROP_MODE_REPLACE, id, _atom_wm_protocols,
@@ -181,17 +236,26 @@ namespace spargel::ui {
         platform->_windows.push(this);
     }
 
-    window_xcb::~window_xcb() {}
+    window_xcb::~window_xcb() {
+        spargel_log_debug("X window %d is closing", _id);
+        xcb_destroy_window(_platform->_connection, _id);
+    }
 
     void window_xcb::set_title(char const* title) {
+        spargel_log_debug("setting the title of X window %d to \"%s\"", _id, title);
         xcb_change_property(_platform->_connection, XCB_PROP_MODE_REPLACE, _id, XCB_ATOM_WM_NAME,
                             XCB_ATOM_STRING, 8, strlen(title), title);
     }
 
     window_handle window_xcb::handle() {
         window_handle handle{};
+
         handle.xcb.connection = _platform->_connection;
         handle.xcb.window = _id;
+
+        handle.xcb.display = _platform->_display;
+        handle.xcb.visual_info = _platform->_visual_info;
+
         return handle;
     }
 

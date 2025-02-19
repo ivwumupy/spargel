@@ -40,6 +40,11 @@ spargel_add_executable(
     DEPS gpu ui
 )
 
+
+add_custom_target(make_resources_dir
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/resources
+)
+
 if (SPARGEL_GPU_ENABLE_VULKAN)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/resources/vertex_shader.spirv
@@ -98,9 +103,9 @@ if (SPARGEL_GPU_ENABLE_VULKAN)
         DEPENDS
             ${CMAKE_CURRENT_BINARY_DIR}/resources/demo_sort.spirv
     )
-    add_dependencies(demo_gpu demo_gpu_vulkan_shaders)
-    add_dependencies(demo_sum demo_sum_vulkan_shaders)
-    add_dependencies(demo_sort demo_sort_vulkan_shaders)
+    add_dependencies(demo_gpu make_resources_dir demo_gpu_vulkan_shaders)
+    add_dependencies(demo_sum make_resources_dir demo_sum_vulkan_shaders)
+    add_dependencies(demo_sort make_resources_dir demo_sort_vulkan_shaders)
 endif ()
 
 if (SPARGEL_IS_MACOS)
@@ -134,10 +139,10 @@ if (SPARGEL_GPU_ENABLE_METAL)
         DEPENDS
             ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
     )
-    add_dependencies(demo_gpu demo_gpu_metal_shaders)
-    add_dependencies(demo_gpu_mac demo_gpu_metal_shaders)
-    add_dependencies(demo_tiles demo_gpu_metal_shaders)
-    add_dependencies(demo_sort demo_gpu_metal_shaders)
+    add_dependencies(demo_gpu make_resources_dir demo_gpu_metal_shaders)
+    add_dependencies(demo_gpu_mac make_resources_dir demo_gpu_metal_shaders)
+    add_dependencies(demo_tiles make_resources_dir demo_gpu_metal_shaders)
+    add_dependencies(demo_sort make_resources_dir demo_gpu_metal_shaders)
 endif ()
 
 if (SPARGEL_GPU_ENABLE_DIRECTX)
@@ -165,5 +170,5 @@ if (SPARGEL_GPU_ENABLE_DIRECTX)
             ${CMAKE_CURRENT_BINARY_DIR}/resources/shaders.vs.dxil
             ${CMAKE_CURRENT_BINARY_DIR}/resources/shaders.ps.dxil
     )
-    add_dependencies(demo_directx demo_directx_shaders)
+    add_dependencies(demo_directx make_resources_dir demo_directx_shaders)
 endif()

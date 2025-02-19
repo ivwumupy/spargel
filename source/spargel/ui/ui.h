@@ -37,6 +37,10 @@ namespace spargel::ui {
             struct {
                 void* connection;
                 int window;
+
+                // Xlib things, for GLX
+                void* display;
+                void* visual_info;
             } xcb;
         };
     };

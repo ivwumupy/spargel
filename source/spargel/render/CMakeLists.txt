@@ -1,11 +1,3 @@
-if (SPARGEL_ENABLE_OPENGL)
-    spargel_add_executable(
-        NAME demo_glad
-        PRIVATE
-            demo_glad.c
-    )
-    target_link_libraries(demo_glad PRIVATE glad)
-endif()
 
 if (SPARGEL_IS_MACOS)
     spargel_add_executable(
@@ -47,4 +39,27 @@ if (SPARGEL_IS_MACOS)
             ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
     )
     add_dependencies(demo_metal demo_render_metal_shaders)
+endif ()
+
+
+if (SPARGEL_ENABLE_OPENGL)
+
+    spargel_add_executable(
+        NAME demo_opengl
+        PRIVATE
+            demo_opengl.cpp
+        DEPS
+            glad
+            resource
+            ui
+    )
+
+    add_custom_target(demo_opengl_shaders ALL
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/resources
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/shader.vs ${CMAKE_CURRENT_BINARY_DIR}/resources/
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/shader.fs ${CMAKE_CURRENT_BINARY_DIR}/resources/
+    )
+
+    add_dependencies(demo_opengl demo_opengl_shaders)
+
 endif ()

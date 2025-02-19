@@ -1,11 +1,19 @@
 #pragma once
 
 #include <spargel/base/vector.h>
+#include <spargel/config.h>
 #include <spargel/ui/text_linux.h>
 #include <spargel/ui/ui.h>
 
-/* xcb */
+/* X11 */
+#include <X11/Xlib-xcb.h>
+#include <X11/Xlib.h>
 #include <xcb/xcb.h>
+
+#if SPARGEL_ENABLE_OPENGL
+/* GLX */
+#include <GL/glx.h>
+#endif
 
 namespace spargel::ui {
 
@@ -27,8 +35,14 @@ namespace spargel::ui {
         }
 
     private:
+        Display* _display;
+
         xcb_connection_t* _connection;
         xcb_screen_t* _screen;
+
+#if SPARGEL_ENABLE_OPENGL
+        XVisualInfo* _visual_info;
+#endif
 
         base::vector<window_xcb*> _windows;
 

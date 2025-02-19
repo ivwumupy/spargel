@@ -28,6 +28,11 @@ if (SPARGEL_IS_LINUX)
     else ()
         message(FATAL_ERROR "X11/Xcb not found")
     endif ()
+
+    if (SPARGEL_ENABLE_OPENGL)
+        find_package(OpenGL REQUIRED GLX)
+        target_link_libraries(ui PRIVATE OpenGL::GLX X11-xcb)
+    endif ()
 endif ()
 
 if (APPLE)
