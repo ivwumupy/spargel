@@ -1,5 +1,6 @@
-#include <spargel/base/base.h>
+
 #include <spargel/base/logging.h>
+#include <spargel/base/panic.h>
 
 //
 #include <combaseapi.h>

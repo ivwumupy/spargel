@@ -12,6 +12,8 @@
 
 #if SPARGEL_IS_LINUX
 #include <GL/glx.h>
+#elif SPARGEL_IS_WINDOWS
+#include <windows.h>
 #else
 #error unimplemented
 #endif
@@ -30,7 +32,11 @@ namespace spargel {
 
             glDrawArrays(GL_TRIANGLES, 0, 3);
 
+#if SPARGEL_IS_LINUX
             glXSwapBuffers(_x_display, _x_window);
+#elif SPARGEL_IS_WINDOWS
+            wglSwapLayerBuffers(_win32_hdc, WGL_SWAP_MAIN_PLANE);
+#endif
         }
 
         unsigned int program;
@@ -39,6 +45,8 @@ namespace spargel {
 #if SPARGEL_IS_LINUX
         Display* _x_display;
         int _x_window;
+#elif SPARGEL_IS_WINDOWS
+        HDC _win32_hdc;
 #endif
     };
 
@@ -71,6 +79,46 @@ namespace spargel {
             spargel_log_fatal("cannot make GL context current");
             spargel_panic_here();
         }
+#elif SPARGEL_IS_WINDOWS
+        auto hwnd = (HWND)handle.win32.hwnd;
+        PIXELFORMATDESCRIPTOR pfd = {
+            sizeof(PIXELFORMATDESCRIPTOR),
+            1,
+            PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,  // Flags
+            PFD_TYPE_RGBA,  // The kind of framebuffer. RGBA or palette.
+            32,             // Colordepth of the framebuffer.
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            24,  // Number of bits for the depthbuffer
+            8,   // Number of bits for the stencilbuffer
+            0,   // Number of Aux buffers in the framebuffer.
+            PFD_MAIN_PLANE,
+            0,
+            0,
+            0,
+            0};
+
+        HDC win32_hdc = GetDC(hwnd);
+        d._win32_hdc = win32_hdc;
+
+        int pixelFormat;
+        pixelFormat = ChoosePixelFormat(win32_hdc, &pfd);
+        SetPixelFormat(win32_hdc, pixelFormat, &pfd);
+
+        HGLRC wgl_ctx = wglCreateContext(win32_hdc);
+
+        wglMakeCurrent(win32_hdc, wgl_ctx);
 #endif
 
         spargel_log_info("Glad generator version: %s", GLAD_GENERATOR_VERSION);
@@ -81,7 +129,7 @@ namespace spargel {
         char infoLog[512];
 
         unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        auto vertexShaderCode = resource_manager->open(resource::resource_id("shader.vs"));
+        auto vertexShaderCode = resource_manager->open(resource::resource_id("demo_opengl.vs"));
         if (!vertexShaderCode) {
             spargel_log_fatal("cannot open vertex shader file");
             spargel_panic_here();
@@ -100,7 +148,7 @@ namespace spargel {
         }
 
         unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        auto fragmentShaderCode = resource_manager->open(resource::resource_id("shader.fs"));
+        auto fragmentShaderCode = resource_manager->open(resource::resource_id("demo_opengl.fs"));
         if (!fragmentShaderCode) {
             spargel_log_fatal("cannot open fragment shader file");
             spargel_panic_here();
@@ -173,6 +221,8 @@ namespace spargel {
 
 #if SPARGEL_IS_LINUX
         glXDestroyContext(x_display, glx_ctx);
+#elif SPARGEL_IS_WINDOWS
+        wglDeleteContext(wgl_ctx);
 #endif
 
         resource_manager->close();

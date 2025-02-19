@@ -54,10 +54,15 @@ if (SPARGEL_ENABLE_OPENGL)
             ui
     )
 
+    if (SPARGEL_IS_WINDOWS)
+        find_package(OpenGL REQUIRED)
+        target_link_libraries(demo_opengl PRIVATE OpenGL::GL)
+    endif ()
+
     add_custom_target(demo_opengl_shaders ALL
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/resources
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/shader.vs ${CMAKE_CURRENT_BINARY_DIR}/resources/
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/shader.fs ${CMAKE_CURRENT_BINARY_DIR}/resources/
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/demo_opengl.vs ${CMAKE_CURRENT_BINARY_DIR}/resources/
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/demo_opengl.fs ${CMAKE_CURRENT_BINARY_DIR}/resources/
     )
 
     add_dependencies(demo_opengl demo_opengl_shaders)

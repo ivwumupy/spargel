@@ -52,6 +52,8 @@ namespace spargel::ui {
 
         RegisterClassA(&wc);
 
+        spargel_log_debug("creating win32 window");
+
         HWND hwnd = CreateWindowExA(0,                    // optional window styles
                                     CLASS_NAME,           // window class
                                     "Spargel Engine",     // window text
@@ -81,9 +83,15 @@ namespace spargel::ui {
         platform->_windows.push(this);
     }
 
-    window_win32::~window_win32() { DestroyWindow(_hwnd); }
+    window_win32::~window_win32() {
+        spargel_log_debug("destroying win32 window");
+        DestroyWindow(_hwnd);
+    }
 
-    void window_win32::set_title(char const* title) { SetWindowTextA(_hwnd, title); }
+    void window_win32::set_title(char const* title) {
+        spargel_log_debug("setting win32 window title to \"%s\"", title);
+        SetWindowTextA(_hwnd, title);
+    }
 
     window_handle window_win32::handle() {
         window_handle handle{};

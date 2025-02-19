@@ -12,6 +12,11 @@
 // todo: now the code assumes little-endian
 // use `__builtin_bswap64` (gcc/clang) or `_byteswap_uint64` (msvc) to swap endian
 
+#if SPARGEL_IS_MSVC
+#include <intrin.h>
+#pragma intrinsic(_mul128)
+#endif
+
 namespace spargel::base {
 
     namespace __wyhash {
@@ -38,7 +43,7 @@ namespace spargel::base {
 
         inline constexpr bool protect_mode = false;
 
-        inline void wymul(u64& a, u64& b) {
+        inline constexpr void wymul(u64& a, u64& b) {
 #ifdef __SIZEOF_INT128__
             __uint128_t r = a;
             r *= b;
@@ -54,12 +59,19 @@ namespace spargel::base {
                 a = (u64)r;
                 b = (u64)(r >> 64);
             }
+#elif SPARGEL_IS_MSVC
+            /* FIXME: this is not regarded as constexpr
+            __int64 h, l;
+            l = _mul128(a, b, &h);
+            a = l;
+            b = h;
+            */
 #else
 #error unimplemented
 #endif
         }
 
-        inline u64 wymix(u64 a, u64 b) {
+        inline constexpr u64 wymix(u64 a, u64 b) {
             wymul(a, b);
             return a ^ b;
         }
@@ -70,7 +82,7 @@ namespace spargel::base {
 
         inline constexpr u64 default_seed = 0xbdd89aa982704029;
 
-        inline u64 wyhash(u8 const* data, u64 len, u64 seed) {
+        inline constexpr u64 wyhash(u8 const* data, u64 len, u64 seed) {
             u64 a;
             u64 b;
 
@@ -123,6 +135,39 @@ namespace spargel::base {
 
     class HashRun {
     public:
+#if SPARGEL_IS_MSVC
+        constexpr void combine(u8 v) {
+            u8 b[1];
+            b[0] = v;
+            _hash = __wyhash::wyhash(b, 1, _hash);
+        }
+        constexpr void combine(u16 v) {
+            u8 b[2];
+            b[0] = v & 0xff;
+            b[1] = (v >> 8) & 0xff;
+            _hash = __wyhash::wyhash(b, 2, _hash);
+        }
+        constexpr void combine(u32 v) {
+            u8 b[4];
+            b[0] = v & 0xff;
+            b[1] = (v >> 8) & 0xff;
+            b[2] = (v >> 16) & 0xff;
+            b[3] = (v >> 24) & 0xff;
+            _hash = __wyhash::wyhash(b, 4, _hash);
+        }
+        constexpr void combine(u64 v) {
+            u8 b[8];
+            b[0] = v & 0xff;
+            b[1] = (v >> 8) & 0xff;
+            b[2] = (v >> 16) & 0xff;
+            b[3] = (v >> 24) & 0xff;
+            b[4] = (v >> 32) & 0xff;
+            b[5] = (v >> 40) & 0xff;
+            b[6] = (v >> 48) & 0xff;
+            b[7] = (v >> 56) & 0xff;
+            _hash = __wyhash::wyhash(b, 8, _hash);
+        }
+#else
         void combine(u8 v) {
             u8 b[1];
             memcpy(b, &v, 1);
@@ -143,6 +188,7 @@ namespace spargel::base {
             memcpy(b, &v, 8);
             _hash = __wyhash::wyhash(b, 8, _hash);
         }
+#endif
 
         void combine(u8 const* data, u64 len) { _hash = __wyhash::wyhash(data, len, _hash); }
 
