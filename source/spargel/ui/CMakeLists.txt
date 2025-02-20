@@ -1,7 +1,8 @@
 spargel_add_library(
     NAME ui
     PRIVATE
-        ui.cpp
+        event.cpp
+        platform.cpp
         ui_dummy.cpp
     PRIVATE_ANDROID
         ui_android.cpp

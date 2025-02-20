@@ -3,6 +3,6 @@
 
 namespace spargel::ui {
 
-    base::unique_ptr<platform> make_platform_dummy() { return base::make_unique<platform_dummy>(); }
+    base::unique_ptr<Platform> makePlatformDummy() { return base::make_unique<PlatformDummy>(); }
 
 }  // namespace spargel::ui

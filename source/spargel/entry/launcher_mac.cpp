@@ -1,7 +1,7 @@
 #include <spargel/base/logging.h>
 #include <spargel/entry/component.h>
 #include <spargel/entry/launch_data.h>
-#include <spargel/ui/ui.h>
+#include <spargel/ui/platform.h>
 
 // platform
 #include <dlfcn.h>
@@ -20,13 +20,13 @@ int main(int argc, char* argv[]) {
         dlsym(lib, "_spargel_make_component"));
 
     spargel::entry::launch_data data;
-    auto platform = spargel::ui::make_platform();
+    auto platform = spargel::ui::makePlatform();
     data.platform = platform.get();
 
     auto component = maker(&data);
     component->on_load();
 
-    platform->start_loop();
+    platform->startLoop();
 
     dlclose(lib);
     return 0;

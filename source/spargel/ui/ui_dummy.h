@@ -1,31 +1,32 @@
 #pragma once
 
-#include <spargel/ui/ui.h>
+#include <spargel/ui/platform.h>
+#include <spargel/ui/window.h>
 
 namespace spargel::ui {
 
-    class window_dummy final : public window {
+    class WindowDummy final : public Window {
     public:
-        void set_title(char const* title) override {}
+        void setTitle(char const* title) override {}
 
         void setAnimating(bool) override {}
         void requestRedraw() override {}
 
-        window_handle handle() override { return {}; }
+        WindowHandle getHandle() override { return {}; }
     };
 
-    class platform_dummy final : public platform {
+    class PlatformDummy final : public Platform {
     public:
-        platform_dummy() : platform(platform_kind::dummy) {}
+        PlatformDummy() : Platform(PlatformKind::dummy) {}
 
-        void start_loop() override {}
+        void startLoop() override {}
 
-        base::unique_ptr<window> make_window(u32 width, u32 height) override {
-            return base::make_unique<window_dummy>();
+        base::unique_ptr<Window> makeWindow(u32 width, u32 height) override {
+            return base::make_unique<WindowDummy>();
         }
         base::unique_ptr<TextSystem> createTextSystem() override { return nullptr; }
     };
 
-    base::unique_ptr<platform> make_platform_dummy();
+    base::unique_ptr<Platform> makePlatformDummy();
 
 }  // namespace spargel::ui

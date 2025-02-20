@@ -2,7 +2,8 @@
 #include <spargel/gpu/gpu.h>
 #include <spargel/resource/directory.h>
 #include <spargel/resource/resource.h>
-#include <spargel/ui/ui.h>
+#include <spargel/ui/platform.h>
+#include <spargel/ui/window.h>
 
 // libc
 #include <stdlib.h>
@@ -87,12 +88,12 @@ u32 max(u32 a, u32 b) { return a > b ? a : b; }
 
 static constexpr int N = 100;
 
-class Renderer final : public spargel::ui::window_delegate {
+class Renderer final : public spargel::ui::WindowDelegate {
 public:
-    explicit Renderer(spargel::ui::window* window,
-                      spargel::resource::resource_manager* resource_manager)
+    Renderer(spargel::ui::Window* window,
+             spargel::resource::resource_manager* resource_manager)
         : _window{window}, _manager{resource_manager} {
-        _window->set_delegate(this);
+        _window->setDelegate(this);
 
 #if USE_VULKAN
         _device = makeDevice(DeviceKind::vulkan);
@@ -156,7 +157,7 @@ public:
         // _device->destroyShaderLibrary(_shader);
     }
 
-    void on_render() override {
+    void onRender() override {
         auto texture = _surface->nextTexture();
 
         auto cmdbuf = _queue->createCommandBuffer();
@@ -200,13 +201,13 @@ public:
         }
     }
 
-    void on_keyboard(spargel::ui::keyboard_event& e) override {
+    void onKeyboard(spargel::ui::KeyboardEvent& e) override {
         if (e.toChar() == 'j') {
             _frame++;
         } else if (e.toChar() == 'k') {
             if (_frame > 0) _frame--;
-        } else if (e.key == spargel::ui::physical_key::space &&
-                   e.action == spargel::ui::keyboard_action::press) {
+        } else if (e.key == spargel::ui::PhysicalKey::space &&
+                   e.action == spargel::ui::KeyboardAction::press) {
             _animating = !_animating;
             _window->setAnimating(_animating);
         }
@@ -214,7 +215,7 @@ public:
     }
 
 private:
-    spargel::ui::window* _window;
+    spargel::ui::Window* _window;
     spargel::resource::resource_manager* _manager;
     spargel::base::unique_ptr<Device> _device;
     ObjectPtr<ShaderLibrary> _shader;
@@ -236,14 +237,14 @@ private:
 };
 
 int main() {
-    auto platform = spargel::ui::make_platform();
+    auto platform = spargel::ui::makePlatform();
     auto resource_manager = spargel::resource::make_relative_manager();
 
-    auto window = platform->make_window(500, 500);
-    window->set_title("Spargel Engine - GPU");
+    auto window = platform->makeWindow(500, 500);
+    window->setTitle("Spargel Engine - GPU");
 
     Renderer r(window.get(), resource_manager.get());
 
-    platform->start_loop();
+    platform->startLoop();
     return 0;
 }

@@ -4,7 +4,6 @@
 #include <spargel/base/meta.h>
 #include <spargel/base/unique_ptr.h>
 #include <spargel/base/vector.h>
-#include <spargel/ui/ui.h>
 #include <spargel/ui/ui_mac.h>
 
 //
@@ -30,9 +29,9 @@
     CADisplayLink* _link;
     CAMetalLayer* _layer;
     NSTrackingArea* _tracking;
-    spargel::ui::window_appkit* _bridge;
+    spargel::ui::WindowAppKit* _bridge;
 }
-- (instancetype)initWithSpargelUIWindow:(spargel::ui::window_appkit*)w
+- (instancetype)initWithSpargelUIWindow:(spargel::ui::WindowAppKit*)w
                              metalLayer:(CAMetalLayer*)layer {
     [super init];
     _bridge = w;
@@ -48,8 +47,7 @@
         [_tracking release];
     }
 
-    NSTrackingAreaOptions options = (NSTrackingActiveAlways | NSTrackingInVisibleRect |
-                                     NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved);
+    NSTrackingAreaOptions options = NSTrackingActiveAlways | NSTrackingInVisibleRect | NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved;
 
     _tracking = [[NSTrackingArea alloc] initWithRect:[self bounds]
                                              options:options
@@ -87,9 +85,7 @@
     // cycle of the event loop, and drains it at the end, thereby releasing any autoreleased objects
     // generated while processing an event.
     //
-    // @autoreleasepool {
     _bridge->_bridge_render();
-    // }
 }
 - (void)viewDidChangeBackingProperties {
     [super viewDidChangeBackingProperties];
@@ -117,7 +113,7 @@
     }
     _layer.drawableSize = newSize;
 
-    // _bridge->_set_drawable_size((float)newSize.width, (float)newSize.height);
+    // _bridge->_setDrawableSize((float)newSize.width, (float)newSize.height);
 }
 - (void)keyDown:(NSEvent*)event {
     auto code = [event keyCode];
@@ -178,9 +174,9 @@
 @end
 
 @implementation SpargelWindowDelegate {
-    spargel::ui::window_appkit* _bridge;
+    spargel::ui::WindowAppKit* _bridge;
 }
-- (instancetype)initWithSpargelUIWindow:(spargel::ui::window_appkit*)w {
+- (instancetype)initWithSpargelUIWindow:(spargel::ui::WindowAppKit*)w {
     [super init];
     _bridge = w;
     return self;
@@ -188,8 +184,8 @@
 @end
 
 namespace {
-    spargel::ui::physical_key translate_physical_key(int code) {
-        using enum spargel::ui::physical_key;
+    spargel::ui::PhysicalKey translatePhysicalKey(int code) {
+        using enum spargel::ui::PhysicalKey;
         switch (code) {
         case kVK_ANSI_A:
             return key_a;
@@ -257,11 +253,11 @@ namespace {
 
 namespace spargel::ui {
 
-    base::unique_ptr<platform> make_platform_appkit() {
-        return base::make_unique<platform_appkit>();
+    base::unique_ptr<Platform> makePlatformAppKit() {
+        return base::make_unique<PlatformAppKit>();
     }
 
-    platform_appkit::platform_appkit() : platform(platform_kind::appkit) {
+    PlatformAppKit::PlatformAppKit() : Platform(PlatformKind::appkit) {
         _app = [NSApplication sharedApplication];
         [_app setActivationPolicy:NSApplicationActivationPolicyRegular];
 
@@ -269,22 +265,22 @@ namespace spargel::ui {
         // NSApp.delegate is a weak reference
         _app.delegate = delegate;
 
-        init_global_menu();
+        initGlobalMenu();
     }
 
-    platform_appkit::~platform_appkit() {}
+    PlatformAppKit::~PlatformAppKit() {}
 
-    void platform_appkit::start_loop() { [_app run]; }
+    void PlatformAppKit::startLoop() { [_app run]; }
 
-    base::unique_ptr<window> platform_appkit::make_window(u32 width, u32 height) {
+    base::unique_ptr<Window> PlatformAppKit::makeWindow(u32 width, u32 height) {
         spargel_assert(width > 0 && height > 0);
-        return base::make_unique<window_appkit>(width, height);
+        return base::make_unique<WindowAppKit>(width, height);
     }
-    base::unique_ptr<TextSystem> platform_appkit::createTextSystem() {
+    base::unique_ptr<TextSystem> PlatformAppKit::createTextSystem() {
         return base::make_unique<TextSystemAppKit>();
     }
 
-    void platform_appkit::init_global_menu() {
+    void PlatformAppKit::initGlobalMenu() {
         NSMenu* menu_bar = [[NSMenu alloc] init];
 
         NSMenu* app_menu = [[NSMenu alloc] initWithTitle:@"Spargel"];
@@ -300,7 +296,7 @@ namespace spargel::ui {
         _app.mainMenu = menu_bar;
     }
 
-    window_appkit::window_appkit(int width, int height) {
+    WindowAppKit::WindowAppKit(int width, int height) {
         NSScreen* screen = [NSScreen mainScreen];
 
         NSWindowStyleMask style = NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable |
@@ -340,63 +336,63 @@ namespace spargel::ui {
         [_window makeKeyAndOrderFront:nil];
     }
 
-    void window_appkit::_enable_text_cursor() {
+    void WindowAppKit::_enable_text_cursor() {
         // _text_cursor.displayMode = NSTextInsertionIndicatorDisplayModeAutomatic;
     }
 
-    window_appkit::~window_appkit() {
+    WindowAppKit::~WindowAppKit() {
         [_window release];
         [_bridge release];
     }
 
-    void window_appkit::set_title(char const* title) {
+    void WindowAppKit::setTitle(char const* title) {
         _window.title = [NSString stringWithUTF8String:title];
     }
 
-    void window_appkit::setAnimating(bool animating) {
+    void WindowAppKit::setAnimating(bool animating) {
         if (_animating != animating) {
             [_view setAnimating:animating];
         }
         _animating = animating;
     }
 
-    void window_appkit::requestRedraw() { _bridge_render(); }
+    void WindowAppKit::requestRedraw() { _bridge_render(); }
 
-    void window_appkit::_set_drawable_size(float width, float height) {
+    void WindowAppKit::_setDrawableSize(float width, float height) {
         _drawable_width = width;
         _drawable_height = height;
     }
 
-    window_handle window_appkit::handle() {
-        window_handle handle;
+    WindowHandle WindowAppKit::getHandle() {
+        WindowHandle handle;
         handle.apple.layer = _layer;
         return handle;
     }
 
-    void window_appkit::_bridge_render() {
-        if (delegate() != nullptr) {
-            delegate()->on_render();
+    void WindowAppKit::_bridge_render() {
+        if (getDelegate() != nullptr) {
+            getDelegate()->onRender();
         }
     }
 
-    void window_appkit::_bridge_key_down(int key, NSEventType type) {
-        if (delegate() != nullptr) {
-            keyboard_event e;
-            e.key = translate_physical_key(key);
+    void WindowAppKit::_bridge_key_down(int key, NSEventType type) {
+        if (getDelegate() != nullptr) {
+            KeyboardEvent e;
+            e.key = translatePhysicalKey(key);
             if (type == NSEventTypeKeyDown) {
-                e.action = keyboard_action::press;
+                e.action = KeyboardAction::press;
             } else if (type == NSEventTypeKeyUp) {
-                e.action = keyboard_action::release;
+                e.action = KeyboardAction::release;
             } else {
                 spargel_panic_here();
             }
-            delegate()->on_keyboard(e);
+            getDelegate()->onKeyboard(e);
         }
     }
 
-    void window_appkit::_bridgeMouseDragged(float dx, float dy) {
-        if (delegate() != nullptr) {
-            delegate()->onMouseDragged(dx, dy);
+    void WindowAppKit::_bridgeMouseDragged(float dx, float dy) {
+        if (getDelegate() != nullptr) {
+            getDelegate()->onMouseDragged(dx, dy);
         }
     }
 

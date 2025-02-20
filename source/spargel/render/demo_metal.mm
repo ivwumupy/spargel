@@ -4,7 +4,8 @@
 #include <spargel/base/optional.h>
 #include <spargel/base/tag_invoke.h>
 #include <spargel/resource/directory.h>
-#include <spargel/ui/ui.h>
+#include <spargel/ui/platform.h>
+#include <spargel/ui/window.h>
 #include <spargel/ui/ui_mac.h>
 
 //
@@ -260,30 +261,30 @@ struct ControlData {
     float camera_to_clip[16];
 };
 
-class Delegate final : public spargel::ui::window_delegate {
+class Delegate final : public spargel::ui::WindowDelegate {
 public:
-    Delegate(spargel::ui::window_appkit* window) : _window{window} { _Setup(); }
+    Delegate(spargel::ui::WindowAppKit* window) : _window{window} { _Setup(); }
 
-    void on_keyboard(spargel::ui::keyboard_event& e) override {
+    void onKeyboard(spargel::ui::KeyboardEvent& e) override {
         float d = 10;
-        if (e.key == spargel::ui::physical_key::key_w) {
+        if (e.key == spargel::ui::PhysicalKey::key_w) {
             _cd.world_to_camera[13] += d;
-        } else if (e.key == spargel::ui::physical_key::key_s) {
+        } else if (e.key == spargel::ui::PhysicalKey::key_s) {
             _cd.world_to_camera[13] -= d;
-        } else if (e.key == spargel::ui::physical_key::key_a) {
+        } else if (e.key == spargel::ui::PhysicalKey::key_a) {
             _cd.world_to_camera[12] -= d;
-        } else if (e.key == spargel::ui::physical_key::key_d) {
+        } else if (e.key == spargel::ui::PhysicalKey::key_d) {
             _cd.world_to_camera[12] += d;
-        } else if (e.key == spargel::ui::physical_key::key_j) {
+        } else if (e.key == spargel::ui::PhysicalKey::key_j) {
             _cd.world_to_camera[14] += d;
-        } else if (e.key == spargel::ui::physical_key::key_k) {
+        } else if (e.key == spargel::ui::PhysicalKey::key_k) {
             _cd.world_to_camera[14] -= d;
         }
         // spargel_log_info("camera: (%.1f, %.1f, 0); scale: %.2f", _cd.camera[0], _cd.camera[1],
         //                  _cd.scale);
     }
 
-    void on_render() override {
+    void onRender() override {
         auto cmdbuf = [_queue commandBuffer];
 
         auto drawable = [_layer nextDrawable];
@@ -342,7 +343,7 @@ private:
         _queue = [_device newCommandQueue];
 
         {
-            _layer = (CAMetalLayer*)_window->handle().apple.layer;
+            _layer = (CAMetalLayer*)_window->getHandle().apple.layer;
             _layer.device = _device;
         }
 
@@ -392,7 +393,7 @@ private:
         }
     }
 
-    spargel::ui::window_appkit* _window;
+    spargel::ui::WindowAppKit* _window;
     spargel::base::unique_ptr<spargel::resource::directory_resource_manager> _resource;
 
     SimpleMesh _mesh;
@@ -431,14 +432,14 @@ private:
 };
 
 int main() {
-    auto platform = spargel::ui::make_platform();
+    auto platform = spargel::ui::makePlatform();
 
-    auto window = platform->make_window(500, 500);
-    window->set_title("Spargel Demo - Render");
+    auto window = platform->makeWindow(500, 500);
+    window->setTitle("Spargel Demo - Render");
 
-    Delegate d(static_cast<spargel::ui::window_appkit*>(window.get()));
-    window->set_delegate(&d);
+    Delegate d(static_cast<spargel::ui::WindowAppKit*>(window.get()));
+    window->setDelegate(&d);
 
-    platform->start_loop();
+    platform->startLoop();
     return 0;
 }

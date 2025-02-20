@@ -1,7 +1,9 @@
 #pragma once
 
 #include <spargel/base/unique_ptr.h>
-#include <spargel/ui/ui.h>
+#include <spargel/ui/platform.h>
+#include <spargel/ui/window.h>
+#include <spargel/ui/text_system.h>
 
 // platform
 #import <AppKit/AppKit.h>
@@ -18,23 +20,23 @@
 
 namespace spargel::ui {
 
-    class platform_appkit final : public platform {
+    class PlatformAppKit final : public Platform {
     public:
-        platform_appkit();
-        ~platform_appkit() override;
+        PlatformAppKit();
+        ~PlatformAppKit() override;
 
-        void start_loop() override;
+        void startLoop() override;
 
-        base::unique_ptr<window> make_window(u32 width, u32 height) override;
+        base::unique_ptr<Window> makeWindow(u32 width, u32 height) override;
         base::unique_ptr<TextSystem> createTextSystem() override;
 
     private:
-        void init_global_menu();
+        void initGlobalMenu();
 
         NSApplication* _app;
     };
 
-    base::unique_ptr<platform> make_platform_appkit();
+    base::unique_ptr<Platform> makePlatformAppKit();
 
     class TextInputDelegate {
     public:
@@ -55,20 +57,20 @@ namespace spargel::ui {
         }
     };
 
-    class window_appkit final : public window {
+    class WindowAppKit final : public Window {
     public:
-        window_appkit(int width, int height);
-        ~window_appkit() override;
+        WindowAppKit(int width, int height);
+        ~WindowAppKit() override;
 
-        void set_title(char const* title) override;
+        void setTitle(char const* title) override;
 
         void setAnimating(bool animating) override;
         void requestRedraw() override;
 
-        window_handle handle() override;
+        WindowHandle getHandle() override;
 
         // todo: remove
-        void _set_drawable_size(float width, float height);
+        void _setDrawableSize(float width, float height);
 
         // todo: refactor
         void _bridge_render();

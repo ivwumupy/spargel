@@ -1,3 +1,4 @@
+#include <spargel/base/algorithm.h>
 #include <spargel/base/logging.h>
 #include <spargel/base/sum_type.h>
 
@@ -6,13 +7,36 @@ struct Foo {
 };
 
 int main() {
-    auto x = spargel::base::SumType<int, double, int, Foo>::make<2>(3);
+    using Type1 = spargel::base::SumType<int, double, int, Foo>;
+
+    auto x = Type1::make<2>(3);
     spargel_log_info("x.getValue<2>() = %d", x.getValue<2>());
     x.getValue<2>() = 100;
     spargel_log_info("x.getValue<2>() = %d", x.getValue<2>());
-    // spargel_log_info("x.get<1>() = %.3f", x.get<1>());
-    // spargel_log_info("x.get<2>() = %d", x.get<2>());
-    // x.setIndex(3);
-    // x.reset();
+
+    auto y = Type1::make<2>(4);
+
+    spargel_log_info("x = %d, y = %d", x.getValue<2>(), y.getValue<2>());
+    spargel::base::swap(x, y);
+    spargel_log_info("x = %d, y = %d", x.getValue<2>(), y.getValue<2>());
+
+    auto z = Type1::make<1>(1.2);
+
+    spargel_log_info("x.index = %zu, z.index = %zu", x.getIndex(), z.getIndex());
+    spargel_log_info("x = %d, z = %.3f", x.getValue<2>(), z.getValue<1>());
+    spargel::base::swap(x, z);
+    spargel_log_info("x.index = %zu, z.index = %zu", x.getIndex(), z.getIndex());
+    spargel_log_info("x = %.3f, z = %d", x.getValue<1>(), z.getValue<2>());
+
+    auto w = Type1::make<3>();
+
+    spargel_log_info("x.index = %zu, w.index = %zu", x.getIndex(), w.getIndex());
+    spargel::base::swap(x, w);
+    spargel_log_info("x.index = %zu, w.index = %zu", x.getIndex(), w.getIndex());
+
+    auto w2 = w;
+
+    auto w3 = spargel::base::move(w);
+
     return 0;
 }

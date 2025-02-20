@@ -1,13 +1,14 @@
 #pragma once
 
 #include <spargel/resource/resource.h>
-#include <spargel/ui/ui.h>
+#include <spargel/ui/platform.h>
+#include <spargel/ui/window.h>
 
 namespace spargel::entry {
 
     struct simple_entry_data {
-        base::unique_ptr<ui::platform> platform;
-        base::unique_ptr<ui::window> window;
+        base::unique_ptr<ui::Platform> platform;
+        base::unique_ptr<ui::Window> window;
         base::unique_ptr<resource::resource_manager> resource_manager;
     };
 

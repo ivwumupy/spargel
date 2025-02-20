@@ -6,7 +6,7 @@
 #include <spargel/base/vector.h>
 #include <spargel/config.h>
 #include <spargel/gpu/gpu_vulkan.h>
-#include <spargel/ui/ui.h>
+#include <spargel/ui/window.h>
 
 // libc
 #include <stdio.h>
@@ -831,7 +831,7 @@ namespace spargel::gpu {
         return make_object<BufferVulkan>(this, buffer, offset, size);
     }
 
-    ObjectPtr<Surface> DeviceVulkan::createSurface(ui::window* w) { return nullptr; }
+    ObjectPtr<Surface> DeviceVulkan::createSurface(ui::Window* w) { return nullptr; }
 
     ObjectPtr<Texture> DeviceVulkan::createTexture(u32 width, u32 height) { return nullptr; }
 

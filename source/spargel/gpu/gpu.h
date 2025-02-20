@@ -11,7 +11,7 @@
 #include <spargel/base/vector.h>
 
 namespace spargel::ui {
-    class window;
+    class Window;
 }
 
 // forward declarations
@@ -535,7 +535,7 @@ namespace spargel::gpu {
         virtual ObjectPtr<ShaderLibrary> createShaderLibrary(base::span<u8> bytes) = 0;
         virtual ObjectPtr<RenderPipeline> createRenderPipeline(
             RenderPipelineDescriptor const& descriptor) = 0;
-        virtual ObjectPtr<Surface> createSurface(ui::window* w) = 0;
+        virtual ObjectPtr<Surface> createSurface(ui::Window* w) = 0;
         virtual void destroyShaderLibrary(ObjectPtr<ShaderLibrary> library) = 0;
         virtual void destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) = 0;
 

@@ -1,11 +1,11 @@
 #pragma once
 
-#include <spargel/ui/ui.h>
+#include <spargel/ui/platform.h>
 
 namespace spargel::entry {
 
     struct launch_data {
-        ui::platform* platform;
+        ui::Platform* platform;
     };
 
 }  // namespace spargel::entry

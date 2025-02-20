@@ -1,6 +1,6 @@
 #include <spargel/base/unique_ptr.h>
 #include <spargel/gpu/gpu_metal.h>
-#include <spargel/ui/ui.h>
+#include <spargel/ui/window.h>
 
 // metal
 #import <Metal/Metal.h>
@@ -215,8 +215,8 @@ namespace spargel::gpu {
         return make_object<BufferMetal>(buf);
     }
 
-    ObjectPtr<Surface> DeviceMetal::createSurface(ui::window* w) {
-        CAMetalLayer* l = (CAMetalLayer*)w->handle().apple.layer;
+    ObjectPtr<Surface> DeviceMetal::createSurface(ui::Window* w) {
+        CAMetalLayer* l = (CAMetalLayer*)w->getHandle().apple.layer;
         l.device = _device;
         return make_object<SurfaceMetal>(l);
     }

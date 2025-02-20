@@ -404,7 +404,7 @@ namespace spargel::gpu {
         ObjectPtr<Buffer> createBuffer(BufferUsage usage, base::span<u8> bytes) override;
         ObjectPtr<Buffer> createBuffer(BufferUsage usage, u32 size) override;
         void destroyBuffer(ObjectPtr<Buffer> b) override;
-        ObjectPtr<Surface> createSurface(ui::window* w) override;
+        ObjectPtr<Surface> createSurface(ui::Window* w) override;
         ObjectPtr<Texture> createTexture(u32 width, u32 height) override;
         void destroyTexture(ObjectPtr<Texture> texture) override;
         ObjectPtr<CommandQueue> createCommandQueue() override;

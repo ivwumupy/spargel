@@ -2,7 +2,8 @@
 #include <spargel/gpu/gpu.h>
 #include <spargel/resource/directory.h>
 #include <spargel/resource/resource.h>
-#include <spargel/ui/ui.h>
+#include <spargel/ui/platform.h>
+#include <spargel/ui/window.h>
 #include <spargel/ui/ui_mac.h>
 
 using namespace spargel::gpu;
@@ -79,13 +80,13 @@ struct QuadData {
 
 u32 max(u32 a, u32 b) { return a > b ? a : b; }
 
-class Renderer final : public spargel::ui::window_delegate, public spargel::ui::TextInputDelegate {
+class Renderer final : public spargel::ui::WindowDelegate, public spargel::ui::TextInputDelegate {
 public:
-    explicit Renderer(spargel::ui::window_appkit* window,
-                      spargel::resource::resource_manager* resource_manager,
-                      spargel::ui::TextSystem* text_system)
+    Renderer(spargel::ui::WindowAppKit* window,
+             spargel::resource::resource_manager* resource_manager,
+             spargel::ui::TextSystem* text_system)
         : _window{window}, _manager{resource_manager}, _text_system{text_system} {
-        _window->set_delegate(this);
+        _window->setDelegate(this);
         _window->setTextDelegate(this);
 
         _device = makeDevice(DeviceKind::metal);
@@ -177,7 +178,7 @@ public:
         _device->destroyShaderLibrary(_shader);
     }
 
-    void on_render() override {
+    void onRender() override {
         // spargel_log_info("%lu", _glyph_cache.count());
 
         auto layout_result =
@@ -243,15 +244,15 @@ public:
         _valid = [[NSArray alloc] init];
     }
 
-    void on_keyboard(spargel::ui::keyboard_event& e) override {
-        if (e.key == spargel::ui::physical_key::key_delete &&
-            e.action == spargel::ui::keyboard_action::press) {
+    void onKeyboard(spargel::ui::KeyboardEvent& e) override {
+        if (e.key == spargel::ui::PhysicalKey::key_delete &&
+            e.action == spargel::ui::KeyboardAction::press) {
             _str.pop();
             if (!_animating) {
                 _window->requestRedraw();
             }
-        } else if (e.key == spargel::ui::physical_key::space &&
-                   e.action == spargel::ui::keyboard_action::press) {
+        } else if (e.key == spargel::ui::PhysicalKey::space &&
+                   e.action == spargel::ui::KeyboardAction::press) {
             _animating = !_animating;
             _window->setAnimating(_animating);
         } else {
@@ -365,7 +366,7 @@ private:
         return _glyph_cache[_glyph_cache.count() - 1];
     }
 
-    spargel::ui::window_appkit* _window;
+    spargel::ui::WindowAppKit* _window;
     spargel::resource::resource_manager* _manager;
     spargel::ui::TextSystem* _text_system;
     spargel::base::unique_ptr<Device> _device;
@@ -389,16 +390,16 @@ private:
 };
 
 int main() {
-    auto platform = spargel::ui::make_platform();
+    auto platform = spargel::ui::makePlatform();
     auto resource_manager = spargel::resource::make_relative_manager();
     auto text_system = platform->createTextSystem();
 
-    auto window = platform->make_window(500, 500);
-    window->set_title("Spargel Engine - GPU");
+    auto window = platform->makeWindow(500, 500);
+    window->setTitle("Spargel Engine - GPU");
 
-    Renderer r((spargel::ui::window_appkit*)window.get(), resource_manager.get(),
+    Renderer r((spargel::ui::WindowAppKit*)window.get(), resource_manager.get(),
                text_system.get());
 
-    platform->start_loop();
+    platform->startLoop();
     return 0;
 }
