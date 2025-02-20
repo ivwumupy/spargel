@@ -64,5 +64,5 @@ endif ()
 ## Sources
 ##---------
 
-add_subdirectory(games)
+add_subdirectory(sample)
 add_subdirectory(source)

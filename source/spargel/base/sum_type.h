@@ -1,6 +1,9 @@
 #pragma once
 
+#include <spargel/base/algorithm.h>
+#include <spargel/base/meta.h>
 #include <spargel/base/object.h>
+#include <spargel/base/tag_invoke.h>
 #include <spargel/base/type_list.h>
 #include <spargel/base/types.h>
 
@@ -9,79 +12,65 @@ namespace spargel::base {
     namespace _sum_type {
 
         template <typename... Ts>
-        struct SumTypeStorage;
+        struct StorageSizeImpl;
 
-        template <>
-        struct SumTypeStorage<> {};
-
-        template <typename T, typename... Ts>
-        struct SumTypeStorage<T, Ts...> {
-            SumTypeStorage() {}
-            ~SumTypeStorage() {}
-
-            template <usize n>
-            Get<TypeList<T, Ts...>, n>& get() {
-                if constexpr (n == 0) {
-                    return storage.value;
-                } else {
-                    return storage.next.template get<n - 1>();
-                }
-            }
-
-            template <usize n>
-            void reset() {
-                if constexpr (n == 0) {
-                    destruct_at(&storage.value);
-                } else {
-                    storage.next.template reset<n - 1>();
-                }
-            }
-
-            union _Union {
-                _Union() {}
-                ~_Union() {}
-
-                T value;
-                SumTypeStorage<Ts...> next;
-            } storage;
+        template <typename T>
+        struct StorageSizeImpl<T> {
+            static constexpr usize value = sizeof(T);
         };
 
+        template <typename T, typename... Ts>
+        struct StorageSizeImpl<T, Ts...> {
+            static constexpr usize _rest = StorageSizeImpl<Ts...>::value;
+            static constexpr usize value = sizeof(T) > _rest ? sizeof(T) : _rest;
+        };
+
+        template <typename... Ts>
+        inline constexpr usize StorageSize = StorageSizeImpl<Ts...>::value;
+
+        /// SumpType cannot be empty.
         template <typename... Ts>
         class SumType {
             using Types = TypeList<Ts...>;
             static constexpr usize TypeCount = sizeof...(Ts);
 
-        public:
-            SumType() = default;
-
-            ~SumType() = default;
-
             template <usize n>
-            Get<Types, n>& get() {
-                return _storage.template get<n>();
+            struct IndexWrapper {};
+
+        public:
+            template <usize i, typename... Args>
+            static SumType make(Args&&... args) {
+                return SumType(IndexWrapper<i>{}, forward<Args>(args)...);
             }
 
-            void reset() {
-                resetImpl<0>();
-                setIndex(-1);
-            }
+            ~SumType() {}
 
-            // unsafe
+            usize getIndex() const { return _index; }
             void setIndex(usize i) { _index = i; }
 
-            usize index() const { return _index; }
+            template <usize i, typename T = Get<Types, i>>
+            T& getValue() { return *getPtr<T>(); }
 
-        private:
-            template <usize n>
-            void resetImpl() {
-                if (_index == n) {
-                    _storage.template reset<n>();
-                } else if constexpr (n + 1 < TypeCount) {
-                    resetImpl<n + 1>();
+            friend void tag_invoke(tag<swap>, SumType& lhs, SumType& rhs) {
+                if (lhs._index == rhs._index) {
+
+                } else {
+
                 }
             }
 
-            SumTypeStorage<Ts...> _storage;
+        private:
+            template <usize i, typename... Args>
+            SumType(IndexWrapper<i>, Args&&... args) : _index{i} {
+                construct_at(getPtr<Get<Types, i>>(), forward<Args>(args)...);
+            }
+
+            template <typename T>
+            T* getPtr() { return reinterpret_cast<T*>(_bytes); }
+
+            // TODO: Alignment.
+            Byte _bytes[StorageSize<Ts...>];
+
             usize _index;
         };
 
