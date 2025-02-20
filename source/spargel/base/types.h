@@ -32,5 +32,6 @@ using f32 = float;
 using f64 = double;
 
 namespace spargel::base {
-    using Byte = std::byte;
+    // using Byte = std::byte;
+    using Byte = u8;
 }

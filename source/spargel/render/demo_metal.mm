@@ -3,6 +3,7 @@
 #include <spargel/base/logging.h>
 #include <spargel/base/optional.h>
 #include <spargel/base/tag_invoke.h>
+#include <spargel/math/vector.h>
 #include <spargel/resource/directory.h>
 #include <spargel/ui/platform.h>
 #include <spargel/ui/window.h>
@@ -12,10 +13,48 @@
 #import <Metal/Metal.h>
 #import <simd/simd.h>
 
+struct Vector3f final {
+    float x;
+    float y;
+    float z;
+
+    Vector3f cross(Vector3f const& other) const {
+        return {
+            y * other.z - z * other.y,
+            z * other.x - x * other.z,
+            x * other.y - y * other.x,
+        };
+    }
+
+    Vector3f& operator+=(Vector3f const& other) {
+        x += other.x;
+        y += other.y;
+        z += other.z;
+        return *this;
+    }
+
+    void normalize() {
+        float l = length();
+        x /= l;
+        y /= l;
+        z /= l;
+    }
+
+    float length() const {
+        return sqrtf(x * x + y * y + z * z);
+    }
+};
+
 struct Point3f final {
     float x;
     float y;
     float z;
+
+    Vector3f to(Point3f const& other) const {
+        return {
+            other.x - x, other.y - y, other.z - z,
+        };
+    }
 };
 
 class Cursor final {
@@ -191,7 +230,8 @@ public:
                 spargel_log_error("bad point %d", i);
                 return {};
             }
-            vertices[i] = {x.value(), y.value(), z.value()};
+            // vertices[i] = {x.value(), y.value(), z.value()};
+            vertices[i] = {x.value() * 1000, y.value() * 1000, z.value() * 1000};
         }
 
         // spargel_assert(vertices.getAllocator() != spargel::base::default_allocator());
@@ -214,6 +254,7 @@ public:
         for (usize i = 0; i < _vertices.count(); i++) {
             _bbox.merge(_vertices[i].x, _vertices[i].y, _vertices[i].z);
         }
+        computeNormals();
     }
 
     SimpleMesh(SimpleMesh const& other) = default;
@@ -235,6 +276,7 @@ public:
 
     spargel::base::span<u32> getIndices() const { return _indices.toSpan(); }
     spargel::base::span<Point3f> getVertices() const { return _vertices.toSpan(); }
+    spargel::base::span<Vector3f> getNormals() const { return _normals.toSpan(); }
 
     BoundingBox const& getBoundingBox() const { return _bbox; }
 
@@ -244,14 +286,40 @@ public:
         spargel::base::swap(lhs._vert_count, rhs._vert_count);
         spargel::base::swap(lhs._indices, rhs._indices);
         spargel::base::swap(lhs._vertices, rhs._vertices);
+        spargel::base::swap(lhs._normals, rhs._normals);
         spargel::base::swap(lhs._bbox, rhs._bbox);
     }
 
 private:
+    void computeNormals() {
+        _normals.reserve(_vertices.count());
+        _normals.set_count(_vertices.count());
+
+        for (usize i = 0; i < _indices.count(); i += 3) {
+            Point3f const& x = _vertices[_indices[i]];
+            Point3f const& y = _vertices[_indices[i + 1]];
+            Point3f const& z = _vertices[_indices[i + 2]];
+
+            _normals[_indices[i]] += x.to(y).cross(x.to(z));
+            _normals[_indices[i+1]] += y.to(z).cross(y.to(x));
+            _normals[_indices[i+2]] += z.to(x).cross(z.to(y));
+        }
+
+        // normalize
+        for (usize i = 0; i < _normals.count(); i++) {
+            auto l = _normals[i].length();
+            if (l < 0.001) {
+                spargel_log_info("small normal: %zu", i);
+            }
+            _normals[i].normalize();
+        }
+    }
+
     u32 _face_count = 0;
     u32 _vert_count = 0;
     spargel::base::vector<u32> _indices;
     spargel::base::vector<Point3f> _vertices;
+    spargel::base::vector<Vector3f> _normals;
     BoundingBox _bbox;
 };
 
@@ -297,7 +365,11 @@ public:
         auto encoder = [cmdbuf renderCommandEncoderWithDescriptor:desc];
 
         [encoder setRenderPipelineState:_mesh_pipeline];
+
+        [encoder setCullMode:MTLCullModeBack];
+
         [encoder setVertexBuffer:_vertices offset:0 atIndex:0];
+        [encoder setVertexBuffer:_normals offset:0 atIndex:1];
 
         float ratio = _layer.drawableSize.width / _layer.drawableSize.height;
         constexpr float alpha = 3.14159 / 6;
@@ -305,7 +377,7 @@ public:
         float width = height * ratio;
         _cd.camera_to_clip[0] = 2.0 / width;
         _cd.camera_to_clip[5] = 2.0 / height;
-        [encoder setVertexBytes:&_cd length:sizeof(ControlData) atIndex:1];
+        [encoder setVertexBytes:&_cd length:sizeof(ControlData) atIndex:2];
 
         [encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle
                             indexCount:_mesh.getIndices().count()
@@ -365,10 +437,16 @@ private:
             // Buffer 0 is vertices.
             vert_desc.layouts[0].stepFunction = MTLVertexStepFunctionPerVertex;
             vert_desc.layouts[0].stride = sizeof(Point3f);
+            // Buffer 1 is normals.
+            vert_desc.layouts[1].stepFunction = MTLVertexStepFunctionPerVertex;
+            vert_desc.layouts[1].stride = sizeof(Vector3f);
             // Attribute 0 is vertex position.
             vert_desc.attributes[0].format = MTLVertexFormatFloat3;
             vert_desc.attributes[0].offset = 0;
             vert_desc.attributes[0].bufferIndex = 0;
+            vert_desc.attributes[1].format = MTLVertexFormatFloat3;
+            vert_desc.attributes[1].offset = 0;
+            vert_desc.attributes[1].bufferIndex = 1;
 
             auto desc = [[MTLRenderPipelineDescriptor alloc] init];
             desc.vertexFunction = _vert_func;
@@ -390,6 +468,9 @@ private:
             _indices = [_device newBufferWithBytes:_mesh.getIndices().asBytes().data()
                                             length:_mesh.getIndices().asBytes().count()
                                            options:MTLResourceStorageModeShared];
+            _normals = [_device newBufferWithBytes:_mesh.getNormals().asBytes().data()
+                                            length:_mesh.getNormals().asBytes().count()
+                                           options:MTLResourceStorageModeShared];
         }
     }
 
@@ -407,6 +488,7 @@ private:
 
     id<MTLBuffer> _vertices;
     id<MTLBuffer> _indices;
+    id<MTLBuffer> _normals;
 
     CAMetalLayer* _layer;
 
@@ -418,7 +500,7 @@ private:
         .model_to_world = {1, 0, 0, 0,
                            0, 1, 0, 0,
                            0, 0, 1, 0,
-                           0, 0, 200, 1,},
+                           0, 0, 500, 1,},
         .world_to_camera = {1, 0, 0, 0,
                             0, 1, 0, 0,
                             0, 0, 1, 0,

@@ -61,6 +61,10 @@
 - (void)mouseDragged:(NSEvent*)event {
     _bridge->_bridgeMouseDragged(event.deltaX, event.deltaY);
 }
+- (void)mouseDown:(NSEvent*)event {
+    auto loc = [event locationInWindow];
+    _bridge->_bridgeMouseDown(loc.x, loc.y);
+}
 - (void)viewDidMoveToWindow {
     [super viewDidMoveToWindow];
     if (self.window == nil) {
@@ -93,10 +97,12 @@
 }
 - (void)setFrameSize:(NSSize)size {
     [super setFrameSize:size];
+    _bridge->_updateSize(size.width, size.height);
     [self resizeDrawable:self.window.screen.backingScaleFactor];
 }
 - (void)setBoundsSize:(NSSize)size {
     [super setBoundsSize:size];
+    _bridge->_updateSize(size.width, size.height);
     [self resizeDrawable:self.window.screen.backingScaleFactor];
 }
 - (void)resizeDrawable:(CGFloat)scaleFactor {
@@ -296,7 +302,7 @@ namespace spargel::ui {
         _app.mainMenu = menu_bar;
     }
 
-    WindowAppKit::WindowAppKit(int width, int height) {
+    WindowAppKit::WindowAppKit(int width, int height) : _width{static_cast<float>(width)}, _height{static_cast<float>(height)} {
         NSScreen* screen = [NSScreen mainScreen];
 
         NSWindowStyleMask style = NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable |
@@ -304,8 +310,8 @@ namespace spargel::ui {
 
         NSRect rect = NSMakeRect(0, 0, width, height);
         // center the window
-        rect.origin.x = (screen.frame.size.width - width) / 2;
-        rect.origin.y = (screen.frame.size.height - height) / 2;
+        rect.origin.x = (screen.frame.size.width - _width) / 2;
+        rect.origin.y = (screen.frame.size.height - _height) / 2;
 
         _bridge = [[SpargelWindowDelegate alloc] initWithSpargelUIWindow:this];
 
@@ -387,6 +393,19 @@ namespace spargel::ui {
                 spargel_panic_here();
             }
             getDelegate()->onKeyboard(e);
+        }
+    }
+
+    // Coordinate of AppKit:
+    //
+    //   ^ y
+    //   |
+    //   |
+    //   +----> x
+    //
+    void WindowAppKit::_bridgeMouseDown(float x, float y) {
+        if (getDelegate() != nullptr) {
+            getDelegate()->onMouseDown(x, _height - y);
         }
     }
 

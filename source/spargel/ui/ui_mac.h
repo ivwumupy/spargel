@@ -77,7 +77,13 @@ namespace spargel::ui {
 
         void _bridge_key_down(int key, NSEventType type);
 
+        void _bridgeMouseDown(float x, float y);
         void _bridgeMouseDragged(float dx, float dy);
+
+        void _updateSize(float width, float height) {
+            _width = width;
+            _height = height;
+        }
 
         void _enable_text_cursor();
 
@@ -89,8 +95,13 @@ namespace spargel::ui {
         SpargelWindowDelegate* _bridge;
         SpargelMetalView* _view;
         CAMetalLayer* _layer;
+
+        float _width;
+        float _height;
+
         float _drawable_width;
         float _drawable_height;
+
         bool _animating = true;
 
         [[maybe_unused]] NSTextInsertionIndicator* _text_cursor;

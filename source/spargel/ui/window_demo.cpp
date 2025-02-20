@@ -7,6 +7,9 @@ public:
     void onKeyboard(spargel::ui::KeyboardEvent& e) override {
         spargel_log_info("key down : %d", e.key);
     }
+    void onMouseDown(float x, float y) override {
+        spargel_log_info("mouse down : %.3f %.3f", x, y);
+    }
 };
 
 int main() {

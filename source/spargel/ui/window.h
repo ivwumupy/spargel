@@ -48,10 +48,14 @@ namespace spargel::ui {
         /// @brief a keyboard event is received
         virtual void onKeyboard(KeyboardEvent& e) {}
 
+        virtual void onMouseDown(float x, float y) {}
+
         /// User has moved the mouse with left button pressed.
         virtual void onMouseDragged(float dx, float dy) {}
     };
 
+    // The coordinate system is TLO (top-left origin).
+    //
     class Window {
     public:
         virtual ~Window() = default;

@@ -3,6 +3,7 @@ using namespace metal;
 
 struct VertexData {
     float3 position [[attribute(0)]];
+    float3 normal [[attribute(1)]];
 };
 
 struct RasterData {
@@ -19,10 +20,11 @@ struct UniformData {
 // The bunny mesh is too small.
 constant float model_scale = 1000;
 
-[[vertex]] RasterData vertex_shader(VertexData in [[stage_in]], // buffer 0
-                                    constant UniformData& uniform [[buffer(1)]],
+[[vertex]] RasterData vertex_shader(VertexData in [[stage_in]], // buffer 0 and buffer 1
+                                    constant UniformData& uniform [[buffer(2)]],
                                     uint vid [[vertex_id]]) {
-    float3 model_position = in.position * model_scale;
+    float3 model_position = in.position;
+    // float3 model_position = in.position * model_scale;
     float4 world_position = uniform.model_to_world * float4(model_position, 1.0);
     float4 camera_position = uniform.world_to_camera * world_position;
     float4 clip_position = uniform.camera_to_clip * camera_position;
@@ -36,7 +38,10 @@ constant float model_scale = 1000;
         {0.0, 0.0, 1.0},
     };
 
-    out.c = cs[vid % 3];
+    // out.c = cs[vid % 3];
+    float t = dot(in.normal, normalize(float3(-1.0, -1.0, -1.0)));
+    t = (t + 0.3) / 1.3;
+    out.c = float3(t, t, t);
     return out;
 }
 

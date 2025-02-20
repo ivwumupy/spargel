@@ -1,6 +1,7 @@
 #pragma once
 
 #include <spargel/base/span.h>
+#include <spargel/base/string.h>
 #include <spargel/base/unique_ptr.h>
 #include <spargel/base/vector.h>
 
@@ -9,6 +10,11 @@ namespace spargel::ui {
     class View;
 
     class Scene {
+    public:
+        void addQuad();
+    };
+
+    class Layer {
     public:
     };
 
@@ -27,6 +33,12 @@ namespace spargel::ui {
     ///
     /// The View class should be sub-classed to provide custom behaviour.
     ///
+    ///----------------
+    /// The Layer Tree
+    ///
+    /// The `View` hierarchy is backed by a `Layer` tree. Some (but not all) views are layer owning.
+    /// Each `Layer` corresponds to a GPU texture.
+    /// 
     class View {
     public:
         View();
