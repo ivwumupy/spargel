@@ -28,10 +28,10 @@ namespace spargel::base {
             ArrayStorage(ArrayStorage const&) = delete;
             ArrayStorage& operator=(ArrayStorage const&) = delete;
 
-            ArrayStorage(ArrayStorage&& other) : _alloc{other._alloc} { swap(*this, other); }
+            ArrayStorage(ArrayStorage&& other) : _alloc{other._alloc} { base::swap(*this, other); }
             ArrayStorage& operator=(ArrayStorage&& other) {
                 ArrayStorage tmp(move(other));
-                swap(*this, tmp);
+                base::swap(*this, tmp);
                 return *this;
             }
 

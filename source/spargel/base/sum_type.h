@@ -53,7 +53,6 @@ namespace spargel::base {
 
             friend void tag_invoke(tag<swap>, SumType& lhs, SumType& rhs) {
                 if (lhs._index == rhs._index) {
-
                 } else {
 
                 }

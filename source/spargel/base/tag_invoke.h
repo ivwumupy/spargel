@@ -9,7 +9,7 @@ namespace spargel::base {
         struct tag_invoke_impl {
             template <typename Tag, typename... Args>
             constexpr decltype(auto) operator()(Tag&& tag, Args&&... args) const {
-                return tag_invoke(forward<Tag>(tag), forward<Args>(args)...);
+                return tag_invoke(base::forward<Tag>(tag), base::forward<Args>(args)...);
             }
         };
     }  // namespace __tag_invoke
