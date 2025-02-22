@@ -3,6 +3,7 @@
 #include <spargel/base/logging.h>
 #include <spargel/base/optional.h>
 #include <spargel/base/tag_invoke.h>
+#include <spargel/math/point.h>
 #include <spargel/math/vector.h>
 #include <spargel/resource/directory.h>
 #include <spargel/ui/platform.h>
@@ -13,49 +14,8 @@
 #import <Metal/Metal.h>
 #import <simd/simd.h>
 
-struct Vector3f final {
-    float x;
-    float y;
-    float z;
-
-    Vector3f cross(Vector3f const& other) const {
-        return {
-            y * other.z - z * other.y,
-            z * other.x - x * other.z,
-            x * other.y - y * other.x,
-        };
-    }
-
-    Vector3f& operator+=(Vector3f const& other) {
-        x += other.x;
-        y += other.y;
-        z += other.z;
-        return *this;
-    }
-
-    void normalize() {
-        float l = length();
-        x /= l;
-        y /= l;
-        z /= l;
-    }
-
-    float length() const {
-        return sqrtf(x * x + y * y + z * z);
-    }
-};
-
-struct Point3f final {
-    float x;
-    float y;
-    float z;
-
-    Vector3f to(Point3f const& other) const {
-        return {
-            other.x - x, other.y - y, other.z - z,
-        };
-    }
-};
+using spargel::math::Vector3f;
+using spargel::math::Point3f;
 
 class Cursor final {
 public:
@@ -300,18 +260,18 @@ private:
             Point3f const& y = _vertices[_indices[i + 1]];
             Point3f const& z = _vertices[_indices[i + 2]];
 
-            _normals[_indices[i]] += x.to(y).cross(x.to(z));
-            _normals[_indices[i+1]] += y.to(z).cross(y.to(x));
-            _normals[_indices[i+2]] += z.to(x).cross(z.to(y));
+            _normals[_indices[i]] += (y - x).cross(z - x);
+            _normals[_indices[i+1]] += (z - y).cross(x - z);
+            _normals[_indices[i+2]] += (x - z).cross(y - z);
         }
 
         // normalize
         for (usize i = 0; i < _normals.count(); i++) {
             auto l = _normals[i].length();
-            if (l < 0.001) {
-                spargel_log_info("small normal: %zu", i);
-            }
-            _normals[i].normalize();
+            // if (l < 0.001) {
+            //     spargel_log_info("small normal: %zu", i);
+            // }
+            _normals[i] = _normals[i].normalize();
         }
     }
 

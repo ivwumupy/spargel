@@ -10,7 +10,7 @@ namespace spargel::math {
         T y;
         T z;
 
-        SPARGEL_ALWAYS_INLINE Vector3 dot(Vector3 const& other) const {
+        SPARGEL_ALWAYS_INLINE T dot(Vector3 const& other) const {
             return x * other.x + y * other.y + z * other.z;
         }
 
@@ -22,17 +22,21 @@ namespace spargel::math {
             );
         }
 
-
         SPARGEL_ALWAYS_INLINE T length() const {
             return math::sqrt(dot(*this));
         }
 
         // TODO: What's the behaviour in edge cases?
-        SPARGEL_ALWAYS_INLINE void normalize() const {
+        SPARGEL_ALWAYS_INLINE Vector3 normalize() const {
             T l = length();
-            x /= l;
-            y /= l;
-            z /= l;
+            return Vector3(x / l, y / l, z / l);
+        }
+
+        SPARGEL_ALWAYS_INLINE Vector3& operator+=(Vector3 const& other) {
+            x += other.x;
+            y += other.y;
+            z += other.z;
+            return *this;
         }
     };
 
