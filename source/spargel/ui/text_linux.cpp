@@ -1,6 +1,8 @@
 
+#include <spargel/base/logging.h>
+#include <spargel/base/panic.h>
 #include <spargel/ui/text_linux.h>
-#include <spargel/ui/ui.h>
+#include <spargel/ui/window.h>
 
 namespace spargel::ui {
 
@@ -11,6 +13,7 @@ namespace spargel::ui {
             spargel_panic_here();
         }
 
+        // FIXME
         const char* font_path = "/usr/share/fonts/truetype/msttcorefonts/Times_New_Roman.ttf";
         err = FT_New_Face(_ft_library, font_path, 0, &_ft_face);
 

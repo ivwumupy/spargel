@@ -2,8 +2,9 @@
 
 #include <spargel/base/vector.h>
 #include <spargel/config.h>
+#include <spargel/ui/platform.h>
 #include <spargel/ui/text_linux.h>
-#include <spargel/ui/ui.h>
+#include <spargel/ui/window.h>
 
 /* X11 */
 #include <X11/Xlib-xcb.h>
@@ -17,18 +18,18 @@
 
 namespace spargel::ui {
 
-    class window_xcb;
+    class WindowXcb;
 
-    class platform_xcb : public platform {
-        friend window_xcb;
+    class PlatformXcb : public Platform {
+        friend WindowXcb;
 
     public:
-        platform_xcb();
-        ~platform_xcb() override;
+        PlatformXcb();
+        ~PlatformXcb() override;
 
-        void start_loop() override;
+        void startLoop() override;
 
-        base::unique_ptr<window> make_window(u32 width, u32 height) override;
+        base::unique_ptr<Window> makeWindow(u32 width, u32 height) override;
 
         base::unique_ptr<TextSystem> createTextSystem() override {
             return base::make_unique<TextSystemLinux>();
@@ -44,7 +45,7 @@ namespace spargel::ui {
         XVisualInfo* _visual_info;
 #endif
 
-        base::vector<window_xcb*> _windows;
+        base::vector<WindowXcb*> _windows;
 
         void _run_render_callbacks();
 
@@ -55,25 +56,25 @@ namespace spargel::ui {
         xcb_intern_atom_reply_t* _intern_atom_reply(xcb_intern_atom_cookie_t cookie);
     };
 
-    base::unique_ptr<platform> make_platform_xcb();
+    base::unique_ptr<Platform> makePlatformXcb();
 
-    class window_xcb : public window {
-        friend platform_xcb;
+    class WindowXcb : public Window {
+        friend PlatformXcb;
 
     public:
-        window_xcb(platform_xcb* platform, xcb_window_t id);
-        ~window_xcb() override;
+        WindowXcb(PlatformXcb* platform, xcb_window_t id);
+        ~WindowXcb() override;
 
-        void set_title(char const* title) override;
+        void setTitle(char const* title) override;
 
         void setAnimating(bool animating) override {}
 
         void requestRedraw() override {}
 
-        window_handle handle() override;
+        WindowHandle getHandle() override;
 
     private:
-        platform_xcb* _platform;
+        PlatformXcb* _platform;
         xcb_window_t _id;
         bool _closed;
     };

@@ -2,6 +2,9 @@
 #include <spargel/base/logging.h>
 #include <spargel/ui/ui_xcb.h>
 
+#include "platform.h"
+#include "window.h"
+
 /* for clock_gettime */
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -15,9 +18,9 @@
 
 namespace spargel::ui {
 
-    base::unique_ptr<platform> make_platform_xcb() { return base::make_unique<platform_xcb>(); }
+    base::unique_ptr<Platform> make_platform_xcb() { return base::make_unique<PlatformXcb>(); }
 
-    platform_xcb::platform_xcb() : platform(platform_kind::xcb) {
+    PlatformXcb::PlatformXcb() : Platform(PlatformKind::xcb) {
         /*
          * Open the connection to the X server.
          * Use the DISPLAY environment variable as the default display name.
@@ -59,7 +62,7 @@ namespace spargel::ui {
         free(reply);
     }
 
-    platform_xcb::~platform_xcb() {
+    PlatformXcb::~PlatformXcb() {
         XFree(_visual_info);
 
         // should not do this
@@ -82,7 +85,7 @@ namespace spargel::ui {
         }
     }
 
-    void platform_xcb::start_loop() {
+    void PlatformXcb::startLoop() {
         xcb_generic_event_t* event;
         struct timespec t1, t2, duration = {.tv_sec = 0, .tv_nsec = 0};
         while (true) {
@@ -126,8 +129,8 @@ namespace spargel::ui {
                     for (auto& window : _windows) {
                         if (window->_id == client_message_event->window) {
                             window->_closed = true;
-                            window->delegate()->on_close_requested();
-                            window->delegate()->on_closed();
+                            window->getDelegate()->onCloseRequested();
+                            window->getDelegate()->onClosed();
                             break;
                         }
                     }
@@ -148,27 +151,26 @@ namespace spargel::ui {
         }
     }
 
-    void platform_xcb::_run_render_callbacks() {
+    void PlatformXcb::_run_render_callbacks() {
         for (auto& window : _windows) {
-            auto delegate = window->delegate();
+            auto delegate = window->getDelegate();
             if (!delegate) {
                 spargel_log_fatal("window delegate not set");
                 spargel_panic_here();
             }
-            delegate->on_render();
+            delegate->onRender();
         }
     }
 
-    xcb_intern_atom_cookie_t platform_xcb::_intern_atom_cookie(u8 only_if_exists,
-                                                               const char* name) {
+    xcb_intern_atom_cookie_t PlatformXcb::_intern_atom_cookie(u8 only_if_exists, const char* name) {
         return xcb_intern_atom(_connection, only_if_exists, strlen(name), name);
     }
 
-    xcb_intern_atom_reply_t* platform_xcb::_intern_atom_reply(xcb_intern_atom_cookie_t cookie) {
+    xcb_intern_atom_reply_t* PlatformXcb::_intern_atom_reply(xcb_intern_atom_cookie_t cookie) {
         return xcb_intern_atom_reply(_connection, cookie, nullptr);
     }
 
-    base::unique_ptr<window> platform_xcb::make_window(u32 width, u32 height) {
+    base::unique_ptr<Window> PlatformXcb::makeWindow(u32 width, u32 height) {
         xcb_window_t id = xcb_generate_id(_connection);
 
 #if SPARGEL_ENABLE_OPENGL
@@ -228,27 +230,27 @@ namespace spargel::ui {
         xcb_map_window(_connection, id);
         xcb_flush(_connection);
 
-        return base::make_unique<window_xcb>(this, id);
+        return base::make_unique<WindowXcb>(this, id);
     }
 
-    window_xcb::window_xcb(platform_xcb* platform, xcb_window_t id)
+    WindowXcb::WindowXcb(PlatformXcb* platform, xcb_window_t id)
         : _platform(platform), _id(id), _closed(false) {
         platform->_windows.push(this);
     }
 
-    window_xcb::~window_xcb() {
+    WindowXcb::~WindowXcb() {
         spargel_log_debug("X window %d is closing", _id);
         xcb_destroy_window(_platform->_connection, _id);
     }
 
-    void window_xcb::set_title(char const* title) {
+    void WindowXcb::setTitle(char const* title) {
         spargel_log_debug("setting the title of X window %d to \"%s\"", _id, title);
         xcb_change_property(_platform->_connection, XCB_PROP_MODE_REPLACE, _id, XCB_ATOM_WM_NAME,
                             XCB_ATOM_STRING, 8, strlen(title), title);
     }
 
-    window_handle window_xcb::handle() {
-        window_handle handle{};
+    WindowHandle WindowXcb::getHandle() {
+        WindowHandle handle{};
 
         handle.xcb.connection = _platform->_connection;
         handle.xcb.window = _id;

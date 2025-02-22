@@ -1,5 +1,5 @@
 
-#include <spargel/ui/ui.h>
+#include <spargel/ui/text_system.h>
 
 // FreeType 2
 #include <ft2build.h>

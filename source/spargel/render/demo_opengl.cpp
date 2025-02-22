@@ -2,7 +2,8 @@
 #include <spargel/base/logging.h>
 #include <spargel/config.h>
 #include <spargel/resource/directory.h>
-#include <spargel/ui/ui.h>
+#include <spargel/ui/platform.h>
+#include <spargel/ui/window.h>
 
 // libc
 #include <stdlib.h>
@@ -20,9 +21,9 @@
 
 namespace spargel {
 
-    class delegate final : public ui::window_delegate {
+    class delegate final : public ui::WindowDelegate {
     public:
-        void on_render() override {
+        void onRender() override {
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
@@ -53,13 +54,13 @@ namespace spargel {
     extern "C" int main() {
         auto resource_manager = resource::make_relative_manager();
 
-        auto platform = ui::make_platform();
-        auto window = platform->make_window(800, 600);
+        auto platform = ui::makePlatform();
+        auto window = platform->makeWindow(800, 600);
         delegate d;
-        window->set_delegate(&d);
-        window->set_title("Spargel Demo - OpenGL");
+        window->setDelegate(&d);
+        window->setTitle("Spargel Demo - OpenGL");
 
-        auto handle = window->handle();
+        auto handle = window->getHandle();
 
 #if SPARGEL_IS_LINUX
         auto x_window = handle.xcb.window;
@@ -211,7 +212,7 @@ namespace spargel {
 
         d.vao = vao;
 
-        platform->start_loop();
+        platform->startLoop();
 
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &vbo);

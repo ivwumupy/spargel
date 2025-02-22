@@ -74,6 +74,32 @@ namespace spargel::base {
                 }
             }
 
+            void resize(usize count) {
+                if (count > this->count()) {
+                    reserve(count);
+                    while (this->count() < count) {
+                        push(T{});
+                    }
+                } else {
+                    while (this->count() > count) {
+                        pop();
+                    }
+                }
+            }
+
+            void resize(usize count, const T& value) {
+                if (count > this->count()) {
+                    reserve(count);
+                    while (this->count() < count) {
+                        push(value);
+                    }
+                } else {
+                    while (this->count() > count) {
+                        pop();
+                    }
+                }
+            }
+
             // unsafe;
             void set_count(usize count) { _end = _begin + count; }
 
