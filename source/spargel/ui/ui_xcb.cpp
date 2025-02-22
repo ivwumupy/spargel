@@ -18,7 +18,7 @@
 
 namespace spargel::ui {
 
-    base::unique_ptr<Platform> make_platform_xcb() { return base::make_unique<PlatformXcb>(); }
+    base::unique_ptr<Platform> makePlatformXcb() { return base::make_unique<PlatformXcb>(); }
 
     PlatformXcb::PlatformXcb() : Platform(PlatformKind::xcb) {
         /*

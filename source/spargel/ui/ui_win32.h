@@ -1,55 +1,58 @@
 #pragma once
 
 #include <spargel/base/vector.h>
-#include <spargel/ui/ui.h>
+#include <spargel/ui/platform.h>
+#include <spargel/ui/window.h>
+#include <spargel/ui/ui_dummy.h>
 
 // Windows
 #include <windows.h>
 
 namespace spargel::ui {
 
-    class window_win32;
+    class WindowWin32;
 
-    class platform_win32 : public platform {
-        friend window_win32;
+    class PlatformWin32 : public Platform {
+        friend WindowWin32;
 
     public:
-        platform_win32(HINSTANCE hInstance)
-            : platform(platform_kind::win32), _hInstance(hInstance) {}
+        PlatformWin32(HINSTANCE hInstance) : Platform(PlatformKind::win32), _hInstance(hInstance) {}
 
-        void start_loop() override;
+        void startLoop() override;
 
-        base::unique_ptr<window> make_window(u32 width, u32 height) override;
-        base::unique_ptr<TextSystem> createTextSystem() override { return nullptr; }
+        base::unique_ptr<Window> makeWindow(u32 width, u32 height) override;
+        base::unique_ptr<TextSystem> createTextSystem() override {
+            return base::make_unique<TextSystemDummy>();
+        }
 
     private:
         HINSTANCE _hInstance;
 
-        base::vector<window_win32*> _windows;
+        base::vector<WindowWin32*> _windows;
 
         void _run_render_callbacks();
     };
 
-    class window_win32 : public window {
-        friend platform_win32;
+    class WindowWin32 : public Window {
+        friend PlatformWin32;
 
     public:
-        window_win32(platform_win32* platform, HWND hwnd);
-        ~window_win32() override;
+        WindowWin32(PlatformWin32* platform, HWND hwnd);
+        ~WindowWin32() override;
 
-        void set_title(char const* title) override;
+        void setTitle(char const* title) override;
 
         void setAnimating(bool animating) override {}
 
         void requestRedraw() override {}
 
-        window_handle handle() override;
+        WindowHandle getHandle() override;
 
     private:
-        platform_win32* _platform;
+        PlatformWin32* _platform;
         HWND _hwnd;
     };
 
-    base::unique_ptr<platform> make_platform_win32();
+    base::unique_ptr<Platform> makePlatformWin32();
 
 }  // namespace spargel::ui

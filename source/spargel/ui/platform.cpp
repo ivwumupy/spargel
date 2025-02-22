@@ -4,22 +4,22 @@
 namespace spargel::ui {
 
 #if SPARGEL_IS_LINUX
-    base::unique_ptr<Platform> make_platform_xcb();
+    base::unique_ptr<Platform> makePlatformXcb();
 #elif SPARGEL_IS_MACOS
     base::unique_ptr<Platform> makePlatformAppKit();
 #elif SPARGEL_IS_WINDOWS
-    base::unique_ptr<Platform> make_platform_win32();
+    base::unique_ptr<Platform> makePlatformWin32();
 #elif SPARGEL_UI_DUMMY
     base::unique_ptr<Platform> makePlatformDummy();
 #endif
 
     base::unique_ptr<Platform> makePlatform() {
 #if SPARGEL_IS_LINUX
-        return make_platform_xcb();
+        return makePlatformXcb();
 #elif SPARGEL_IS_MACOS
         return makePlatformAppKit();
 #elif SPARGEL_IS_WINDOWS
-        return make_platform_win32();
+        return makePlatformWin32();
 #elif SPARGEL_UI_DUMMY
         return makePlatformDummy();
 #else

@@ -22,4 +22,6 @@ namespace spargel::ui {
         return result;
     }
 
+    base::unique_ptr<Platform> makePlatformDummy() { return base::make_unique<PlatformDummy>(); }
+
 }  // namespace spargel::ui
