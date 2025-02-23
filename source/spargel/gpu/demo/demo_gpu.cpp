@@ -86,7 +86,7 @@ public:
         _surface = _device->createSurface(_window);
 
 #if USE_METAL
-        auto blob = _manager->open(spargel::resource::resource_id("shader.metallib"));
+        auto blob = _manager->open(spargel::resource::ResourceId("shader.metallib"));
 
         _shader = _device->createShaderLibrary(blob->getSpan());
 

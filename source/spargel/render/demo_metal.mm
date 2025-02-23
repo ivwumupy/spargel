@@ -478,10 +478,10 @@ private:
     void _Setup() {
         NSError* error;
 
-        _resource = spargel::resource::make_relative_manager();
+        _resource = spargel::resource::makeRelativeManager();
 
         {
-            auto blob = _resource->open(spargel::resource::resource_id("bunny.smesh"));
+            auto blob = _resource->open(spargel::resource::ResourceId("bunny.smesh"));
             auto s = SimpleMesh::create(blob->getSpan());
             if (!s.hasValue()) {
                 spargel_log_error("wrong format");
@@ -503,7 +503,7 @@ private:
         }
 
         {
-            auto blob = _resource->open(spargel::resource::resource_id("shader.metallib"));
+            auto blob = _resource->open(spargel::resource::ResourceId("shader.metallib"));
             auto blob_span = blob->getSpan();
             auto library_data =
                 dispatch_data_create(blob_span.data(), blob_span.count(), dispatch_get_main_queue(),
@@ -566,7 +566,7 @@ private:
     }
 
     spargel::ui::WindowAppKit* _window;
-    spargel::base::unique_ptr<spargel::resource::directory_resource_manager> _resource;
+    spargel::base::unique_ptr<spargel::resource::ResourceManagerDirectory> _resource;
 
     SimpleMesh _mesh;
 

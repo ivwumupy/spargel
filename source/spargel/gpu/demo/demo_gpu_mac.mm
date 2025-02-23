@@ -83,7 +83,7 @@ u32 max(u32 a, u32 b) { return a > b ? a : b; }
 class Renderer final : public spargel::ui::WindowDelegate, public spargel::ui::TextInputDelegate {
 public:
     Renderer(spargel::ui::WindowAppKit* window,
-             spargel::resource::resource_manager* resource_manager,
+             spargel::resource::ResourceManager* resource_manager,
              spargel::ui::TextSystem* text_system)
         : _window{window}, _manager{resource_manager}, _text_system{text_system} {
         _window->setDelegate(this);
@@ -94,11 +94,12 @@ public:
         _surface = _device->createSurface(_window);
 
 #if USE_METAL
-        auto blob = _manager->open(spargel::resource::resource_id("shader.metallib"));
+        auto blob = _manager->open(spargel::resource::ResourceId("shader.metallib"));
 
         _shader = _device->createShaderLibrary(blob->getSpan());
 
-        blob->close();
+        // TODO: Close the resource.
+        // blob->close();
 #endif
 
         RenderPipelineBuilder builder;
@@ -367,7 +368,7 @@ private:
     }
 
     spargel::ui::WindowAppKit* _window;
-    spargel::resource::resource_manager* _manager;
+    spargel::resource::ResourceManager* _manager;
     spargel::ui::TextSystem* _text_system;
     spargel::base::unique_ptr<Device> _device;
     ObjectPtr<ShaderLibrary> _shader;
@@ -391,7 +392,7 @@ private:
 
 int main() {
     auto platform = spargel::ui::makePlatform();
-    auto resource_manager = spargel::resource::make_relative_manager();
+    auto resource_manager = spargel::resource::makeRelativeManager();
     auto text_system = platform->createTextSystem();
 
     auto window = platform->makeWindow(500, 500);
