@@ -1,8 +1,10 @@
 #include <spargel/base/algorithm.h>
 #include <spargel/base/assert.h>
+#include <spargel/base/attribute.h>
 #include <spargel/base/logging.h>
 #include <spargel/base/optional.h>
 #include <spargel/base/tag_invoke.h>
+#include <spargel/math/matrix.h>
 #include <spargel/math/point.h>
 #include <spargel/math/vector.h>
 #include <spargel/resource/directory.h>
@@ -16,6 +18,7 @@
 
 using spargel::math::Vector3f;
 using spargel::math::Point3f;
+using spargel::math::Matrix4x4f;
 
 class Cursor final {
 public:
@@ -190,12 +193,9 @@ public:
                 spargel_log_error("bad point %d", i);
                 return {};
             }
-            // vertices[i] = {x.value(), y.value(), z.value()};
+            // scale the bunny mesh
             vertices[i] = {x.value() * 1000, y.value() * 1000, z.value() * 1000};
         }
-
-        // spargel_assert(vertices.getAllocator() != spargel::base::default_allocator());
-        // spargel_assert(indices.getAllocator() == spargel::base::default_allocator());
 
         return spargel::base::makeOptional<SimpleMesh>(face_count.value(), vert_count.value(),
                                                        spargel::base::move(indices),
@@ -263,11 +263,14 @@ private:
             _normals[_indices[i]] += (y - x).cross(z - x);
             _normals[_indices[i+1]] += (z - y).cross(x - z);
             _normals[_indices[i+2]] += (x - z).cross(y - z);
+            // _normals[_indices[i]] += (z - x).cross(y - x);
+            // _normals[_indices[i+1]] += (x - y).cross(z - z);
+            // _normals[_indices[i+2]] += (y - z).cross(x - z);
         }
 
         // normalize
         for (usize i = 0; i < _normals.count(); i++) {
-            auto l = _normals[i].length();
+            // auto l = _normals[i].length();
             // if (l < 0.001) {
             //     spargel_log_info("small normal: %zu", i);
             // }
@@ -284,9 +287,123 @@ private:
 };
 
 struct ControlData {
-    float model_to_world[16];
-    float world_to_camera[16];
-    float camera_to_clip[16];
+    Matrix4x4f model_to_world;
+    Matrix4x4f world_to_camera;
+    Matrix4x4f camera_to_clip;
+};
+
+static_assert(sizeof(ControlData) == sizeof(float) * 16 * 3);
+
+/// A simple perspective or parallel camera.
+class Camera {
+public:
+    Camera() = default;
+
+    /// Move the camera by the vector.
+    void move(Vector3f v) {
+        _position = _position + v;
+        _state_dirty = true;
+    }
+
+    void setPosition(Point3f p) {
+        _position = p;
+        _state_dirty = true;
+    }
+    void setDirection(Vector3f v) {
+        _direction = v;
+        _state_dirty = true;
+    }
+    void setUp(Vector3f v) {
+        _up = v;
+        _state_dirty = true;
+    }
+
+    void setViewAngle(float v) {
+        _view_angle = v;
+        _state_dirty = true;
+    }
+    void setAspectRatio(float r) {
+        _aspect_ratio = r;
+        _state_dirty = true;
+    }
+    void setNearPlane(float d) {
+        _near_plane = d;
+        _state_dirty = true;
+    }
+    void setFarPlane(float d) {
+        _far_plane = d;
+        _state_dirty = true;
+    }
+
+    void update() {
+        if (!_state_dirty) {
+            return;
+        }
+        computeWorldToCamera();
+        computeCameraToClip();
+        _state_dirty = false;
+    }
+
+    Matrix4x4f const& getWorldToCamera() const {
+        return _world_to_camera;
+    }
+    Matrix4x4f const& getCameraToClip() const {
+        return _camera_to_clip;
+    }
+
+private:
+    void computeWorldToCamera() {
+        Vector3f z = _direction.normalize();
+        Vector3f y = _up.normalize();
+        // The coordinate system is left-handed.
+        Vector3f x = _up.cross(_direction).normalize();
+        Vector3f p = _position.asVector();
+        Vector3f t(p.dot(x), p.dot(y), p.dot(z));
+        // clang-format off
+        _world_to_camera = Matrix4x4f(
+            x.x, y.x, z.x, 0,
+            x.y, y.y, z.y, 0,
+            x.z, y.z, z.z, 0,
+            -t.x, -t.y, -t.z, 1
+        );
+        // clang-format on
+    }
+    void computeCameraToClip() {
+        // y = tan(a / 2), x = r * y
+        float ys = 1.0 / spargel::math::tan(_view_angle * 0.5);
+        float xs = ys / _aspect_ratio;
+        float zs = _far_plane / (_far_plane - _near_plane);
+        float t = - zs * _near_plane;
+        // clang-format off
+        _camera_to_clip = Matrix4x4f(
+            xs, 0, 0, 0,
+            0, ys, 0, 0,
+            0, 0, zs, 1,
+            0, 0, t, 0
+        );
+        // clang-format on
+    }
+
+    // The position of the camera in the world coordinate.
+    Point3f _position;
+    // The facing direction of the camera.
+    Vector3f _direction;
+    // The up direction of the camera.
+    Vector3f _up;
+
+    // The angle of view in the vertical direction, in radians.
+    float _view_angle;
+    // The ratio of width over height;
+    float _aspect_ratio;
+    // The distance to the near plane;
+    float _near_plane;
+    // The distance to the far plane;
+    float _far_plane;
+
+    Matrix4x4f _world_to_camera;
+    Matrix4x4f _camera_to_clip;
+
+    bool _state_dirty = true;
 };
 
 class Delegate final : public spargel::ui::WindowDelegate {
@@ -295,21 +412,25 @@ public:
 
     void onKeyboard(spargel::ui::KeyboardEvent& e) override {
         float d = 10;
+        float dx = 0;
+        float dy = 0;
+        float dz = 0;
         if (e.key == spargel::ui::PhysicalKey::key_w) {
-            _cd.world_to_camera[13] += d;
+            dy += d;
         } else if (e.key == spargel::ui::PhysicalKey::key_s) {
-            _cd.world_to_camera[13] -= d;
+            dy -= d;
         } else if (e.key == spargel::ui::PhysicalKey::key_a) {
-            _cd.world_to_camera[12] -= d;
+            dx += d;
         } else if (e.key == spargel::ui::PhysicalKey::key_d) {
-            _cd.world_to_camera[12] += d;
+            dx -= d;
         } else if (e.key == spargel::ui::PhysicalKey::key_j) {
-            _cd.world_to_camera[14] += d;
+            dz += d;
         } else if (e.key == spargel::ui::PhysicalKey::key_k) {
-            _cd.world_to_camera[14] -= d;
+            dz -= d;
         }
-        // spargel_log_info("camera: (%.1f, %.1f, 0); scale: %.2f", _cd.camera[0], _cd.camera[1],
-        //                  _cd.scale);
+        _camera.move(Vector3f(dx, dy, dz));
+
+        _window->requestRedraw();
     }
 
     void onRender() override {
@@ -332,11 +453,13 @@ public:
         [encoder setVertexBuffer:_normals offset:0 atIndex:1];
 
         float ratio = _layer.drawableSize.width / _layer.drawableSize.height;
-        constexpr float alpha = 3.14159 / 6;
-        float height = tanf(alpha);
-        float width = height * ratio;
-        _cd.camera_to_clip[0] = 2.0 / width;
-        _cd.camera_to_clip[5] = 2.0 / height;
+        _camera.setAspectRatio(ratio);
+
+        _camera.update();
+
+        _cd.world_to_camera = _camera.getWorldToCamera();
+        _cd.camera_to_clip = _camera.getCameraToClip();
+
         [encoder setVertexBytes:&_cd length:sizeof(ControlData) atIndex:2];
 
         [encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle
@@ -367,7 +490,7 @@ private:
             _mesh = spargel::base::move(s).value();
 
             auto& bbox = _mesh.getBoundingBox();
-            spargel_log_info("(%.3f, %.3f, %.3f) - (%.3f, %.3f, %.3f)", bbox.xmin, bbox.ymin,
+            spargel_log_info("bounding box: (%.3f, %.3f, %.3f) - (%.3f, %.3f, %.3f)", bbox.xmin, bbox.ymin,
                              bbox.zmin, bbox.xmax, bbox.ymax, bbox.zmax);
         }
 
@@ -432,6 +555,14 @@ private:
                                             length:_mesh.getNormals().asBytes().count()
                                            options:MTLResourceStorageModeShared];
         }
+
+        _camera.setDirection(Vector3f(0, 0, 1));
+        _camera.setUp(Vector3f(0, 1, 0));
+        _camera.setViewAngle(3.14159 / 3); // 60 degrees
+        _camera.setNearPlane(1);
+        _camera.setFarPlane(1000);
+
+        _window->setAnimating(false);
     }
 
     spargel::ui::WindowAppKit* _window;
@@ -452,23 +583,17 @@ private:
 
     CAMetalLayer* _layer;
 
-    static constexpr float zmax = 1000;
-    static constexpr float zmin = 1;
+    Camera _camera;
 
     // clang-format off
     ControlData _cd = {
-        .model_to_world = {1, 0, 0, 0,
-                           0, 1, 0, 0,
-                           0, 0, 1, 0,
-                           0, 0, 500, 1,},
-        .world_to_camera = {1, 0, 0, 0,
-                            0, 1, 0, 0,
-                            0, 0, 1, 0,
-                            0, 0, 0, 1,},
-        .camera_to_clip = {1, 0, 0, 0,
-                           0, 1, 0, 0,
-                           0, 0, zmax/(zmax-zmin), 1,
-                           0, 0, -zmax*zmin/(zmax-zmin), 0,},
+        .model_to_world =
+            Matrix4x4f(
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 500, 1
+            ),
     };
     // clang-format on
 };

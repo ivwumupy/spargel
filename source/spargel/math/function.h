@@ -13,4 +13,6 @@ namespace spargel::math {
     SPARGEL_ALWAYS_INLINE float sqrt(float x) { return ::sqrtf(x); }
     SPARGEL_ALWAYS_INLINE double sqrt(double x) { return ::sqrt(x); }
 
+    SPARGEL_ALWAYS_INLINE float tan(float x) { return ::tanf(x); }
+
 }

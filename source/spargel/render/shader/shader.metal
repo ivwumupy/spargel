@@ -18,7 +18,7 @@ struct UniformData {
 };
 
 // The bunny mesh is too small.
-constant float model_scale = 1000;
+// constant float model_scale = 1000;
 
 [[vertex]] RasterData vertex_shader(VertexData in [[stage_in]], // buffer 0 and buffer 1
                                     constant UniformData& uniform [[buffer(2)]],
@@ -31,12 +31,6 @@ constant float model_scale = 1000;
 
     RasterData out;
     out.position = clip_position;
-
-    float3 cs[3] = {
-        {1.0, 0.0, 0.0},
-        {0.0, 1.0, 0.0},
-        {0.0, 0.0, 1.0},
-    };
 
     // out.c = cs[vid % 3];
     float t = dot(in.normal, normalize(float3(-1.0, -1.0, -1.0)));
