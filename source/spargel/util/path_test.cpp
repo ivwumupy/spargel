@@ -1,24 +1,37 @@
+
 #include <spargel/base/assert.h>
 #include <spargel/util/path.h>
 
-#if SPARGEL_IS_WINDOWS
+static usize dirname_len(const char* s) {
+    auto result = spargel::util::dirname(spargel::base::string_from_cstr(s));
+    return result.length();
+}
 
 int main() {
-    auto p = spargel::util::dirname(spargel::base::string("C:\\hello\\world"));
-    spargel_assert(p.length() == 8);
-    auto q = spargel::util::dirname(spargel::base::string("D:\\hello\\world\\"));
-    spargel_assert(q.length() == 14);
-    return 0;
-}
+    // absolute
+#if SPARGEL_IS_WINDOWS
+
+    // TODO
+    spargel_assert(dirname_len("C:\\hello\\world").length() == 8);
+    spargel_assert(dirname_len("D:\\hello\\world\\").length() == 14);
 
 #else  // SPARGEL_IS_WINDOWS
 
-int main() {
-    auto p = spargel::util::dirname(spargel::base::string("/hello/world"));
-    spargel_assert(p.length() == 6);
-    auto q = spargel::util::dirname(spargel::base::string("/hello/world/"));
-    spargel_assert(q.length() == 12);
+    spargel_assert(dirname_len("/") == 1);              // "/"
+    spargel_assert(dirname_len("/hello") == 1);         // "/"
+    spargel_assert(dirname_len("/hello/") == 1);        // "/"
+    spargel_assert(dirname_len("/hello/world") == 6);   // "/hello"
+    spargel_assert(dirname_len("/hello/world/") == 6);  // "/hello"
+
+#endif  // SPARGEL_IS_WINDOWS
+
+    // relative
+    spargel_assert(dirname_len("") == 1);              // "."
+    spargel_assert(dirname_len(".") == 1);             // "."
+    spargel_assert(dirname_len("hello") == 1);         // "."
+    spargel_assert(dirname_len("hello/") == 1);        // "."
+    spargel_assert(dirname_len("hello/world") == 5);   // "hello"
+    spargel_assert(dirname_len("hello/world/") == 5);  // "hello"
+
     return 0;
 }
-
-#endif

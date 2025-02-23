@@ -1,18 +1,21 @@
 #pragma once
 
+#include <spargel/base/optional.h>
 #include <spargel/base/span.h>
 #include <spargel/base/string.h>
 #include <spargel/base/string_view.h>
 #include <spargel/base/types.h>
 
+#include <cstddef>
+
 namespace spargel::resource {
 
-    class resource_id {
+    class ResourceId {
     public:
         static constexpr base::string_view default_namespace = "core";
 
-        resource_id(base::string_view ns, base::string_view path) : _namespace(ns), _path(path) {}
-        resource_id(base::string_view path) : resource_id(default_namespace, path) {}
+        ResourceId(base::string_view ns, base::string_view path) : _namespace(ns), _path(path) {}
+        ResourceId(base::string_view path) : ResourceId(default_namespace, path) {}
 
         const base::string& ns() const { return _namespace; }
         const base::string& path() const { return _path; }
@@ -22,32 +25,34 @@ namespace spargel::resource {
         base::string _path;
     };
 
-    class resource;
+    class Resource;
 
-    class resource_manager {
+    class ResourceManager {
     public:
-        virtual ~resource_manager() = default;
+        virtual ~ResourceManager() = default;
 
-        virtual void close() {}
-
-        virtual resource* open(const resource_id& id) = 0;
+        virtual Resource* open(const ResourceId& id) = 0;
     };
 
-    class resource {
+    /*
+     * This represents native resource handle class.
+     * It can not be copied.
+     */
+    class Resource {
     public:
-        resource() : _mapped(nullptr), _mapped_size(0) {}
+        Resource() : _mapped(nullptr), _mapped_size(0) {}
 
-        virtual ~resource() = default;
+        Resource(Resource&) = delete;
 
-        virtual void close();
+        virtual ~Resource();
 
         virtual usize size() = 0;
 
-        virtual void get_data(void* buf) = 0;
+        virtual void getData(void* buf) = 0;
 
-        virtual void* map_data();
+        virtual void* mapData();
 
-        base::span<u8> getSpan() { return base::make_span<u8>(size(), (u8*)map_data()); }
+        base::span<u8> getSpan() { return base::make_span<u8>(size(), (u8*)mapData()); }
 
     private:
         void* _mapped;
@@ -55,8 +60,8 @@ namespace spargel::resource {
     };
 
     // The most trivial example
-    class empty_resource_manager final : public resource_manager {
+    class EmptyResourceManager final : public ResourceManager {
     public:
-        resource* open(const resource_id& id) override { return nullptr; }
+        Resource* open(const ResourceId& id) override { return nullptr; }
     };
 }  // namespace spargel::resource

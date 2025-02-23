@@ -72,8 +72,7 @@ u32 max(u32 a, u32 b) { return a > b ? a : b; }
 
 class Renderer final : public spargel::ui::WindowDelegate {
 public:
-    Renderer(spargel::ui::Window* window,
-             spargel::resource::resource_manager* resource_manager,
+    Renderer(spargel::ui::Window* window, spargel::resource::ResourceManager* resource_manager,
              spargel::ui::TextSystem* text_system)
         : _window{window}, _manager{resource_manager}, _text_system{text_system} {
         _window->setDelegate(this);
@@ -91,7 +90,7 @@ public:
 
         _shader = _device->createShaderLibrary(blob->getSpan());
 
-        blob->close();
+        delete blob;
 #endif
 
         RenderPipelineBuilder builder;
@@ -311,7 +310,7 @@ private:
     }
 
     spargel::ui::Window* _window;
-    spargel::resource::resource_manager* _manager;
+    spargel::resource::ResourceManager* _manager;
     spargel::ui::TextSystem* _text_system;
     spargel::base::unique_ptr<Device> _device;
     ObjectPtr<ShaderLibrary> _shader;
@@ -334,7 +333,7 @@ private:
 
 int main() {
     auto platform = spargel::ui::makePlatform();
-    auto resource_manager = spargel::resource::make_relative_manager();
+    auto resource_manager = spargel::resource::makeRelativeManager();
     auto text_system = platform->createTextSystem();
 
     auto window = platform->makeWindow(500, 500);

@@ -11,6 +11,8 @@ spargel_add_library(
         platform_posix.cpp
     PRIVATE_ANDROID
         platform_linux.cpp
+    PRIVATE_EMSCRIPTEN
+        platform_emscripten.cpp
     PRIVATE_LINUX
         platform_linux.cpp
     PRIVATE_MACOS

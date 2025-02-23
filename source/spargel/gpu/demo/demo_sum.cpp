@@ -14,7 +14,7 @@ static constexpr float arr2[] = {4.0, 5.0, 6.0};
 int main(int argc, char* argv[]) {
     base::CommandLine cmdline(argc, argv);
 
-    auto resource_manager = resource::make_relative_manager();
+    auto resource_manager = resource::makeRelativeManager();
     gpu::DeviceKind backend = gpu::DeviceKind::unknown;
     if (cmdline.hasSwitch("metal")) {
         backend = gpu::DeviceKind::metal;
@@ -33,14 +33,15 @@ int main(int argc, char* argv[]) {
     auto buf3 =
         device->createBuffer(gpu::BufferUsage::storage | gpu::BufferUsage::map_read, sizeof(arr1));
 
-    resource::directory_resource* blob = nullptr;
+    resource::ResourceDirectory* blob = nullptr;
 
     if (backend == gpu::DeviceKind::metal) {
-        blob = resource_manager->open(resource::resource_id("shader.metallib"));
+        blob = resource_manager->open(resource::ResourceId("shader.metallib"));
     } else if (backend == gpu::DeviceKind::vulkan) {
-        blob = resource_manager->open(resource::resource_id("demo_sum.spirv"));
+        blob = resource_manager->open(resource::ResourceId("demo_sum.spirv"));
     }
     auto library = device->createShaderLibrary(blob->getSpan());
+    delete blob;
 
     spargel_log_info("shader library loaded");
 

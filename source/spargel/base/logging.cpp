@@ -1,3 +1,4 @@
+
 #include <spargel/base/assert.h>
 #include <spargel/base/logging.h>
 #include <spargel/config.h>
@@ -10,12 +11,17 @@
 #include <time.h>
 
 // platform
-#if SPARGEL_IS_POSIX
+#if SPARGEL_IS_POSIX || SPARGEL_IS_EMSCRIPTEN
 #include <sys/time.h>
 #endif
 
 #if SPARGEL_IS_ANDROID
 #include <android/log.h>
+#endif
+
+#if SPARGEL_IS_EMSCRIPTEN
+#include <emscripten.h>
+#include <emscripten/console.h>
 #endif
 
 #if SPARGEL_IS_WINDOWS
@@ -39,7 +45,7 @@ namespace spargel::base {
     };
 
     static void log_get_time(struct log_timestamp* time) {
-#if SPARGEL_IS_POSIX
+#if SPARGEL_IS_POSIX || SPARGEL_IS_EMSCRIPTEN
         struct timeval tv;
         gettimeofday(&tv, NULL);
         time_t t = tv.tv_sec;
@@ -68,38 +74,53 @@ namespace spargel::base {
 
     void log(int level, char const* file, char const* func, u32 line, char const* format, ...) {
         spargel_assert(level >= 0 && level < _LOG_COUNT);
+
         char const* name = log_names[level];
         struct log_timestamp time;
         log_get_time(&time);
 
+        va_list ap;
+
+#if !SPARGEL_IS_EMSCRIPTEN
+
+        char const* log_prefix = "";
+
 #if SPARGEL_ENABLE_LOG_ANSI_COLOR
         switch (level) {
         case 0:
-            fputs("\033[36m", stderr);
+            log_prefix = "\033[36m";
             break;
         case 1:
-            fputs("\033[32m", stderr);
+            log_prefix = "\033[32m";
             break;
         case 2:
-            fputs("\033[1;93m", stderr);
+            log_prefix = "\033[1;93m";
             break;
         case 3:
         case 4:
-            fputs("\033[1;31m", stderr);
+            log_prefix = "\033[1;31m";
             break;
         default:
-            fputs("\033[0m", stderr);
+            log_prefix = "\033[0m";
             break;
         }
-#endif
+#endif  // SPARGEL_ENABLE_LOG_ANSI_COLOR
 
+        fputs(log_prefix, stderr);
         fprintf(stderr, "[%02d%02d/%02d%02d%02d.%06d:%s:%s:%s:%u] ", time.mon, time.day, time.hour,
                 time.min, time.sec, time.usec, name, file, func, line);
 
-        va_list ap;
         va_start(ap, format);
         vfprintf(stderr, format, ap);
         va_end(ap);
+
+#if SPARGEL_ENABLE_LOG_ANSI_COLOR
+        fputs("\033[0m", stderr);
+#endif
+
+        fprintf(stderr, "\n");
+
+#endif  // !SPARGEL_IS_EMSCRIPTEN
 
 #if SPARGEL_IS_ANDROID
         int android_log_prio;
@@ -126,13 +147,34 @@ namespace spargel::base {
         va_start(ap, format);
         __android_log_vprint(android_log_prio, "spargel", format, ap);
         va_end(ap);
-#endif
+#endif  // SPARGEL_IS_ANDROID
 
-#if SPARGEL_ENABLE_LOG_ANSI_COLOR
-        fputs("\033[0m", stderr);
-#endif
+#if SPARGEL_IS_EMSCRIPTEN
+        // FIXME
+        char log_buf[4096];
 
-        fprintf(stderr, "\n");
+        va_start(ap, format);
+        vsnprintf(log_buf, 4096, format, ap);
+        va_end(ap);
+
+        switch (level) {
+        case 0:
+        case 1:
+            emscripten_console_log(log_buf);
+            break;
+        case 2:
+            emscripten_console_warn(log_buf);
+            break;
+        case 3:
+        case 4:
+            emscripten_console_error(log_buf);
+            break;
+        default:
+            emscripten_console_log(log_buf);
+            break;
+        }
+
+#endif  // SPARGEL_IS_EMSCRIPTEN
     }
 
 }  // namespace spargel::base

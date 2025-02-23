@@ -52,7 +52,7 @@ namespace spargel {
     };
 
     extern "C" int main() {
-        auto resource_manager = resource::make_relative_manager();
+        auto resource_manager = resource::makeRelativeManager();
 
         auto platform = ui::makePlatform();
         auto window = platform->makeWindow(800, 600);
@@ -130,15 +130,14 @@ namespace spargel {
         char infoLog[512];
 
         unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        auto vertexShaderCode = resource_manager->open(resource::resource_id("demo_opengl.vs"));
+        auto vertexShaderCode = resource_manager->open(resource::ResourceId("demo_opengl.vs"));
         if (!vertexShaderCode) {
             spargel_log_fatal("cannot open vertex shader file");
             spargel_panic_here();
         }
-        auto pVertexShaderCode = (GLchar*)vertexShaderCode->map_data();
+        auto pVertexShaderCode = (GLchar*)vertexShaderCode->mapData();
         auto vertexShaderCodeLength = (GLint)vertexShaderCode->size();
         glShaderSource(vertexShader, 1, &pVertexShaderCode, &vertexShaderCodeLength);
-        vertexShaderCode->close();
         delete vertexShaderCode;
         glCompileShader(vertexShader);
         glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
@@ -149,15 +148,14 @@ namespace spargel {
         }
 
         unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        auto fragmentShaderCode = resource_manager->open(resource::resource_id("demo_opengl.fs"));
+        auto fragmentShaderCode = resource_manager->open(resource::ResourceId("demo_opengl.fs"));
         if (!fragmentShaderCode) {
             spargel_log_fatal("cannot open fragment shader file");
             spargel_panic_here();
         }
-        auto pFragmentShaderCode = (GLchar*)fragmentShaderCode->map_data();
+        auto pFragmentShaderCode = (GLchar*)fragmentShaderCode->mapData();
         auto fragmentShaderCodeLength = (GLint)fragmentShaderCode->size();
         glShaderSource(fragmentShader, 1, &pFragmentShaderCode, &fragmentShaderCodeLength);
-        fragmentShaderCode->close();
         delete fragmentShaderCode;
         glCompileShader(fragmentShader);
         glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
@@ -225,8 +223,6 @@ namespace spargel {
 #elif SPARGEL_IS_WINDOWS
         wglDeleteContext(wgl_ctx);
 #endif
-
-        resource_manager->close();
 
         return 0;
     }

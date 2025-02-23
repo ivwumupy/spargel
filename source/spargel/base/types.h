@@ -1,13 +1,14 @@
 #pragma once
 
 #include <spargel/base/compiler.h>
+#include <spargel/config.h>
 
 // c std
 #include <stddef.h>
 #include <stdint.h>
 
 // cpp std
-#include <cstddef> // std::byte
+#include <cstddef>  // std::byte
 
 using ssize = ptrdiff_t;
 using usize = size_t;
@@ -25,7 +26,7 @@ using i64 = int64_t;
 using nullptr_t = decltype(nullptr);
 
 // TODO
-#if !SPARGEL_IS_MSVC
+#if !(SPARGEL_IS_MSVC || SPARGEL_IS_EMSCRIPTEN)
 using f16 = _Float16;
 #endif
 using f32 = float;
@@ -34,4 +35,4 @@ using f64 = double;
 namespace spargel::base {
     // using Byte = std::byte;
     using Byte = u8;
-}
+}  // namespace spargel::base

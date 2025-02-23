@@ -30,7 +30,7 @@ function(spargel_add_executable)
     cmake_parse_arguments(ARGS
         "" # options
         "NAME" # one value
-        "PRIVATE;PRIVATE_POSIX;PRIVATE_ANDROID;PRIVATE_LINUX;PRIVATE_MACOS;PRIVATE_WINDOWS;DEPS" # multi value
+        "PRIVATE;PRIVATE_POSIX;PRIVATE_ANDROID;PRIVATE_EMSCRIPTEN;PRIVATE_LINUX;PRIVATE_MACOS;PRIVATE_WINDOWS;DEPS" # multi value
         ${ARGN})
 
     add_executable(${ARGS_NAME})
@@ -38,6 +38,9 @@ function(spargel_add_executable)
     target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE})
     if (SPARGEL_IS_ANDROID)
         target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_ANDROID})
+    endif ()
+    if (SPARGEL_IS_EMSCRIPTEN)
+        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_EMSCRIPTEN})
     endif ()
     if (SPARGEL_IS_LINUX)
         target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_LINUX})
@@ -85,13 +88,16 @@ function(spargel_add_library)
     cmake_parse_arguments(ARGS
         "" # options
         "NAME" # one value
-        "PUBLIC;PRIVATE;PRIVATE_POSIX;PRIVATE_ANDROID;PRIVATE_LINUX;PRIVATE_MACOS;PRIVATE_WINDOWS;DEPS" # multi value
+        "PUBLIC;PRIVATE;PRIVATE_POSIX;PRIVATE_ANDROID;PRIVATE_EMSCRIPTEN;PRIVATE_LINUX;PRIVATE_MACOS;PRIVATE_WINDOWS;DEPS" # multi value
         ${ARGN})
     add_library(${ARGS_NAME})
     spargel_target_common(${ARGS_NAME})
     target_sources(${ARGS_NAME} PUBLIC ${ARGS_PUBLIC} PRIVATE ${ARGS_PRIVATE})
     if (SPARGEL_IS_ANDROID)
         target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_ANDROID})
+    endif ()
+    if (SPARGEL_IS_EMSCRIPTEN)
+        target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_EMSCRIPTEN})
     endif ()
     if (SPARGEL_IS_LINUX)
         target_sources(${ARGS_NAME} PRIVATE ${ARGS_PRIVATE_POSIX} ${ARGS_PRIVATE_LINUX})

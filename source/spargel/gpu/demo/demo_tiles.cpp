@@ -90,8 +90,7 @@ static constexpr int N = 100;
 
 class Renderer final : public spargel::ui::WindowDelegate {
 public:
-    Renderer(spargel::ui::Window* window,
-             spargel::resource::resource_manager* resource_manager)
+    Renderer(spargel::ui::Window* window, spargel::resource::ResourceManager* resource_manager)
         : _window{window}, _manager{resource_manager} {
         _window->setDelegate(this);
 
@@ -108,7 +107,7 @@ public:
 
         _shader = _device->createShaderLibrary(blob->getSpan());
 
-        blob->close();
+        delete blob;
 #endif
 
         RenderPipelineBuilder builder;
@@ -216,7 +215,7 @@ public:
 
 private:
     spargel::ui::Window* _window;
-    spargel::resource::resource_manager* _manager;
+    spargel::resource::ResourceManager* _manager;
     spargel::base::unique_ptr<Device> _device;
     ObjectPtr<ShaderLibrary> _shader;
     ObjectPtr<RenderPipeline> _pipeline;
@@ -238,7 +237,7 @@ private:
 
 int main() {
     auto platform = spargel::ui::makePlatform();
-    auto resource_manager = spargel::resource::make_relative_manager();
+    auto resource_manager = spargel::resource::makeRelativeManager();
 
     auto window = platform->makeWindow(500, 500);
     window->setTitle("Spargel Engine - GPU");

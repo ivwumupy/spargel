@@ -9,7 +9,7 @@ namespace spargel::entry {
     struct simple_entry_data {
         base::unique_ptr<ui::Platform> platform;
         base::unique_ptr<ui::Window> window;
-        base::unique_ptr<resource::resource_manager> resource_manager;
+        base::unique_ptr<resource::ResourceManager> resource_manager;
     };
 
     int simple_entry(spargel::entry::simple_entry_data* entry_data);

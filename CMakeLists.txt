@@ -28,6 +28,12 @@ else()
     set(SPARGEL_IS_MACOS NO CACHE BOOL "")
 endif()
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL Emscripten)
+    set(SPARGEL_IS_EMSCRIPTEN YES CACHE BOOL "")
+else()
+    set(SPARGEL_IS_EMSCRIPTEN NO CACHE BOOL "")
+endif()
+
 if(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
     set(SPARGEL_IS_LINUX YES CACHE BOOL "")
 else()

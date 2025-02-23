@@ -7,9 +7,7 @@
 #if SPARGEL_FILE_MMAP
 
 #if SPARGEL_IS_WINDOWS
-
 typedef void* HANDLE;
-
 #endif
 
 #else
@@ -21,17 +19,17 @@ typedef void* HANDLE;
 
 namespace spargel::resource {
 
-    class directory_resource : public resource {
-        friend class directory_resource_manager;
+    class ResourceDirectory : public Resource {
+        friend class ResourceManagerDirectory;
 
     public:
-        void close() override;
+        ~ResourceDirectory() override;
 
         usize size() override { return _size; }
 
-        void get_data(void* buf) override;
+        void getData(void* buf) override;
 
-        void* map_data() override;
+        void* mapData() override;
 
     private:
         usize _size;
@@ -40,11 +38,11 @@ namespace spargel::resource {
 
 #if SPARGEL_IS_POSIX
         int _fd;
-        directory_resource(usize size, int fd) : _size(size), _mapped(nullptr), _fd(fd) {}
+        ResourceDirectory(usize size, int fd) : _size(size), _mapped(nullptr), _fd(fd) {}
 #elif SPARGEL_IS_WINDOWS
         HANDLE _file_handle;
         HANDLE _mapping_handle;
-        directory_resource(usize size, HANDLE file_handle)
+        ResourceDirectory(usize size, HANDLE file_handle)
             : _size(size), _mapped(nullptr), _file_handle(file_handle), _mapping_handle(nullptr) {}
 #else
 #error unimplemented
@@ -54,22 +52,22 @@ namespace spargel::resource {
         void _unmap(void* ptr, usize size);
 #else
         FILE* _fp;
-        directory_resource(usize size, FILE* fp) : _size(size), _fp(fp) {}
+        ResourceDirectory(usize size, FILE* fp) : _size(size), _fp(fp) {}
 #endif
     };
 
-    class directory_resource_manager : public resource_manager {
+    class ResourceManagerDirectory : public ResourceManager {
     public:
-        directory_resource_manager(base::string_view root_path) : _root_path(root_path) {}
+        ResourceManagerDirectory(base::string_view root_path) : _root_path(root_path) {}
 
-        directory_resource* open(const resource_id& id) override;
+        ResourceDirectory* open(const ResourceId& id) override;
 
     private:
         base::string _root_path;
 
-        base::string _real_path(const resource_id& id);
+        base::string _real_path(const ResourceId& id);
     };
 
-    base::unique_ptr<directory_resource_manager> make_relative_manager();
+    base::unique_ptr<ResourceManagerDirectory> makeRelativeManager();
 
 }  // namespace spargel::resource

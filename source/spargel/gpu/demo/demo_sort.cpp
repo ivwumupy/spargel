@@ -11,7 +11,7 @@ using namespace spargel;
 int main(int argc, char* argv[]) {
     base::CommandLine cmdline(argc, argv);
 
-    auto resource_manager = resource::make_relative_manager();
+    auto resource_manager = resource::makeRelativeManager();
     gpu::DeviceKind backend = gpu::DeviceKind::unknown;
     if (cmdline.hasSwitch("metal")) {
         backend = gpu::DeviceKind::metal;
@@ -34,14 +34,15 @@ int main(int argc, char* argv[]) {
         device->createBuffer(gpu::BufferUsage::storage,
                              base::make_span<u8>(sizeof(u32) * data.count(), (u8*)data.data()));
 
-    resource::directory_resource* blob = nullptr;
+    resource::ResourceDirectory* blob = nullptr;
 
     if (backend == gpu::DeviceKind::metal) {
-        blob = resource_manager->open(resource::resource_id("shader.metallib"));
+        blob = resource_manager->open(resource::ResourceId("shader.metallib"));
     } else if (backend == gpu::DeviceKind::vulkan) {
-        blob = resource_manager->open(resource::resource_id("demo_sort.spirv"));
+        blob = resource_manager->open(resource::ResourceId("demo_sort.spirv"));
     }
     auto library = device->createShaderLibrary(blob->getSpan());
+    delete blob;
 
     auto pipeline = device->createComputePipeline2({
         .compute =
