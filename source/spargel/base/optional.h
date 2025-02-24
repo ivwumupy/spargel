@@ -15,6 +15,19 @@ namespace spargel::base {
         public:
             Optional() = default;
 
+            template <typename U>
+                requires(is_convertible<U, T>)
+            Optional(Optional<U>&& other) {
+                if (other.hasValue()) {
+                    _status = Status::value;
+                } else {
+                    _status = Status::empty;
+                }
+                if (_status == Status::value) {
+                    construct_at(getPtr(), base::move(other.value()));
+                }
+            }
+
             Optional(Optional const& other) : _status{other._status} {
                 if (other.hasValue()) {
                     construct_at(getPtr(), other.value());
