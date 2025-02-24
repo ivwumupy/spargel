@@ -96,7 +96,7 @@ public:
 #if USE_METAL
         auto blob = _manager->open(spargel::resource::ResourceId("shader.metallib"));
 
-        _shader = _device->createShaderLibrary(blob->getSpan());
+        _shader = _device->createShaderLibrary(blob.value()->getSpan());
 
         // TODO: Close the resource.
         // blob->close();

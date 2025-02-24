@@ -482,7 +482,12 @@ private:
 
         {
             auto blob = _resource->open(spargel::resource::ResourceId("bunny.smesh"));
-            auto s = SimpleMesh::create(blob->getSpan());
+            if (!blob.hasValue()) {
+                spargel_log_error("cannot load mesh");
+                spargel_panic_here();
+            }
+
+            auto s = SimpleMesh::create(blob.value()->getSpan());
             if (!s.hasValue()) {
                 spargel_log_error("wrong format");
                 spargel_panic_here();
@@ -504,7 +509,11 @@ private:
 
         {
             auto blob = _resource->open(spargel::resource::ResourceId("shader.metallib"));
-            auto blob_span = blob->getSpan();
+            if (!blob.hasValue()) {
+                spargel_log_error("cannot load shader");
+                spargel_panic_here();
+            }
+            auto blob_span = blob.value()->getSpan();
             auto library_data =
                 dispatch_data_create(blob_span.data(), blob_span.count(), dispatch_get_main_queue(),
                                      DISPATCH_DATA_DESTRUCTOR_DEFAULT);
