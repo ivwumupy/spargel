@@ -15,6 +15,15 @@ namespace spargel::util {
             cur--;
         }
 
+        // Handle case where all characters were separators
+        if (cur < path.begin()) {
+            if (path.length() > 0 && *path.begin() == PATH_SPLIT) {
+                return base::string_from_cstr("/");
+            } else {
+                return base::string_from_cstr(".");
+            }
+        }
+
         // Find last separator
         for (; cur >= path.begin(); cur--) {
             if (*cur == PATH_SPLIT) break;

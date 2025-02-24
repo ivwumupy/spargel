@@ -72,8 +72,8 @@ namespace spargel::resource {
         base::string real_path = _real_path(id);
         int fd = ::open(real_path.data(), O_RDONLY);
         if (fd < 0) {
-            spargel_log_error("requested resource \"%s:%s\" not found", id.ns().data(),
-                              id.path().data());
+            spargel_log_error("requested resource \"%s:%s\" not found (%s)", id.ns().data(),
+                              id.path().data(), real_path.data());
             return nullptr;
         }
         struct stat sb;
@@ -110,15 +110,15 @@ namespace spargel::resource {
         HANDLE file_handle = CreateFileA(real_path.data(), GENERIC_READ, 0, NULL, OPEN_EXISTING,
                                          FILE_ATTRIBUTE_READONLY, nullptr);
         if (file_handle == INVALID_HANDLE_VALUE) {
-            spargel_log_error("requested resource \"%s:%s\" not found", id.ns().data(),
-                              id.path().data());
+            spargel_log_error("requested resource \"%s:%s\" not found (%s)", id.ns().data(),
+                              id.path().data(), real_path.data());
             return nullptr;
         }
 
         LARGE_INTEGER size;
         if (!GetFileSizeEx(file_handle, &size)) {
-            spargel_log_error("cannot get the size of resource \"%s:%s\"", id.ns().data(),
-                              id.path().data());
+            spargel_log_error("cannot get the size of resource \"%s:%s\" (%s)", id.ns().data(),
+                              id.path().data(), real_path.data());
             CloseHandle(file_handle);
             return nullptr;
         }
@@ -145,6 +145,8 @@ namespace spargel::resource {
         base::string real_path = _real_path(id);
         FILE* fp = fopen(real_path.data(), "rb");
         if (!fp) {
+            spargel_log_error("cannot open file for resource \"%s:%s\" (%s)", id.ns().data(),
+                              id.path().data(), real_path.data());
             return nullptr;
         }
         fseek(fp, 0, SEEK_END);

@@ -2,9 +2,9 @@
 #include <spargel/base/assert.h>
 #include <spargel/util/path.h>
 
-static usize dirname_len(const char* s) {
-    auto result = spargel::util::dirname(spargel::base::string_from_cstr(s));
-    return result.length();
+static bool dirname_equal(const char* path, const char* expected) {
+    auto path_dirname = spargel::util::dirname(spargel::base::string_from_cstr(path));
+    return path_dirname == spargel::base::string_from_cstr(expected);
 }
 
 int main() {
@@ -12,26 +12,30 @@ int main() {
 #if SPARGEL_IS_WINDOWS
 
     // TODO
-    spargel_assert(dirname_len("C:\\hello\\world").length() == 8);
-    spargel_assert(dirname_len("D:\\hello\\world\\").length() == 14);
+    spargel_assert(dirname_equal("C:\\hello\\world").length() == 8);
+    spargel_assert(dirname_equal("D:\\hello\\world\\").length() == 14);
 
 #else  // SPARGEL_IS_WINDOWS
 
-    spargel_assert(dirname_len("/") == 1);              // "/"
-    spargel_assert(dirname_len("/hello") == 1);         // "/"
-    spargel_assert(dirname_len("/hello/") == 1);        // "/"
-    spargel_assert(dirname_len("/hello/world") == 6);   // "/hello"
-    spargel_assert(dirname_len("/hello/world/") == 6);  // "/hello"
+    spargel_assert(dirname_equal("/", "/"));
+    spargel_assert(dirname_equal("/hello", "/"));
+    spargel_assert(dirname_equal("/hello/", "/"));
+    spargel_assert(dirname_equal("/hello/world", "/hello"));
+    spargel_assert(dirname_equal("/hello/world/", "/hello"));
 
 #endif  // SPARGEL_IS_WINDOWS
 
     // relative
-    spargel_assert(dirname_len("") == 1);              // "."
-    spargel_assert(dirname_len(".") == 1);             // "."
-    spargel_assert(dirname_len("hello") == 1);         // "."
-    spargel_assert(dirname_len("hello/") == 1);        // "."
-    spargel_assert(dirname_len("hello/world") == 5);   // "hello"
-    spargel_assert(dirname_len("hello/world/") == 5);  // "hello"
+    spargel_assert(dirname_equal("", "."));
+    spargel_assert(dirname_equal(".", "."));
+    spargel_assert(dirname_equal("hello", "."));
+    spargel_assert(dirname_equal("hello/", "."));
+    spargel_assert(dirname_equal("hello/world", "hello"));
+    spargel_assert(dirname_equal("hello/world/", "hello"));
+    spargel_assert(dirname_equal("./hello", "."));
+    spargel_assert(dirname_equal("./hello/", "."));
+    spargel_assert(dirname_equal("./hello/world", "./hello"));
+    spargel_assert(dirname_equal("./hello/world/", "./hello"));
 
     return 0;
 }

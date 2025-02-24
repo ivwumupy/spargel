@@ -20,8 +20,7 @@
 #endif
 
 #if SPARGEL_IS_EMSCRIPTEN
-#include <emscripten.h>
-#include <emscripten/console.h>
+#include <spargel/base/platform_emscripten.h>
 #endif
 
 #if SPARGEL_IS_WINDOWS
@@ -159,18 +158,20 @@ namespace spargel::base {
 
         switch (level) {
         case 0:
+            emscriptenConsoleDebug(log_buf);
+            break;
         case 1:
-            emscripten_console_log(log_buf);
+            emscriptenConsoleInfo(log_buf);
             break;
         case 2:
-            emscripten_console_warn(log_buf);
+            emscriptenConsoleWarn(log_buf);
             break;
         case 3:
         case 4:
-            emscripten_console_error(log_buf);
+            emscriptenConsoleError(log_buf);
             break;
         default:
-            emscripten_console_log(log_buf);
+            emscriptenConsoleLog(log_buf);
             break;
         }
 

@@ -1,3 +1,4 @@
+
 #include <spargel/config.h>
 #include <spargel/ui/platform.h>
 
@@ -9,9 +10,9 @@ namespace spargel::ui {
     base::unique_ptr<Platform> makePlatformAppKit();
 #elif SPARGEL_IS_WINDOWS
     base::unique_ptr<Platform> makePlatformWin32();
-#elif SPARGEL_UI_DUMMY
-    base::unique_ptr<Platform> makePlatformDummy();
 #endif
+
+    base::unique_ptr<Platform> makePlatformDummy();
 
     base::unique_ptr<Platform> makePlatform() {
 #if SPARGEL_IS_LINUX
@@ -20,11 +21,9 @@ namespace spargel::ui {
         return makePlatformAppKit();
 #elif SPARGEL_IS_WINDOWS
         return makePlatformWin32();
-#elif SPARGEL_UI_DUMMY
-        return makePlatformDummy();
 #else
-        return nullptr;
+        return makePlatformDummy();
 #endif
     }
 
-}
+}  // namespace spargel::ui
