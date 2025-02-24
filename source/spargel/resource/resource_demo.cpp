@@ -49,19 +49,17 @@ namespace spargel::entry {
         base::string_view path = "abc.txt";
 
         auto resource = entry_data->resource_manager->open(resource::ResourceId(path));
-        if (!resource) {
+        if (!resource.hasValue()) {
             spargel_log_error("Cannot open resource \"%s\"", path.data());
             return 1;
         }
 
-        size_t size = resource->size();
+        size_t size = resource.value()->size();
         spargel_log_info("Size of \"%s\": %zu", path.data(), size);
         spargel_log_info("================");
 
-        char* data = (char*)resource->mapData();
+        char* data = (char*)resource.value()->mapData();
         xxd_print(data, size);
-
-        delete resource;
 
         return 0;
     }

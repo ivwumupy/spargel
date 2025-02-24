@@ -105,9 +105,7 @@ public:
 #if USE_METAL
         auto blob = _manager->open(spargel::resource::ResourceId("shader.metallib"));
 
-        _shader = _device->createShaderLibrary(blob->getSpan());
-
-        delete blob;
+        _shader = _device->createShaderLibrary(blob.value()->getSpan());
 #endif
 
         RenderPipelineBuilder builder;

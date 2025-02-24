@@ -131,14 +131,13 @@ namespace spargel {
 
         unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
         auto vertexShaderCode = resource_manager->open(resource::ResourceId("demo_opengl.vs"));
-        if (!vertexShaderCode) {
+        if (!vertexShaderCode.hasValue()) {
             spargel_log_fatal("cannot open vertex shader file");
             spargel_panic_here();
         }
-        auto pVertexShaderCode = (GLchar*)vertexShaderCode->mapData();
-        auto vertexShaderCodeLength = (GLint)vertexShaderCode->size();
+        auto pVertexShaderCode = (GLchar*)vertexShaderCode.value()->mapData();
+        auto vertexShaderCodeLength = (GLint)vertexShaderCode.value()->size();
         glShaderSource(vertexShader, 1, &pVertexShaderCode, &vertexShaderCodeLength);
-        delete vertexShaderCode;
         glCompileShader(vertexShader);
         glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
         if (!success) {
@@ -149,14 +148,13 @@ namespace spargel {
 
         unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
         auto fragmentShaderCode = resource_manager->open(resource::ResourceId("demo_opengl.fs"));
-        if (!fragmentShaderCode) {
+        if (!fragmentShaderCode.hasValue()) {
             spargel_log_fatal("cannot open fragment shader file");
             spargel_panic_here();
         }
-        auto pFragmentShaderCode = (GLchar*)fragmentShaderCode->mapData();
-        auto fragmentShaderCodeLength = (GLint)fragmentShaderCode->size();
+        auto pFragmentShaderCode = (GLchar*)fragmentShaderCode.value()->mapData();
+        auto fragmentShaderCodeLength = (GLint)fragmentShaderCode.value()->size();
         glShaderSource(fragmentShader, 1, &pFragmentShaderCode, &fragmentShaderCodeLength);
-        delete fragmentShaderCode;
         glCompileShader(fragmentShader);
         glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
         if (!success) {

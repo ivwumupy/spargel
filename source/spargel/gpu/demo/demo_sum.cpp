@@ -33,15 +33,14 @@ int main(int argc, char* argv[]) {
     auto buf3 =
         device->createBuffer(gpu::BufferUsage::storage | gpu::BufferUsage::map_read, sizeof(arr1));
 
-    resource::ResourceDirectory* blob = nullptr;
+    base::Optional<base::unique_ptr<resource::Resource>> blob;
 
     if (backend == gpu::DeviceKind::metal) {
         blob = resource_manager->open(resource::ResourceId("shader.metallib"));
     } else if (backend == gpu::DeviceKind::vulkan) {
         blob = resource_manager->open(resource::ResourceId("demo_sum.spirv"));
     }
-    auto library = device->createShaderLibrary(blob->getSpan());
-    delete blob;
+    auto library = device->createShaderLibrary(blob.value()->getSpan());
 
     spargel_log_info("shader library loaded");
 

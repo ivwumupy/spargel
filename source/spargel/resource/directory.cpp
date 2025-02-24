@@ -9,6 +9,8 @@
 // libc
 #include <string.h>
 
+#include "resource.h"
+
 #if SPARGEL_FILE_MMAP
 
 #if SPARGEL_IS_POSIX
@@ -29,6 +31,42 @@
 #endif  // SPARGEL_FILE_MMAP
 
 namespace spargel::resource {
+
+    class ResourceDirectory : public Resource {
+        friend class ResourceManagerDirectory;
+
+    public:
+        ~ResourceDirectory() override;
+
+        usize size() override { return _size; }
+
+        void getData(void* buf) override;
+
+        void* mapData() override;
+
+        usize _size;
+#if SPARGEL_FILE_MMAP
+        void* _mapped;
+
+#if SPARGEL_IS_POSIX
+        int _fd;
+        ResourceDirectory(usize size, int fd) : _size(size), _mapped(nullptr), _fd(fd) {}
+#elif SPARGEL_IS_WINDOWS
+        HANDLE _file_handle;
+        HANDLE _mapping_handle;
+        ResourceDirectory(usize size, HANDLE file_handle)
+            : _size(size), _mapped(nullptr), _file_handle(file_handle), _mapping_handle(nullptr) {}
+#else
+#error unimplemented
+#endif
+
+        void* _map();
+        void _unmap(void* ptr, usize size);
+#else
+        FILE* _fp;
+        ResourceDirectory(usize size, FILE* fp) : _size(size), _fp(fp) {}
+#endif
+    };
 
 #if SPARGEL_FILE_MMAP
 
@@ -68,21 +106,23 @@ namespace spargel::resource {
 
     void ResourceDirectory::_unmap(void* ptr, usize size) { munmap(ptr, size); }
 
-    ResourceDirectory* ResourceManagerDirectory::open(const ResourceId& id) {
+    base::Optional<base::unique_ptr<Resource>> ResourceManagerDirectory::open(
+        const ResourceId& id) {
         base::string real_path = _real_path(id);
         int fd = ::open(real_path.data(), O_RDONLY);
         if (fd < 0) {
             spargel_log_error("requested resource \"%s:%s\" not found (%s)", id.ns().data(),
                               id.path().data(), real_path.data());
-            return nullptr;
+            return base::Optional<base::unique_ptr<Resource>>();
         }
         struct stat sb;
         if (fstat(fd, &sb) < 0) {
             ::close(fd);
-            return nullptr;
+            return base::Optional<base::unique_ptr<Resource>>();
         }
 
-        return new ResourceDirectory(sb.st_size, fd);
+        return base::makeOptional<base::unique_ptr<ResourceDirectory>>(
+            base::make_unique<ResourceDirectory>(sb.st_size, fd));
     }
 
 #elif SPARGEL_IS_WINDOWS
@@ -105,14 +145,15 @@ namespace spargel::resource {
 
     void ResourceDirectory::_unmap(void* ptr, usize size) { UnmapViewOfFile(ptr); }
 
-    ResourceDirectory* ResourceManagerDirectory::open(const ResourceId& id) {
+    base::Optional<base::unique_ptr<Resource>> ResourceManagerDirectory::open(
+        const ResourceId& id) {
         base::string real_path = _real_path(id);
         HANDLE file_handle = CreateFileA(real_path.data(), GENERIC_READ, 0, NULL, OPEN_EXISTING,
                                          FILE_ATTRIBUTE_READONLY, nullptr);
         if (file_handle == INVALID_HANDLE_VALUE) {
             spargel_log_error("requested resource \"%s:%s\" not found (%s)", id.ns().data(),
                               id.path().data(), real_path.data());
-            return nullptr;
+            return base::Optional<base::unique_ptr<Resource>>();
         }
 
         LARGE_INTEGER size;
@@ -120,10 +161,11 @@ namespace spargel::resource {
             spargel_log_error("cannot get the size of resource \"%s:%s\" (%s)", id.ns().data(),
                               id.path().data(), real_path.data());
             CloseHandle(file_handle);
-            return nullptr;
+            return base::Optional<base::unique_ptr<Resource>>();
         }
 
-        return new ResourceDirectory(size.QuadPart, file_handle);
+        return base::makeOptional<base::unique_ptr<ResourceDirectory>>(
+            base::make_unique<ResourceDirectory>(size.QuadPart, file_handle));
     }
 
 #else
@@ -141,18 +183,21 @@ namespace spargel::resource {
 
     void* ResourceDirectory::mapData() { return Resource::mapData(); }
 
-    ResourceDirectory* ResourceManagerDirectory::open(const ResourceId& id) {
+    base::Optional<base::unique_ptr<Resource>> ResourceManagerDirectory::open(
+        const ResourceId& id) {
         base::string real_path = _real_path(id);
         FILE* fp = fopen(real_path.data(), "rb");
         if (!fp) {
             spargel_log_error("cannot open file for resource \"%s:%s\" (%s)", id.ns().data(),
                               id.path().data(), real_path.data());
-            return nullptr;
+            return base::Optional<base::unique_ptr<Resource>>();
         }
         fseek(fp, 0, SEEK_END);
         long size = ftell(fp);
         fseek(fp, 0, SEEK_SET);
-        return new ResourceDirectory(size, fp);
+
+        return base::makeOptional<base::unique_ptr<ResourceDirectory>>(
+            base::make_unique<ResourceDirectory>(size, fp));
     }
 #endif  // SPARGEL_FILE_MMAP
 

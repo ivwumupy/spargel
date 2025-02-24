@@ -34,15 +34,14 @@ int main(int argc, char* argv[]) {
         device->createBuffer(gpu::BufferUsage::storage,
                              base::make_span<u8>(sizeof(u32) * data.count(), (u8*)data.data()));
 
-    resource::ResourceDirectory* blob = nullptr;
+    base::Optional<base::unique_ptr<resource::Resource>> blob;
 
     if (backend == gpu::DeviceKind::metal) {
         blob = resource_manager->open(resource::ResourceId("shader.metallib"));
     } else if (backend == gpu::DeviceKind::vulkan) {
         blob = resource_manager->open(resource::ResourceId("demo_sort.spirv"));
     }
-    auto library = device->createShaderLibrary(blob->getSpan());
-    delete blob;
+    auto library = device->createShaderLibrary(blob.value()->getSpan());
 
     auto pipeline = device->createComputePipeline2({
         .compute =

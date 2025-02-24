@@ -5,6 +5,7 @@
 #include <spargel/base/string.h>
 #include <spargel/base/string_view.h>
 #include <spargel/base/types.h>
+#include <spargel/base/unique_ptr.h>
 
 #include <cstddef>
 
@@ -31,7 +32,7 @@ namespace spargel::resource {
     public:
         virtual ~ResourceManager() = default;
 
-        virtual Resource* open(const ResourceId& id) = 0;
+        virtual base::Optional<base::unique_ptr<Resource>> open(const ResourceId& id) = 0;
     };
 
     /*
@@ -60,8 +61,10 @@ namespace spargel::resource {
     };
 
     // The most trivial example
-    class EmptyResourceManager final : public ResourceManager {
+    class ResourceManagerEmpty final : public ResourceManager {
     public:
-        Resource* open(const ResourceId& id) override { return nullptr; }
+        base::Optional<base::unique_ptr<Resource>> open(const ResourceId& id) override {
+            return base::Optional<base::unique_ptr<Resource>>();
+        }
     };
 }  // namespace spargel::resource
