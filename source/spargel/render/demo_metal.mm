@@ -194,7 +194,8 @@ public:
                 return {};
             }
             // scale the bunny mesh
-            vertices[i] = {x.value() * 1000, y.value() * 1000, z.value() * 1000};
+            // vertices[i] = {x.value() * 1000, y.value() * 1000, z.value() * 1000};
+            vertices[i] = {x.value() * 10, y.value() * 10, z.value() * 10};
         }
 
         return spargel::base::makeOptional<SimpleMesh>(face_count.value(), vert_count.value(),
@@ -481,7 +482,7 @@ private:
         _resource = spargel::resource::makeRelativeManager();
 
         {
-            auto blob = _resource->open(spargel::resource::ResourceId("bunny.smesh"));
+            auto blob = _resource->open(spargel::resource::ResourceId("cube.smesh"));
             if (!blob.hasValue()) {
                 spargel_log_error("cannot load mesh");
                 spargel_panic_here();

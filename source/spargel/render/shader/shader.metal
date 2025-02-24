@@ -32,10 +32,26 @@ struct UniformData {
     RasterData out;
     out.position = clip_position;
 
+    float3 cs[12] = {
+        float3(1.0, 0.0, 0.0),
+        float3(0.0, 1.0, 0.0),
+        float3(0.0, 0.0, 1.0),
+        float3(1.0, 1.0, 0.0),
+        float3(1.0, 0.0, 1.0),
+        float3(0.0, 1.0, 1.0),
+        float3(1.0, 1.0, 1.0),
+        float3(0.0, 0.0, 0.0),
+        float3(0.6, 0.3, 0.3),
+        float3(0.3, 0.6, 0.3),
+        float3(0.3, 0.3, 0.6),
+        float3(0.3, 0.3, 0.3),
+    };
+
+    out.c = cs[vid];
     // out.c = cs[vid % 3];
-    float t = dot(in.normal, normalize(float3(-1.0, -1.0, -1.0)));
-    t = (t + 0.3) / 1.3;
-    out.c = float3(t, t, t);
+    // float t = dot(in.normal, normalize(float3(-1.0, -1.0, -1.0)));
+    // t = (t + 0.3) / 1.3;
+    // out.c = float3(t, t, t);
     return out;
 }
 
