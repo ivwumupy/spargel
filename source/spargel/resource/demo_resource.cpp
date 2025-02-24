@@ -1,9 +1,6 @@
 
 #include <spargel/base/logging.h>
-#include <spargel/base/platform.h>
-#include <spargel/entry/simple.h>
-#include <spargel/resource/resource.h>
-#include <spargel/util/path.h>
+#include <spargel/resource/directory.h>
 
 // libc
 #include <stdio.h>
@@ -43,12 +40,14 @@ static void xxd_print(char* data, size_t size) {
     }
 }
 
-namespace spargel::entry {
+namespace spargel {
 
-    int simple_entry(simple_entry_data* entry_data) {
-        base::string_view path = "abc.txt";
+    extern "C" int main() {
+        auto resource_manager = resource::makeRelativeManager();
 
-        auto resource = entry_data->resource_manager->open(resource::ResourceId(path));
+        base::string_view path = "dir/abc.txt";
+
+        auto resource = resource_manager->open(resource::ResourceId(path));
         if (!resource.hasValue()) {
             spargel_log_error("Cannot open resource \"%s\"", path.data());
             return 1;
@@ -64,4 +63,4 @@ namespace spargel::entry {
         return 0;
     }
 
-}  // namespace spargel::entry
+}  // namespace spargel

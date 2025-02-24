@@ -30,6 +30,10 @@
 
 #endif  // SPARGEL_FILE_MMAP
 
+#if SPARGEL_IS_POSIX
+#include <unistd.h>
+#endif
+
 namespace spargel::resource {
 
     class ResourceDirectory : public Resource {
@@ -201,14 +205,33 @@ namespace spargel::resource {
     }
 #endif  // SPARGEL_FILE_MMAP
 
+#if SPARGEL_IS_POSIX
+    bool ResourceManagerDirectory::has(const ResourceId& id) {
+        base::string real_path = _real_path(id);
+        return access(real_path.data(), F_OK) == 0;
+    }
+#else
+    bool ResourceManagerDirectory::has(const ResourceId& id) {
+        base::string real_path = _real_path(id);
+        FILE* fp = fopen(real_path.data(), "rb");
+        if (fp) {
+            fclose(fp);
+            return true;
+        } else {
+            return false;
+        }
+    }
+#endif
+
     base::string ResourceManagerDirectory::_real_path(const ResourceId& id) {
         base::string root = _root_path.length() == 0 ? base::string(".") : _root_path;
         return root + PATH_SPLIT + id.path();
     }
 
-    base::unique_ptr<ResourceManagerDirectory> makeRelativeManager() {
+    base::unique_ptr<ResourceManagerDirectory> makeRelativeManager(
+        const base::string& resources_dir) {
         base::string root_path =
-            util::dirname(base::get_executable_path()) + PATH_SPLIT + base::string("resources");
+            util::dirname(base::get_executable_path()) + PATH_SPLIT + base::string(resources_dir);
         return base::make_unique<ResourceManagerDirectory>(root_path.view());
     }
 

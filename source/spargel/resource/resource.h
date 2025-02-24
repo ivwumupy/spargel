@@ -32,6 +32,8 @@ namespace spargel::resource {
     public:
         virtual ~ResourceManager() = default;
 
+        virtual bool has(const ResourceId& id) = 0;
+
         virtual base::Optional<base::unique_ptr<Resource>> open(const ResourceId& id) = 0;
     };
 
@@ -63,6 +65,8 @@ namespace spargel::resource {
     // The most trivial example
     class ResourceManagerEmpty final : public ResourceManager {
     public:
+        bool has(const ResourceId& id) override { return false; }
+
         base::Optional<base::unique_ptr<Resource>> open(const ResourceId& id) override {
             return base::Optional<base::unique_ptr<Resource>>();
         }

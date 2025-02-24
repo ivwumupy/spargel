@@ -4,6 +4,7 @@ spargel_add_library(
     PRIVATE
         resource.cpp
         directory.cpp
+        overlay.cpp
     PRIVATE_ANDROID
         android_asset.cpp
     DEPS
@@ -11,16 +12,25 @@ spargel_add_library(
         util
 )
 
-spargel_add_application(
-    NAME resource_demo
-    PRIVATE resource_demo.cpp
-    DEPS
-        resource
-        entry
+spargel_add_executable(
+    NAME demo_resource
+    PRIVATE demo_resource.cpp
+    DEPS resource
 )
 spargel_application_add_resources(
-    TARGET resource_demo
+    TARGET demo_resource
     SRC ${CMAKE_CURRENT_SOURCE_DIR}/demo_assets
     DST
     DEPS
 )
+
+spargel_add_executable(
+    NAME demo_resource_overlay
+    PRIVATE demo_resource_overlay.cpp
+    DEPS resource
+)
+add_custom_target(demo_resource_overlay_resources
+    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${CMAKE_CURRENT_SOURCE_DIR}/demo_assets ${CMAKE_CURRENT_BINARY_DIR}/resources
+    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${CMAKE_CURRENT_SOURCE_DIR}/demo_assets2 ${CMAKE_CURRENT_BINARY_DIR}/resources2
+)
+add_dependencies(demo_resource_overlay demo_resource_overlay_resources)
