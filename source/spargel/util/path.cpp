@@ -5,7 +5,7 @@
 namespace spargel::util {
 
     base::string dirname(const base::string& path) {
-        if (path.length() == 0) return base::string_from_cstr(".");
+        if (path.length() == 0) return base::string(".");
 
         const char* data = path.data();
         const char* cur = path.end() - 1;
@@ -18,9 +18,9 @@ namespace spargel::util {
         // Handle case where all characters were separators
         if (cur < path.begin()) {
             if (path.length() > 0 && *path.begin() == PATH_SPLIT) {
-                return base::string_from_cstr("/");
+                return base::string("/");
             } else {
-                return base::string_from_cstr(".");
+                return base::string(".");
             }
         }
 
@@ -30,7 +30,7 @@ namespace spargel::util {
         }
 
         // If no separator found, return "."
-        if (cur < path.begin()) return base::string_from_cstr(".");
+        if (cur < path.begin()) return base::string(".");
 
         // If we're at root, return "/"
         if (cur == path.begin() && *cur == PATH_SPLIT) {

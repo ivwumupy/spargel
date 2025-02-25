@@ -11,8 +11,8 @@ namespace spargel {
 
     extern "C" int main() {
         base::vector<base::unique_ptr<resource::ResourceManager>> managers;
-        managers.push(resource::makeRelativeManager(base::string_from_cstr("resources2")));
-        managers.push(resource::makeRelativeManager(base::string_from_cstr("resources")));
+        managers.push(resource::makeRelativeManager(base::string("resources2")));
+        managers.push(resource::makeRelativeManager(base::string("resources")));
         auto manager = resource::ResourceManagerOverlay(base::move(managers));
 
         base::string_view path1 = "dir/abc.txt";

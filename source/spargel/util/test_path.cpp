@@ -5,8 +5,8 @@
 namespace spargel {
 
     static bool dirname_equal(const char* path, const char* expected) {
-        auto path_dirname = util::dirname(base::string_from_cstr(path));
-        return path_dirname == base::string_from_cstr(expected);
+        auto path_dirname = util::dirname(base::string(path));
+        return path_dirname == base::string(expected);
     }
 
     void test_dirname() {
@@ -43,62 +43,62 @@ namespace spargel {
     void test_parsePath() {
         util::ParsedPath parsed;
 
-        parsed = util::parsePath(base::string_from_cstr(""));
+        parsed = util::parsePath(base::string(""));
         spargel_assert(parsed.absolute == false);
         spargel_assert(parsed.directory == false);
         spargel_assert(parsed.components.count() == 0);
 
-        parsed = util::parsePath(base::string_from_cstr("."));
+        parsed = util::parsePath(base::string("."));
         spargel_assert(parsed.absolute == false);
         spargel_assert(parsed.directory == false);
         spargel_assert(parsed.components.count() == 1);
-        spargel_assert(parsed.components[0] == base::string_from_cstr("."));
+        spargel_assert(parsed.components[0] == base::string("."));
 
-        parsed = util::parsePath(base::string_from_cstr("./"));
+        parsed = util::parsePath(base::string("./"));
         spargel_assert(parsed.absolute == false);
         spargel_assert(parsed.directory == true);
         spargel_assert(parsed.components.count() == 1);
-        spargel_assert(parsed.components[0] == base::string_from_cstr("."));
+        spargel_assert(parsed.components[0] == base::string("."));
 
-        parsed = util::parsePath(base::string_from_cstr("hello"));
+        parsed = util::parsePath(base::string("hello"));
         spargel_assert(parsed.absolute == false);
         spargel_assert(parsed.directory == false);
         spargel_assert(parsed.components.count() == 1);
-        spargel_assert(parsed.components[0] == base::string_from_cstr("hello"));
+        spargel_assert(parsed.components[0] == base::string("hello"));
 
-        parsed = util::parsePath(base::string_from_cstr("hello/"));
+        parsed = util::parsePath(base::string("hello/"));
         spargel_assert(parsed.absolute == false);
         spargel_assert(parsed.directory = true);
         spargel_assert(parsed.components.count() == 1);
-        spargel_assert(parsed.components[0] == base::string_from_cstr("hello"));
+        spargel_assert(parsed.components[0] == base::string("hello"));
 
-        parsed = util::parsePath(base::string_from_cstr("hello/world"));
+        parsed = util::parsePath(base::string("hello/world"));
         spargel_assert(parsed.absolute == false);
         spargel_assert(parsed.directory == false);
         spargel_assert(parsed.components.count() == 2);
-        spargel_assert(parsed.components[0] == base::string_from_cstr("hello"));
-        spargel_assert(parsed.components[1] == base::string_from_cstr("world"));
+        spargel_assert(parsed.components[0] == base::string("hello"));
+        spargel_assert(parsed.components[1] == base::string("world"));
 
-        parsed = util::parsePath(base::string_from_cstr("hello/world/"));
+        parsed = util::parsePath(base::string("hello/world/"));
         spargel_assert(parsed.absolute == false);
         spargel_assert(parsed.directory = true);
         spargel_assert(parsed.components.count() == 2);
-        spargel_assert(parsed.components[0] == base::string_from_cstr("hello"));
-        spargel_assert(parsed.components[1] == base::string_from_cstr("world"));
+        spargel_assert(parsed.components[0] == base::string("hello"));
+        spargel_assert(parsed.components[1] == base::string("world"));
 
-        parsed = util::parsePath(base::string_from_cstr("/hello/world"));
+        parsed = util::parsePath(base::string("/hello/world"));
         spargel_assert(parsed.absolute == true);
         spargel_assert(parsed.directory == false);
         spargel_assert(parsed.components.count() == 2);
-        spargel_assert(parsed.components[0] == base::string_from_cstr("hello"));
-        spargel_assert(parsed.components[1] == base::string_from_cstr("world"));
+        spargel_assert(parsed.components[0] == base::string("hello"));
+        spargel_assert(parsed.components[1] == base::string("world"));
 
-        parsed = util::parsePath(base::string_from_cstr("/hello/world/"));
+        parsed = util::parsePath(base::string("/hello/world/"));
         spargel_assert(parsed.absolute == true);
         spargel_assert(parsed.directory = true);
         spargel_assert(parsed.components.count() == 2);
-        spargel_assert(parsed.components[0] == base::string_from_cstr("hello"));
-        spargel_assert(parsed.components[1] == base::string_from_cstr("world"));
+        spargel_assert(parsed.components[0] == base::string("hello"));
+        spargel_assert(parsed.components[1] == base::string("world"));
     }
 
     extern "C" int main() {

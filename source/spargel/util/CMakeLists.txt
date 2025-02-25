@@ -6,9 +6,9 @@ spargel_add_library(
 )
 
 spargel_add_executable(
-    NAME path_test
+    NAME test_path
     PRIVATE
-        path_test.cpp
+        test_path.cpp
     DEPS
         base
         util

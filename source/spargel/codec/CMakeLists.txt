@@ -1,14 +1,23 @@
+
 spargel_add_library(
     NAME codec
     PRIVATE
         codec.cpp
         cursor.cpp
-        json.cpp
-        ppm.cpp
+        #json.cpp
+        json2.cpp
+        #ppm.cpp
     DEPS
         base
 )
 
+spargel_add_executable(
+    NAME test_json
+    PRIVATE test_json.cpp
+    DEPS codec
+)
+
+if (FALSE)
 spargel_add_executable(
     NAME ppm_info
     PRIVATE ppm_info.cpp
@@ -20,3 +29,4 @@ spargel_add_executable(
     PRIVATE dump_json.cpp
     DEPS codec
 )
+endif ()

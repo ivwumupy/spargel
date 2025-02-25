@@ -9,11 +9,32 @@ namespace spargel::codec {
         char const* end;
     };
 
-    bool cursor_is_end(struct cursor const* cursor);
-    u8 cursor_peek(struct cursor const* cursor);
-    void cursor_advance(struct cursor* cursor);
-    bool cursor_try_eat_char(struct cursor* cursor, char c);
-    bool cursor_try_eat_str(struct cursor* cursor, char const* str);
-    bool cursor_try_eat_bytes(struct cursor* cursor, u8 const* bytes, ssize len);
+    struct Cursor {
+        const char* cur;
+        const char* end;
+    };
+
+    static inline bool cursorIsEnd(const Cursor& cursor) { return cursor.cur >= cursor.end; }
+
+    static inline u8 cursorPeek(const Cursor& cursor) {
+        if (cursorIsEnd(cursor)) return 0;
+        return *cursor.cur;
+    }
+
+    static inline void cursorAdvance(Cursor& cursor, int steps = 1) { cursor.cur += steps; }
+
+    static inline u8 cursorGetChar(Cursor& cursor) {
+        u8 ch = cursorPeek(cursor);
+        cursorAdvance(cursor);
+        return ch;
+    }
+
+    /*
+     * These funtions will move the cursor if succeeds,
+     * otherwise the cursor will not move.
+     */
+    bool cursorTryEatChar(Cursor& cursor, char ch);
+    bool cursorTryEatBytes(Cursor& cursor, const u8* bytes, usize count);
+    bool cursorTryEatString(Cursor& cursor, const char* str);
 
 }  // namespace spargel::codec

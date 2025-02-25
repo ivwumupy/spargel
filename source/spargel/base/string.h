@@ -20,6 +20,9 @@ namespace spargel::base {
             string(string const& other);
             string& operator=(string const& other);
 
+            explicit string(const char* cstr);
+            string& operator=(const char* cstr);
+
             ~string();
 
             char& operator[](usize i) { return _data[i]; }
@@ -48,12 +51,14 @@ namespace spargel::base {
             char* _data = nullptr;
         };
 
+        // clang-format off
         /// A code point is a value in the Unicode codespace, i.e. an integer in the range [0, 10ffff].
         /// A Unicode scalar value is a code point that is not a high-surrogate or a low-surrogate.
         /// In other words, a Unicode scalar value is a code point in the range [0, d7ff] union [e000, 10ffff].
         ///
         /// A `UnicodeScalar` represents a Unicode scalar value.
         ///
+        // clang-format on
         class UnicodeScalar {
         public:
             UnicodeScalar() = default;
@@ -88,7 +93,9 @@ namespace spargel::base {
         ///
         class String {
         public:
-            String(Allocator* alloc = default_allocator()) : _bytes(alloc), _alloc{alloc} { spargel_assert(alloc != nullptr); }
+            String(Allocator* alloc = default_allocator()) : _bytes(alloc), _alloc{alloc} {
+                spargel_assert(alloc != nullptr);
+            }
 
             String(String const& other) : _bytes(other._bytes), _alloc{other._alloc} {}
             String& operator=(String const& other) {

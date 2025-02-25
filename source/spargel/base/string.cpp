@@ -3,6 +3,8 @@
 // libc
 #include <string.h>
 
+#include "allocator.h"
+
 namespace spargel::base {
 
     namespace _string {
@@ -36,6 +38,27 @@ namespace spargel::base {
                 // _data = (char*)allocate(_length + 1, ALLOCATION_BASE);
                 _data = (char*)default_allocator()->allocate(_length + 1);
                 memcpy(_data, other._data, _length);
+                _data[_length] = 0;
+            }
+            return *this;
+        }
+
+        string::string(const char* cstr) {
+            _length = strlen(cstr);
+            if (_length > 0) {
+                _data = (char*)default_allocator()->allocate(_length + 1);
+                memcpy(_data, cstr, _length);
+                _data[_length] = 0;
+            }
+        }
+
+        string& string::operator=(const char* cstr) {
+            if (_length > 0) {
+                default_allocator()->free(_data, _length + 1);
+            }
+            if (_length > 0) {
+                _data = (char*)default_allocator()->allocate(_length + 1);
+                memcpy(_data, cstr, _length);
                 _data[_length] = 0;
             }
             return *this;
