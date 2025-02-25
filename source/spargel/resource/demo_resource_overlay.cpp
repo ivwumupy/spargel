@@ -15,12 +15,6 @@ namespace spargel {
         managers.push(resource::makeRelativeManager(base::string_from_cstr("resources")));
         auto manager = resource::ResourceManagerOverlay(base::move(managers));
 
-        // TODO
-        auto manage2 = resource::ResourceManagerOverlay({
-            // resource::makeRelativeManager(base::string_from_cstr("resources2")),
-            // resource::makeRelativeManager(base::string_from_cstr("resources")),
-        });
-
         base::string_view path1 = "dir/abc.txt";
 
         auto resource1 = manager.open(resource::ResourceId(path1));

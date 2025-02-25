@@ -8,7 +8,7 @@ namespace spargel::util {
         if (path.length() == 0) return base::string_from_cstr(".");
 
         const char* data = path.data();
-        char const* cur = path.end() - 1;
+        const char* cur = path.end() - 1;
 
         // Skip trailing separators
         while (cur >= path.begin() && *cur == PATH_SPLIT) {
@@ -39,6 +39,36 @@ namespace spargel::util {
 
         // Return path up to but not including the separator
         return base::string_from_range(data, cur);
+    }
+
+    ParsedPath parsePath(const base::string& path) {
+        if (path.length() == 0) return {.absolute = false, .directory = false, .components = {}};
+
+        const char* data = path.data();
+        const char *cur = path.begin(), *s;
+
+        bool absolute = data[0] == '/';
+        bool directory = false;
+        base::vector<base::string> components;
+
+        for (; cur < path.end(); cur++) {
+            if (*cur == '/') continue;
+
+            directory = true;
+
+            s = cur;
+            for (; cur < path.end(); cur++) {
+                directory = false;
+                if (*cur == '/') {
+                    directory = true;
+                    break;
+                }
+            }
+
+            components.push(base::string_from_range(s, cur));
+        }
+
+        return {.absolute = absolute, .directory = directory, .components = components};
     }
 
 }  // namespace spargel::util
