@@ -14,16 +14,16 @@ namespace spargel::codec {
         const char* end;
     };
 
-    static inline bool cursorIsEnd(const Cursor& cursor) { return cursor.cur >= cursor.end; }
+    inline bool cursorIsEnd(const Cursor& cursor) { return cursor.cur >= cursor.end; }
 
-    static inline u8 cursorPeek(const Cursor& cursor) {
+    inline u8 cursorPeek(const Cursor& cursor) {
         if (cursorIsEnd(cursor)) return 0;
         return *cursor.cur;
     }
 
-    static inline void cursorAdvance(Cursor& cursor, int steps = 1) { cursor.cur += steps; }
+    inline void cursorAdvance(Cursor& cursor, int steps = 1) { cursor.cur += steps; }
 
-    static inline u8 cursorGetChar(Cursor& cursor) {
+    inline u8 cursorGetChar(Cursor& cursor) {
         u8 ch = cursorPeek(cursor);
         cursorAdvance(cursor);
         return ch;

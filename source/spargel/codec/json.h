@@ -64,6 +64,8 @@ namespace spargel::codec {
             return error(base::string(msg));
         }
 
+        base::string const& getMessage() const { return _msg; }
+
     private:
         JsonParseResult(bool failed, const base::string& msg) : _failed(failed), _msg(msg) {}
 

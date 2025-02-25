@@ -1,11 +1,9 @@
-
 #include <spargel/codec/cursor.h>
 #include <spargel/codec/json.h>
 
 namespace spargel::codec {
 
     JsonValue::JsonValue(const JsonValue& other) {
-        this->~JsonValue();
         type = other.type;
         switch (other.type) {
         case JsonValueType::object:
@@ -46,6 +44,8 @@ namespace spargel::codec {
         }
     }
 
+    namespace {
+
     static const JsonParseResult SUCCESS = JsonParseResult::success();
     static const JsonParseResult UNEXPECTED_END = JsonParseResult::error("unexpected end");
 
@@ -53,16 +53,16 @@ namespace spargel::codec {
         Cursor cursor;
     };
 
-    static JsonParseResult parseValue(JsonParseContext& ctx, JsonValue& value);
-    static JsonParseResult parseObject(JsonParseContext& ctx, JsonObject& object);
-    static JsonParseResult parseArray(JsonParseContext& ctx, JsonArray& array);
-    static JsonParseResult parseString(JsonParseContext& ctx, JsonString& string);
-    static JsonParseResult parseBoolean(JsonParseContext& ctx, JsonBoolean& boolean);
-    static JsonParseResult parseNull(JsonParseContext& ctx);
-    static JsonParseResult parseMembers(JsonParseContext& ctx, JsonObject& object);
-    static JsonParseResult parseMember(JsonParseContext& ctx, JsonString& key, JsonValue& value);
-    static JsonParseResult parseElements(JsonParseContext& ctx, JsonArray& array);
-    static JsonParseResult parseElement(JsonParseContext& ctx, JsonValue& value);
+    JsonParseResult parseValue(JsonParseContext& ctx, JsonValue& value);
+    JsonParseResult parseObject(JsonParseContext& ctx, JsonObject& object);
+    JsonParseResult parseArray(JsonParseContext& ctx, JsonArray& array);
+    JsonParseResult parseString(JsonParseContext& ctx, JsonString& string);
+    JsonParseResult parseBoolean(JsonParseContext& ctx, JsonBoolean& boolean);
+    JsonParseResult parseNull(JsonParseContext& ctx);
+    JsonParseResult parseMembers(JsonParseContext& ctx, JsonObject& object);
+    JsonParseResult parseMember(JsonParseContext& ctx, JsonString& key, JsonValue& value);
+    JsonParseResult parseElements(JsonParseContext& ctx, JsonArray& array);
+    JsonParseResult parseElement(JsonParseContext& ctx, JsonValue& value);
 
     /*
      * The syntax descriptions in the following comments are from:
@@ -78,7 +78,7 @@ namespace spargel::codec {
      *   '000D' ws
      *   '0009' ws
      */
-    static void eatWhitespace(JsonParseContext& ctx) {
+    void eatWhitespace(JsonParseContext& ctx) {
         auto& cursor = ctx.cursor;
         while (!cursorIsEnd(cursor)) {
             char ch = cursorPeek(cursor);
@@ -100,7 +100,7 @@ namespace spargel::codec {
      *   "false"
      *   "null"
      */
-    static JsonParseResult parseValue(JsonParseContext& ctx, JsonValue& value) {
+    JsonParseResult parseValue(JsonParseContext& ctx, JsonValue& value) {
         auto& cursor = ctx.cursor;
         if (cursorIsEnd(cursor)) return JsonParseResult::error("expected a value");
 
@@ -148,7 +148,7 @@ namespace spargel::codec {
      *   '{' ws '}'
      *   '{' members '}'
      */
-    static JsonParseResult parseObject(JsonParseContext& ctx, JsonObject& object) {
+    JsonParseResult parseObject(JsonParseContext& ctx, JsonObject& object) {
         auto& cursor = ctx.cursor;
 
         // '{' ws
@@ -172,7 +172,7 @@ namespace spargel::codec {
      *   '[' ws ']'
      *   '[' elements ']'
      */
-    static JsonParseResult parseArray(JsonParseContext& ctx, JsonArray& array) {
+    JsonParseResult parseArray(JsonParseContext& ctx, JsonArray& array) {
         auto& cursor = ctx.cursor;
 
         // '[' ws
@@ -195,7 +195,7 @@ namespace spargel::codec {
      * string
      *   '"' characters '"'
      */
-    static JsonParseResult parseString(JsonParseContext& ctx, JsonString& string) {
+    JsonParseResult parseString(JsonParseContext& ctx, JsonString& string) {
         auto& cursor = ctx.cursor;
 
         // '"'
@@ -206,7 +206,8 @@ namespace spargel::codec {
         const char* end = cursor.cur;
         while (!cursorIsEnd(cursor)) {
             if (cursorGetChar(cursor) == '"') {
-                end = cursor.cur;
+                // FIXME: ???
+                end = cursor.cur - 1;
                 string = base::string_from_range(begin, end);
                 return SUCCESS;
             }
@@ -219,7 +220,7 @@ namespace spargel::codec {
      *   "true"
      *   "false"
      */
-    static JsonParseResult parseBoolean(JsonParseContext& ctx, JsonBoolean& boolean) {
+    JsonParseResult parseBoolean(JsonParseContext& ctx, JsonBoolean& boolean) {
         auto& cursor = ctx.cursor;
         if (cursorTryEatString(cursor, "true")) {
             boolean = true;
@@ -235,7 +236,7 @@ namespace spargel::codec {
     /*
      *   "null"
      */
-    static JsonParseResult parseNull(JsonParseContext& ctx) {
+    JsonParseResult parseNull(JsonParseContext& ctx) {
         auto& cursor = ctx.cursor;
         if (cursorTryEatString(cursor, "null"))
             return SUCCESS;
@@ -272,7 +273,7 @@ namespace spargel::codec {
      * member:
      *   ws string ws ':' element
      */
-    static JsonParseResult parseMember(JsonParseContext& ctx, JsonString& key, JsonValue& value) {
+    JsonParseResult parseMember(JsonParseContext& ctx, JsonString& key, JsonValue& value) {
         auto& cursor = ctx.cursor;
 
         // ws
@@ -300,7 +301,7 @@ namespace spargel::codec {
      *   element
      *   element ',' elements
      */
-    static JsonParseResult parseElements(JsonParseContext& ctx, JsonArray& array) {
+    JsonParseResult parseElements(JsonParseContext& ctx, JsonArray& array) {
         auto& cursor = ctx.cursor;
 
         JsonParseResult result;
@@ -323,7 +324,7 @@ namespace spargel::codec {
      * element:
      *   ws value ws
      */
-    static JsonParseResult parseElement(JsonParseContext& ctx, JsonValue& value) {
+    JsonParseResult parseElement(JsonParseContext& ctx, JsonValue& value) {
         // ws
         eatWhitespace(ctx);
 
@@ -335,6 +336,8 @@ namespace spargel::codec {
         eatWhitespace(ctx);
 
         return JsonParseResult::success();
+    }
+
     }
 
     JsonParseResult parseJson(const char* str, usize length, JsonValue& value) {

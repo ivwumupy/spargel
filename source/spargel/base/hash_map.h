@@ -25,7 +25,18 @@ namespace spargel::base {
             }
 
             HashMap(HashMap const& other)
-                : _alloc{other._alloc}, _keys(other._keys), _values(other._values) {}
+                : _capacity{other._capacity}, _count{other._count},
+                  _status(other._status), _keys(other._capacity, other._alloc), _values(other._capacity, other._alloc),
+                  _alloc{other._alloc} {
+                spargel_assert(_capacity == _status.count());
+
+                for (usize i = 0; i < _capacity; i++) {
+                    if (_status[i] == SlotStatus::used) {
+                        construct_at(_keys.getPtr(i), other._keys[i]);
+                        construct_at(_values.getPtr(i), other._values[i]);
+                    }
+                }
+            }
             HashMap& operator=(HashMap const& other) {
                 spargel_assert(_alloc == other._alloc);
 

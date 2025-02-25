@@ -99,7 +99,6 @@ namespace spargel::base {
     string string_from_range(char const* begin, char const* end) {
         string str;
         str._length = end - begin;
-        // str._data = (char*)allocate(str._length + 1, ALLOCATION_BASE);
         str._data = (char*)default_allocator()->allocate(str._length + 1);
         memcpy(str._data, begin, str._length);
         str._data[str._length] = 0;

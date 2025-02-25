@@ -1,12 +1,9 @@
-
 spargel_add_library(
     NAME codec
     PRIVATE
         codec.cpp
         cursor.cpp
-        #json.cpp
         json2.cpp
-        #ppm.cpp
     DEPS
         base
 )

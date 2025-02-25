@@ -14,12 +14,12 @@ namespace spargel::codec {
     }
 
     bool cursorTryEatString(Cursor& cursor, const char* str) {
-        ssize len = (ssize)strlen(str);
+        usize len = (usize)strlen(str);
         return cursorTryEatBytes(cursor, (const u8*)str, len);
     }
 
-    bool cursorTryEatBytes(Cursor& cursor, const u8* bytes, ssize len) {
-        if (cursor.cur + len >= cursor.end) return false;
+    bool cursorTryEatBytes(Cursor& cursor, const u8* bytes, usize len) {
+        if (cursor.cur + len > cursor.end) return false;
         if (memcmp(bytes, cursor.cur, len) != 0) return false;
         cursor.cur += len;
         return true;
