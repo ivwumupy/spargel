@@ -194,8 +194,7 @@ public:
                 return {};
             }
             // scale the bunny mesh
-            // vertices[i] = {x.value() * 1000, y.value() * 1000, z.value() * 1000};
-            vertices[i] = {x.value() * 10, y.value() * 10, z.value() * 10};
+            vertices[i] = {x.value() * 1000, y.value() * 1000, z.value() * 1000};
         }
 
         return spargel::base::makeOptional<SimpleMesh>(face_count.value(), vert_count.value(),
@@ -261,20 +260,13 @@ private:
             Point3f const& y = _vertices[_indices[i + 1]];
             Point3f const& z = _vertices[_indices[i + 2]];
 
-            _normals[_indices[i]] += (y - x).cross(z - x);
-            _normals[_indices[i+1]] += (z - y).cross(x - z);
-            _normals[_indices[i+2]] += (x - z).cross(y - z);
-            // _normals[_indices[i]] += (z - x).cross(y - x);
-            // _normals[_indices[i+1]] += (x - y).cross(z - z);
-            // _normals[_indices[i+2]] += (y - z).cross(x - z);
+            _normals[_indices[i]] += (z - x).cross(y - x);
+            _normals[_indices[i+1]] += (x - y).cross(z - z);
+            _normals[_indices[i+2]] += (y - z).cross(x - z);
         }
 
         // normalize
         for (usize i = 0; i < _normals.count(); i++) {
-            // auto l = _normals[i].length();
-            // if (l < 0.001) {
-            //     spargel_log_info("small normal: %zu", i);
-            // }
             _normals[i] = _normals[i].normalize();
         }
     }
@@ -448,6 +440,8 @@ public:
 
         [encoder setRenderPipelineState:_mesh_pipeline];
 
+        // for bunny mesh
+        [encoder setFrontFacingWinding:MTLWindingCounterClockwise];
         [encoder setCullMode:MTLCullModeBack];
 
         [encoder setVertexBuffer:_vertices offset:0 atIndex:0];
@@ -482,7 +476,7 @@ private:
         _resource = spargel::resource::makeRelativeManager();
 
         {
-            auto blob = _resource->open(spargel::resource::ResourceId("cube.smesh"));
+            auto blob = _resource->open(spargel::resource::ResourceId("bunny.smesh"));
             if (!blob.hasValue()) {
                 spargel_log_error("cannot load mesh");
                 spargel_panic_here();
