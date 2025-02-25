@@ -6,11 +6,13 @@
 #include <spargel/entry/launch_data.h>
 #include <spargel/ui/window.h>
 
+using namespace spargel;
+
 #define DEMO_EXPORT [[gnu::visibility("default")]]
 
-class DEMO_EXPORT demo_component final : public spargel::entry::component {
+class DEMO_EXPORT demo_component final : public entry::component {
 public:
-    explicit demo_component(spargel::entry::launch_data* l) : spargel::entry::component(l) {}
+    explicit demo_component(entry::launch_data* l) : entry::component(l) {}
 
     void on_load() override {
         _window = get_launch_data()->platform->makeWindow(500, 500);
@@ -19,10 +21,9 @@ public:
     }
 
 private:
-    spargel::base::unique_ptr<spargel::ui::Window> _window;
+    base::unique_ptr<ui::Window> _window;
 };
 
-extern "C" DEMO_EXPORT spargel::entry::component* _spargel_make_component(
-    spargel::entry::launch_data* l) {
-    return spargel::base::default_allocator()->alloc_object<demo_component>(l);
+extern "C" DEMO_EXPORT entry::component* _spargel_make_component(entry::launch_data* l) {
+    return base::default_allocator()->alloc_object<demo_component>(l);
 }

@@ -38,4 +38,4 @@ namespace spargel::ui {
 
     base::unique_ptr<Platform> makePlatform();
 
-}
+}  // namespace spargel::ui

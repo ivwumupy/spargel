@@ -19,6 +19,8 @@
 #include <CoreText/CoreText.h>
 #import <QuartzCore/QuartzCore.h>
 
+using namespace spargel;
+
 @implementation SpargelApplicationDelegate
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication*)sender {
     return YES;
@@ -29,10 +31,9 @@
     CADisplayLink* _link;
     CAMetalLayer* _layer;
     NSTrackingArea* _tracking;
-    spargel::ui::WindowAppKit* _bridge;
+    ui::WindowAppKit* _bridge;
 }
-- (instancetype)initWithSpargelUIWindow:(spargel::ui::WindowAppKit*)w
-                             metalLayer:(CAMetalLayer*)layer {
+- (instancetype)initWithSpargelUIWindow:(ui::WindowAppKit*)w metalLayer:(CAMetalLayer*)layer {
     [super init];
     _bridge = w;
     _layer = layer;
@@ -47,7 +48,8 @@
         [_tracking release];
     }
 
-    NSTrackingAreaOptions options = NSTrackingActiveAlways | NSTrackingInVisibleRect | NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved;
+    NSTrackingAreaOptions options = NSTrackingActiveAlways | NSTrackingInVisibleRect |
+                                    NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved;
 
     _tracking = [[NSTrackingArea alloc] initWithRect:[self bounds]
                                              options:options
@@ -180,9 +182,9 @@
 @end
 
 @implementation SpargelWindowDelegate {
-    spargel::ui::WindowAppKit* _bridge;
+    ui::WindowAppKit* _bridge;
 }
-- (instancetype)initWithSpargelUIWindow:(spargel::ui::WindowAppKit*)w {
+- (instancetype)initWithSpargelUIWindow:(ui::WindowAppKit*)w {
     [super init];
     _bridge = w;
     return self;
@@ -190,8 +192,8 @@
 @end
 
 namespace {
-    spargel::ui::PhysicalKey translatePhysicalKey(int code) {
-        using enum spargel::ui::PhysicalKey;
+    ui::PhysicalKey translatePhysicalKey(int code) {
+        using enum ui::PhysicalKey;
         switch (code) {
         case kVK_ANSI_A:
             return key_a;
@@ -259,9 +261,7 @@ namespace {
 
 namespace spargel::ui {
 
-    base::unique_ptr<Platform> makePlatformAppKit() {
-        return base::make_unique<PlatformAppKit>();
-    }
+    base::unique_ptr<Platform> makePlatformAppKit() { return base::make_unique<PlatformAppKit>(); }
 
     PlatformAppKit::PlatformAppKit() : Platform(PlatformKind::appkit) {
         _app = [NSApplication sharedApplication];
@@ -302,7 +302,8 @@ namespace spargel::ui {
         _app.mainMenu = menu_bar;
     }
 
-    WindowAppKit::WindowAppKit(int width, int height) : _width{static_cast<float>(width)}, _height{static_cast<float>(height)} {
+    WindowAppKit::WindowAppKit(int width, int height)
+        : _width{static_cast<float>(width)}, _height{static_cast<float>(height)} {
         NSScreen* screen = [NSScreen mainScreen];
 
         NSWindowStyleMask style = NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable |

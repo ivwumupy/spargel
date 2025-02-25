@@ -1,4 +1,3 @@
-
 #include <spargel/resource/android_asset.h>
 
 namespace spargel::resource {
@@ -25,7 +24,7 @@ namespace spargel::resource {
     void ResourceAndroidAsset::getData(void* buf) { AAsset_read(_asset, buf, size()); }
 
     base::Optional<base::unique_ptr<Resource>> ResourceManagerAndroidAsset::open(
-        const spargel::resource::ResourceId& id) {
+        const resource::ResourceId& id) {
         AAsset* asset = AAssetManager_open(_asset_manager, id.path().data(), AASSET_MODE_BUFFER);
         return asset ? base::makeOptional<base::unique_ptr<ResourceAndroidAsset>>(
                            base::make_unique<ResourceAndroidAsset>(asset))

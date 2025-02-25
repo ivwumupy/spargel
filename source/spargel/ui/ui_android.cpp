@@ -1,11 +1,10 @@
-
 #include <spargel/ui/ui_android.h>
 
 namespace spargel::ui {
 
     platform_android::platform_android(struct android_app* app)
         : platform(platform_kind::android), _app(app) {
-        auto* data = (spargel::ui::android_app_data*)_app->userData;
+        auto* data = (ui::android_app_data*)_app->userData;
         data->platform = this;
     }
 
@@ -14,7 +13,7 @@ namespace spargel::ui {
     }
 
     void platform_android::start_loop() {
-        auto* data = (spargel::ui::android_app_data*)_app->userData;
+        auto* data = (ui::android_app_data*)_app->userData;
 
         while (!_app->destroyRequested) {
             android_poll_source* source;

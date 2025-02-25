@@ -1395,7 +1395,7 @@ namespace spargel::gpu {
     //         cast_object(vulkan_device, d, device);
     //         alloc_object(vulkan_surface, s);
 
-    //         spargel::ui::window_handle wh = descriptor->window->handle();
+    //         ui::window_handle wh = descriptor->window->handle();
     //         VkSurfaceKHR surf;
     // #if SPARGEL_IS_ANDROID
     //         VkAndroidSurfaceCreateInfoKHR info;

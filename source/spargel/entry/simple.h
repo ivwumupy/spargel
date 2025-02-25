@@ -12,6 +12,6 @@ namespace spargel::entry {
         base::unique_ptr<resource::ResourceManager> resource_manager;
     };
 
-    int simple_entry(spargel::entry::simple_entry_data* entry_data);
+    int simple_entry(entry::simple_entry_data* entry_data);
 
 }  // namespace spargel::entry

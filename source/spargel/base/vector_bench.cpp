@@ -5,6 +5,8 @@
 // stl
 #include <vector>
 
+using namespace spargel;
+
 // from EASTL
 struct MovableType {
     int8_t* mpData;
@@ -25,7 +27,7 @@ struct MovableType {
     MovableType(MovableType&& x) : mpData(x.mpData) { x.mpData = NULL; }
 
     MovableType& operator=(MovableType&& x) {
-        spargel::base::swap(
+        base::swap(
             mpData,
             x.mpData);  // In practice it may not be right to do a swap, depending on the case.
         return *this;
@@ -35,7 +37,7 @@ struct MovableType {
 };
 
 int main() {
-    spargel::base::runBench(
+    base::runBench(
         "std::vector::push", {1, 10, 100, 1000, 10000, 100000, 1000000},
         [](usize n) {
             std::vector<usize> v;
@@ -44,28 +46,27 @@ int main() {
             }
         },
         [](usize n, double t) { return t / n; });
-    spargel::base::runBench(
+    base::runBench(
         "base::vector::push", {1, 10, 100, 1000, 10000, 100000, 1000000},
         [](usize n) {
-            spargel::base::vector<usize> v;
+            base::vector<usize> v;
             for (usize i = 0; i < n; i++) {
                 v.push(i);
             }
         },
         [](usize n, double t) { return t / n; });
-    spargel::base::runBench(
+    base::runBench(
         "base::vector::push(arena)", {1, 10, 100, 1000, 10000, 100000, 1000000},
         [](usize n) {
-            auto arena = spargel::base::ArenaAllocator(n * sizeof(usize) * 10,
-                                                       spargel::base::default_allocator());
-            spargel::base::vector<usize> v(&arena);
+            auto arena = base::ArenaAllocator(n * sizeof(usize) * 10, base::default_allocator());
+            base::vector<usize> v(&arena);
             for (usize i = 0; i < n; i++) {
                 v.push(i);
             }
         },
         [](usize n, double t) { return t / n; });
 
-    spargel::base::runBench(
+    base::runBench(
         "std::vector::push(movable)", {1, 10, 100, 1000, 10000},
         [](usize n) {
             std::vector<MovableType> v;
@@ -74,21 +75,21 @@ int main() {
             }
         },
         [](usize n, double t) { return t / n; });
-    spargel::base::runBench(
+    base::runBench(
         "base::vector::push(movable)", {1, 10, 100, 1000, 10000},
         [](usize n) {
-            spargel::base::vector<MovableType> v;
+            base::vector<MovableType> v;
             for (usize i = 0; i < n; i++) {
                 v.push();
             }
         },
         [](usize n, double t) { return t / n; });
-    spargel::base::runBench(
+    base::runBench(
         "base::vector::push(movable,arena)", {1, 10, 100, 1000, 10000},
         [](usize n) {
-            auto arena = spargel::base::ArenaAllocator(n * sizeof(MovableType) * 10,
-                                                       spargel::base::default_allocator());
-            spargel::base::vector<MovableType> v(&arena);
+            auto arena =
+                base::ArenaAllocator(n * sizeof(MovableType) * 10, base::default_allocator());
+            base::vector<MovableType> v(&arena);
             for (usize i = 0; i < n; i++) {
                 v.push();
             }

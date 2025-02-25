@@ -1,4 +1,3 @@
-
 #include <spargel/base/logging.h>
 #include <spargel/base/platform.h>
 #include <spargel/entry/simple.h>

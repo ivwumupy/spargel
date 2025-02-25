@@ -15,4 +15,4 @@ namespace spargel::math {
 
     SPARGEL_ALWAYS_INLINE float tan(float x) { return ::tanf(x); }
 
-}
+}  // namespace spargel::math

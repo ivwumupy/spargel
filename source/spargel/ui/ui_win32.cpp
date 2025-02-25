@@ -1,8 +1,5 @@
-
 #include <spargel/base/logging.h>
 #include <spargel/ui/ui_win32.h>
-
-#include "window.h"
 
 namespace spargel::ui {
 

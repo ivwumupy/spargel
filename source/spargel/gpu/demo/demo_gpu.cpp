@@ -6,6 +6,7 @@
 #include <spargel/ui/text_system.h>
 #include <spargel/ui/window.h>
 
+using namespace spargel;
 using namespace spargel::gpu;
 
 #define USE_VULKAN 0
@@ -70,10 +71,10 @@ struct QuadData {
 
 u32 max(u32 a, u32 b) { return a > b ? a : b; }
 
-class Renderer final : public spargel::ui::WindowDelegate {
+class Renderer final : public ui::WindowDelegate {
 public:
-    Renderer(spargel::ui::Window* window, spargel::resource::ResourceManager* resource_manager,
-             spargel::ui::TextSystem* text_system)
+    Renderer(ui::Window* window, resource::ResourceManager* resource_manager,
+             ui::TextSystem* text_system)
         : _window{window}, _manager{resource_manager}, _text_system{text_system} {
         _window->setDelegate(this);
 
@@ -86,7 +87,7 @@ public:
         _surface = _device->createSurface(_window);
 
 #if USE_METAL
-        auto blob = _manager->open(spargel::resource::ResourceId("shader.metallib"));
+        auto blob = _manager->open(resource::ResourceId("shader.metallib"));
 
         _shader = _device->createShaderLibrary(blob.value()->getSpan());
 #endif
@@ -99,14 +100,13 @@ public:
         builder.addColorAttachment(TextureFormat::bgra8_unorm, true);
         _pipeline = builder.build(_device.get());
 
-        _positions = _device->createBuffer(
-            BufferUsage::vertex, spargel::base::make_span<u8>(sizeof(positions), (u8*)positions));
+        _positions = _device->createBuffer(BufferUsage::vertex,
+                                           base::make_span<u8>(sizeof(positions), (u8*)positions));
 
         _uniform_data.viewport.width = _surface->width();
         _uniform_data.viewport.height = _surface->height();
         _uniforms = _device->createBuffer(
-            BufferUsage::uniform,
-            spargel::base::make_span(sizeof(_uniform_data), (u8*)&_uniform_data));
+            BufferUsage::uniform, base::make_span(sizeof(_uniform_data), (u8*)&_uniform_data));
 
         _queue = _device->createCommandQueue();
 
@@ -171,8 +171,7 @@ public:
     void onRender() override {
         // spargel_log_info("%lu", _glyph_cache.count());
 
-        auto layout_result =
-            _text_system->layoutLine(spargel::base::string_view(_str.begin(), _str.end()));
+        auto layout_result = _text_system->layoutLine(base::string_view(_str.begin(), _str.end()));
 
         _vquads.clear();
         float total_width = 0;
@@ -202,7 +201,7 @@ public:
         }
         _quads = _device->createBuffer(
             BufferUsage::storage,
-            spargel::base::make_span(_vquads.count() * sizeof(QuadData), (u8*)_vquads.data()));
+            base::make_span(_vquads.count() * sizeof(QuadData), (u8*)_vquads.data()));
 
         auto texture = _surface->nextTexture();
 
@@ -233,15 +232,13 @@ public:
         _device->destroyBuffer(_quads);
     }
 
-    void onKeyboard(spargel::ui::KeyboardEvent& e) override {
-        if (e.key == spargel::ui::PhysicalKey::key_delete &&
-            e.action == spargel::ui::KeyboardAction::press) {
+    void onKeyboard(ui::KeyboardEvent& e) override {
+        if (e.key == ui::PhysicalKey::key_delete && e.action == ui::KeyboardAction::press) {
             _str.pop();
             if (!_animating) {
                 _window->requestRedraw();
             }
-        } else if (e.key == spargel::ui::PhysicalKey::space &&
-                   e.action == spargel::ui::KeyboardAction::press) {
+        } else if (e.key == ui::PhysicalKey::space && e.action == ui::KeyboardAction::press) {
             _animating = !_animating;
             _window->setAnimating(_animating);
         } else {
@@ -254,7 +251,7 @@ public:
 
 private:
     struct GlyphEntry {
-        spargel::ui::GlyphId id;
+        ui::GlyphId id;
         u32 x;
         u32 y;
         u32 width;
@@ -265,7 +262,7 @@ private:
     };
 
     // todo: optimize
-    GlyphEntry& findOrInsert(spargel::ui::GlyphId id) {
+    GlyphEntry& findOrInsert(ui::GlyphId id) {
         for (usize i = 0; i < _glyph_cache.count(); i++) {
             if (_glyph_cache[i].id == id) {
                 return _glyph_cache[i];
@@ -307,10 +304,10 @@ private:
         return _glyph_cache[_glyph_cache.count() - 1];
     }
 
-    spargel::ui::Window* _window;
-    spargel::resource::ResourceManager* _manager;
-    spargel::ui::TextSystem* _text_system;
-    spargel::base::unique_ptr<Device> _device;
+    ui::Window* _window;
+    resource::ResourceManager* _manager;
+    ui::TextSystem* _text_system;
+    base::unique_ptr<Device> _device;
     ObjectPtr<ShaderLibrary> _shader;
     ObjectPtr<RenderPipeline> _pipeline;
     ObjectPtr<Buffer> _positions;
@@ -320,9 +317,9 @@ private:
     ObjectPtr<Surface> _surface;
     ObjectPtr<CommandQueue> _queue;
     ObjectPtr<Texture> _atlas;
-    spargel::base::vector<char> _str;
-    spargel::base::vector<QuadData> _vquads;
-    spargel::base::vector<GlyphEntry> _glyph_cache;
+    base::vector<char> _str;
+    base::vector<QuadData> _vquads;
+    base::vector<GlyphEntry> _glyph_cache;
     u32 _cur_row = 0;
     u32 _cur_col = 0;
     u32 _nxt_row = 0;
@@ -330,8 +327,8 @@ private:
 };
 
 int main() {
-    auto platform = spargel::ui::makePlatform();
-    auto resource_manager = spargel::resource::makeRelativeManager();
+    auto platform = ui::makePlatform();
+    auto resource_manager = resource::makeRelativeManager();
     auto text_system = platform->createTextSystem();
 
     auto window = platform->makeWindow(500, 500);

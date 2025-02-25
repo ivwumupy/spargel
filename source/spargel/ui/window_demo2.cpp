@@ -1,11 +1,10 @@
-
 #include <spargel/base/logging.h>
 #include <spargel/entry/simple.h>
 #include <spargel/ui/window.h>
 
 namespace spargel::entry {
 
-    class delegate final : public spargel::ui::WindowDelegate {};
+    class delegate final : public ui::WindowDelegate {};
 
     int simple_entry(simple_entry_data* data) {
         spargel_log_debug("window_demo2");

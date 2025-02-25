@@ -1,4 +1,3 @@
-
 #include <spargel/base/const.h>
 #include <spargel/util/path.h>
 

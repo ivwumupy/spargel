@@ -61,4 +61,4 @@ namespace spargel::ui {
         }
     }
 
-}
+}  // namespace spargel::ui

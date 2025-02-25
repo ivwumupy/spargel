@@ -13,9 +13,7 @@ namespace spargel::math {
         T y;
         T z;
 
-        SPARGEL_ALWAYS_INLINE Vector3<T> asVector() const {
-            return Vector3<T>(x, y, z);
-        }
+        SPARGEL_ALWAYS_INLINE Vector3<T> asVector() const { return Vector3<T>(x, y, z); }
     };
 
     template <typename T>
@@ -30,4 +28,4 @@ namespace spargel::math {
 
     using Point3f = Point3<float>;
 
-}
+}  // namespace spargel::math

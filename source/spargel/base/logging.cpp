@@ -1,4 +1,3 @@
-
 #include <spargel/base/assert.h>
 #include <spargel/base/logging.h>
 #include <spargel/config.h>

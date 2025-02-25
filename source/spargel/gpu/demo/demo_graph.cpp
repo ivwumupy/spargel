@@ -82,7 +82,7 @@ int main() {
 
     u32 cull_count = 0;
 
-    spargel::base::vector<u32> tmp;
+    base::vector<u32> tmp;
     for (usize i = 0; i < graph.nodes.count(); i++) {
         auto& node = graph.nodes[i];
         if (node.refcount == 0 && !node.target) {
@@ -130,7 +130,7 @@ int main() {
             tmp.push(i);
         }
     }
-    spargel::base::vector<u32> result;
+    base::vector<u32> result;
     while (!tmp.empty()) {
         auto i = tmp[tmp.count() - 1];
         tmp.pop();

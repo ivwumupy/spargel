@@ -9,25 +9,29 @@
 #include <spargel/math/vector.h>
 #include <spargel/resource/directory.h>
 #include <spargel/ui/platform.h>
-#include <spargel/ui/window.h>
 #include <spargel/ui/ui_mac.h>
+#include <spargel/ui/window.h>
+
+// libc
+#include <stdio.h>
 
 //
 #import <Metal/Metal.h>
 #import <simd/simd.h>
 
-using spargel::math::Vector3f;
-using spargel::math::Point3f;
-using spargel::math::Matrix4x4f;
+using namespace spargel;
+
+using math::Matrix4x4f;
+using math::Point3f;
+using math::Vector3f;
 
 class Cursor final {
 public:
-    explicit Cursor(spargel::base::span<u8> bytes)
-        : _begin{bytes.begin()}, _end{bytes.end()}, _cur{_begin} {
+    explicit Cursor(base::span<u8> bytes) : _begin{bytes.begin()}, _end{bytes.end()}, _cur{_begin} {
         printf("len = %zu\n", bytes.count());
     }
 
-    spargel::base::Optional<u32> readU32() {
+    base::Optional<u32> readU32() {
         eatWhitespace();
         u32 result = 0;
         u8 c = peek();
@@ -42,10 +46,10 @@ public:
             result = result * 10 + (c - '0');
             advance();
         }
-        return spargel::base::makeOptional<u32>(result);
+        return base::makeOptional<u32>(result);
     }
 
-    spargel::base::Optional<float> readFloat() {
+    base::Optional<float> readFloat() {
         eatWhitespace();
         float result = 0;
         float d = 1;
@@ -81,7 +85,7 @@ public:
         if (negative) {
             result = -result;
         }
-        return spargel::base::makeOptional<float>(result);
+        return base::makeOptional<float>(result);
     }
 
 private:
@@ -156,7 +160,7 @@ struct BoundingBox {
 
 class SimpleMesh final {
 public:
-    static spargel::base::Optional<SimpleMesh> create(spargel::base::span<u8> bytes) {
+    static base::Optional<SimpleMesh> create(base::span<u8> bytes) {
         Cursor cursor(bytes);
 
         auto face_count = cursor.readU32();
@@ -166,8 +170,8 @@ public:
             return {};
         }
 
-        spargel::base::vector<u32> indices;
-        spargel::base::vector<Point3f> vertices;
+        base::vector<u32> indices;
+        base::vector<Point3f> vertices;
 
         u32 indices_count = face_count.value() * 3;
         indices.reserve(indices_count);
@@ -197,19 +201,18 @@ public:
             vertices[i] = {x.value() * 1000, y.value() * 1000, z.value() * 1000};
         }
 
-        return spargel::base::makeOptional<SimpleMesh>(face_count.value(), vert_count.value(),
-                                                       spargel::base::move(indices),
-                                                       spargel::base::move(vertices));
+        return base::makeOptional<SimpleMesh>(face_count.value(), vert_count.value(),
+                                              base::move(indices), base::move(vertices));
     }
 
     SimpleMesh() = default;
 
-    SimpleMesh(u32 face_count, u32 vert_count, spargel::base::vector<u32> indices,
-               spargel::base::vector<Point3f> vertices)
+    SimpleMesh(u32 face_count, u32 vert_count, base::vector<u32> indices,
+               base::vector<Point3f> vertices)
         : _face_count{face_count},
           _vert_count{vert_count},
-          _indices(spargel::base::move(indices)),
-          _vertices(spargel::base::move(vertices)) {
+          _indices(base::move(indices)),
+          _vertices(base::move(vertices)) {
         _bbox = BoundingBox(_vertices[0].x, _vertices[0].y, _vertices[0].z);
         for (usize i = 0; i < _vertices.count(); i++) {
             _bbox.merge(_vertices[i].x, _vertices[i].y, _vertices[i].z);
@@ -220,34 +223,33 @@ public:
     SimpleMesh(SimpleMesh const& other) = default;
     SimpleMesh& operator=(SimpleMesh const& other) {
         SimpleMesh tmp(other);
-        spargel::base::swap(*this, tmp);
+        base::swap(*this, tmp);
         return *this;
     }
 
-    SimpleMesh(SimpleMesh&& other) { spargel::base::swap(*this, other); }
+    SimpleMesh(SimpleMesh&& other) { base::swap(*this, other); }
     SimpleMesh& operator=(SimpleMesh&& other) {
-        SimpleMesh tmp(spargel::base::move(other));
-        spargel::base::swap(*this, tmp);
+        SimpleMesh tmp(base::move(other));
+        base::swap(*this, tmp);
         return *this;
     }
 
     u32 getFaceCount() const { return _face_count; }
     u32 getVertexCount() const { return _vert_count; }
 
-    spargel::base::span<u32> getIndices() const { return _indices.toSpan(); }
-    spargel::base::span<Point3f> getVertices() const { return _vertices.toSpan(); }
-    spargel::base::span<Vector3f> getNormals() const { return _normals.toSpan(); }
+    base::span<u32> getIndices() const { return _indices.toSpan(); }
+    base::span<Point3f> getVertices() const { return _vertices.toSpan(); }
+    base::span<Vector3f> getNormals() const { return _normals.toSpan(); }
 
     BoundingBox const& getBoundingBox() const { return _bbox; }
 
-    friend void tag_invoke(spargel::base::tag<spargel::base::swap>, SimpleMesh& lhs,
-                           SimpleMesh& rhs) {
-        spargel::base::swap(lhs._face_count, rhs._face_count);
-        spargel::base::swap(lhs._vert_count, rhs._vert_count);
-        spargel::base::swap(lhs._indices, rhs._indices);
-        spargel::base::swap(lhs._vertices, rhs._vertices);
-        spargel::base::swap(lhs._normals, rhs._normals);
-        spargel::base::swap(lhs._bbox, rhs._bbox);
+    friend void tag_invoke(base::tag<base::swap>, SimpleMesh& lhs, SimpleMesh& rhs) {
+        base::swap(lhs._face_count, rhs._face_count);
+        base::swap(lhs._vert_count, rhs._vert_count);
+        base::swap(lhs._indices, rhs._indices);
+        base::swap(lhs._vertices, rhs._vertices);
+        base::swap(lhs._normals, rhs._normals);
+        base::swap(lhs._bbox, rhs._bbox);
     }
 
 private:
@@ -261,8 +263,8 @@ private:
             Point3f const& z = _vertices[_indices[i + 2]];
 
             _normals[_indices[i]] += (z - x).cross(y - x);
-            _normals[_indices[i+1]] += (x - y).cross(z - z);
-            _normals[_indices[i+2]] += (y - z).cross(x - z);
+            _normals[_indices[i + 1]] += (x - y).cross(z - z);
+            _normals[_indices[i + 2]] += (y - z).cross(x - z);
         }
 
         // normalize
@@ -273,9 +275,9 @@ private:
 
     u32 _face_count = 0;
     u32 _vert_count = 0;
-    spargel::base::vector<u32> _indices;
-    spargel::base::vector<Point3f> _vertices;
-    spargel::base::vector<Vector3f> _normals;
+    base::vector<u32> _indices;
+    base::vector<Point3f> _vertices;
+    base::vector<Vector3f> _normals;
     BoundingBox _bbox;
 };
 
@@ -337,12 +339,8 @@ public:
         _state_dirty = false;
     }
 
-    Matrix4x4f const& getWorldToCamera() const {
-        return _world_to_camera;
-    }
-    Matrix4x4f const& getCameraToClip() const {
-        return _camera_to_clip;
-    }
+    Matrix4x4f const& getWorldToCamera() const { return _world_to_camera; }
+    Matrix4x4f const& getCameraToClip() const { return _camera_to_clip; }
 
 private:
     void computeWorldToCamera() {
@@ -363,10 +361,10 @@ private:
     }
     void computeCameraToClip() {
         // y = tan(a / 2), x = r * y
-        float ys = 1.0 / spargel::math::tan(_view_angle * 0.5);
+        float ys = 1.0 / math::tan(_view_angle * 0.5);
         float xs = ys / _aspect_ratio;
         float zs = _far_plane / (_far_plane - _near_plane);
-        float t = - zs * _near_plane;
+        float t = -zs * _near_plane;
         // clang-format off
         _camera_to_clip = Matrix4x4f(
             xs, 0, 0, 0,
@@ -399,26 +397,26 @@ private:
     bool _state_dirty = true;
 };
 
-class Delegate final : public spargel::ui::WindowDelegate {
+class Delegate final : public ui::WindowDelegate {
 public:
-    Delegate(spargel::ui::WindowAppKit* window) : _window{window} { _Setup(); }
+    Delegate(ui::WindowAppKit* window) : _window{window} { _Setup(); }
 
-    void onKeyboard(spargel::ui::KeyboardEvent& e) override {
+    void onKeyboard(ui::KeyboardEvent& e) override {
         float d = 10;
         float dx = 0;
         float dy = 0;
         float dz = 0;
-        if (e.key == spargel::ui::PhysicalKey::key_w) {
+        if (e.key == ui::PhysicalKey::key_w) {
             dy += d;
-        } else if (e.key == spargel::ui::PhysicalKey::key_s) {
+        } else if (e.key == ui::PhysicalKey::key_s) {
             dy -= d;
-        } else if (e.key == spargel::ui::PhysicalKey::key_a) {
+        } else if (e.key == ui::PhysicalKey::key_a) {
             dx += d;
-        } else if (e.key == spargel::ui::PhysicalKey::key_d) {
+        } else if (e.key == ui::PhysicalKey::key_d) {
             dx -= d;
-        } else if (e.key == spargel::ui::PhysicalKey::key_j) {
+        } else if (e.key == ui::PhysicalKey::key_j) {
             dz += d;
-        } else if (e.key == spargel::ui::PhysicalKey::key_k) {
+        } else if (e.key == ui::PhysicalKey::key_k) {
             dz -= d;
         }
         _camera.move(Vector3f(dx, dy, dz));
@@ -473,10 +471,10 @@ private:
     void _Setup() {
         NSError* error;
 
-        _resource = spargel::resource::makeRelativeManager();
+        _resource = resource::makeRelativeManager();
 
         {
-            auto blob = _resource->open(spargel::resource::ResourceId("bunny.smesh"));
+            auto blob = _resource->open(resource::ResourceId("bunny.smesh"));
             if (!blob.hasValue()) {
                 spargel_log_error("cannot load mesh");
                 spargel_panic_here();
@@ -487,11 +485,11 @@ private:
                 spargel_log_error("wrong format");
                 spargel_panic_here();
             }
-            _mesh = spargel::base::move(s).value();
+            _mesh = base::move(s).value();
 
             auto& bbox = _mesh.getBoundingBox();
-            spargel_log_info("bounding box: (%.3f, %.3f, %.3f) - (%.3f, %.3f, %.3f)", bbox.xmin, bbox.ymin,
-                             bbox.zmin, bbox.xmax, bbox.ymax, bbox.zmax);
+            spargel_log_info("bounding box: (%.3f, %.3f, %.3f) - (%.3f, %.3f, %.3f)", bbox.xmin,
+                             bbox.ymin, bbox.zmin, bbox.xmax, bbox.ymax, bbox.zmax);
         }
 
         _device = MTLCreateSystemDefaultDevice();
@@ -503,7 +501,7 @@ private:
         }
 
         {
-            auto blob = _resource->open(spargel::resource::ResourceId("shader.metallib"));
+            auto blob = _resource->open(resource::ResourceId("shader.metallib"));
             if (!blob.hasValue()) {
                 spargel_log_error("cannot load shader");
                 spargel_panic_here();
@@ -562,15 +560,15 @@ private:
 
         _camera.setDirection(Vector3f(0, 0, 1));
         _camera.setUp(Vector3f(0, 1, 0));
-        _camera.setViewAngle(3.14159 / 3); // 60 degrees
+        _camera.setViewAngle(3.14159 / 3);  // 60 degrees
         _camera.setNearPlane(1);
         _camera.setFarPlane(1000);
 
         _window->setAnimating(false);
     }
 
-    spargel::ui::WindowAppKit* _window;
-    spargel::base::unique_ptr<spargel::resource::ResourceManagerDirectory> _resource;
+    ui::WindowAppKit* _window;
+    base::unique_ptr<resource::ResourceManagerDirectory> _resource;
 
     SimpleMesh _mesh;
 
@@ -603,12 +601,12 @@ private:
 };
 
 int main() {
-    auto platform = spargel::ui::makePlatform();
+    auto platform = ui::makePlatform();
 
     auto window = platform->makeWindow(500, 500);
     window->setTitle("Spargel Demo - Render");
 
-    Delegate d(static_cast<spargel::ui::WindowAppKit*>(window.get()));
+    Delegate d(static_cast<ui::WindowAppKit*>(window.get()));
     window->setDelegate(&d);
 
     platform->startLoop();

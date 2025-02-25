@@ -16,16 +16,11 @@ namespace spargel::math {
         }
 
         SPARGEL_ALWAYS_INLINE Vector3 cross(Vector3 const& other) const {
-            return Vector3(
-                y * other.z - z * other.y,
-                z * other.x - x * other.z,
-                x * other.y - y * other.x
-            );
+            return Vector3(y * other.z - z * other.y, z * other.x - x * other.z,
+                           x * other.y - y * other.x);
         }
 
-        SPARGEL_ALWAYS_INLINE T length() const {
-            return math::sqrt(dot(*this));
-        }
+        SPARGEL_ALWAYS_INLINE T length() const { return math::sqrt(dot(*this)); }
 
         // TODO: What's the behaviour in edge cases?
         SPARGEL_ALWAYS_INLINE Vector3 normalize() const {
@@ -52,9 +47,7 @@ namespace spargel::math {
             return x * other.x + y * other.y + z * other.z + w * other.w;
         }
 
-        SPARGEL_ALWAYS_INLINE T length() const {
-            return math::sqrt(dot(*this));
-        }
+        SPARGEL_ALWAYS_INLINE T length() const { return math::sqrt(dot(*this)); }
 
         // TODO: What's the behaviour in edge cases?
         SPARGEL_ALWAYS_INLINE Vector4 normalize() const {
@@ -94,4 +87,4 @@ namespace spargel::math {
     using Vector3f = Vector3<float>;
     using Vector4f = Vector4<float>;
 
-}
+}  // namespace spargel::math

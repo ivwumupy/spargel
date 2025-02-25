@@ -4,8 +4,6 @@
 #include <spargel/ui/text_system.h>
 #include <spargel/ui/window.h>
 
-using namespace spargel::base;
-
 namespace spargel::ui {
 
     class WindowDummy final : public Window {

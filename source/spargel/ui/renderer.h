@@ -2,7 +2,6 @@
 
 namespace spargel::ui {
 
-    class Renderer {
-    };
+    class Renderer {};
 
-}
+}  // namespace spargel::ui

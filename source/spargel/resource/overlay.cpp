@@ -1,4 +1,3 @@
-
 #include <spargel/resource/overlay.h>
 
 namespace spargel::resource {

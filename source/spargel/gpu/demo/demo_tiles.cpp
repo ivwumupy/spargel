@@ -8,6 +8,7 @@
 // libc
 #include <stdlib.h>
 
+using namespace spargel;
 using namespace spargel::gpu;
 
 #define USE_VULKAN 0
@@ -88,9 +89,9 @@ u32 max(u32 a, u32 b) { return a > b ? a : b; }
 
 static constexpr int N = 100;
 
-class Renderer final : public spargel::ui::WindowDelegate {
+class Renderer final : public ui::WindowDelegate {
 public:
-    Renderer(spargel::ui::Window* window, spargel::resource::ResourceManager* resource_manager)
+    Renderer(ui::Window* window, resource::ResourceManager* resource_manager)
         : _window{window}, _manager{resource_manager} {
         _window->setDelegate(this);
 
@@ -103,7 +104,7 @@ public:
         _surface = _device->createSurface(_window);
 
 #if USE_METAL
-        auto blob = _manager->open(spargel::resource::ResourceId("shader.metallib"));
+        auto blob = _manager->open(resource::ResourceId("shader.metallib"));
 
         _shader = _device->createShaderLibrary(blob.value()->getSpan());
 #endif
@@ -125,18 +126,16 @@ public:
 
         _positions = _device->createBuffer(
             BufferUsage::vertex,
-            spargel::base::make_span<u8>(_more_positions.count() * sizeof(VertexPosition),
-                                         (u8*)_more_positions.data()));
+            base::make_span<u8>(_more_positions.count() * sizeof(VertexPosition),
+                                (u8*)_more_positions.data()));
         _colors = _device->createBuffer(
-            BufferUsage::vertex,
-            spargel::base::make_span<u8>(_more_colors.count() * sizeof(VertexColor),
-                                         (u8*)_more_colors.data()));
+            BufferUsage::vertex, base::make_span<u8>(_more_colors.count() * sizeof(VertexColor),
+                                                     (u8*)_more_colors.data()));
 
         _uniform_data.viewport.width = _surface->width();
         _uniform_data.viewport.height = _surface->height();
         _uniforms = _device->createBuffer(
-            BufferUsage::uniform,
-            spargel::base::make_span(sizeof(_uniform_data), (u8*)&_uniform_data));
+            BufferUsage::uniform, base::make_span(sizeof(_uniform_data), (u8*)&_uniform_data));
 
         _frag_control = _device->createBuffer(BufferUsage::uniform, 64);
         _frag_data = _device->createBuffer(BufferUsage::uniform, 64);
@@ -198,13 +197,12 @@ public:
         }
     }
 
-    void onKeyboard(spargel::ui::KeyboardEvent& e) override {
+    void onKeyboard(ui::KeyboardEvent& e) override {
         if (e.toChar() == 'j') {
             _frame++;
         } else if (e.toChar() == 'k') {
             if (_frame > 0) _frame--;
-        } else if (e.key == spargel::ui::PhysicalKey::space &&
-                   e.action == spargel::ui::KeyboardAction::press) {
+        } else if (e.key == ui::PhysicalKey::space && e.action == ui::KeyboardAction::press) {
             _animating = !_animating;
             _window->setAnimating(_animating);
         }
@@ -212,9 +210,9 @@ public:
     }
 
 private:
-    spargel::ui::Window* _window;
-    spargel::resource::ResourceManager* _manager;
-    spargel::base::unique_ptr<Device> _device;
+    ui::Window* _window;
+    resource::ResourceManager* _manager;
+    base::unique_ptr<Device> _device;
     ObjectPtr<ShaderLibrary> _shader;
     ObjectPtr<RenderPipeline> _pipeline;
     ObjectPtr<Buffer> _positions;
@@ -226,16 +224,16 @@ private:
     ObjectPtr<Surface> _surface;
     ObjectPtr<CommandQueue> _queue;
     ObjectPtr<Texture> _atlas;
-    spargel::base::vector<char> _str;
+    base::vector<char> _str;
     bool _animating = false;
     usize _frame = 0;
-    spargel::base::vector<VertexPosition> _more_positions;
-    spargel::base::vector<VertexColor> _more_colors;
+    base::vector<VertexPosition> _more_positions;
+    base::vector<VertexColor> _more_colors;
 };
 
 int main() {
-    auto platform = spargel::ui::makePlatform();
-    auto resource_manager = spargel::resource::makeRelativeManager();
+    auto platform = ui::makePlatform();
+    auto resource_manager = resource::makeRelativeManager();
 
     auto window = platform->makeWindow(500, 500);
     window->setTitle("Spargel Engine - GPU");

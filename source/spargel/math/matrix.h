@@ -34,4 +34,4 @@ namespace spargel::math {
 
     using Matrix4x4f = Matrix4x4<float>;
 
-}
+}  // namespace spargel::math

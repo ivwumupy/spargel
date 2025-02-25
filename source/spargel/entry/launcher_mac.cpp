@@ -6,6 +6,8 @@
 // platform
 #include <dlfcn.h>
 
+using namespace spargel;
+
 int main(int argc, char* argv[]) {
     spargel_log_info("launcher started");
     if (argc < 2) {
@@ -16,11 +18,11 @@ int main(int argc, char* argv[]) {
     spargel_log_info("loading component <<%s>>", path);
 
     auto lib = dlopen(path, RTLD_NOW | RTLD_LOCAL);
-    auto maker = reinterpret_cast<spargel::entry::component* (*)(spargel::entry::launch_data*)>(
+    auto maker = reinterpret_cast<entry::component* (*)(entry::launch_data*)>(
         dlsym(lib, "_spargel_make_component"));
 
-    spargel::entry::launch_data data;
-    auto platform = spargel::ui::makePlatform();
+    entry::launch_data data;
+    auto platform = ui::makePlatform();
     data.platform = platform.get();
 
     auto component = maker(&data);

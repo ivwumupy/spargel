@@ -1,4 +1,3 @@
-
 #include <spargel/base/platform_emscripten.h>
 
 // libc

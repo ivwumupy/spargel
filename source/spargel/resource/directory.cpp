@@ -1,4 +1,3 @@
-
 #include <spargel/base/assert.h>
 #include <spargel/base/const.h>
 #include <spargel/base/logging.h>
@@ -8,8 +7,6 @@
 
 // libc
 #include <string.h>
-
-#include "resource.h"
 
 #if SPARGEL_FILE_MMAP
 

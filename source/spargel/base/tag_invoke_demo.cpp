@@ -1,12 +1,14 @@
 #include <spargel/base/logging.h>
 #include <spargel/base/tag_invoke.h>
 
+using namespace spargel;
+
 namespace A {
     namespace __foo {
         struct foo {
             template <typename T>
             constexpr void operator()(T t) const {
-                spargel::base::tag_invoke(foo{}, t);
+                base::tag_invoke(foo{}, t);
             }
         };
         template <typename T>
@@ -18,9 +20,9 @@ namespace A {
 }  // namespace A
 
 namespace B {
-    static_assert(spargel::base::is_same<spargel::base::tag<A::foo>, A::__foo::foo>);
+    static_assert(base::is_same<base::tag<A::foo>, A::__foo::foo>);
     struct bar {};
-    void tag_invoke(spargel::base::tag<A::foo>, bar b) { spargel_log_info("special impl for bar"); }
+    void tag_invoke(base::tag<A::foo>, bar b) { spargel_log_info("special impl for bar"); }
 }  // namespace B
 
 int main() {

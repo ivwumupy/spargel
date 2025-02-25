@@ -4,8 +4,7 @@
 
 namespace spargel::ui {
 
-    class RendererMetal final : public Renderer {
-    };
+    class RendererMetal final : public Renderer {};
 
     /// A `LayerMetal` is a Metal texture.
     class LayerMetal final : public Layer {
@@ -14,4 +13,4 @@ namespace spargel::ui {
         id<MTLTexture> _texture;
     };
 
-}
+}  // namespace spargel::ui

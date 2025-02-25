@@ -1,4 +1,3 @@
-
 #include <spargel/ui/ui_dummy.h>
 
 namespace spargel::ui {

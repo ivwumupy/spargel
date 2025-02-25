@@ -1,4 +1,3 @@
-
 #include <spargel/config.h>
 #include <spargel/ui/platform.h>
 

@@ -49,4 +49,4 @@ namespace spargel::ui {
         char toChar();
     };
 
-}
+}  // namespace spargel::ui

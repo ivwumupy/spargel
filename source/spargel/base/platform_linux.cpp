@@ -1,4 +1,3 @@
-
 #include <spargel/base/platform.h>
 
 /* libc */

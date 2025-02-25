@@ -1,9 +1,5 @@
-
 #include <spargel/base/logging.h>
 #include <spargel/ui/ui_xcb.h>
-
-#include "platform.h"
-#include "window.h"
 
 /* for clock_gettime */
 #ifndef _GNU_SOURCE
