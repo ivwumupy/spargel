@@ -94,9 +94,21 @@ namespace {
         spargel_assert(!result.failed());
         spargel_assert(isEqual(value, JsonValue(JsonString(" \" \\ / \b \f \n \r \t "))));
 
-        result = parseJson("\"\u0020\u0041\u0061\"", value);
+        result = parseJson("\"\\u0020\\u0041\\u0061\"", value);
         spargel_assert(!result.failed());
         spargel_assert(isEqual(value, JsonValue(JsonString(" Aa"))));
+
+        result = parseJson("\"\\u4e2d\\u6587\"", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonString("中文"))));
+
+        result = parseJson("\"\\u65e5\\u672c\\u8a9e\"", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonString("日本語"))));
+
+        result = parseJson("\"\\ud55c\\uad6d\\uc5b4\"", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonString("한국어"))));
 
         result = parseJson("\"\n\"", value);
         spargel_assert(result.failed());
