@@ -69,6 +69,8 @@ namespace spargel::base {
 
             friend string operator+(const string& s, char ch);
 
+            friend string operator+(const string& s, const char* s2) { return s + string(s2); }
+
             friend void tag_invoke(tag<swap>, string& lhs, string& rhs) {
                 swap(lhs._length, rhs._length);
                 swap(lhs._data, rhs._data);

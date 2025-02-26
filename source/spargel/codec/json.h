@@ -1,6 +1,7 @@
 #pragma once
 
 #include <spargel/base/hash_map.h>
+#include <spargel/base/optional.h>
 #include <spargel/base/string.h>
 #include <spargel/base/vector.h>
 
@@ -99,6 +100,26 @@ namespace spargel::codec {
         base::string _msg;
     };
 
+    /*
+     * Parser
+     */
+
     JsonParseResult parseJson(const char* str, usize length, JsonValue& value);
+
+    /*
+     * Utils
+     */
+
+    JsonObject* getJsonMemberObject(JsonObject& json, const JsonString& key,
+                                    JsonParseResult& result, bool optional = false);
+
+    JsonArray* getJsonMemberArray(JsonObject& json, const JsonString& key, JsonParseResult& result,
+                                  bool optional = false);
+
+    JsonString* getJsonMemberString(JsonObject& json, const JsonString& key,
+                                    JsonParseResult& result, bool optional = false);
+
+    JsonNumber* getJsonMemberNumber(JsonObject& json, const JsonString& key,
+                                    JsonParseResult& result, bool optional = false);
 
 }  // namespace spargel::codec

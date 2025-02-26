@@ -1,87 +1,99 @@
-#include <spargel/codec/codec.h>
+#include <spargel/codec/json.h>
 
 /* libc */
 #include <stdio.h>
 
 using namespace spargel;
+using namespace spargel::codec;
 
-static void dump_json_value(struct codec::json_value const* value);
+namespace {
 
-static void dump_json_array(struct codec::json_array const* array) {
-    printf("[");
-    for (ssize i = 0; i < array->count; i++) {
-        dump_json_value(&array->values[i]);
-        if (i < array->count - 1) printf(",");
+    void dumpValue(const JsonValue& value);
+
+    void dumpObject(const JsonObject& object) { printf("{TODO}"); }
+
+    void dumpArray(const JsonArray& array) {
+        putchar('[');
+        putchar(' ');
+        usize count = array.elements.count();
+        for (usize i = 0; i < count; i++) {
+            dumpValue(array.elements[i]);
+            if (i < count - 1) {
+                putchar(',');
+                putchar(' ');
+            }
+        }
+        putchar(' ');
+        putchar(']');
     }
-    printf("]");
-}
-static void dump_json_object(struct codec::json_object const* object) {
-    printf("{");
-    int cnt = 0;
-    for (ssize i = 0; i < object->capacity; i++) {
-        struct codec::json_object_entry* entry = &object->entries[i];
-        if (entry->used) {
-            printf("\"%s\":", entry->key.data());
-            dump_json_value(&entry->value);
-            cnt++;
-            if (cnt < object->count) printf(",");
+
+    void dumpString(const JsonString& string) {
+        putchar('"');
+        printf("%s", string.data());
+        putchar('"');
+    }
+
+    void dumpValue(const JsonValue& value) {
+        switch (value.type) {
+        case JsonValueType::object:
+            dumpObject(value.object);
+            break;
+        case JsonValueType::array:
+            dumpArray(value.array);
+            break;
+        case JsonValueType::string:
+            dumpString(value.string);
+            break;
+        case JsonValueType::number:
+            printf("%lf", value.number);
+            break;
+        case JsonValueType::boolean:
+            printf(value.boolean ? "true" : "false");
+            break;
+        case JsonValueType::null:
+            printf("null");
+            break;
         }
     }
-    printf("}");
-}
 
-static void dump_json_value(struct codec::json_value const* value) {
-    switch (value->kind) {
-    case codec::JSON_VALUE_KIND_ARRAY:
-        dump_json_array(&value->array);
-        break;
-    case codec::JSON_VALUE_KIND_OBJECT:
-        dump_json_object(&value->object);
-        break;
-    case codec::JSON_VALUE_KIND_STRING:
-        printf("\"%s\"", value->string.data());
-        break;
-    case codec::JSON_VALUE_KIND_BOOLEAN:
-        if (value->boolean)
-            printf("true");
-        else
-            printf("false");
-        break;
-    default:
-        break;
-    }
-}
-
-struct file {
-    char* data;
-    ssize length;
-};
-
-/* todo: error checking */
-static void read_file(char const* path, struct file* f) {
-    FILE* file = fopen(path, "rb");
-    fseek(file, 0, SEEK_END);
-    ssize len = ftell(file);
-    char* data = (char*)base::default_allocator()->allocate(len);
-    fseek(file, 0, SEEK_SET);
-    fread(data, len, 1, file);
-    // data[len] = 0;
-    f->data = data;
-    f->length = len;
-}
+}  // namespace
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) return -1;
-    struct file f;
-    read_file(argv[1], &f);
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+        return 1;
+    }
 
-    codec::json_value value;
-    int result = codec::json_parse(f.data, f.length, &value);
+    // read file
+    FILE* fp = fopen(argv[1], "rb");
+    if (!fp) {
+        fprintf(stderr, "Cannot open file \"%s\"\n", argv[1]);
+        return 1;
+    }
+    fseek(fp, 0, SEEK_END);
+    ssize len = ftell(fp);
+    if (len <= 0) {
+        fprintf(stderr, "Bad file size: %zu\n", len);
+        fclose(fp);
+        return 1;
+    }
+    char* data = (char*)base::default_allocator()->allocate(len);
+    fseek(fp, 0, SEEK_SET);
+    fread(data, len, 1, fp);
+    fclose(fp);
 
-    dump_json_value(&value);
+    JsonValue value;
+    auto result = parseJson(data, len, value);
+    if (result.failed()) {
+        fprintf(stderr, "Failed to parse JSON: %s\n", result.message().data());
+        base::default_allocator()->free(data, len);
+        return 1;
+    }
 
-    base::default_allocator()->free(f.data, f.length);
+    dumpValue(value);
+    putchar('\n');
 
-    codec::json_value_deinit(&value);
-    return result;
+    base::default_allocator()->free(data, len);
+
+    return 0;
 }
