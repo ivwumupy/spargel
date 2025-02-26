@@ -18,10 +18,36 @@ namespace spargel::base {
             string(string_view v);
 
             string(string const& other);
-            string& operator=(string const& other);
+            string& operator=(string const& other) {
+                if (this != &other) {
+                    string tmp(other);
+                    swap(*this, tmp);
+                }
+                return *this;
+            }
+
+            string(string&& other) { swap(*this, other); }
+            string& operator=(string&& other) {
+                if (this != &other) {
+                    string tmp(move(other));
+                    swap(*this, tmp);
+                }
+                return *this;
+            }
 
             explicit string(const char* cstr);
-            string& operator=(const char* cstr);
+            string& operator=(const char* cstr) {
+                string tmp(cstr);
+                swap(*this, tmp);
+                return *this;
+            }
+
+            explicit string(char ch);
+            string& operator=(char ch) {
+                string tmp(ch);
+                swap(*this, tmp);
+                return *this;
+            }
 
             ~string();
 
@@ -42,6 +68,11 @@ namespace spargel::base {
             friend string operator+(const string& lhs, const string& rhs);
 
             friend string operator+(const string& s, char ch);
+
+            friend void tag_invoke(tag<swap>, string& lhs, string& rhs) {
+                swap(lhs._length, rhs._length);
+                swap(lhs._data, rhs._data);
+            }
 
             friend void tag_invoke(tag<hash>, HashRun& r, string const& s) {
                 r.combine((u8 const*)s._data, s._length);

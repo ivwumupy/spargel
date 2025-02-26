@@ -1,6 +1,9 @@
 #include <spargel/codec/cursor.h>
 #include <spargel/codec/json.h>
 
+// libm
+#include <math.h>
+
 namespace spargel::codec {
 
     JsonValue::JsonValue(const JsonValue& other) { construct_from(other); }
@@ -97,6 +100,11 @@ namespace spargel::codec {
         static const JsonParseResult SUCCESS = JsonParseResult::success();
         static const JsonParseResult UNEXPECTED_END = JsonParseResult::error("unexpected end");
 
+        base::string char2hex(char ch) {
+            const char hexDigits[] = "123456789abcdef";
+            return base::string(hexDigits[(ch >> 4) & 0xf]) + hexDigits[ch & 0xf];
+        }
+
         struct JsonParseContext {
             Cursor cursor;
         };
@@ -105,6 +113,7 @@ namespace spargel::codec {
         JsonParseResult parseObject(JsonParseContext& ctx, JsonObject& object);
         JsonParseResult parseArray(JsonParseContext& ctx, JsonArray& array);
         JsonParseResult parseString(JsonParseContext& ctx, JsonString& string);
+        JsonParseResult parseNumber(JsonParseContext& ctx, JsonNumber& number);
         JsonParseResult parseBoolean(JsonParseContext& ctx, JsonBoolean& boolean);
         JsonParseResult parseNull(JsonParseContext& ctx);
         JsonParseResult parseMembers(JsonParseContext& ctx, JsonObject& object);
@@ -126,7 +135,7 @@ namespace spargel::codec {
          *   '000D' ws
          *   '0009' ws
          */
-        void eatWhitespace(JsonParseContext& ctx) {
+        void eatWhitespaces(JsonParseContext& ctx) {
             auto& cursor = ctx.cursor;
             while (!cursorIsEnd(cursor)) {
                 char ch = cursorPeek(cursor);
@@ -143,7 +152,7 @@ namespace spargel::codec {
          *   object
          *   array
          *   string
-         *   number (TODO)
+         *   number
          *   "true"
          *   "false"
          *   "null"
@@ -182,8 +191,14 @@ namespace spargel::codec {
                 result = parseNull(ctx);
                 break;
             default:
-                result =
-                    JsonParseResult::error(base::string("unexpected character: '") + ch + '\'');
+                /* number */
+                if ((ch >= '0' && ch <= '9') || ch == '-') {
+                    value = JsonValue(JsonNumber());
+                    result = parseNumber(ctx, value.number);
+                } else {
+                    result =
+                        JsonParseResult::error(base::string("unexpected character: '") + ch + '\'');
+                }
             }
 
             return result;
@@ -199,7 +214,7 @@ namespace spargel::codec {
 
             // '{' ws
             if (!cursorTryEatChar(cursor, '{')) return JsonParseResult::error("expected '{'");
-            eatWhitespace(ctx);
+            eatWhitespaces(ctx);
             if (cursorIsEnd(cursor)) return UNEXPECTED_END;
 
             // '}'
@@ -214,7 +229,7 @@ namespace spargel::codec {
         }
 
         /*
-         * array
+         * array:
          *   '[' ws ']'
          *   '[' elements ']'
          */
@@ -223,7 +238,7 @@ namespace spargel::codec {
 
             // '[' ws
             if (!cursorTryEatChar(cursor, '[')) return JsonParseResult::error("expected '['");
-            eatWhitespace(ctx);
+            eatWhitespaces(ctx);
             if (cursorIsEnd(cursor)) return UNEXPECTED_END;
 
             // ']'
@@ -238,8 +253,27 @@ namespace spargel::codec {
         }
 
         /*
-         * string
+         * string:
          *   '"' characters '"'
+         * character
+         *   '0020' . '10FFFF' - '"' - '\'
+         *   '\' escape
+         *
+         * escape:
+         *   '"'
+         *   '\'
+         *   '/'
+         *   'b'
+         *   'f'
+         *   'n'
+         *   'r'
+         *   't'
+         *   'u' hex hex hex hex
+         *
+         * hex:
+         *   digit
+         *   'A' . 'F'
+         *   'a' . 'f'
          */
         JsonParseResult parseString(JsonParseContext& ctx, JsonString& string) {
             auto& cursor = ctx.cursor;
@@ -248,15 +282,232 @@ namespace spargel::codec {
             if (!cursorTryEatChar(cursor, '"')) return JsonParseResult::error("expected '\"'");
 
             // characters
-            const char* begin = cursor.cur;
+            base::vector<char> chars;
             while (!cursorIsEnd(cursor)) {
-                if (cursorGetChar(cursor) == '"') {
-                    string = base::string_from_range(begin, cursor.cur - 1);
+                char ch = cursorGetChar(cursor);
+                // '"'
+                if (ch == '"') {
+                    string = base::string_from_range(chars.begin(), chars.end());
                     return SUCCESS;
+                }
+
+                // '\'
+                if (ch == '\\') {
+                    if (cursorIsEnd(cursor)) return JsonParseResult::error("unfinished escape");
+
+                    ch = cursorGetChar(cursor);
+                    switch (ch) {
+                    case '\"':
+                    case '\\':
+                    case '/':  // why escape this?
+                        chars.push(ch);
+                        break;
+                    case 'b':
+                        chars.push('\b');
+                        break;
+                    case 'f':
+                        chars.push('\f');
+                        break;
+                    case 'n':
+                        chars.push('\n');
+                        break;
+                    case 'r':
+                        chars.push('\r');
+                        break;
+                    case 't':
+                        chars.push('\t');
+                        break;
+                    case 'u': {
+                        // TODO: unicode
+                        u16 code = 0;
+                        for (int i = 0; i < 4; i++) {
+                            if (cursorIsEnd(cursor))
+                                return JsonParseResult::error("expected a hex digit");
+                            ch = cursorGetChar(cursor);
+                            u8 v;
+                            if ('0' <= ch && ch <= '9')
+                                v = ch - '0';
+                            else if ('A' <= ch && ch <= 'F')
+                                v = ch - 'A' + 0x10;
+                            else if ('a' <= ch && ch <= 'f')
+                                v = ch - 'a' + 0x10;
+                            else
+                                return JsonParseResult::error("bad hex digit");
+                            code = code * 0x10 + v;
+                        }
+                        chars.push(code & 0xff);
+                    } break;
+                    default:
+                        return JsonParseResult::error(
+                            base::string("unexpected escape character: '") + ch + '\'');
+                    }
+                } else if (ch >= 0x20) {
+                    // TODO: unicode
+                    chars.push(ch);
+                } else {
+                    return JsonParseResult::error(base::string("invalid character 0x") +
+                                                  char2hex(ch));
                 }
             }
 
             return UNEXPECTED_END;
+        }
+
+        /*
+         * integer:
+         *   digit
+         *   onenine digits
+         *   '-' digit
+         *   '-' onenine digits
+         *
+         * digits:
+         *   digit
+         *   digit digits
+         *
+         * digit:
+         *   '0'
+         *   onenine
+         *
+         * onenine:
+         *   '1' . '9'
+         */
+        JsonParseResult parseInteger(JsonParseContext& ctx, JsonNumber& number, bool& minus) {
+            auto& cursor = ctx.cursor;
+            if (cursorIsEnd(cursor)) return UNEXPECTED_END;
+
+            minus = false;
+            char ch = cursorPeek(cursor);
+
+            // '-'
+            if (ch == '-') {
+                minus = true;
+                cursorAdvance(cursor);
+                ch = cursorPeek(cursor);
+            }
+
+            // digit
+            if (ch == '0') {
+                cursorAdvance(cursor);
+                return SUCCESS;
+            }
+
+            // digit
+            // onenine digits
+            if (ch > '0' && ch <= '9') {
+                number = (ch - '0');
+                cursorAdvance(cursor);
+                while (!cursorIsEnd(cursor)) {
+                    ch = cursorPeek(cursor);
+                    if (ch >= '0' && ch <= '9') {
+                        number = number * 10 + (ch - '0');
+                        cursorAdvance(cursor);
+                    } else {
+                        break;
+                    }
+                }
+
+                return SUCCESS;
+            }
+
+            return JsonParseResult::error("expected a number");
+        }
+
+        /*
+         * fraction:
+         *   ""
+         *   '.' digits
+         */
+        JsonParseResult parseFraction(JsonParseContext& ctx, JsonNumber& number) {
+            auto& cursor = ctx.cursor;
+            if (cursorIsEnd(cursor)) return SUCCESS;
+
+            // '.'
+            if (cursorPeek(cursor) != '.') return SUCCESS;
+            cursorAdvance(cursor);
+
+            // digits
+            char ch = cursorPeek(cursor);
+            if (!(ch >= '0' && ch <= '9'))
+                return JsonParseResult::error("expected fractional part");
+            JsonNumber x = 0.1;
+            while (!cursorIsEnd(cursor)) {
+                ch = cursorPeek(cursor);
+                if (ch >= '0' && ch <= '9') {
+                    number += x * (ch - '0');
+                    x *= 0.1;
+                    cursorAdvance(cursor);
+                } else {
+                    break;
+                }
+            }
+
+            return SUCCESS;
+        }
+
+        /*
+         * exponent:
+         *   ""
+         *   'E' sign digits
+         *   'e' sign digits
+         *
+         * sign:
+         *   ""
+         *   '+'
+         *   '-'
+         */
+        JsonParseResult parseExponent(JsonParseContext& ctx, JsonNumber& number) {
+            auto& cursor = ctx.cursor;
+
+            if (!cursorTryEatChar(cursor, 'E') && !cursorTryEatChar(cursor, 'e')) return SUCCESS;
+
+            bool minus = false;
+            if (cursorTryEatChar(cursor, '-')) {
+                minus = true;
+            } else if (cursorTryEatChar(cursor, '+')) {
+                // skip
+            }
+
+            // digits
+            char ch = cursorPeek(cursor);
+            if (!(ch >= '0' && ch <= '9'))
+                return JsonParseResult::error("expected exponential part");
+            JsonNumber exponent = 0;
+            while (!cursorIsEnd(cursor)) {
+                ch = cursorPeek(cursor);
+                if (ch >= '0' && ch <= '9') {
+                    exponent = exponent * 10 + (ch - '0');
+                    cursorAdvance(cursor);
+                } else {
+                    break;
+                }
+            }
+
+            if (minus)
+                number *= pow(0.1, exponent);
+            else
+                number *= pow(10, exponent);
+
+            return SUCCESS;
+        }
+
+        /*
+         * number:
+         *   integer fraction exponent
+         */
+        JsonParseResult parseNumber(JsonParseContext& ctx, JsonNumber& number) {
+            bool minus;
+            auto result = parseInteger(ctx, number, minus);
+            if (result.failed()) return result;
+
+            result = parseFraction(ctx, number);
+            if (result.failed()) return result;
+
+            result = parseExponent(ctx, number);
+            if (result.failed()) return result;
+
+            if (minus) number = -number;
+
+            return SUCCESS;
         }
 
         /*
@@ -265,6 +516,7 @@ namespace spargel::codec {
          */
         JsonParseResult parseBoolean(JsonParseContext& ctx, JsonBoolean& boolean) {
             auto& cursor = ctx.cursor;
+
             if (cursorTryEatString(cursor, "true")) {
                 boolean = true;
                 return SUCCESS;
@@ -281,6 +533,7 @@ namespace spargel::codec {
          */
         JsonParseResult parseNull(JsonParseContext& ctx) {
             auto& cursor = ctx.cursor;
+
             if (cursorTryEatString(cursor, "null"))
                 return SUCCESS;
             else
@@ -320,14 +573,14 @@ namespace spargel::codec {
             auto& cursor = ctx.cursor;
 
             // ws
-            eatWhitespace(ctx);
+            eatWhitespaces(ctx);
 
             // string
             auto result = parseString(ctx, key);
             if (result.failed()) return result;
 
             // ws
-            eatWhitespace(ctx);
+            eatWhitespaces(ctx);
 
             // ':'
             if (!cursorTryEatChar(cursor, ':')) return JsonParseResult::error("expected ':'");
@@ -369,14 +622,14 @@ namespace spargel::codec {
          */
         JsonParseResult parseElement(JsonParseContext& ctx, JsonValue& value) {
             // ws
-            eatWhitespace(ctx);
+            eatWhitespaces(ctx);
 
             // value
             auto result = parseValue(ctx, value);
             if (result.failed()) return result;
 
             // ws
-            eatWhitespace(ctx);
+            eatWhitespaces(ctx);
 
             return SUCCESS;
         }

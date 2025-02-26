@@ -4,6 +4,11 @@
 // libc
 #include <string.h>
 
+// libm
+#include <math.h>
+
+#include <cassert>
+
 using namespace spargel;
 using namespace spargel::codec;
 
@@ -21,7 +26,7 @@ namespace {
         case JsonValueType::string:
             return v1.string == v2.string;
         case JsonValueType::number:
-            return v1.number == v2.number;
+            return abs(v1.number - v2.number) < 1e-9;
         case JsonValueType::boolean:
             return v1.boolean == v2.boolean;
         case JsonValueType::null:
@@ -29,6 +34,13 @@ namespace {
         default:
             return false;
         }
+    }
+
+    bool isMemberEqual(JsonObject& object, const JsonString& key, const JsonValue& v) {
+        auto* ptr = object.members.get(key);
+        if (ptr == nullptr) return false;
+
+        return isEqual(*ptr, v);
     }
 
     void test_JsonValue() {
@@ -66,22 +78,70 @@ namespace {
 
         result = parseJson("null", value);
         spargel_assert(!result.failed());
-        spargel_assert(value.type == JsonValueType::null);
+        spargel_assert(isEqual(value, JsonValue()));
 
         result = parseJson("true", value);
         spargel_assert(!result.failed());
-        spargel_assert(value.type == JsonValueType::boolean);
-        spargel_assert(value.boolean == true);
+        spargel_assert(isEqual(value, JsonValue(JsonBoolean(true))));
 
         result = parseJson("false", value);
         spargel_assert(!result.failed());
-        spargel_assert(value.type == JsonValueType::boolean);
-        spargel_assert(value.boolean == false);
+        spargel_assert(isEqual(value, JsonValue(JsonBoolean(false))));
 
         result = parseJson("\"string\"", value);
         spargel_assert(!result.failed());
-        spargel_assert(value.type == JsonValueType::string);
-        spargel_assert(value.string == base::string("string"));
+        spargel_assert(isEqual(value, JsonValue(JsonString("string"))));
+
+        result = parseJson("\" \\\" \\\\ \\/ \\b \\f \\n \\r \\t \"", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonString(" \" \\ / \b \f \n \r \t "))));
+
+        result = parseJson("\"\u0020\u0041\u0061\"", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonString(" Aa"))));
+
+        result = parseJson("\"\n\"", value);
+        spargel_assert(result.failed());
+
+        result = parseJson("0", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonNumber(0))));
+
+        result = parseJson("12345", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonNumber(12345))));
+
+        result = parseJson("-54321", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonNumber(-54321))));
+
+        result = parseJson("123.000456", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonNumber(123.000456))));
+
+        result = parseJson("-654.000321", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonNumber(-654.000321))));
+
+        result = parseJson("0.001", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonNumber(0.001))));
+
+        result = parseJson("-0.001", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonNumber(-0.001))));
+
+        result = parseJson("0.001e4", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonNumber(0.001e4))));
+
+        result = parseJson("-0.001e+3", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonNumber(-0.001e+3))));
+
+        result = parseJson("-0.001E-3", value);
+        spargel_assert(!result.failed());
+        spargel_assert(isEqual(value, JsonValue(JsonNumber(-0.001E-3))));
     }
 
     void test_array() {
@@ -93,14 +153,15 @@ namespace {
         spargel_assert(value.type == JsonValueType::array);
         spargel_assert(value.array.elements.count() == 0);
 
-        result = parseJson("[ true, \"ABC\", null, false ]", value);
+        result = parseJson("[ true, \"ABC\", -123.456, null, false ]", value);
         spargel_assert(!result.failed());
         spargel_assert(value.type == JsonValueType::array);
-        spargel_assert(value.array.elements.count() == 4);
+        spargel_assert(value.array.elements.count() == 5);
         spargel_assert(isEqual(value.array.elements[0], JsonValue(JsonBoolean(true))));
         spargel_assert(isEqual(value.array.elements[1], JsonValue(JsonString("ABC"))));
-        spargel_assert(isEqual(value.array.elements[2], JsonValue()));
-        spargel_assert(isEqual(value.array.elements[3], JsonValue(JsonBoolean(false))));
+        spargel_assert(isEqual(value.array.elements[2], JsonValue(JsonNumber(-123.456))));
+        spargel_assert(isEqual(value.array.elements[3], JsonValue()));
+        spargel_assert(isEqual(value.array.elements[4], JsonValue(JsonBoolean(false))));
     }
 
     void test_object() {
@@ -112,21 +173,74 @@ namespace {
         spargel_assert(value.type == JsonValueType::object);
         spargel_assert(value.object.members.count() == 0);
 
-        result = parseJson("{ \"error\": null, \"name\": \"Alice\", \"good\": true }", value);
+        result = parseJson("{ \"error\": null, \"name\": \"Alice\", \"age\": 20, \"happy\": true }",
+                           value);
+        spargel_assert(!result.failed());
+        spargel_assert(value.type == JsonValueType::object);
+        spargel_assert(value.object.members.count() == 4);
+        spargel_assert(isMemberEqual(value.object, JsonString("error"), JsonValue()));
+        spargel_assert(
+            isMemberEqual(value.object, JsonString("name"), JsonValue(JsonString("Alice"))));
+        spargel_assert(isMemberEqual(value.object, JsonString("age"), JsonValue(JsonNumber(20))));
+        spargel_assert(
+            isMemberEqual(value.object, JsonString("happy"), JsonValue(JsonBoolean(true))));
+    }
+
+    void test_composite() {
+        JsonValue value;
+        JsonParseResult result;
+        const char* str;
+
+        str =
+            "{\n"
+            "   \"model\": \"deepseek-chat\",\n"
+            "   \"choices\": [\n"
+            "       {\n"
+            "           \"index\": 0,\n"
+            "           \"role\": \"assistant\",\n"
+            "           \"logprobs\":null,\n"
+            "           \"finish_reason\":\"stop\"\n"
+            "       }\n"
+            "   ],\n"
+            "   \"usage\": {\n"
+            "       \"prompt_tokens\":11,\n"
+            "       \"completion_tokens\":11,\n"
+            "       \"total_tokens\":22\n"
+            "   }\n"
+            "}";
+        result = parseJson(str, value);
         spargel_assert(!result.failed());
         spargel_assert(value.type == JsonValueType::object);
         spargel_assert(value.object.members.count() == 3);
-        spargel_assert(value.object.members.get(JsonString("error")) != nullptr);
-        spargel_assert(isEqual(*value.object.members.get(JsonString("error")), JsonValue()));
-        spargel_assert(value.object.members.get(JsonString("name")) != nullptr);
-        spargel_assert(
-            isEqual(*value.object.members.get(JsonString("name")), JsonValue(JsonString("Alice"))));
-        spargel_assert(value.object.members.get(JsonString("good")) != nullptr);
-        spargel_assert(
-            isEqual(*value.object.members.get(JsonString("good")), JsonValue(JsonBoolean(true))));
-    }
 
-    void test_composite() {}
+        spargel_assert(isMemberEqual(value.object, JsonString("model"),
+                                     JsonValue(JsonString("deepseek-chat"))));
+
+        auto* ptr1 = value.object.members.get(JsonString("choices"));
+        assert(ptr1 != nullptr);
+        auto& v1 = *ptr1;
+        spargel_assert(v1.type == JsonValueType::array);
+        spargel_assert(v1.array.elements.count() == 1);
+        auto& v11 = v1.array.elements[0];
+        spargel_assert(v11.type == JsonValueType::object);
+        spargel_assert(isMemberEqual(v11.object, JsonString("index"), JsonValue(JsonNumber(0))));
+        spargel_assert(
+            isMemberEqual(v11.object, JsonString("role"), JsonValue(JsonString("assistant"))));
+        spargel_assert(isMemberEqual(v11.object, JsonString("logprobs"), JsonValue()));
+        spargel_assert(
+            isMemberEqual(v11.object, JsonString("finish_reason"), JsonValue(JsonString("stop"))));
+
+        auto* ptr2 = value.object.members.get(JsonString("usage"));
+        spargel_assert(ptr2 != nullptr);
+        auto& v2 = *ptr2;
+        spargel_assert(v2.type == JsonValueType::object);
+        spargel_assert(
+            isMemberEqual(v2.object, JsonString("prompt_tokens"), JsonValue(JsonNumber(11))));
+        spargel_assert(
+            isMemberEqual(v2.object, JsonString("completion_tokens"), JsonValue(JsonNumber(11))));
+        spargel_assert(
+            isMemberEqual(v2.object, JsonString("total_tokens"), JsonValue(JsonNumber(22))));
+    }
 
 }  // namespace
 

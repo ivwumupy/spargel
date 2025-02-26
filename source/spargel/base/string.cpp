@@ -3,6 +3,8 @@
 // libc
 #include <string.h>
 
+#include "allocator.h"
+
 namespace spargel::base {
 
     namespace _string {
@@ -26,21 +28,6 @@ namespace spargel::base {
             }
         }
 
-        string& string::operator=(string const& other) {
-            if (_length > 0) {
-                // deallocate(_data, _length + 1, ALLOCATION_BASE);
-                default_allocator()->free(_data, _length + 1);
-            }
-            _length = other._length;
-            if (_length > 0) {
-                // _data = (char*)allocate(_length + 1, ALLOCATION_BASE);
-                _data = (char*)default_allocator()->allocate(_length + 1);
-                memcpy(_data, other._data, _length);
-                _data[_length] = 0;
-            }
-            return *this;
-        }
-
         string::string(const char* cstr) {
             _length = strlen(cstr);
             if (_length > 0) {
@@ -50,20 +37,15 @@ namespace spargel::base {
             }
         }
 
-        string& string::operator=(const char* cstr) {
-            if (_length > 0) {
-                default_allocator()->free(_data, _length + 1);
-            }
-            if (_length > 0) {
-                _data = (char*)default_allocator()->allocate(_length + 1);
-                memcpy(_data, cstr, _length);
-                _data[_length] = 0;
-            }
-            return *this;
+        string::string(char ch) {
+            _length = 1;
+            _data = (char*)default_allocator()->allocate(2);
+            _data[0] = ch;
+            _data[1] = '\0';
         }
 
         string::~string() {
-            if (_data) {
+            if (_length > 0) {
                 // deallocate(_data, _length + 1, ALLOCATION_BASE);
                 default_allocator()->free(_data, _length + 1);
             }
