@@ -227,8 +227,9 @@ namespace spargel::resource {
 
     base::unique_ptr<ResourceManagerDirectory> makeRelativeManager(
         const base::string& resources_dir) {
-        base::string root_path =
-            util::dirname(base::get_executable_path()) + PATH_SPLIT + base::string(resources_dir);
+        base::string root_path = util::dirname(base::get_executable_path());
+        if (resources_dir.length() > 0)
+            root_path = root_path + PATH_SPLIT + base::string(resources_dir);
         return base::make_unique<ResourceManagerDirectory>(root_path.view());
     }
 

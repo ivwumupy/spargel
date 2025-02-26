@@ -51,7 +51,7 @@ public:
 };
 
 int main() {
-    auto resource_manager = resource::makeRelativeManager();
+    auto resource_manager = resource::makeRelativeManager(base::string("resources"));
 
     auto platform = ui::makePlatform();
     auto window = platform->makeWindow(800, 600);

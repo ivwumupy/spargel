@@ -101,7 +101,7 @@ namespace spargel::codec {
         static const JsonParseResult UNEXPECTED_END = JsonParseResult::error("unexpected end");
 
         base::string char2hex(char ch) {
-            const char hexDigits[] = "123456789abcdef";
+            const char hexDigits[] = "0123456789abcdef";
             return base::string(hexDigits[(ch >> 4) & 0xf]) + hexDigits[ch & 0xf];
         }
 
@@ -143,7 +143,6 @@ namespace spargel::codec {
                     cursorAdvance(cursor);
                 else
                     break;
-                ;
             }
         }
 
@@ -341,8 +340,9 @@ namespace spargel::codec {
                         return JsonParseResult::error(
                             base::string("unexpected escape character: '") + ch + '\'');
                     }
-                } else if (ch >= 0x20) {
+                } else if ((u8)ch >= 0x20) {
                     // TODO: unicode
+                    // no problem for UTF-8
                     chars.push(ch);
                 } else {
                     return JsonParseResult::error(base::string("invalid character 0x") +

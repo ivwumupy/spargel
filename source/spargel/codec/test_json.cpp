@@ -7,8 +7,6 @@
 // libm
 #include <math.h>
 
-#include <cassert>
-
 using namespace spargel;
 using namespace spargel::codec;
 
@@ -217,7 +215,7 @@ namespace {
                                      JsonValue(JsonString("deepseek-chat"))));
 
         auto* ptr1 = value.object.members.get(JsonString("choices"));
-        assert(ptr1 != nullptr);
+        spargel_assert(ptr1 != nullptr);
         auto& v1 = *ptr1;
         spargel_assert(v1.type == JsonValueType::array);
         spargel_assert(v1.array.elements.count() == 1);

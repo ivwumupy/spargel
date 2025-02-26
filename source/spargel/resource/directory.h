@@ -34,6 +34,6 @@ namespace spargel::resource {
     };
 
     base::unique_ptr<ResourceManagerDirectory> makeRelativeManager(
-        const base::string& resources_dir = base::string("resources"));
+        const base::string& resources_dir = base::string());
 
 }  // namespace spargel::resource

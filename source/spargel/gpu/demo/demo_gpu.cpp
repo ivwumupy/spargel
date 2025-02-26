@@ -328,7 +328,7 @@ private:
 
 int main() {
     auto platform = ui::makePlatform();
-    auto resource_manager = resource::makeRelativeManager();
+    auto resource_manager = resource::makeRelativeManager(base::string("resources"));
     auto text_system = platform->createTextSystem();
 
     auto window = platform->makeWindow(500, 500);

@@ -11,7 +11,7 @@ using namespace spargel;
 int main(int argc, char* argv[]) {
     base::CommandLine cmdline(argc, argv);
 
-    auto resource_manager = resource::makeRelativeManager();
+    auto resource_manager = resource::makeRelativeManager(base::string("resources"));
     gpu::DeviceKind backend = gpu::DeviceKind::unknown;
     if (cmdline.hasSwitch("metal")) {
         backend = gpu::DeviceKind::metal;

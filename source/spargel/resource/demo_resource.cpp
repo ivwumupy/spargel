@@ -42,7 +42,7 @@ static void xxd_print(char* data, size_t size) {
 }
 
 int main() {
-    auto resource_manager = resource::makeRelativeManager();
+    auto resource_manager = resource::makeRelativeManager(base::string("resources"));
 
     base::string_view path = "dir/abc.txt";
 
