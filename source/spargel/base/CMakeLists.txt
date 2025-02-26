@@ -109,6 +109,14 @@ spargel_add_executable(
 )
 
 spargel_add_executable(
+    NAME string_test
+    PRIVATE
+        string_test.cpp
+    DEPS
+        base
+)
+
+spargel_add_executable(
     NAME sum_type_test
     PRIVATE
         sum_type_test.cpp

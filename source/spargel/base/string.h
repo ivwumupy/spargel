@@ -178,11 +178,7 @@ namespace spargel::base {
     using _string::string;
     using _string::String;
 
-    string string_from_cstr(char const* str);
-
     string string_from_range(char const* begin, char const* end);
-
-    string string_concat(string const& str1, string const& str2);
 
 }  // namespace spargel::base
 

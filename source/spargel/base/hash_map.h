@@ -25,8 +25,11 @@ namespace spargel::base {
             }
 
             HashMap(HashMap const& other)
-                : _capacity{other._capacity}, _count{other._count},
-                  _status(other._status), _keys(other._capacity, other._alloc), _values(other._capacity, other._alloc),
+                : _capacity{other._capacity},
+                  _count{other._count},
+                  _status(other._status),
+                  _keys(other._capacity, other._alloc),
+                  _values(other._capacity, other._alloc),
                   _alloc{other._alloc} {
                 spargel_assert(_capacity == _status.count());
 
@@ -45,7 +48,14 @@ namespace spargel::base {
                 return *this;
             }
 
-            HashMap(HashMap&& other) : _alloc{other._alloc} { swap(*this, other); }
+            // FIXME:
+            // ArrayStorage does not hava a default constructor
+            HashMap(HashMap&& other)
+                : _keys(ArrayStorage<K>(other._alloc)),
+                  _values(ArrayStorage<T>(other._alloc)),
+                  _alloc{other._alloc} {
+                swap(*this, other);
+            }
             HashMap& operator=(HashMap&& other) {
                 spargel_assert(_alloc == other._alloc);
 
@@ -97,6 +107,9 @@ namespace spargel::base {
             friend void tag_invoke(tag<swap>, HashMap& lhs, HashMap& rhs) {
                 spargel_assert(lhs._alloc == rhs._alloc);
 
+                swap(lhs._capacity, rhs._capacity);
+                swap(lhs._count, rhs._count);
+                swap(lhs._status, rhs._status);
                 swap(lhs._keys, rhs._keys);
                 swap(lhs._values, rhs._values);
             }

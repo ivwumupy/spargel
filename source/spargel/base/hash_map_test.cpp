@@ -3,9 +3,55 @@
 #include <spargel/base/hash_map.h>
 #include <spargel/base/string.h>
 
-#include <cassert>
-
 using namespace spargel;
+
+void test_copy() {
+    base::HashMap<int, int> z1(base::default_allocator());
+    z1.set(2, 100);
+
+    auto z2(z1);
+    spargel_assert(z2.get(2) != nullptr);
+    spargel_assert(*z2.get(2) == 100);
+
+    auto z3 = z2;
+    spargel_assert(z3.get(2) != nullptr);
+    spargel_assert(*z3.get(2) == 100);
+
+    base::HashMap<base::string, base::string> z4(base::default_allocator());
+    z4.set(base::string("name"), base::string("Alice"));
+
+    auto z5(z4);
+    spargel_assert(z5.get(base::string("name")) != nullptr);
+    spargel_assert(*z5.get(base::string("name")) == base::string("Alice"));
+
+    auto z6 = z5;
+    spargel_assert(z6.get(base::string("name")) != nullptr);
+    spargel_assert(*z6.get(base::string("name")) == base::string("Alice"));
+}
+
+void test_move() {
+    base::HashMap<int, int> z1(base::default_allocator());
+    z1.set(2, 100);
+
+    auto z2(base::move(z1));
+    spargel_assert(z2.get(2) != nullptr);
+    spargel_assert(*z2.get(2) == 100);
+
+    auto z3 = base::move(z2);
+    spargel_assert(z3.get(2) != nullptr);
+    spargel_assert(*z3.get(2) == 100);
+
+    base::HashMap<base::string, base::string> z4(base::default_allocator());
+    z4.set(base::string("name"), base::string("Alice"));
+
+    auto z5(base::move(z4));
+    spargel_assert(z5.get(base::string("name")) != nullptr);
+    spargel_assert(*z5.get(base::string("name")) == base::string("Alice"));
+
+    auto z6 = base::move(z5);
+    spargel_assert(z6.get(base::string("name")) != nullptr);
+    spargel_assert(*z6.get(base::string("name")) == base::string("Alice"));
+}
 
 int main() {
     base::HashMap<int, int> x(base::default_allocator());
@@ -40,14 +86,9 @@ int main() {
     spargel_assert(y.count() == 1);
     spargel_assert(*y.get(base::string("name")) == base::string("Alice"));
 
-    // copy
-    x.set(1, 10);
-    auto z = x;
-    assert(z.count() == x.count());
-    assert(z.get(1) != x.get(1));
-    assert(*z.get(1) == *x.get(1));
-    z.set(1, 20);
-    assert(*z.get(1) != *x.get(1));
+    test_copy();
+
+    test_move();
 
     return 0;
 }

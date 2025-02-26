@@ -3,30 +3,27 @@
 
 namespace spargel::codec {
 
-    JsonValue::JsonValue(const JsonValue& other) {
-        this->~JsonValue();
-        type = other.type;
-        switch (other.type) {
-        case JsonValueType::object:
-            object = other.object;
-            break;
-        case JsonValueType::array:
-            array = other.array;
-            break;
-        case JsonValueType::string:
-            string = other.string;
-            break;
-        case JsonValueType::number:
-            number = other.number;
-            break;
-        case JsonValueType::boolean:
-            boolean = other.boolean;
-        case JsonValueType::null:
-            break;
+    JsonValue::JsonValue(const JsonValue& other) { construct_from(other); }
+
+    JsonValue::JsonValue(JsonValue&& other) { move_from(base::move(other)); }
+
+    JsonValue& JsonValue::operator=(const JsonValue& other) {
+        if (this != &other) {
+            destroy();
+            construct_from(other);
         }
+        return *this;
     }
 
-    JsonValue::~JsonValue() {
+    JsonValue& JsonValue::operator=(JsonValue&& other) {
+        if (this != &other) {
+            destroy();
+            move_from(base::move(other));
+        }
+        return *this;
+    }
+
+    void JsonValue::destroy() {
         switch (type) {
         case JsonValueType::object:
             object.~JsonObject();
@@ -37,12 +34,62 @@ namespace spargel::codec {
         case JsonValueType::string:
             string.~JsonString();
             break;
-        // These types do not need to be destructed
         case JsonValueType::number:
+            number.~JsonNumber();
+            break;
         case JsonValueType::boolean:
+            boolean.~JsonBoolean();
+            break;
         case JsonValueType::null:
             break;
         }
+        type = JsonValueType::null;
+    }
+
+    void JsonValue::construct_from(const JsonValue& other) {
+        switch (other.type) {
+        case JsonValueType::object:
+            base::construct_at(&object, other.object);
+            break;
+        case JsonValueType::array:
+            base::construct_at(&array, other.array);
+            break;
+        case JsonValueType::string:
+            base::construct_at(&string, other.string);
+            break;
+        case JsonValueType::number:
+            base::construct_at(&number, other.number);
+            break;
+        case JsonValueType::boolean:
+            base::construct_at(&boolean, other.boolean);
+            break;
+        case JsonValueType::null:
+            break;
+        }
+        type = other.type;
+    }
+
+    void JsonValue::move_from(JsonValue&& other) {
+        switch (other.type) {
+        case JsonValueType::object:
+            base::construct_at(&object, base::move(other.object));
+            break;
+        case JsonValueType::array:
+            base::construct_at(&array, base::move(other.array));
+            break;
+        case JsonValueType::string:
+            base::construct_at(&string, base::move(other.string));
+            break;
+        case JsonValueType::number:
+            base::construct_at(&number, base::move(other.number));
+            break;
+        case JsonValueType::boolean:
+            base::construct_at(&boolean, base::move(other.boolean));
+            break;
+        case JsonValueType::null:
+            break;
+        }
+        type = other.type;
     }
 
     namespace {
@@ -110,31 +157,28 @@ namespace spargel::codec {
             switch (ch) {
             case '{':
                 /* object */
-                value.type = JsonValueType::object;
-                new (&value.object) JsonObject;
+                value = JsonValue(JsonObject());
                 result = parseObject(ctx, value.object);
                 break;
             case '[':
                 /* array */
-                value.type = JsonValueType::array;
-                new (&value.array) JsonArray;
+                value = JsonValue(JsonArray());
                 result = parseArray(ctx, value.array);
                 break;
             case '"':
                 /* string */
-                value.type = JsonValueType::string;
-                new (&value.string) JsonString;
+                value = JsonValue(JsonString());
                 result = parseString(ctx, value.string);
                 break;
             case 't':
             case 'f':
                 /* true/false */
-                value.type = JsonValueType::boolean;
+                value = JsonValue(JsonBoolean());
                 result = parseBoolean(ctx, value.boolean);
                 break;
             case 'n':
                 /* null */
-                value.type = JsonValueType::null;
+                value = JsonValue();
                 result = parseNull(ctx);
                 break;
             default:
@@ -334,7 +378,7 @@ namespace spargel::codec {
             // ws
             eatWhitespace(ctx);
 
-            return JsonParseResult::success();
+            return SUCCESS;
         }
 
     }  // namespace

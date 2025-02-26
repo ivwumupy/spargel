@@ -23,7 +23,9 @@ namespace spargel::base {
             vector(Allocator* alloc = default_allocator()) : _alloc{alloc} {}
 
             vector(vector const& other) : _alloc{other._alloc} {
-                allocate(other.count());
+                usize cnt = other.count();
+                if (cnt == 0) cnt = 1;
+                allocate(cnt);
                 copy_from(other.begin(), other.end());
             }
             vector& operator=(vector const& other) {

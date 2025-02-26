@@ -22,7 +22,7 @@ namespace spargel::base {
             ArrayStorage(Allocator* alloc) : _alloc{alloc} {}
 
             ArrayStorage(usize count, Allocator* alloc) : _count{count}, _alloc{alloc} {
-                _data = static_cast<Byte*>(_alloc->allocate(_count * sizeof(T)));
+                if (count > 0) _data = static_cast<Byte*>(_alloc->allocate(count * sizeof(T)));
             }
 
             ArrayStorage(ArrayStorage const&) = delete;

@@ -21,7 +21,7 @@ namespace spargel::codec {
 
     using JsonBoolean = bool;
 
-    struct JsonValue;
+    class JsonValue;
 
     struct JsonObject {
         base::HashMap<JsonString, JsonValue> members;
@@ -33,7 +33,8 @@ namespace spargel::codec {
         base::vector<JsonValue> elements;
     };
 
-    struct JsonValue {
+    class JsonValue {
+    public:
         JsonValueType type;
         union {
             JsonObject object;
@@ -45,9 +46,34 @@ namespace spargel::codec {
 
         JsonValue() : type(JsonValueType::null) {}
 
+        explicit JsonValue(const JsonObject& object)
+            : type(JsonValueType::object), object(object) {}
+
+        explicit JsonValue(const JsonArray& array) : type(JsonValueType::array), array(array) {}
+
+        explicit JsonValue(const JsonString& string)
+            : type(JsonValueType::string), string(string) {}
+
+        explicit JsonValue(JsonNumber number) : type(JsonValueType::number), number(number) {}
+
+        explicit JsonValue(JsonBoolean boolean) : type(JsonValueType::boolean), boolean(boolean) {}
+
         JsonValue(const JsonValue& other);
 
-        ~JsonValue();
+        JsonValue(JsonValue&& other);
+
+        JsonValue& operator=(const JsonValue& other);
+
+        JsonValue& operator=(JsonValue&& other);
+
+        ~JsonValue() { destroy(); }
+
+    private:
+        void destroy();
+
+        void construct_from(const JsonValue& other);
+
+        void move_from(JsonValue&& other);
     };
 
     class JsonParseResult {
@@ -64,7 +90,7 @@ namespace spargel::codec {
             return error(base::string(msg));
         }
 
-        base::string const& getMessage() const { return _msg; }
+        base::string const& message() const { return _msg; }
 
     private:
         JsonParseResult(bool failed, const base::string& msg) : _failed(failed), _msg(msg) {}

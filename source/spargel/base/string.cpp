@@ -71,10 +71,22 @@ namespace spargel::base {
 
         bool operator==(string const& lhs, string const& rhs) {
             if (lhs._length != rhs._length) return false;
+            if (lhs._length == 0) return true;
             return memcmp(lhs._data, rhs._data, lhs._length) == 0;
         }
 
-        string operator+(const string& lhs, const string& rhs) { return string_concat(lhs, rhs); }
+        string operator+(const string& lhs, const string& rhs) {
+            string str;
+            str._length = lhs._length + rhs._length;
+            if (str._length > 0) {
+                // str._data = (char*)allocate(str._length + 1, ALLOCATION_BASE);
+                str._data = (char*)default_allocator()->allocate(str._length + 1);
+                memcpy(str._data, lhs._data, lhs._length);
+                memcpy(str._data + lhs._length, rhs._data, rhs._length);
+                str._data[str._length] = '\0';
+            }
+            return str;
+        }
 
         string operator+(const string& s, char ch) {
             string str;
@@ -89,28 +101,14 @@ namespace spargel::base {
 
     }  // namespace _string
 
-    string string_from_cstr(char const* str) {
-        usize len = strlen(str);
-        return string_from_range(str, str + len);
-    }
-
     string string_from_range(char const* begin, char const* end) {
         string str;
         str._length = end - begin;
-        str._data = (char*)default_allocator()->allocate(str._length + 1);
-        memcpy(str._data, begin, str._length);
-        str._data[str._length] = 0;
-        return str;
-    }
-
-    string string_concat(string const& str1, string const& str2) {
-        string str;
-        str._length = str1._length + str2._length;
-        // str._data = (char*)allocate(str._length + 1, ALLOCATION_BASE);
-        str._data = (char*)default_allocator()->allocate(str._length + 1);
-        memcpy(str._data, str1._data, str1._length);
-        memcpy(str._data + str1._length, str2._data, str2._length);
-        str._data[str._length] = '\0';
+        if (str._length > 0) {
+            str._data = (char*)default_allocator()->allocate(str._length + 1);
+            memcpy(str._data, begin, str._length);
+            str._data[str._length] = 0;
+        }
         return str;
     }
 

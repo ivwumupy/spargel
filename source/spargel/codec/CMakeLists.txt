@@ -14,6 +14,12 @@ spargel_add_executable(
     DEPS codec
 )
 
+spargel_add_executable(
+    NAME dump_json2
+    PRIVATE dump_json2.cpp
+    DEPS codec
+)
+
 if (FALSE)
 spargel_add_executable(
     NAME ppm_info
