@@ -55,9 +55,11 @@ namespace spargel::codec {
         explicit JsonValue(const JsonString& string)
             : type(JsonValueType::string), string(string) {}
 
-        explicit JsonValue(JsonNumber number) : type(JsonValueType::number), number(number) {}
+        explicit JsonValue(const JsonNumber& number)
+            : type(JsonValueType::number), number(number) {}
 
-        explicit JsonValue(JsonBoolean boolean) : type(JsonValueType::boolean), boolean(boolean) {}
+        explicit JsonValue(const JsonBoolean& boolean)
+            : type(JsonValueType::boolean), boolean(boolean) {}
 
         JsonValue(const JsonValue& other);
 
@@ -83,6 +85,11 @@ namespace spargel::codec {
 
         bool failed() const { return _failed; }
 
+        base::string const& message() const { return _msg; }
+
+        friend JsonParseResult operator+(const JsonParseResult& result1,
+                                         const JsonParseResult& result2);
+
         static JsonParseResult success() { return JsonParseResult(false, base::string()); }
 
         static JsonParseResult error(const base::string& msg) { return JsonParseResult(true, msg); }
@@ -90,8 +97,6 @@ namespace spargel::codec {
         static JsonParseResult error(const char* msg = "failed to parse JSON") {
             return error(base::string(msg));
         }
-
-        base::string const& message() const { return _msg; }
 
     private:
         JsonParseResult(bool failed, const base::string& msg) : _failed(failed), _msg(msg) {}
@@ -110,16 +115,16 @@ namespace spargel::codec {
      * Utils
      */
 
-    JsonObject* getJsonMemberObject(JsonObject& json, const JsonString& key,
-                                    JsonParseResult& result, bool optional = false);
+    const JsonObject* getJsonMemberObject(const JsonObject& json, const JsonString& key,
+                                          JsonParseResult& result, bool optional = false);
 
-    JsonArray* getJsonMemberArray(JsonObject& json, const JsonString& key, JsonParseResult& result,
-                                  bool optional = false);
+    const JsonArray* getJsonMemberArray(const JsonObject& json, const JsonString& key,
+                                        JsonParseResult& result, bool optional = false);
 
-    JsonString* getJsonMemberString(JsonObject& json, const JsonString& key,
-                                    JsonParseResult& result, bool optional = false);
+    const JsonString* getJsonMemberString(const JsonObject& json, const JsonString& key,
+                                          JsonParseResult& result, bool optional = false);
 
-    JsonNumber* getJsonMemberNumber(JsonObject& json, const JsonString& key,
-                                    JsonParseResult& result, bool optional = false);
+    const JsonNumber* getJsonMemberNumber(const JsonObject& json, const JsonString& key,
+                                          JsonParseResult& result, bool optional = false);
 
 }  // namespace spargel::codec

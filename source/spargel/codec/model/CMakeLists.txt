@@ -7,9 +7,9 @@ spargel_add_library(
 )
 
 spargel_add_executable(
-    NAME dump_gltf
+    NAME summary_gltf
     PRIVATE
-        dump_gltf.cpp
+        summary_gltf.cpp
     DEPS
         codec_gltf
 )

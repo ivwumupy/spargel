@@ -74,6 +74,14 @@ namespace spargel::base {
                 return nullptr;
             }
 
+            T const* get(K const& key) const {
+                auto result = findSlot(key);
+                if (result.has_key) {
+                    return &_values[result.index];
+                }
+                return nullptr;
+            }
+
             template <typename... Args>
             void set(K const& key, Args&&... args) {
                 ensureSpace();
@@ -168,7 +176,7 @@ namespace spargel::base {
                 }
             }
 
-            FindResult findSlot(K const& key) {
+            FindResult findSlot(K const& key) const {
                 if (_capacity == 0) {
                     return FindResult(false, 0);
                 }

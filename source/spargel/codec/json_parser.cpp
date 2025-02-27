@@ -95,6 +95,13 @@ namespace spargel::codec {
         type = other.type;
     }
 
+    JsonParseResult operator+(const JsonParseResult& result1, const JsonParseResult& result2) {
+        if (!result1.failed() && !result2.failed())
+            return JsonParseResult::success();
+        else
+            return JsonParseResult::error(result1.message() + " : " + result2.message());
+    }
+
     namespace {
 
         static const JsonParseResult SUCCESS = JsonParseResult::success();

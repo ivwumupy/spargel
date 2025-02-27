@@ -29,8 +29,15 @@ spargel_add_library(
     DEPS base
 )
 
-if (SPARGEL_IS_ANDROID OR SPARGEL_IS_LINUX)
+if (SPARGEL_IS_ANDROID)
     target_link_libraries(base PUBLIC m)
+endif ()
+
+if (SPARGEL_IS_LINUX)
+    target_link_libraries(base PUBLIC
+        m
+        unwind
+        unwind-${CMAKE_SYSTEM_PROCESSOR})
 endif ()
 
 spargel_add_executable(
