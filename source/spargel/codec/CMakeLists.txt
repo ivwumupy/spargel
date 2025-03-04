@@ -32,4 +32,12 @@ spargel_add_executable(
         codec_json
 )
 
+spargel_add_executable(
+    NAME try_codec
+    PRIVATE
+        try_codec.cpp
+    DEPS
+        base
+)
+
 add_subdirectory(model/)
