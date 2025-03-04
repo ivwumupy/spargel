@@ -1,4 +1,3 @@
-#include <spargel/base/assert.h>
 #include <spargel/base/allocator.h>
 #include <spargel/codec/codec.h>
 

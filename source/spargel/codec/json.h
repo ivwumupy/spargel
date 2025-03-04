@@ -4,6 +4,7 @@
 #include <spargel/base/optional.h>
 #include <spargel/base/string.h>
 #include <spargel/base/vector.h>
+#include <spargel/codec/codec.h>
 
 namespace spargel::codec {
 
@@ -34,6 +35,7 @@ namespace spargel::codec {
         base::vector<JsonValue> elements;
     };
 
+    // TODO: change to SumType?
     class JsonValue {
     public:
         JsonValueType type;
@@ -47,19 +49,12 @@ namespace spargel::codec {
 
         JsonValue() : type(JsonValueType::null) {}
 
-        explicit JsonValue(const JsonObject& object)
-            : type(JsonValueType::object), object(object) {}
-
-        explicit JsonValue(const JsonArray& array) : type(JsonValueType::array), array(array) {}
-
-        explicit JsonValue(const JsonString& string)
-            : type(JsonValueType::string), string(string) {}
-
-        explicit JsonValue(const JsonNumber& number)
-            : type(JsonValueType::number), number(number) {}
-
-        explicit JsonValue(const JsonBoolean& boolean)
-            : type(JsonValueType::boolean), boolean(boolean) {}
+        JsonValue(JsonObject&& object) : type(JsonValueType::object), object(base::move(object)) {}
+        JsonValue(JsonArray&& array) : type(JsonValueType::array), array(base::move(array)) {}
+        JsonValue(JsonString&& string) : type(JsonValueType::string), string(base::move(string)) {}
+        JsonValue(JsonNumber&& number) : type(JsonValueType::number), number(base::move(number)) {}
+        JsonValue(JsonBoolean&& boolean)
+            : type(JsonValueType::boolean), boolean(base::move(boolean)) {}
 
         JsonValue(const JsonValue& other);
 
@@ -79,52 +74,33 @@ namespace spargel::codec {
         void move_from(JsonValue&& other);
     };
 
-    class JsonParseResult {
-    public:
-        JsonParseResult() : _failed(false), _msg("") {}
-
-        bool failed() const { return _failed; }
-
-        base::string const& message() const { return _msg; }
-
-        friend JsonParseResult operator+(const JsonParseResult& result1,
-                                         const JsonParseResult& result2);
-
-        static JsonParseResult success() { return JsonParseResult(false, base::string()); }
-
-        static JsonParseResult error(const base::string& msg) { return JsonParseResult(true, msg); }
-
-        static JsonParseResult error(const char* msg = "failed to parse JSON") {
-            return error(base::string(msg));
-        }
-
-    private:
-        JsonParseResult(bool failed, const base::string& msg) : _failed(failed), _msg(msg) {}
-
-        bool _failed;
-        base::string _msg;
-    };
+    class JsonParseError : public CodecError {};
 
     /*
      * Parser
      */
 
-    JsonParseResult parseJson(const char* str, usize length, JsonValue& value);
+    base::Either<JsonValue, JsonParseError> parseJson(const char* str, usize length,
+                                                      JsonValue& value);
 
     /*
      * Utils
      */
 
-    const JsonObject* getJsonMemberObject(const JsonObject& json, const JsonString& key,
-                                          JsonParseResult& result, bool optional = false);
+    base::Either<const JsonObject*, JsonParseError> getJsonMemberObject(const JsonObject& json,
+                                                                        const JsonString& key,
+                                                                        bool optional = false);
 
-    const JsonArray* getJsonMemberArray(const JsonObject& json, const JsonString& key,
-                                        JsonParseResult& result, bool optional = false);
+    base::Either<const JsonArray*, JsonParseError> getJsonMemberArray(const JsonObject& json,
+                                                                      const JsonString& key,
+                                                                      bool optional = false);
 
-    const JsonString* getJsonMemberString(const JsonObject& json, const JsonString& key,
-                                          JsonParseResult& result, bool optional = false);
+    base::Either<const JsonString*, JsonParseError> getJsonMemberString(const JsonObject& json,
+                                                                        const JsonString& key,
+                                                                        bool optional = false);
 
-    const JsonNumber* getJsonMemberNumber(const JsonObject& json, const JsonString& key,
-                                          JsonParseResult& result, bool optional = false);
+    base::Either<const JsonNumber*, JsonParseError> getJsonMemberNumber(const JsonObject& json,
+                                                                        const JsonString& key,
+                                                                        bool optional = false);
 
 }  // namespace spargel::codec

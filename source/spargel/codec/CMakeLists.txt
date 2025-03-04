@@ -7,6 +7,7 @@ spargel_add_library(
         base
 )
 
+if (0)
 spargel_add_library(
     NAME codec_json
     PRIVATE
@@ -15,29 +16,34 @@ spargel_add_library(
     DEPS
         codec
 )
+endif ()
 
+# TEST
+
+spargel_add_executable(
+    NAME test_codec
+    PRIVATE test_codec.cpp
+    DEPS codec
+)
+
+if (0)
 spargel_add_executable(
     NAME test_json
-    PRIVATE
-        test_json.cpp
-    DEPS
-        codec_json
+    PRIVATE test_json.cpp
+    DEPS codec_json
 )
+endif ()
 
+# OTHER
+
+if (0)
 spargel_add_executable(
     NAME dump_json
-    PRIVATE
-        dump_json.cpp
-    DEPS
-        codec_json
+    PRIVATE dump_json.cpp
+    DEPS codec_json
 )
+endif ()
 
-spargel_add_executable(
-    NAME try_codec
-    PRIVATE
-        try_codec.cpp
-    DEPS
-        base
-)
-
+if (0)
 add_subdirectory(model/)
+endif ()
