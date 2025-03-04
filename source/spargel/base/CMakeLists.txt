@@ -40,11 +40,7 @@ if (SPARGEL_IS_LINUX)
         unwind-${CMAKE_SYSTEM_PROCESSOR})
 endif ()
 
-spargel_add_executable(
-    NAME executable_path_demo
-    PRIVATE executable_path_demo.cpp
-    DEPS base
-)
+# DEMO
 
 spargel_add_executable(
     NAME backtrace_demo
@@ -53,8 +49,8 @@ spargel_add_executable(
 )
 
 spargel_add_executable(
-    NAME panic_demo
-    PRIVATE panic_demo.cpp
+    NAME executable_path_demo
+    PRIVATE executable_path_demo.cpp
     DEPS base
 )
 
@@ -65,14 +61,46 @@ spargel_add_executable(
 )
 
 spargel_add_executable(
+    NAME panic_demo
+    PRIVATE panic_demo.cpp
+    DEPS base
+)
+
+spargel_add_executable(
     NAME tag_invoke_demo
     PRIVATE tag_invoke_demo.cpp
     DEPS base
 )
 
+# TEST
+
 spargel_add_executable(
-    NAME vector_test
-    PRIVATE vector_test.cpp
+    NAME array_storage_test
+    PRIVATE array_storage_test.cpp
+    DEPS base
+)
+
+spargel_add_executable(
+    NAME either_test
+    PRIVATE either_test.cpp
+    DEPS base
+)
+
+spargel_add_executable(
+    NAME hash_test
+    PRIVATE hash_test.cpp
+    DEPS base
+)
+
+spargel_add_executable(
+    NAME hash_map_test
+    PRIVATE hash_map_test.cpp
+    DEPS base
+)
+
+spargel_add_executable(
+    NAME inline_array_test
+    PRIVATE inline_array_test.cpp
     DEPS base
 )
 
@@ -83,82 +111,45 @@ spargel_add_executable(
 )
 
 spargel_add_executable(
-    NAME test_demo
-    PRIVATE
-        test_demo.cpp
-    DEPS
-        base
-        test_main
-)
-
-spargel_add_executable(
-    NAME vector_bench
-    PRIVATE
-        vector_bench.cpp
-    DEPS
-        base
-)
-
-spargel_add_executable(
-    NAME hash_test
-    PRIVATE
-        hash_test.cpp
-    DEPS
-        base
-)
-
-spargel_add_executable(
-    NAME tagged_union_test
-    PRIVATE
-        tagged_union_test.cpp
-    DEPS
-        base
+    NAME optional_test
+    PRIVATE optional_test.cpp
+    DEPS base
 )
 
 spargel_add_executable(
     NAME string_test
-    PRIVATE
-        string_test.cpp
-    DEPS
-        base
+    PRIVATE string_test.cpp
+    DEPS base
 )
 
 spargel_add_executable(
     NAME sum_type_test
-    PRIVATE
-        sum_type_test.cpp
-    DEPS
-        base
+    PRIVATE sum_type_test.cpp
+    DEPS base
 )
 
 spargel_add_executable(
-    NAME inline_array_test
-    PRIVATE
-        inline_array_test.cpp
-    DEPS
-        base
+    NAME tagged_union_test
+    PRIVATE tagged_union_test.cpp
+    DEPS base
 )
 
 spargel_add_executable(
-    NAME optional_test
-    PRIVATE
-        optional_test.cpp
-    DEPS
-        base
+    NAME test_demo
+    PRIVATE test_demo.cpp
+    DEPS test_main base
 )
 
 spargel_add_executable(
-    NAME array_storage_test
-    PRIVATE
-        array_storage_test.cpp
-    DEPS
-        base
+    NAME vector_test
+    PRIVATE vector_test.cpp
+    DEPS base
 )
 
+# OTHER
+
 spargel_add_executable(
-    NAME hash_map_test
-    PRIVATE
-        hash_map_test.cpp
-    DEPS
-        base
+    NAME vector_bench
+    PRIVATE vector_bench.cpp
+    DEPS base
 )
