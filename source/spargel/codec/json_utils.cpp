@@ -2,61 +2,75 @@
 
 namespace spargel::codec {
 
-    const static JsonParseResult SUCCESS = JsonParseResult::success();
-
     namespace {
 
-        const JsonValue* getJsonMember(const JsonObject& json, const JsonString& key,
-                                       JsonValueType type, const base::string& type_name,
-                                       JsonParseResult& result, bool optional) {
+        base::Either<const JsonValue*, JsonParseError> getJsonMember(const JsonObject& json,
+                                                                     const JsonString& key,
+                                                                     JsonValueType type,
+                                                                     const base::string& type_name,
+                                                                     bool optional) {
             auto* member = json.members.get(key);
             if (member == nullptr) {
                 if (optional)
-                    result = SUCCESS;
+                    return base::makeLeft<const JsonValue*, JsonParseError>(nullptr);
                 else
-                    result = JsonParseResult::error(base::string("expected member \"") + key + '"');
-
-                return nullptr;
+                    return base::makeRight<const JsonValue*, JsonParseError>(
+                        base::string("expected member \"") + key + '"');
             } else {
                 if (member->type == type) {
-                    result = SUCCESS;
-                    return member;
+                    return base::makeLeft<const JsonValue*, JsonParseError>(member);
                 } else {
-                    result = JsonParseResult::error(base::string("expected \"") + key +
-                                                    "\" to be of type \"" + type_name + '"');
-                    return nullptr;
+                    return base::makeRight<const JsonValue*, JsonParseError>(
+                        base::string("expected \"") + key + "\" to be of type \"" + type_name +
+                        '"');
                 }
             }
         }
 
     }  // namespace
 
-    const JsonObject* getJsonMemberObject(const JsonObject& json, const JsonString& key,
-                                          JsonParseResult& result, bool optional) {
-        auto* member = getJsonMember(json, key, JsonValueType::object, base::string("object"),
-                                     result, optional);
-        return member == nullptr ? nullptr : &member->object;
+    base::Either<const JsonObject*, JsonParseError> getJsonMemberObject(const JsonObject& json,
+                                                                        const JsonString& key,
+                                                                        bool optional) {
+        auto result =
+            getJsonMember(json, key, JsonValueType::object, base::string("object"), optional);
+        if (result.isRight())
+            return base::makeRight<const JsonObject*, JsonParseError>(result.right());
+        else
+            return base::makeLeft<const JsonObject*, JsonParseError>(&result.left()->object);
     }
 
-    const JsonArray* getJsonMemberArray(const JsonObject& json, const JsonString& key,
-                                        JsonParseResult& result, bool optional) {
-        auto* member =
-            getJsonMember(json, key, JsonValueType::array, base::string("array"), result, optional);
-        return member == nullptr ? nullptr : &member->array;
+    base::Either<const JsonArray*, JsonParseError> getJsonMemberArray(const JsonObject& json,
+                                                                      const JsonString& key,
+                                                                      bool optional) {
+        auto result =
+            getJsonMember(json, key, JsonValueType::array, base::string("array"), optional);
+        if (result.isRight())
+            return base::makeRight<const JsonArray*, JsonParseError>(result.right());
+        else
+            return base::makeLeft<const JsonArray*, JsonParseError>(&result.left()->array);
     }
 
-    const JsonString* getJsonMemberString(const JsonObject& json, const JsonString& key,
-                                          JsonParseResult& result, bool optional) {
-        auto* member = getJsonMember(json, key, JsonValueType::string, base::string("string"),
-                                     result, optional);
-        return member == nullptr ? nullptr : &member->string;
+    base::Either<const JsonString*, JsonParseError> getJsonMemberString(const JsonObject& json,
+                                                                        const JsonString& key,
+                                                                        bool optional) {
+        auto result =
+            getJsonMember(json, key, JsonValueType::string, base::string("string"), optional);
+        if (result.isRight())
+            return base::makeRight<const JsonString*, JsonParseError>(result.right());
+        else
+            return base::makeLeft<const JsonString*, JsonParseError>(&result.left()->string);
     }
 
-    const JsonNumber* getJsonMemberNumber(const JsonObject& json, const JsonString& key,
-                                          JsonParseResult& result, bool optional) {
-        auto* member = getJsonMember(json, key, JsonValueType::number, base::string("number"),
-                                     result, optional);
-        return member == nullptr ? nullptr : &member->number;
+    base::Either<const JsonNumber*, JsonParseError> getJsonMemberNumber(const JsonObject& json,
+                                                                        const JsonString& key,
+                                                                        bool optional) {
+        auto result =
+            getJsonMember(json, key, JsonValueType::number, base::string("number"), optional);
+        if (result.isRight())
+            return base::makeRight<const JsonNumber*, JsonParseError>(result.right());
+        else
+            return base::makeLeft<const JsonNumber*, JsonParseError>(&result.left()->number);
     }
 
 }  // namespace spargel::codec

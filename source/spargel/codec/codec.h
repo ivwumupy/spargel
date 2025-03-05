@@ -14,6 +14,8 @@ namespace spargel::codec {
 
         CodecError(const char* message) : _message(message) {}
 
+        const base::string& message() { return _message; }
+
         friend CodecError operator+(const CodecError& error1, const CodecError& error2) {
             return CodecError(error1._message + error2._message);
         }
@@ -31,6 +33,21 @@ namespace spargel::codec {
     concept IsEncodeBackend = requires {
         typename EB::DataType;  /* backend data type */
         typename EB::ErrorType; /* encode error type */
+    } && requires(EB& backend, bool b) {
+        backend.makeBoolean(b);
+        {
+            backend.makeBoolean(b)
+        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+    } && requires(EB& backend, u32 n) {
+        backend.makeU32(n);
+        {
+            backend.makeU32(n)
+        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+    } && requires(EB& backend, i32 n) {
+        backend.makeI32(n);
+        {
+            backend.makeI32(n)
+        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, const base::string& s) {
         backend.makeString(s);
         {
@@ -49,6 +66,16 @@ namespace spargel::codec {
         typename DB::DataType;  /* backend data type */
         typename DB::ErrorType; /* decode error type */
     } && requires(DB& backend, const DB::DataType& data) {
+        backend.getBoolean(data);
+        {
+            backend.getBoolean(data)
+        } -> base::ConvertibleTo<base::Either<bool, typename DB::ErrorType>>;
+
+        backend.getU32(data);
+        { backend.getU32(data) } -> base::ConvertibleTo<base::Either<u32, typename DB::ErrorType>>;
+        backend.getI32(data);
+        { backend.getI32(data) } -> base::ConvertibleTo<base::Either<i32, typename DB::ErrorType>>;
+
         backend.getString(data);
         {
             backend.getString(data)
@@ -70,7 +97,13 @@ namespace spargel::codec {
             using DataType = DummyType;
             using ErrorType = CodecError;
 
+            base::Either<DummyType, CodecError> makeBoolean(bool b);
+
+            base::Either<DummyType, CodecError> makeU32(u32 n);
+            base::Either<DummyType, CodecError> makeI32(i32 n);
+
             base::Either<DummyType, CodecError> makeString(const base::string& s);
+
             base::Either<DummyType, CodecError> makeArray(const base::vector<DummyType>& array);
         };
         static_assert(IsEncodeBackend<DummyEncodeBackend>);
@@ -79,7 +112,13 @@ namespace spargel::codec {
             using DataType = DummyType;
             using ErrorType = CodecError;
 
+            base::Either<bool, CodecError> getBoolean(const DummyType& data);
+
+            base::Either<u32, CodecError> getU32(const DummyType& data);
+            base::Either<i32, CodecError> getI32(const DummyType& data);
+
             base::Either<base::string, CodecError> getString(const DummyType& data);
+
             base::Either<base::vector<DummyType>, CodecError> getArray(const DummyType& data);
         };
         static_assert(IsDecodeBackend<DummyDecodeBackend>);
@@ -114,34 +153,83 @@ namespace spargel::codec {
      * encoding/decoding of basic types
      */
 
-    struct CodecOfString {
+    struct CodecBoolean {
+        using Type = bool;
+
+        template <IsEncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(bool b,
+                                                                                  EB& backend) {
+            return backend.makeBoolean(b);
+        }
+
+        template <IsDecodeBackend DB>
+        static base::Either<bool, typename DB::ErrorType> decode(const typename DB::DataType& data,
+                                                                 DB& backend) {
+            return backend.getBoolean(data);
+        }
+    };
+    static_assert(IsEncoder<CodecBoolean> && IsDecoder<CodecBoolean>);
+
+    struct CodecU32 {
+        using Type = u32;
+
+        template <IsEncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(u32 n,
+                                                                                  EB& backend) {
+            return backend.makeU32(n);
+        }
+
+        template <IsDecodeBackend DB>
+        static base::Either<u32, typename DB::ErrorType> decode(const typename DB::DataType& data,
+                                                                DB& backend) {
+            return backend.getU32(data);
+        }
+    };
+    static_assert(IsEncoder<CodecU32> && IsDecoder<CodecU32>);
+
+    struct CodecI32 {
+        using Type = i32;
+
+        template <IsEncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(i32 n,
+                                                                                  EB& backend) {
+            return backend.makeI32(n);
+        }
+
+        template <IsDecodeBackend DB>
+        static base::Either<i32, typename DB::ErrorType> decode(const typename DB::DataType& data,
+                                                                DB& backend) {
+            return backend.getI32(data);
+        }
+    };
+    static_assert(IsEncoder<CodecI32> && IsDecoder<CodecI32>);
+
+    struct CodecString {
         using Type = base::string;
 
-        template <typename EB>
-            requires IsEncodeBackend<EB>
-        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(const Type& s,
-                                                                                  EB& backend) {
+        template <IsEncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(
+            const base::string& s, EB& backend) {
             return backend.makeString(s);
         }
 
-        template <typename DB>
-            requires IsDecodeBackend<DB>
-        static base::Either<Type, typename DB::ErrorType> decode(const typename DB::DataType& data,
-                                                                 DB& backend) {
+        template <IsDecodeBackend DB>
+        static base::Either<base::string, typename DB::ErrorType> decode(
+            const typename DB::DataType& data, DB& backend) {
             return backend.getString(data);
         }
     };
-    static_assert(IsEncoder<CodecOfString> && IsDecoder<CodecOfString>);
+    static_assert(IsEncoder<CodecString> && IsDecoder<CodecString>);
 
     template <typename Codec>
-    struct ArrayCodecOf {
+    struct CodecArray {
         using ChildType = Codec::Type;
         using Type = base::vector<ChildType>;
 
-        template <typename EB>
-            requires IsEncodeBackend<EB> && IsEncoder<Codec>
-        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(const Type& array,
-                                                                                  EB& backend) {
+        template <IsEncodeBackend EB>
+            requires IsEncoder<Codec>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(
+            const base::vector<ChildType>& array, EB& backend) {
             using DataType = EB::DataType;
             using ErrorType = EB::ErrorType;
 
@@ -156,32 +244,35 @@ namespace spargel::codec {
             return backend.makeArray(base::move(tmp));
         }
 
-        template <typename DB>
-            requires IsDecodeBackend<DB> && IsDecoder<Codec>
-        static base::Either<Type, typename DB::ErrorType> decode(const typename DB::DataType& data,
-                                                                 DB& backend) {
+        template <IsDecodeBackend DB>
+            requires IsDecoder<Codec>
+        static base::Either<base::vector<ChildType>, typename DB::ErrorType> decode(
+            const typename DB::DataType& data, DB& backend) {
             using DataType = DB::DataType;
             using ErrorType = DB::ErrorType;
 
-            base::Either<Type, ErrorType> result_array = backend.getArray(data);
+            base::Either<base::vector<DataType>, ErrorType> result_array = backend.getArray(data);
             if (result_array.isRight())
-                return base::makeRight<Type, ErrorType>(result_array.right());
+                return base::makeRight<base::vector<ChildType>, ErrorType>(result_array.right());
 
-            Type tmp;
+            base::vector<ChildType> tmp;
             for (const auto& item : result_array.left()) {
                 base::Either<ChildType, ErrorType> result =
-                    Codec::template decode<DataType, DB, ErrorType>(item, backend);
-                if (result.isRight()) return base::makeRight<Type, ErrorType>(result.right());
+                    Codec::template decode<DB>(item, backend);
+                if (result.isRight())
+                    return base::makeRight<base::vector<ChildType>, ErrorType>(result.right());
                 tmp.push(base::move(result.left()));
             }
 
-            return base::makeLeft<Type, ErrorType>(base::move(tmp));
+            return base::makeLeft<base::vector<ChildType>, ErrorType>(base::move(tmp));
         }
     };
-    static_assert(IsEncoder<ArrayCodecOf<CodecOfString>>);
-    static_assert(IsDecoder<ArrayCodecOf<CodecOfString>>);
-    static_assert(IsEncoder<ArrayCodecOf<ArrayCodecOf<CodecOfString>>>);
-    static_assert(IsDecoder<ArrayCodecOf<ArrayCodecOf<CodecOfString>>>);
+    static_assert(IsEncoder<CodecArray<CodecI32>>);
+    static_assert(IsEncoder<CodecArray<CodecString>>);
+    static_assert(IsDecoder<CodecArray<CodecI32>>);
+    static_assert(IsDecoder<CodecArray<CodecString>>);
+    static_assert(IsEncoder<CodecArray<CodecArray<CodecI32>>>);
+    static_assert(IsDecoder<CodecArray<CodecArray<CodecString>>>);
 
     /**
      * todo:

@@ -82,15 +82,14 @@ int main(int argc, char* argv[]) {
     fread(data, len, 1, fp);
     fclose(fp);
 
-    JsonValue value;
-    auto result = parseJson(data, len, value);
-    if (result.failed()) {
-        fprintf(stderr, "Failed to parse JSON: %s\n", result.message().data());
+    auto result = parseJson(data, len);
+    if (result.isRight()) {
+        fprintf(stderr, "Failed to parse JSON: %s\n", result.right().message().data());
         base::default_allocator()->free(data, len);
         return 1;
     }
 
-    dumpValue(value);
+    dumpValue(result.left());
     putchar('\n');
 
     base::default_allocator()->free(data, len);

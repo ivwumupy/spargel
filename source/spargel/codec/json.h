@@ -35,7 +35,7 @@ namespace spargel::codec {
         base::vector<JsonValue> elements;
     };
 
-    // TODO: change to SumType?
+    // TODO: change to tagged union?
     class JsonValue {
     public:
         JsonValueType type;
@@ -80,8 +80,7 @@ namespace spargel::codec {
      * Parser
      */
 
-    base::Either<JsonValue, JsonParseError> parseJson(const char* str, usize length,
-                                                      JsonValue& value);
+    base::Either<JsonValue, JsonParseError> parseJson(const char* str, usize length);
 
     /*
      * Utils
@@ -102,5 +101,45 @@ namespace spargel::codec {
     base::Either<const JsonNumber*, JsonParseError> getJsonMemberNumber(const JsonObject& json,
                                                                         const JsonString& key,
                                                                         bool optional = false);
+
+    /*
+     * Codec Backend
+     */
+
+    class JsonEncodeError : public CodecError {};
+    class JsonDecodeError : public CodecError {};
+
+    // JSON encode backend
+    struct EncodeBackedJson {
+        using DataType = JsonValue;
+        using ErrorType = JsonEncodeError;
+
+        base::Either<JsonValue, JsonEncodeError> makeBoolean(bool b);
+
+        base::Either<JsonValue, JsonEncodeError> makeU32(u32 n);
+        base::Either<JsonValue, JsonEncodeError> makeI32(i32 n);
+
+        base::Either<JsonValue, JsonEncodeError> makeString(const base::string& s);
+
+        base::Either<JsonValue, JsonEncodeError> makeArray(const base::vector<JsonValue>& array);
+    };
+    static_assert(IsEncodeBackend<EncodeBackedJson>);
+
+    // JSON decode backend
+    struct DecodeBackendJson {
+        using DataType = JsonValue;
+        using ErrorType = JsonDecodeError;
+
+        base::Either<bool, JsonDecodeError> getBoolean(const JsonValue& data);
+
+        base::Either<u32, JsonDecodeError> getU32(const JsonValue& data);
+        base::Either<i32, JsonDecodeError> getI32(const JsonValue& data);
+
+        base::Either<base::string, JsonDecodeError> getString(const JsonValue& data);
+
+        base::Either<base::vector<JsonValue>, JsonDecodeError> getArray(const JsonValue& data);
+    };
+
+    static_assert(IsDecodeBackend<DecodeBackendJson>);
 
 }  // namespace spargel::codec

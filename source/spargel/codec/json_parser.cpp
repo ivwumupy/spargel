@@ -97,8 +97,6 @@ namespace spargel::codec {
 
     namespace {
 
-        struct Success {};
-        const auto SUCCESS = Success{};
         const auto UNEXPECTED_END = JsonParseError("unexpected end");
 
         base::string char2hex(char ch) {
@@ -134,10 +132,10 @@ namespace spargel::codec {
         base::Either<JsonString, JsonParseError> parseString(JsonParseContext& ctx);
         base::Either<JsonNumber, JsonParseError> parseNumber(JsonParseContext& ctx);
         base::Either<JsonBoolean, JsonParseError> parseBoolean(JsonParseContext& ctx);
-        base::Either<Success, JsonParseError> parseNull(JsonParseContext& ctx);
+        base::Either<JsonValue, JsonParseError> parseNull(JsonParseContext& ctx);
         base::Either<JsonObject, JsonParseError> parseMembers(JsonParseContext& ctx);
-        base::Either<Success, JsonParseError> parseMember(JsonParseContext& ctx, JsonString& key,
-                                                          JsonValue& value);
+        base::Either<JsonValue, JsonParseError> parseMember(JsonParseContext& ctx, JsonString& key,
+                                                            JsonValue& value);
         base::Either<JsonArray, JsonParseError> parseElements(JsonParseContext& ctx);
         base::Either<JsonValue, JsonParseError> parseElement(JsonParseContext& ctx);
 
@@ -200,7 +198,7 @@ namespace spargel::codec {
                 /* null */
                 auto result = parseNull(ctx);
                 if (result.isRight())
-                    return base::makeRight<JsonValue, JsonParseError>(result.right());
+                    return result;
                 else
                     return base::makeLeft<JsonValue, JsonParseError>();
             }
@@ -220,8 +218,7 @@ namespace spargel::codec {
          *   '{' ws '}'
          *   '{' members '}'
          */
-        base::Either<JsonObject, JsonParseError> parseObject(JsonParseContext& ctx,
-                                                             JsonObject& object) {
+        base::Either<JsonObject, JsonParseError> parseObject(JsonParseContext& ctx) {
             auto& cursor = ctx.cursor;
 
             // '{' ws
@@ -249,23 +246,26 @@ namespace spargel::codec {
          *   '[' ws ']'
          *   '[' elements ']'
          */
-        JsonParseResult parseArray(JsonParseContext& ctx, JsonArray& array) {
+        base::Either<JsonArray, JsonParseError> parseArray(JsonParseContext& ctx) {
             auto& cursor = ctx.cursor;
 
             // '[' ws
-            if (!cursorTryEatChar(cursor, '[')) return JsonParseResult::error("expected '['");
+            if (!cursorTryEatChar(cursor, '['))
+                return base::makeRight<JsonArray, JsonParseError>("expected '['");
             eatWhitespaces(ctx);
-            if (cursorIsEnd(cursor)) return UNEXPECTED_END;
+            if (cursorIsEnd(cursor))
+                return base::makeRight<JsonArray, JsonParseError>(UNEXPECTED_END);
 
             // ']'
-            if (cursorTryEatChar(cursor, ']')) return SUCCESS;
+            if (cursorTryEatChar(cursor, ']')) return base::makeLeft<JsonArray, JsonParseError>();
 
             // elements ']'
-            auto result = parseElements(ctx, array);
-            if (result.failed()) return result;
-            if (!cursorTryEatChar(cursor, ']')) return JsonParseResult::error("expected ']'");
+            auto result = parseElements(ctx);
+            if (result.isRight()) return result;
+            if (!cursorTryEatChar(cursor, ']'))
+                return base::makeRight<JsonArray, JsonParseError>("expected ']'");
 
-            return SUCCESS;
+            return result;
         }
 
         /*
@@ -291,11 +291,12 @@ namespace spargel::codec {
          *   'A' . 'F'
          *   'a' . 'f'
          */
-        JsonParseResult parseString(JsonParseContext& ctx, JsonString& string) {
+        base::Either<JsonString, JsonParseError> parseString(JsonParseContext& ctx) {
             auto& cursor = ctx.cursor;
 
             // '"'
-            if (!cursorTryEatChar(cursor, '"')) return JsonParseResult::error("expected '\"'");
+            if (!cursorTryEatChar(cursor, '"'))
+                return base::makeRight<JsonString, JsonParseError>("expected '\"'");
 
             // characters
             base::vector<char> chars;
@@ -303,13 +304,14 @@ namespace spargel::codec {
                 char ch = cursorGetChar(cursor);
                 // '"'
                 if (ch == '"') {
-                    string = base::string_from_range(chars.begin(), chars.end());
-                    return SUCCESS;
+                    return base::makeLeft<JsonString, JsonParseError>(
+                        base::string_from_range(chars.begin(), chars.end()));
                 }
 
                 // '\'
                 if (ch == '\\') {
-                    if (cursorIsEnd(cursor)) return JsonParseResult::error("unfinished escape");
+                    if (cursorIsEnd(cursor))
+                        return base::makeRight<JsonString, JsonParseError>("unfinished escape");
 
                     ch = cursorGetChar(cursor);
                     switch (ch) {
@@ -338,7 +340,8 @@ namespace spargel::codec {
                         u16 code = 0;
                         for (int i = 0; i < 4; i++) {
                             if (cursorIsEnd(cursor))
-                                return JsonParseResult::error("expected a hex digit");
+                                return base::makeRight<JsonString, JsonParseError>(
+                                    "expected a hex digit");
                             ch = cursorGetChar(cursor);
                             u8 v;
                             if ('0' <= ch && ch <= '9')
@@ -348,13 +351,13 @@ namespace spargel::codec {
                             else if ('a' <= ch && ch <= 'f')
                                 v = ch - 'a' + 0xa;
                             else
-                                return JsonParseResult::error("bad hex digit");
+                                return base::makeRight<JsonString, JsonParseError>("bad hex digit");
                             code = code * 0x10 + v;
                         }
                         appendUtf8(chars, code);
                     } break;
                     default:
-                        return JsonParseResult::error(
+                        return base::makeRight<JsonString, JsonParseError>(
                             base::string("unexpected escape character: '") + ch + '\'');
                     }
                 } else if ((u8)ch >= 0x20) {
@@ -362,12 +365,12 @@ namespace spargel::codec {
                     // no problem for UTF-8
                     chars.push(ch);
                 } else {
-                    return JsonParseResult::error(base::string("invalid character 0x") +
-                                                  char2hex(ch));
+                    return base::makeRight<JsonString, JsonParseError>(
+                        base::string("invalid character 0x") + char2hex(ch));
                 }
             }
 
-            return UNEXPECTED_END;
+            return base::makeRight<JsonString, JsonParseError>(UNEXPECTED_END);
         }
 
         /*
@@ -388,9 +391,11 @@ namespace spargel::codec {
          * onenine:
          *   '1' . '9'
          */
-        JsonParseResult parseInteger(JsonParseContext& ctx, JsonNumber& number, bool& minus) {
+        base::Either<JsonValue, JsonParseError> parseInteger(JsonParseContext& ctx,
+                                                             JsonNumber& number, bool& minus) {
             auto& cursor = ctx.cursor;
-            if (cursorIsEnd(cursor)) return UNEXPECTED_END;
+            if (cursorIsEnd(cursor))
+                return base::makeRight<JsonValue, JsonParseError>(UNEXPECTED_END);
 
             minus = false;
             char ch = cursorPeek(cursor);
@@ -405,7 +410,7 @@ namespace spargel::codec {
             // digit
             if (ch == '0') {
                 cursorAdvance(cursor);
-                return SUCCESS;
+                return base::makeLeft<JsonValue, JsonParseError>();
             }
 
             // digit
@@ -423,10 +428,10 @@ namespace spargel::codec {
                     }
                 }
 
-                return SUCCESS;
+                return base::makeLeft<JsonValue, JsonParseError>();
             }
 
-            return JsonParseResult::error("expected a number");
+            return base::makeRight<JsonValue, JsonParseError>("expected a number");
         }
 
         /*
@@ -434,18 +439,19 @@ namespace spargel::codec {
          *   ""
          *   '.' digits
          */
-        JsonParseResult parseFraction(JsonParseContext& ctx, JsonNumber& number) {
+        base::Either<JsonValue, JsonParseError> parseFraction(JsonParseContext& ctx,
+                                                              JsonNumber& number) {
             auto& cursor = ctx.cursor;
-            if (cursorIsEnd(cursor)) return SUCCESS;
+            if (cursorIsEnd(cursor)) return base::makeLeft<JsonValue, JsonParseError>();
 
             // '.'
-            if (cursorPeek(cursor) != '.') return SUCCESS;
+            if (cursorPeek(cursor) != '.') return base::makeLeft<JsonValue, JsonParseError>();
             cursorAdvance(cursor);
 
             // digits
             char ch = cursorPeek(cursor);
             if (!('0' <= ch && ch <= '9'))
-                return JsonParseResult::error("expected fractional part");
+                return base::makeRight<JsonValue, JsonParseError>("expected fractional part");
             JsonNumber x = 0.1;
             while (!cursorIsEnd(cursor)) {
                 ch = cursorPeek(cursor);
@@ -458,7 +464,7 @@ namespace spargel::codec {
                 }
             }
 
-            return SUCCESS;
+            return base::makeLeft<JsonValue, JsonParseError>();
         }
 
         /*
@@ -472,10 +478,12 @@ namespace spargel::codec {
          *   '+'
          *   '-'
          */
-        JsonParseResult parseExponent(JsonParseContext& ctx, JsonNumber& number) {
+        base::Either<JsonValue, JsonParseError> parseExponent(JsonParseContext& ctx,
+                                                              JsonNumber& number) {
             auto& cursor = ctx.cursor;
 
-            if (!cursorTryEatChar(cursor, 'E') && !cursorTryEatChar(cursor, 'e')) return SUCCESS;
+            if (!cursorTryEatChar(cursor, 'E') && !cursorTryEatChar(cursor, 'e'))
+                return base::makeLeft<JsonValue, JsonParseError>();
 
             bool minus = false;
             if (cursorTryEatChar(cursor, '-')) {
@@ -487,7 +495,7 @@ namespace spargel::codec {
             // digits
             char ch = cursorPeek(cursor);
             if (!('0' <= ch && ch <= '9'))
-                return JsonParseResult::error("expected exponential part");
+                return base::makeRight<JsonValue, JsonParseError>("expected exponential part");
             JsonNumber exponent = 0;
             while (!cursorIsEnd(cursor)) {
                 ch = cursorPeek(cursor);
@@ -504,57 +512,60 @@ namespace spargel::codec {
             else
                 number *= pow(10, exponent);
 
-            return SUCCESS;
+            return base::makeLeft<JsonValue, JsonParseError>();
         }
 
         /*
          * number:
          *   integer fraction exponent
          */
-        JsonParseResult parseNumber(JsonParseContext& ctx, JsonNumber& number) {
+        base::Either<JsonNumber, JsonParseError> parseNumber(JsonParseContext& ctx) {
+            JsonNumber number(0);
             bool minus;
             auto result = parseInteger(ctx, number, minus);
-            if (result.failed()) return result;
+            if (result.isRight())
+                return base::makeRight<JsonNumber, JsonParseError>(result.right());
 
             result = parseFraction(ctx, number);
-            if (result.failed()) return result;
+            if (result.isRight())
+                return base::makeRight<JsonNumber, JsonParseError>(result.right());
 
             result = parseExponent(ctx, number);
-            if (result.failed()) return result;
+            if (result.isRight())
+                return base::makeRight<JsonNumber, JsonParseError>(result.right());
 
             if (minus) number = -number;
 
-            return SUCCESS;
+            return base::makeLeft<JsonNumber, JsonParseError>(base::move(number));
         }
 
         /*
          *   "true"
          *   "false"
          */
-        JsonParseResult parseBoolean(JsonParseContext& ctx, JsonBoolean& boolean) {
+        base::Either<JsonBoolean, JsonParseError> parseBoolean(JsonParseContext& ctx) {
             auto& cursor = ctx.cursor;
 
             if (cursorTryEatString(cursor, "true")) {
-                boolean = true;
-                return SUCCESS;
+                return base::makeLeft<JsonBoolean, JsonParseError>(true);
             } else if (cursorTryEatString(cursor, "false")) {
-                boolean = false;
-                return SUCCESS;
+                return base::makeLeft<JsonBoolean, JsonParseError>(false);
             } else {
-                return JsonParseResult::error("expected \"true\" or \"false\"");
+                return base::makeRight<JsonBoolean, JsonParseError>(
+                    "expected \"true\" or \"false\"");
             }
         }
 
         /*
          *   "null"
          */
-        JsonParseResult parseNull(JsonParseContext& ctx) {
+        base::Either<JsonValue, JsonParseError> parseNull(JsonParseContext& ctx) {
             auto& cursor = ctx.cursor;
 
             if (cursorTryEatString(cursor, "null"))
-                return SUCCESS;
+                return base::makeLeft<JsonValue, JsonParseError>();
             else
-                return JsonParseResult::error("expected \"null\"");
+                return base::makeRight<JsonValue, JsonParseError>("expected \"null\"");
         }
 
         /*
@@ -562,51 +573,58 @@ namespace spargel::codec {
          *   member
          *   member ',' members
          */
-        JsonParseResult parseMembers(JsonParseContext& ctx, JsonObject& object) {
+        base::Either<JsonObject, JsonParseError> parseMembers(JsonParseContext& ctx) {
             auto& cursor = ctx.cursor;
 
-            JsonParseResult result;
+            JsonObject object;
+            auto result = base::makeLeft<JsonValue, JsonParseError>();
             while (!cursorIsEnd(cursor)) {
                 // member
                 JsonString key;
                 JsonValue value;
                 result = parseMember(ctx, key, value);
-                if (result.failed()) return result;
+                if (result.isRight())
+                    return base::makeRight<JsonObject, JsonParseError>(result.right());
 
                 object.members.set(base::move(key), base::move(value));
 
                 // ','
-                if (!cursorTryEatChar(cursor, ',')) return SUCCESS;
+                if (!cursorTryEatChar(cursor, ','))
+                    return base::makeLeft<JsonObject, JsonParseError>(base::move(object));
             }
 
-            return UNEXPECTED_END;
+            return base::makeRight<JsonObject, JsonParseError>(UNEXPECTED_END);
         }
 
         /*
          * member:
          *   ws string ws ':' element
          */
-        JsonParseResult parseMember(JsonParseContext& ctx, JsonString& key, JsonValue& value) {
+        base::Either<JsonValue, JsonParseError> parseMember(JsonParseContext& ctx, JsonString& key,
+                                                            JsonValue& value) {
             auto& cursor = ctx.cursor;
 
             // ws
             eatWhitespaces(ctx);
 
             // string
-            auto result = parseString(ctx, key);
-            if (result.failed()) return result;
+            auto result_key = parseString(ctx);
+            if (result_key.isRight()) return result_key;
+            key = result_key.left();
 
             // ws
             eatWhitespaces(ctx);
 
             // ':'
-            if (!cursorTryEatChar(cursor, ':')) return JsonParseResult::error("expected ':'");
+            if (!cursorTryEatChar(cursor, ':'))
+                return base::makeRight<JsonValue, JsonParseError>("expected ':'");
 
             // element
-            result = parseElement(ctx, value);
-            if (result.failed()) return result;
+            auto result_value = parseElement(ctx);
+            if (result_value.isRight()) return result_value;
+            value = result_value.left();
 
-            return SUCCESS;
+            return base::makeLeft<JsonValue, JsonParseError>();
         }
 
         /*
@@ -614,50 +632,52 @@ namespace spargel::codec {
          *   element
          *   element ',' elements
          */
-        JsonParseResult parseElements(JsonParseContext& ctx, JsonArray& array) {
+        base::Either<JsonArray, JsonParseError> parseElements(JsonParseContext& ctx) {
             auto& cursor = ctx.cursor;
 
-            JsonParseResult result;
+            JsonArray array;
+            auto result = base::makeLeft<JsonValue, JsonParseError>();
             while (!cursorIsEnd(cursor)) {
                 // element
-                JsonValue value;
-                result = parseElement(ctx, value);
-                if (result.failed()) return result;
+                result = parseElement(ctx);
+                if (result.isRight())
+                    return base::makeRight<JsonArray, JsonParseError>(result.right());
 
-                array.elements.push(base::move(value));
+                array.elements.push(base::move(result.left()));
 
                 // ','
-                if (!cursorTryEatChar(cursor, ',')) return SUCCESS;
+                if (!cursorTryEatChar(cursor, ','))
+                    return base::makeLeft<JsonArray, JsonParseError>(base::move(array));
             }
 
-            return UNEXPECTED_END;
+            return base::makeRight<JsonArray, JsonParseError>(UNEXPECTED_END);
         }
 
         /*
          * element:
          *   ws value ws
          */
-        JsonParseResult parseElement(JsonParseContext& ctx, JsonValue& value) {
+        base::Either<JsonValue, JsonParseError> parseElement(JsonParseContext& ctx) {
             // ws
             eatWhitespaces(ctx);
 
             // value
-            auto result = parseValue(ctx, value);
-            if (result.failed()) return result;
+            auto result = parseValue(ctx);
+            if (result.isRight()) return result;
 
             // ws
             eatWhitespaces(ctx);
 
-            return SUCCESS;
+            return result;
         }
 
     }  // namespace
 
-    JsonParseResult parseJson(const char* str, usize length, JsonValue& value) {
+    base::Either<JsonValue, JsonParseError> parseJson(const char* str, usize length) {
         JsonParseContext ctx;
         ctx.cursor.cur = str;
         ctx.cursor.end = str + length;
-        return parseElement(ctx, value);
+        return parseElement(ctx);
     }
 
 }  // namespace spargel::codec
