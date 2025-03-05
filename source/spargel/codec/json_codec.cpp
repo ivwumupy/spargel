@@ -3,27 +3,6 @@
 
 namespace spargel::codec {
 
-    base::Either<JsonValue, JsonEncodeError> EncodeBackedJson::makeBoolean(bool b) {
-        return base::makeLeft<JsonBoolean, JsonEncodeError>(b);
-    }
-
-    base::Either<JsonValue, JsonEncodeError> EncodeBackedJson::makeU32(u32 n) {
-        return base::makeLeft<JsonNumber, JsonEncodeError>(n);
-    }
-
-    base::Either<JsonValue, JsonEncodeError> EncodeBackedJson::makeI32(i32 n) {
-        return base::makeLeft<JsonNumber, JsonEncodeError>(n);
-    }
-
-    base::Either<JsonValue, JsonEncodeError> EncodeBackedJson::makeString(const base::string& s) {
-        return base::makeLeft<JsonString, JsonEncodeError>(s);
-    }
-
-    base::Either<JsonValue, JsonEncodeError> EncodeBackedJson::makeArray(
-        const base::vector<JsonValue>& array) {
-        return base::makeLeft<JsonArray, JsonEncodeError>(array);
-    }
-
     base::Either<bool, JsonDecodeError> DecodeBackendJson::getBoolean(const JsonValue& data) {
         if (data.type == JsonValueType::boolean)
             return base::makeLeft<bool, JsonDecodeError>(data.boolean);

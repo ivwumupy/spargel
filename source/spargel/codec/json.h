@@ -114,16 +114,25 @@ namespace spargel::codec {
         using DataType = JsonValue;
         using ErrorType = JsonEncodeError;
 
-        base::Either<JsonValue, JsonEncodeError> makeBoolean(bool b);
+        base::Either<JsonValue, JsonEncodeError> makeBoolean(bool b) {
+            return base::makeLeft<JsonBoolean, JsonEncodeError>(b);
+        }
 
-        base::Either<JsonValue, JsonEncodeError> makeU32(u32 n);
-        base::Either<JsonValue, JsonEncodeError> makeI32(i32 n);
+        base::Either<JsonValue, JsonEncodeError> makeU32(u32 n) {
+            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+        }
+        base::Either<JsonValue, JsonEncodeError> makeI32(i32 n) {
+            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+        }
 
-        base::Either<JsonValue, JsonEncodeError> makeString(const base::string& s);
+        base::Either<JsonValue, JsonEncodeError> makeString(const base::string& s) {
+            return base::makeLeft<JsonString, JsonEncodeError>(s);
+        }
 
-        base::Either<JsonValue, JsonEncodeError> makeArray(const base::vector<JsonValue>& array);
+        base::Either<JsonValue, JsonEncodeError> makeArray(const base::vector<JsonValue>& array) {
+            return base::makeLeft<JsonArray, JsonEncodeError>(array);
+        }
     };
-    static_assert(IsEncodeBackend<EncodeBackedJson>);
 
     // JSON decode backend
     struct DecodeBackendJson {
@@ -139,7 +148,5 @@ namespace spargel::codec {
 
         base::Either<base::vector<JsonValue>, JsonDecodeError> getArray(const JsonValue& data);
     };
-
-    static_assert(IsDecodeBackend<DecodeBackendJson>);
 
 }  // namespace spargel::codec
