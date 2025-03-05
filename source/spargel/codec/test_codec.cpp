@@ -1,3 +1,5 @@
+#include <spargel/base/check.h>
+#include <spargel/base/test.h>
 #include <spargel/codec/codec.h>
 
 using namespace spargel;
@@ -54,22 +56,22 @@ namespace {
 
 }  // namespace
 
-void test_encode_primitive() {
+TEST(Codec_Encode_Primitive) {
     EncodeBackendTest encoder;
     auto result = base::makeRight<TestData, CodecError>("");
 
     result = CodecBoolean::encode(encoder, true);
-    spargel_assert(result.isLeft() && result.left().value == 1);
+    spargel_check(result.isLeft() && result.left().value == 1);
     result = CodecBoolean::encode(encoder, false);
-    spargel_assert(result.isLeft() && result.left().value == 0);
+    spargel_check(result.isLeft() && result.left().value == 0);
 
     result = CodecU32::encode(encoder, 123);
-    spargel_assert(result.isLeft() && result.left().value == 123);
+    spargel_check(result.isLeft() && result.left().value == 123);
     result = CodecI32::encode(encoder, -321);
-    spargel_assert(result.isLeft() && result.left().value == -321);
+    spargel_check(result.isLeft() && result.left().value == -321);
 
     result = CodecString::encode(encoder, base::string("ABC"));
-    spargel_assert(result.isLeft() && result.left().value == 3);
+    spargel_check(result.isLeft() && result.left().value == 3);
 
     {
         base::vector<base::string> v;
@@ -77,7 +79,7 @@ void test_encode_primitive() {
         v.push("BC");
         v.push("DEF");
         result = CodecArray<CodecString>::encode(encoder, base::move(v));
-        spargel_assert(result.isLeft() && result.left().value == 1 + 2 + 3);
+        spargel_check(result.isLeft() && result.left().value == 1 + 2 + 3);
     }
     {
         base::vector<base::vector<i32>> v;
@@ -90,8 +92,6 @@ void test_encode_primitive() {
         v2.push(-4);
         v.push(base::move(v2));
         result = CodecArray<CodecArray<CodecI32>>::encode(encoder, base::move(v));
-        spargel_assert(result.isLeft() && result.left().value == (1 + -2) + (3 + -4));
+        spargel_check(result.isLeft() && result.left().value == (1 + -2) + (3 + -4));
     }
 }
-
-int main() { return 0; }

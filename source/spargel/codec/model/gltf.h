@@ -173,35 +173,8 @@ namespace spargel::codec::model {
         Optional<vector<GlTFScene>> scenes;
     };
 
-    class GlTFParseResult {
-    public:
-        GlTFParseResult() : _failed(false), _msg("") {}
+    class GlTFDecodeError : public CodecError {};
 
-        explicit GlTFParseResult(const JsonParseResult& jsonResult)
-            : _failed(jsonResult.failed()), _msg(jsonResult.message()) {}
-
-        bool failed() const { return _failed; }
-
-        base::string const& message() const { return _msg; }
-
-        friend GlTFParseResult operator+(const GlTFParseResult& result1,
-                                         const GlTFParseResult& result2);
-
-        static GlTFParseResult success() { return GlTFParseResult(false, base::string()); }
-
-        static GlTFParseResult error(const base::string& msg) { return GlTFParseResult(true, msg); }
-
-        static GlTFParseResult error(const char* msg = "failed to parse glTF") {
-            return error(base::string(msg));
-        }
-
-    private:
-        GlTFParseResult(bool failed, const base::string& msg) : _failed(failed), _msg(msg) {}
-
-        bool _failed;
-        base::string _msg;
-    };
-
-    GlTFParseResult parseGlTF(const JsonValue& json, GlTF& gltf);
+    base::Either<GlTF, GlTFDecodeError> parseGlTF(const JsonValue& json);
 
 }  // namespace spargel::codec::model

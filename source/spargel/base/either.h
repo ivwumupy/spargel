@@ -36,37 +36,37 @@ namespace spargel::base {
             R& right() { return _value.template getValue<1>(); }
             const R& right() const { return _value.template getValue<1>(); }
 
-            template <typename G, typename D, typename... Arg>
-            friend Either<G, D> makeLeft(Arg&&... args);
+            template <typename G, typename D, typename... Args>
+            friend Either<G, D> makeLeft(Args&&... args);
 
-            template <typename G, typename D, typename... Arg>
-            friend Either<G, D> makeRight(Arg&&... args);
+            template <typename G, typename D, typename... Args>
+            friend Either<G, D> makeRight(Args&&... args);
 
         private:
             template <bool>
             struct LeftTag {};
 
-            template <typename... Arg>
-            Either(LeftTag<true>, Arg&&... args)
-                : _value(Type::template make<0>(forward<Arg>(args)...)) {}
+            template <typename... Args>
+            Either(LeftTag<true>, Args&&... args)
+                : _value(Type::template make<0>(forward<Args>(args)...)) {}
 
-            template <typename... Arg>
-            Either(LeftTag<false>, Arg&&... args)
-                : _value(Type::template make<1>(forward<Arg>(args)...)) {}
+            template <typename... Args>
+            Either(LeftTag<false>, Args&&... args)
+                : _value(Type::template make<1>(forward<Args>(args)...)) {}
 
             Type _value;
         };
 
-        template <typename L, typename R, typename... Arg>
-        Either<L, R> makeLeft(Arg&&... args) {
+        template <typename L, typename R, typename... Args>
+        Either<L, R> makeLeft(Args&&... args) {
             return Either<L, R>(typename Either<L, R>::template LeftTag<true>{},
-                                forward<Arg>(args)...);
+                                forward<Args>(args)...);
         }
 
-        template <typename L, typename R, typename... Arg>
-        Either<L, R> makeRight(Arg&&... args) {
+        template <typename L, typename R, typename... Args>
+        Either<L, R> makeRight(Args&&... args) {
             return Either<L, R>(typename Either<L, R>::template LeftTag<false>{},
-                                forward<Arg>(args)...);
+                                forward<Args>(args)...);
         }
 
     }  // namespace _either

@@ -226,7 +226,7 @@ namespace spargel::codec {
             EB& backend, const Type& array) {
             base::vector<typename EB::DataType> tmp;
             for (const auto& item : array) {
-                auto result = Codec::template encode(backend, item);
+                auto result = Codec::template encode<EB>(backend, item);
                 if (result.isRight()) return result;
                 tmp.push(base::move(result.left()));
             }

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <spargel/base/assert.h>
+#include <spargel/base/check.h>
+#include <spargel/base/test.h>
 #include <spargel/codec/json.h>
 
 // libc

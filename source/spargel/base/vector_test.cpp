@@ -3,7 +3,7 @@
 #include <spargel/base/test.h>
 #include <spargel/base/vector.h>
 
-using spargel::base::vector;
+using namespace spargel::base;
 
 TEST(Vector_Basic) {
     vector<int> v1;

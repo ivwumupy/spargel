@@ -4,24 +4,24 @@
 #include <spargel/base/meta.h>
 #include <spargel/base/test.h>
 
-using namespace spargel;
+using namespace spargel::base;
 
 TEST(ArrayStorage_DefaultConstructor) {
-    base::ArrayStorage<int> y(nullptr);
+    ArrayStorage<int> y(nullptr);
     spargel_check(y.getCount() == 0);
     spargel_check(y.getAllocator() == nullptr);
 }
 
 TEST(ArrayStorage_ConstructByCapacity) {
-    base::ArrayStorage<int> x(10, base::default_allocator());
+    ArrayStorage<int> x(10, default_allocator());
     spargel_check(x.getCount() == 10);
-    spargel_check(x.getAllocator() == base::default_allocator());
+    spargel_check(x.getAllocator() == default_allocator());
 }
 
 TEST(ArrayStorage_MoveConstructor) {
-    base::ArrayStorage<int> x(10, base::default_allocator());
-    base::ArrayStorage<int> z(base::move(x));
+    ArrayStorage<int> x(10, default_allocator());
+    ArrayStorage<int> z(move(x));
     spargel_check(x.getCount() == 0);
     spargel_check(z.getCount() == 10);
-    spargel_check(z.getAllocator() == base::default_allocator());
+    spargel_check(z.getAllocator() == default_allocator());
 }

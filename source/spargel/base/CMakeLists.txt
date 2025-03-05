@@ -82,7 +82,6 @@ spargel_add_executable(
         base
         test_main
 )
-
 add_test(
     NAME array_storage_test
     COMMAND array_storage_test
@@ -101,6 +100,18 @@ add_test(
 )
 
 spargel_add_executable(
+    NAME functional_test
+    PRIVATE functional_test.cpp
+    DEPS
+        base
+        test_main
+)
+add_test(
+    NAME functional_test
+    COMMAND functional_test
+)
+
+spargel_add_executable(
     NAME hash_test
     PRIVATE
         hash_test.cpp
@@ -108,7 +119,6 @@ spargel_add_executable(
         base
         test_main
 )
-
 add_test(
     NAME hash_test
     COMMAND hash_test
@@ -137,7 +147,6 @@ add_test(
     NAME inline_array_test
     COMMAND inline_array_test
 )
-
 
 spargel_add_executable(
     NAME meta_test
@@ -187,7 +196,6 @@ add_test(
     COMMAND sum_type_test
 )
 
-
 spargel_add_executable(
     NAME tagged_union_test
     PRIVATE tagged_union_test.cpp
@@ -200,7 +208,6 @@ add_test(
     COMMAND tagged_union_test
 )
 
-
 spargel_add_executable(
     NAME test_demo
     PRIVATE
@@ -209,7 +216,6 @@ spargel_add_executable(
         base
         test_main
 )
-
 add_test(
     NAME test_test
     COMMAND test_demo
@@ -226,5 +232,3 @@ add_test(
     NAME vector_test
     COMMAND vector_test
 )
-
-

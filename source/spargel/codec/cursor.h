@@ -4,11 +4,6 @@
 
 namespace spargel::codec {
 
-    struct cursor {
-        char const* cur;
-        char const* end;
-    };
-
     struct Cursor {
         const char* cur;
         const char* end;
