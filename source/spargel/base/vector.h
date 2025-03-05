@@ -17,6 +17,13 @@ namespace spargel::base {
 
     namespace __vector {
 
+        /// TODO:
+        ///     - Implement iterators (with generation checking).
+        ///
+        /// Questions:
+        ///     - Do iterators remain valid when the vector is moved?
+        ///       => No.
+        ///
         template <typename T>
         class vector {
         public:
