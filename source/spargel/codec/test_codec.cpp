@@ -7,19 +7,25 @@ using namespace spargel::codec;
 
 namespace {
 
-    static_assert(Encoder<CodecBoolean> && Decoder<CodecBoolean>);
-    static_assert(Encoder<CodecU32> && Decoder<CodecU32>);
-    static_assert(Encoder<CodecI32> && Decoder<CodecI32>);
-    static_assert(Encoder<CodecString> && Decoder<CodecString>);
+    static_assert(EncoderDecoder<CodecBoolean>);
+    static_assert(EncoderDecoder<CodecU32>);
+    static_assert(EncoderDecoder<CodecI32>);
+    static_assert(EncoderDecoder<CodecString>);
 
-    static_assert(Encoder<CodecArray<CodecI32>>);
-    static_assert(Encoder<CodecArray<CodecString>>);
-    static_assert(Decoder<CodecArray<CodecI32>>);
-    static_assert(Decoder<CodecArray<CodecString>>);
-    static_assert(Encoder<CodecArray<CodecArray<CodecString>>>);
-    static_assert(Decoder<CodecArray<CodecArray<CodecI32>>>);
-    static_assert(Encoder<CodecArray<CodecArray<CodecArray<CodecI32>>>>);
-    static_assert(Decoder<CodecArray<CodecArray<CodecArray<CodecString>>>>);
+    static_assert(EncoderDecoder<CodecArray<CodecI32>>);
+    static_assert(EncoderDecoder<CodecArray<CodecString>>);
+    static_assert(EncoderDecoder<CodecArray<CodecArray<CodecI32>>>);
+    static_assert(EncoderDecoder<CodecArray<CodecArray<CodecString>>>);
+    static_assert(EncoderDecoder<CodecArray<CodecArray<CodecArray<CodecI32>>>>);
+    static_assert(EncoderDecoder<CodecArray<CodecArray<CodecArray<CodecString>>>>);
+
+    static_assert(EncoderDecoder<CodecCheck<CodecI32, [](i32 a) { return a < 0; }>>);
+
+    static_assert(EncoderDecoder<CodecGreaterThan<CodecI32, 0>>);
+    static_assert(EncoderDecoder<CodecGreaterEqual<CodecI32, 0>>);
+    static_assert(EncoderDecoder<CodecLessThan<CodecI32, 0>>);
+    static_assert(EncoderDecoder<CodecLessEqual<CodecI32, 0>>);
+    static_assert(EncoderDecoder<CodecInRange<CodecI32, 0, 100>>);
 
     struct TestData {
         int value;

@@ -33,6 +33,9 @@ TEST(Optional_Basic) {
     spargel_check(!y.hasValue());
     spargel_check(x.value() == 2);
 
+    x = nullopt;
+    spargel_check(!x.hasValue());
+
     Optional<Foo> f = makeOptional<Foo>(123);
     Optional<Foo> g = f;
     Optional<Foo> h = move(f);

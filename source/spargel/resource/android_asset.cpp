@@ -28,6 +28,6 @@ namespace spargel::resource {
         AAsset* asset = AAssetManager_open(_asset_manager, id.path().data(), AASSET_MODE_BUFFER);
         return asset ? base::makeOptional<base::unique_ptr<ResourceAndroidAsset>>(
                            base::make_unique<ResourceAndroidAsset>(asset))
-                     : base::Optional<base::unique_ptr<Resource>>();
+                     : base::nullopt;
     }
 }  // namespace spargel::resource

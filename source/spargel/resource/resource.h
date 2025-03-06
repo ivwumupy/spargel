@@ -68,7 +68,7 @@ namespace spargel::resource {
         bool has(const ResourceId& id) override { return false; }
 
         base::Optional<base::unique_ptr<Resource>> open(const ResourceId& id) override {
-            return base::Optional<base::unique_ptr<Resource>>();
+            return base::nullopt;
         }
     };
 }  // namespace spargel::resource

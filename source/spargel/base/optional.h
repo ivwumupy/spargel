@@ -10,6 +10,10 @@ namespace spargel::base {
 
     namespace _optional {
 
+        struct nullopt_t {};
+
+        inline constexpr nullopt_t nullopt;
+
         template <typename T>
         class Optional {
         public:
@@ -27,6 +31,8 @@ namespace spargel::base {
                     construct_at(getPtr(), base::move(other.value()));
                 }
             }
+
+            Optional(const nullopt_t& other) {}
 
             Optional(Optional const& other) : _status{other._status} {
                 if (other.hasValue()) {
@@ -107,7 +113,10 @@ namespace spargel::base {
 
     }  // namespace _optional
 
-    using _optional::makeOptional;
+    using _optional::nullopt;
+
     using _optional::Optional;
+
+    using _optional::makeOptional;
 
 }  // namespace spargel::base

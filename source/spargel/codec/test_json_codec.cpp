@@ -28,7 +28,7 @@ struct Student {
                 EncodeMapEntry::Optional<CodecString>("nickname", student.nickname),
                 EncodeMapEntry::Normal<CodecU32>("age", student.age),
                 EncodeMapEntry::Normal<CodecBoolean>("happy", student.happy),
-                EncodeMapEntry::Normal<CodecArray<CodecU32>>("scores", student.scores));
+                EncodeMapEntry::Normal<CodecArray<CodecInRange<CodecU32, 0, 100>>>("scores", student.scores));
             // clang-format on
         }
 
@@ -43,11 +43,13 @@ struct Student {
                 DecodeMapEntry::Optional<CodecString>("nickname"),
                 DecodeMapEntry::Required<CodecU32>("age"),
                 DecodeMapEntry::Required<CodecBoolean>("happy"),
-                DecodeMapEntry::Required<CodecArray<CodecU32>>("scores"));
+                DecodeMapEntry::Required<CodecArray<CodecInRange<CodecU32, 0, 100>>>("scores"));
             // clang-format on
         }
     };
 };
+
+static_assert(Encoder<Student::Codec> && Decoder<Student::Codec>);
 
 TEST(JSON_Codec_Encode_Primitive) {
     EncodeBackedJson backend;
@@ -189,8 +191,10 @@ TEST(JSON_Codec_Decode_Array) {
     {
         auto result_json = parseJson("[123, 456, 789]");
         spargel_check(result_json.isLeft());
+
         auto result = CodecArray<CodecU32>::decode(backend, base::move(result_json.left()));
         spargel_check(result.isLeft());
+
         auto& array = result.left();
         spargel_check(array.count() == 3);
         spargel_check(array[0] == 123);
@@ -200,9 +204,11 @@ TEST(JSON_Codec_Decode_Array) {
     {
         auto result_json = parseJson("[[\"ABC\", \"123\"], [\"XYZ\", \"789\"]]");
         spargel_check(result_json.isLeft());
+
         auto result =
             CodecArray<CodecArray<CodecString>>::decode(backend, base::move(result_json.left()));
         spargel_check(result.isLeft());
+
         auto& array = result.left();
         spargel_check(array[0][0] == base::string("ABC"));
         spargel_check(array[0][1] == base::string("123"));

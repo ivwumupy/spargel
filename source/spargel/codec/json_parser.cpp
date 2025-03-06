@@ -107,6 +107,7 @@ namespace spargel::codec {
         using base::makeOptional;
         using base::makeRight;
         using base::move;
+        using base::nullopt;
 
         const auto UNEXPECTED_END = JsonParseError("unexpected end");
 
@@ -418,7 +419,7 @@ namespace spargel::codec {
             // digit
             if (ch == '0') {
                 cursorAdvance(cursor);
-                return Optional<JsonParseError>();
+                return nullopt;
             }
 
             // digit
@@ -436,7 +437,7 @@ namespace spargel::codec {
                     }
                 }
 
-                return Optional<JsonParseError>();
+                return nullopt;
             }
 
             return makeOptional<JsonParseError>("expected a number");
@@ -449,10 +450,10 @@ namespace spargel::codec {
          */
         Optional<JsonParseError> parseFraction(JsonParseContext& ctx, JsonNumber& number) {
             auto& cursor = ctx.cursor;
-            if (cursorIsEnd(cursor)) return Optional<JsonParseError>();
+            if (cursorIsEnd(cursor)) return nullopt;
 
             // '.'
-            if (cursorPeek(cursor) != '.') return Optional<JsonParseError>();
+            if (cursorPeek(cursor) != '.') return nullopt;
             cursorAdvance(cursor);
 
             // digits
@@ -471,7 +472,7 @@ namespace spargel::codec {
                 }
             }
 
-            return Optional<JsonParseError>();
+            return nullopt;
         }
 
         /*
@@ -488,8 +489,7 @@ namespace spargel::codec {
         Optional<JsonParseError> parseExponent(JsonParseContext& ctx, JsonNumber& number) {
             auto& cursor = ctx.cursor;
 
-            if (!cursorTryEatChar(cursor, 'E') && !cursorTryEatChar(cursor, 'e'))
-                return Optional<JsonParseError>();
+            if (!cursorTryEatChar(cursor, 'E') && !cursorTryEatChar(cursor, 'e')) return nullopt;
 
             bool minus = false;
             if (cursorTryEatChar(cursor, '-')) {
@@ -518,7 +518,7 @@ namespace spargel::codec {
             else
                 number *= pow(10, exponent);
 
-            return Optional<JsonParseError>();
+            return nullopt;
         }
 
         /*
@@ -568,7 +568,7 @@ namespace spargel::codec {
             auto& cursor = ctx.cursor;
 
             if (cursorTryEatString(cursor, "null"))
-                return Optional<JsonParseError>();
+                return nullopt;
             else
                 return makeOptional<JsonParseError>("expected \"null\"");
         }
@@ -628,7 +628,7 @@ namespace spargel::codec {
                 return makeOptional<JsonParseError>(move(result_value.right()));
             value = result_value.left();
 
-            return Optional<JsonParseError>();
+            return nullopt;
         }
 
         /*

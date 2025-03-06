@@ -26,6 +26,14 @@ namespace spargel::codec {
 
         const base::string& message() { return _message; }
 
+        friend CodecError operator+(const CodecError& error, const base::string_view& str) {
+            return CodecError(error._message + str);
+        }
+
+        friend CodecError operator+(const CodecError& error, char ch) {
+            return CodecError(error._message + ch);
+        }
+
         friend CodecError operator+(const CodecError& error1, const CodecError& error2) {
             return CodecError(error1._message + error2._message);
         }
@@ -186,113 +194,8 @@ namespace spargel::codec {
         } -> base::ConvertibleTo<base::Either<typename D::Type, DecodeBackendDummy::ErrorType>>;
     };
 
-    /*
-     * codecs of basic types
-     */
-
-    struct CodecBoolean {
-        using Type = bool;
-
-        template <EncodeBackend EB>
-        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                                  bool b) {
-            return backend.makeBoolean(b);
-        }
-
-        template <DecodeBackend DB>
-        static base::Either<bool, typename DB::ErrorType> decode(
-            DB& backend, const typename DB::DataType& data) {
-            return backend.getBoolean(data);
-        }
-    };
-
-    struct CodecU32 {
-        using Type = u32;
-
-        template <EncodeBackend EB>
-        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                                  u32 n) {
-            return backend.makeU32(n);
-        }
-
-        template <DecodeBackend DB>
-        static base::Either<u32, typename DB::ErrorType> decode(DB& backend,
-                                                                const typename DB::DataType& data) {
-            return backend.getU32(data);
-        }
-    };
-
-    struct CodecI32 {
-        using Type = i32;
-
-        template <EncodeBackend EB>
-        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                                  i32 n) {
-            return backend.makeI32(n);
-        }
-
-        template <DecodeBackend DB>
-        static base::Either<i32, typename DB::ErrorType> decode(DB& backend,
-                                                                const typename DB::DataType& data) {
-            return backend.getI32(data);
-        }
-    };
-
-    struct CodecString {
-        using Type = base::string;
-
-        template <EncodeBackend EB>
-        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-            EB& backend, const base::string& s) {
-            return backend.makeString(s);
-        }
-
-        template <DecodeBackend DB>
-        static base::Either<base::string, typename DB::ErrorType> decode(
-            DB& backend, const typename DB::DataType& data) {
-            return backend.getString(data);
-        }
-    };
-
     template <typename Codec>
-    struct CodecArray {
-        using ChildType = Codec::Type;
-        using Type = base::vector<ChildType>;
-
-        template <EncodeBackend EB>
-            requires Encoder<Codec>
-        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-            EB& backend, const Type& array) {
-            base::vector<typename EB::DataType> tmp;
-            for (const auto& item : array) {
-                auto result = Codec::template encode<EB>(backend, item);
-                if (result.isRight()) return result;
-                tmp.push(base::move(result.left()));
-            }
-
-            return backend.makeArray(base::move(tmp));
-        }
-
-        template <DecodeBackend DB>
-            requires Decoder<Codec>
-        static base::Either<Type, typename DB::ErrorType> decode(
-            DB& backend, const typename DB::DataType& data) {
-            using ErrorType = DB::ErrorType;
-
-            auto result_array = backend.getArray(data);
-            if (result_array.isRight())
-                return base::makeRight<Type, ErrorType>(result_array.right());
-
-            Type tmp;
-            for (const auto& item : result_array.left()) {
-                auto result = Codec::template decode<DB>(backend, item);
-                if (result.isRight()) return base::makeRight<Type, ErrorType>(result.right());
-                tmp.push(base::move(result.left()));
-            }
-
-            return base::makeLeft<Type, ErrorType>(base::move(tmp));
-        }
-    };
+    concept EncoderDecoder = Encoder<Codec> && Decoder<Codec>;
 
     /*
      * utils for encoding maps
@@ -330,7 +233,7 @@ namespace spargel::codec {
         template <EncodeBackend EB>
         base::Optional<typename EB::ErrorType> encodeToMap(
             base::HashMap<base::string, typename EB::DataType>& map, EB& backend) {
-            return base::Optional<typename EB::ErrorType>();
+            return base::nullopt;
         }
 
         // encode one normal entry
@@ -471,7 +374,7 @@ namespace spargel::codec {
                                                     base::move(decode_result.left()))),
                                     backend, data, base::forward<Entries>(entries)...);
             } else {
-                return decodeMap<R>(curry(func, base::Optional<typename D::Type>()), backend, data,
+                return decodeMap<R>(curry(func, base::nullopt), backend, data,
                                     base::forward<Entries>(entries)...);
             }
         }
@@ -505,41 +408,186 @@ namespace spargel::codec {
 
     using __decode_map::decodeMap;
 
-    /**
-     * todo:
-     *  - bmp
-     *  - png
-     *  - openexr
-     *  - ptex
+    /*
+     * codecs of basic types
      */
 
-    /* this is a hack */
-    struct color4 {
-        u8 b;
-        u8 g;
-        u8 r;
-        u8 a;
+    struct CodecBoolean {
+        using Type = bool;
+
+        template <EncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
+                                                                                  bool b) {
+            return backend.makeBoolean(b);
+        }
+
+        template <DecodeBackend DB>
+        static base::Either<bool, typename DB::ErrorType> decode(
+            DB& backend, const typename DB::DataType& data) {
+            return backend.getBoolean(data);
+        }
     };
 
-    struct image {
-        int width;
-        int height;
-        struct color4* pixels;
+    struct CodecU32 {
+        using Type = u32;
+
+        template <EncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
+                                                                                  u32 n) {
+            return backend.makeU32(n);
+        }
+
+        template <DecodeBackend DB>
+        static base::Either<u32, typename DB::ErrorType> decode(DB& backend,
+                                                                const typename DB::DataType& data) {
+            return backend.getU32(data);
+        }
     };
 
-    void destroy_image(struct image image);
+    struct CodecI32 {
+        using Type = i32;
 
-    enum decode_result {
-        DECODE_SUCCESS,
-        /* todo: better error codes */
-        DECODE_FAILED,
+        template <EncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
+                                                                                  i32 n) {
+            return backend.makeI32(n);
+        }
+
+        template <DecodeBackend DB>
+        static base::Either<i32, typename DB::ErrorType> decode(DB& backend,
+                                                                const typename DB::DataType& data) {
+            return backend.getI32(data);
+        }
     };
 
-    /**
-     * @brief ppm loader
+    struct CodecString {
+        using Type = base::string;
+
+        template <EncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(
+            EB& backend, const base::string& s) {
+            return backend.makeString(s);
+        }
+
+        template <DecodeBackend DB>
+        static base::Either<base::string, typename DB::ErrorType> decode(
+            DB& backend, const typename DB::DataType& data) {
+            return backend.getString(data);
+        }
+    };
+
+    /*
+     * useful codecs
      */
-    int load_ppm_image(char const* path, struct image* image);
 
-    void destroy_image(struct image const* image);
+    /*
+     * Codec of an array of some type
+     *
+     * CodecArray<Codec> encodes/decodes an array, whose elements are encoded/decoded using
+     * Codec.
+     */
+    template <typename Codec>
+        requires Encoder<Codec> || Decoder<Codec>
+    struct CodecArray {
+        using ChildType = Codec::Type;
+        using Type = base::vector<ChildType>;
+
+        template <EncodeBackend EB>
+            requires Encoder<Codec>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(
+            EB& backend, const Type& array) {
+            base::vector<typename EB::DataType> tmp;
+            for (const auto& item : array) {
+                auto result = Codec::template encode<EB>(backend, item);
+                if (result.isRight()) return result;
+                tmp.push(base::move(result.left()));
+            }
+
+            return backend.makeArray(base::move(tmp));
+        }
+
+        template <DecodeBackend DB>
+            requires Decoder<Codec>
+        static base::Either<Type, typename DB::ErrorType> decode(
+            DB& backend, const typename DB::DataType& data) {
+            using ErrorType = DB::ErrorType;
+
+            auto result_array = backend.getArray(data);
+            if (result_array.isRight())
+                return base::makeRight<Type, ErrorType>(result_array.right());
+
+            Type tmp;
+            for (const auto& item : result_array.left()) {
+                auto result = Codec::template decode<DB>(backend, item);
+                if (result.isRight()) return base::makeRight<Type, ErrorType>(result.right());
+                tmp.push(base::move(result.left()));
+            }
+
+            return base::makeLeft<Type, ErrorType>(base::move(tmp));
+        }
+    };
+
+    template <typename F, typename E>
+    concept CheckFunctionFor =
+        (Encoder<E> || Decoder<E>) && requires(const F& func, const E::Type& v) {
+            func(v);
+            { func(v) } -> base::SameAs<bool>;
+        };
+
+    /*
+     * middleware codec that checks if the value to be encoded/decoded value meets certain condition
+     */
+    template <typename Codec, auto check_func>
+        requires(Encoder<Codec> || Decoder<Codec>) && CheckFunctionFor<decltype(check_func), Codec>
+    struct CodecCheck {
+        using Type = Codec::Type;
+
+        template <EncodeBackend EB>
+            requires Encoder<Codec>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(
+            EB& backend, const Type& object) {
+            if (check_func(object)) {
+                return Codec::template encode<EB>(backend, object);
+            } else {
+                return base::makeRight<typename EB::DataType, typename EB::ErrorType>(
+                    "value to be encoded failed the condition check");
+            }
+        }
+
+        template <DecodeBackend DB>
+            requires Decoder<Codec>
+        static base::Either<Type, typename DB::ErrorType> decode(
+            DB& backend, const typename DB::DataType& data) {
+            auto result = Codec::template decode<DB>(backend, data);
+            if (result.isLeft()) {
+                if (check_func(result.left())) {
+                    return result;
+                } else {
+                    return base::makeRight<Type, typename DB::ErrorType>(
+                        "decoded value failed the condition check");
+                }
+            } else {
+                return result;
+            }
+        }
+    };
+
+    template <typename Codec, Codec::Type v>
+    // some compilers (e.g. GCC) will fail if they see '>' here
+    using CodecGreaterThan = CodecCheck<Codec, [](const Codec::Type& a) { return !(a <= v); }>;
+
+    template <typename Codec, Codec::Type v>
+    using CodecGreaterEqual = CodecCheck<Codec, [](const Codec::Type& a) { return !(a < v); }>;
+
+    template <typename Codec, Codec::Type v>
+    using CodecLessThan = CodecCheck<Codec, [](const Codec::Type& a) { return a < v; }>;
+
+    template <typename Codec, Codec::Type v>
+    using CodecLessEqual = CodecCheck<Codec, [](const Codec::Type& a) { return a <= v; }>;
+
+    template <typename Codec, Codec::Type min, Codec::Type max>
+        requires(min <= max)
+    using CodecInRange =
+        CodecCheck<Codec, [](const Codec::Type& a) { return a >= min && a <= max; }>;
 
 }  // namespace spargel::codec

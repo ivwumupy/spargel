@@ -54,7 +54,7 @@ namespace spargel::codec {
         const JsonValue& data, const base::string& key) {
         if (data.type == JsonValueType::object) {
             auto* ptr = data.object.members.get(key);
-            auto optional = base::Optional<JsonValue>();
+            base::Optional<JsonValue> optional = base::nullopt;
             if (ptr != nullptr) optional = base::makeOptional<JsonValue>(*ptr);
             return base::makeLeft<base::Optional<JsonValue>, JsonDecodeError>(base::move(optional));
         } else {

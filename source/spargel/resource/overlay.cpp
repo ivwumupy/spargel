@@ -16,7 +16,7 @@ namespace spargel::resource {
                 if (resource.hasValue()) return resource;
             }
         }
-        return base::Optional<base::unique_ptr<Resource>>();
+        return base::nullopt;
     }
 
 }  // namespace spargel::resource
