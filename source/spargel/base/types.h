@@ -25,14 +25,19 @@ using i64 = int64_t;
 
 using nullptr_t = decltype(nullptr);
 
-// TODO
-#if !(SPARGEL_IS_MSVC || SPARGEL_IS_EMSCRIPTEN)
-using f16 = _Float16;
-#endif
+// TODO: not well supported by MSVC or older GCC/Clang
+// #if !(SPARGEL_IS_MSVC)
+// using f16 = _Float16;
+// #endif
+
 using f32 = float;
 using f64 = double;
 
 namespace spargel::base {
+
     // using Byte = std::byte;
     using Byte = u8;
+
+    using nullptr_t = decltype(nullptr);
+
 }  // namespace spargel::base

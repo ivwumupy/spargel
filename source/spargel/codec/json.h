@@ -17,6 +17,8 @@ namespace spargel::codec {
         null,
     };
 
+    struct JsonNull {};
+
     using JsonString = base::string;
 
     using JsonNumber = double;
@@ -51,6 +53,7 @@ namespace spargel::codec {
 
         JsonValue() : type(JsonValueType::null) {}
 
+        JsonValue(JsonNull&& null) : type(JsonValueType::null) {}
         JsonValue(JsonObject&& object) : type(JsonValueType::object), object(base::move(object)) {}
         JsonValue(JsonArray&& array) : type(JsonValueType::array), array(base::move(array)) {}
         JsonValue(JsonString&& string) : type(JsonValueType::string), string(base::move(string)) {}
@@ -85,46 +88,58 @@ namespace spargel::codec {
     base::Either<JsonValue, JsonParseError> parseJson(const char* str, usize length);
 
     /*
-     * Utils
-     */
-
-    base::Either<const JsonObject*, JsonParseError> getJsonMemberObject(const JsonObject& json,
-                                                                        const JsonString& key,
-                                                                        bool optional = false);
-
-    base::Either<const JsonArray*, JsonParseError> getJsonMemberArray(const JsonObject& json,
-                                                                      const JsonString& key,
-                                                                      bool optional = false);
-
-    base::Either<const JsonString*, JsonParseError> getJsonMemberString(const JsonObject& json,
-                                                                        const JsonString& key,
-                                                                        bool optional = false);
-
-    base::Either<const JsonNumber*, JsonParseError> getJsonMemberNumber(const JsonObject& json,
-                                                                        const JsonString& key,
-                                                                        bool optional = false);
-
-    /*
      * Codec Backend
+     *
+     * Note: due to floating point errors, JSON backend cannot properly handle large integers
+     * (U64/I64). For large integers, use strings to represent them.
      */
 
     class JsonEncodeError : public CodecError {};
     class JsonDecodeError : public CodecError {};
 
     // JSON encode backend
-    struct EncodeBackedJson {
+    struct EncodeBackendJson {
         using DataType = JsonValue;
         using ErrorType = JsonEncodeError;
 
-        base::Either<JsonValue, JsonEncodeError> makeBoolean(bool b) {
-            return base::makeLeft<JsonBoolean, JsonEncodeError>(b);
+        base::Either<JsonValue, JsonEncodeError> makeNull() {
+            return base::makeLeft<JsonValue, JsonEncodeError>(JsonNull());
         }
 
+        base::Either<JsonValue, JsonEncodeError> makeBoolean(bool b) {
+            return base::makeLeft<JsonBoolean, JsonEncodeError>(JsonBoolean(b));
+        }
+
+        base::Either<JsonValue, JsonEncodeError> makeU8(u8 n) {
+            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+        }
+        base::Either<JsonValue, JsonEncodeError> makeI8(i8 n) {
+            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+        }
+        base::Either<JsonValue, JsonEncodeError> makeU16(u16 n) {
+            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+        }
+        base::Either<JsonValue, JsonEncodeError> makeI16(i16 n) {
+            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+        }
         base::Either<JsonValue, JsonEncodeError> makeU32(u32 n) {
             return base::makeLeft<JsonNumber, JsonEncodeError>(n);
         }
         base::Either<JsonValue, JsonEncodeError> makeI32(i32 n) {
             return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+        }
+        base::Either<JsonValue, JsonEncodeError> makeU64(u64 n) {
+            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+        }
+        base::Either<JsonValue, JsonEncodeError> makeI64(i64 n) {
+            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+        }
+
+        base::Either<JsonValue, JsonEncodeError> makeF32(f32 v) {
+            return base::makeLeft<JsonNumber, JsonEncodeError>(v);
+        }
+        base::Either<JsonValue, JsonEncodeError> makeF64(f64 v) {
+            return base::makeLeft<JsonNumber, JsonEncodeError>(v);
         }
 
         base::Either<JsonValue, JsonEncodeError> makeString(const base::string& s) {
@@ -146,10 +161,21 @@ namespace spargel::codec {
         using DataType = JsonValue;
         using ErrorType = JsonDecodeError;
 
+        base::Optional<JsonDecodeError> getNull(const JsonValue& data);
+
         base::Either<bool, JsonDecodeError> getBoolean(const JsonValue& data);
 
+        base::Either<u8, JsonDecodeError> getU8(const JsonValue& data);
+        base::Either<i8, JsonDecodeError> getI8(const JsonValue& data);
+        base::Either<u16, JsonDecodeError> getU16(const JsonValue& data);
+        base::Either<i16, JsonDecodeError> getI16(const JsonValue& data);
         base::Either<u32, JsonDecodeError> getU32(const JsonValue& data);
         base::Either<i32, JsonDecodeError> getI32(const JsonValue& data);
+        base::Either<u64, JsonDecodeError> getU64(const JsonValue& data);
+        base::Either<i64, JsonDecodeError> getI64(const JsonValue& data);
+
+        base::Either<f32, JsonDecodeError> getF32(const JsonValue& data);
+        base::Either<f64, JsonDecodeError> getF64(const JsonValue& data);
 
         base::Either<base::string, JsonDecodeError> getString(const JsonValue& data);
 

@@ -3,8 +3,6 @@
 // libc
 #include <string.h>
 
-#include "allocator.h"
-
 namespace spargel::base {
 
     namespace _string {

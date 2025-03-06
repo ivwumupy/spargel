@@ -60,10 +60,35 @@ namespace spargel::codec {
         typename EB::DataType;  /* backend data type */
         typename EB::ErrorType; /* encode error type */
         requires ConstructableFromMessage<typename EB::ErrorType>;
+    } && requires(EB& backend) {
+        backend.makeNull();
+        {
+            backend.makeNull()
+        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, bool b) {
         backend.makeBoolean(b);
         {
             backend.makeBoolean(b)
+        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+    } && requires(EB& backend, u8 n) {
+        backend.makeU8(n);
+        {
+            backend.makeU8(n)
+        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+    } && requires(EB& backend, i8 n) {
+        backend.makeI8(n);
+        {
+            backend.makeI8(n)
+        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+    } && requires(EB& backend, u16 n) {
+        backend.makeU16(n);
+        {
+            backend.makeU16(n)
+        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+    } && requires(EB& backend, i16 n) {
+        backend.makeI16(n);
+        {
+            backend.makeI16(n)
         } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, u32 n) {
         backend.makeU32(n);
@@ -74,6 +99,26 @@ namespace spargel::codec {
         backend.makeI32(n);
         {
             backend.makeI32(n)
+        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+    } && requires(EB& backend, u64 n) {
+        backend.makeU64(n);
+        {
+            backend.makeU64(n)
+        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+    } && requires(EB& backend, i64 n) {
+        backend.makeI64(n);
+        {
+            backend.makeI64(n)
+        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+    } && requires(EB& backend, f32 v) {
+        backend.makeF32(v);
+        {
+            backend.makeF32(v)
+        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+    } && requires(EB& backend, f64 v) {
+        backend.makeF64(v);
+        {
+            backend.makeF64(v)
         } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, const base::string& s) {
         backend.makeString(s);
@@ -99,15 +144,35 @@ namespace spargel::codec {
         typename DB::ErrorType; /* decode error type */
         requires ConstructableFromMessage<typename DB::ErrorType>;
     } && requires(DB& backend, const DB::DataType& data) {
+        backend.getNull(data);
+        { backend.getNull(data) } -> base::ConvertibleTo<base::Optional<typename DB::ErrorType>>;
+
         backend.getBoolean(data);
         {
             backend.getBoolean(data)
         } -> base::ConvertibleTo<base::Either<bool, typename DB::ErrorType>>;
 
+        backend.getU8(data);
+        { backend.getU8(data) } -> base::ConvertibleTo<base::Either<u8, typename DB::ErrorType>>;
+        backend.getI8(data);
+        { backend.getI8(data) } -> base::ConvertibleTo<base::Either<i8, typename DB::ErrorType>>;
+        backend.getU16(data);
+        { backend.getU16(data) } -> base::ConvertibleTo<base::Either<u16, typename DB::ErrorType>>;
+        backend.getI16(data);
+        { backend.getI16(data) } -> base::ConvertibleTo<base::Either<i16, typename DB::ErrorType>>;
         backend.getU32(data);
         { backend.getU32(data) } -> base::ConvertibleTo<base::Either<u32, typename DB::ErrorType>>;
         backend.getI32(data);
         { backend.getI32(data) } -> base::ConvertibleTo<base::Either<i32, typename DB::ErrorType>>;
+        backend.getU64(data);
+        { backend.getU64(data) } -> base::ConvertibleTo<base::Either<u64, typename DB::ErrorType>>;
+        backend.getI64(data);
+        { backend.getI64(data) } -> base::ConvertibleTo<base::Either<i64, typename DB::ErrorType>>;
+
+        backend.getF32(data);
+        { backend.getF32(data) } -> base::ConvertibleTo<base::Either<f32, typename DB::ErrorType>>;
+        backend.getF64(data);
+        { backend.getF64(data) } -> base::ConvertibleTo<base::Either<f64, typename DB::ErrorType>>;
 
         backend.getString(data);
         {
@@ -138,10 +203,21 @@ namespace spargel::codec {
             using DataType = DummyType;
             using ErrorType = CodecError;
 
+            base::Either<DummyType, CodecError> makeNull();
+
             base::Either<DummyType, CodecError> makeBoolean(bool b);
 
+            base::Either<DummyType, CodecError> makeU8(u8 n);
+            base::Either<DummyType, CodecError> makeI8(i8 n);
+            base::Either<DummyType, CodecError> makeU16(u16 n);
+            base::Either<DummyType, CodecError> makeI16(i16 n);
             base::Either<DummyType, CodecError> makeU32(u32 n);
             base::Either<DummyType, CodecError> makeI32(i32 n);
+            base::Either<DummyType, CodecError> makeU64(u64 n);
+            base::Either<DummyType, CodecError> makeI64(i64 n);
+
+            base::Either<DummyType, CodecError> makeF32(f32 v);
+            base::Either<DummyType, CodecError> makeF64(f64 v);
 
             base::Either<DummyType, CodecError> makeString(const base::string& s);
 
@@ -156,10 +232,21 @@ namespace spargel::codec {
             using DataType = DummyType;
             using ErrorType = CodecError;
 
+            base::Optional<CodecError> getNull(const DummyType& data);
+
             base::Either<bool, CodecError> getBoolean(const DummyType& data);
 
+            base::Either<u8, CodecError> getU8(const DummyType& data);
+            base::Either<i8, CodecError> getI8(const DummyType& data);
+            base::Either<u16, CodecError> getU16(const DummyType& data);
+            base::Either<i16, CodecError> getI16(const DummyType& data);
             base::Either<u32, CodecError> getU32(const DummyType& data);
             base::Either<i32, CodecError> getI32(const DummyType& data);
+            base::Either<u64, CodecError> getU64(const DummyType& data);
+            base::Either<i64, CodecError> getI64(const DummyType& data);
+
+            base::Either<u64, CodecError> getF32(const DummyType& data);
+            base::Either<i64, CodecError> getF64(const DummyType& data);
 
             base::Either<base::string, CodecError> getString(const DummyType& data);
 
@@ -203,7 +290,7 @@ namespace spargel::codec {
 
     namespace __encode_map {
 
-        struct EncodeMapEntry {
+        struct EncodeField {
             // the entry will always be encoded to the target map
             template <Decoder E>
             struct Normal {
@@ -240,7 +327,7 @@ namespace spargel::codec {
         template <EncodeBackend EB, Encoder E, typename... Entries>
         base::Optional<typename EB::ErrorType> encodeToMap(
             base::HashMap<base::string, typename EB::DataType>& map, EB& backend,
-            EncodeMapEntry::Normal<E> entry, Entries... entries) {
+            EncodeField::Normal<E> entry, Entries... entries) {
             auto result = E::template encode<EB>(backend, entry.value);
             if (result.isRight()) return base::makeOptional<typename EB::ErrorType>(result.right());
 
@@ -253,7 +340,7 @@ namespace spargel::codec {
         template <EncodeBackend EB, Encoder E, typename... Entries>
         base::Optional<typename EB::ErrorType> encodeToMap(
             base::HashMap<base::string, typename EB::DataType>& map, EB& backend,
-            EncodeMapEntry::Optional<E> entry, Entries... entries) {
+            EncodeField::Optional<E> entry, Entries... entries) {
             if (entry.value.hasValue()) {
                 auto result = E::template encode<EB>(backend, entry.value.value());
                 if (result.isRight())
@@ -281,7 +368,7 @@ namespace spargel::codec {
 
     }  // namespace __encode_map
 
-    using __encode_map::EncodeMapEntry;
+    using __encode_map::EncodeField;
 
     using __encode_map::encodeMap;
 
@@ -291,7 +378,7 @@ namespace spargel::codec {
 
     namespace __decode_map {
 
-        struct DecodeMapEntry {
+        struct DecodeField {
             // the entry is required to exist
             template <Decoder D>
             struct Required {
@@ -336,7 +423,7 @@ namespace spargel::codec {
         template <typename R, typename F, DecodeBackend DB, Decoder D, typename... Entries>
         base::Either<R, typename DB::ErrorType> decodeMap(F func, DB& backend,
                                                           const typename DB::DataType& data,
-                                                          DecodeMapEntry::Required<D> entry,
+                                                          DecodeField::Required<D> entry,
                                                           Entries... entries) {
             auto result = backend.getMember(data, entry.key);
             if (result.isRight()) return base::makeRight<R, typename DB::ErrorType>(result.right());
@@ -359,7 +446,7 @@ namespace spargel::codec {
         template <typename R, typename F, DecodeBackend DB, Decoder D, typename... Entries>
         base::Either<R, typename DB::ErrorType> decodeMap(F func, DB& backend,
                                                           const typename DB::DataType& data,
-                                                          DecodeMapEntry::Optional<D> entry,
+                                                          DecodeField::Optional<D> entry,
                                                           Entries... entries) {
             auto result = backend.getMember(data, entry.key);
             if (result.isRight()) return base::makeRight<R, typename DB::ErrorType>(result.right());
@@ -383,7 +470,7 @@ namespace spargel::codec {
         template <typename R, typename F, DecodeBackend DB, Decoder D, typename... Entries>
         base::Either<R, typename DB::ErrorType> decodeMap(F func, DB& backend,
                                                           const typename DB::DataType& data,
-                                                          DecodeMapEntry::Default<D> entry,
+                                                          DecodeField::Default<D> entry,
                                                           Entries... entries) {
             auto result = backend.getMember(data, entry.key);
             if (result.isRight()) return base::makeRight<R, typename DB::ErrorType>(result.right());
@@ -404,13 +491,33 @@ namespace spargel::codec {
 
     }  // namespace __decode_map
 
-    using __decode_map::DecodeMapEntry;
+    using __decode_map::DecodeField;
 
     using __decode_map::decodeMap;
 
     /*
      * codecs of basic types
      */
+
+    struct CodecNull {
+        using Type = base::nullptr_t;
+
+        template <EncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(
+            EB& backend, base::nullptr_t ptr = nullptr) {
+            return backend.makeNull();
+        }
+
+        template <DecodeBackend DB>
+        static base::Either<base::nullptr_t, typename DB::ErrorType> decode(
+            DB& backend, const typename DB::DataType& data) {
+            auto result = backend.getNull(data);
+            if (result.hasValue()) {
+                return base::makeRight<base::nullptr_t, typename DB::ErrorType>(result.value());
+            }
+            return base::makeLeft<base::nullptr_t, typename DB::ErrorType>(nullptr);
+        }
+    };
 
     struct CodecBoolean {
         using Type = bool;
@@ -425,6 +532,70 @@ namespace spargel::codec {
         static base::Either<bool, typename DB::ErrorType> decode(
             DB& backend, const typename DB::DataType& data) {
             return backend.getBoolean(data);
+        }
+    };
+
+    struct CodecU8 {
+        using Type = u8;
+
+        template <EncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
+                                                                                  u8 n) {
+            return backend.makeU8(n);
+        }
+
+        template <DecodeBackend DB>
+        static base::Either<u8, typename DB::ErrorType> decode(DB& backend,
+                                                               const typename DB::DataType& data) {
+            return backend.getU8(data);
+        }
+    };
+
+    struct CodecI8 {
+        using Type = i8;
+
+        template <EncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
+                                                                                  i8 n) {
+            return backend.makeI8(n);
+        }
+
+        template <DecodeBackend DB>
+        static base::Either<i8, typename DB::ErrorType> decode(DB& backend,
+                                                               const typename DB::DataType& data) {
+            return backend.getI8(data);
+        }
+    };
+
+    struct CodecU16 {
+        using Type = u16;
+
+        template <EncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
+                                                                                  u16 n) {
+            return backend.makeU16(n);
+        }
+
+        template <DecodeBackend DB>
+        static base::Either<u16, typename DB::ErrorType> decode(DB& backend,
+                                                                const typename DB::DataType& data) {
+            return backend.getU16(data);
+        }
+    };
+
+    struct CodecI16 {
+        using Type = i16;
+
+        template <EncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
+                                                                                  i16 n) {
+            return backend.makeI16(n);
+        }
+
+        template <DecodeBackend DB>
+        static base::Either<i16, typename DB::ErrorType> decode(DB& backend,
+                                                                const typename DB::DataType& data) {
+            return backend.getI16(data);
         }
     };
 
@@ -457,6 +628,70 @@ namespace spargel::codec {
         static base::Either<i32, typename DB::ErrorType> decode(DB& backend,
                                                                 const typename DB::DataType& data) {
             return backend.getI32(data);
+        }
+    };
+
+    struct CodecU64 {
+        using Type = u64;
+
+        template <EncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
+                                                                                  u64 n) {
+            return backend.makeU64(n);
+        }
+
+        template <DecodeBackend DB>
+        static base::Either<u64, typename DB::ErrorType> decode(DB& backend,
+                                                                const typename DB::DataType& data) {
+            return backend.getU64(data);
+        }
+    };
+
+    struct CodecI64 {
+        using Type = i64;
+
+        template <EncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
+                                                                                  i64 n) {
+            return backend.makeI64(n);
+        }
+
+        template <DecodeBackend DB>
+        static base::Either<i64, typename DB::ErrorType> decode(DB& backend,
+                                                                const typename DB::DataType& data) {
+            return backend.getI64(data);
+        }
+    };
+
+    struct CodecF32 {
+        using Type = f32;
+
+        template <EncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
+                                                                                  f32 v) {
+            return backend.makeF32(v);
+        }
+
+        template <DecodeBackend DB>
+        static base::Either<f32, typename DB::ErrorType> decode(DB& backend,
+                                                                const typename DB::DataType& data) {
+            return backend.getF32(data);
+        }
+    };
+
+    struct CodecF64 {
+        using Type = f64;
+
+        template <EncodeBackend EB>
+        static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
+                                                                                  f64 v) {
+            return backend.makeF64(v);
+        }
+
+        template <DecodeBackend DB>
+        static base::Either<f64, typename DB::ErrorType> decode(DB& backend,
+                                                                const typename DB::DataType& data) {
+            return backend.getF64(data);
         }
     };
 

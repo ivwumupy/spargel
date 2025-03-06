@@ -12,7 +12,6 @@ spargel_add_library(
     PRIVATE
         json_codec.cpp
         json_parser.cpp
-        json_utils.cpp
     DEPS
         codec
 )

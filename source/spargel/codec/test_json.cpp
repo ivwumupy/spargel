@@ -3,9 +3,8 @@
 namespace {
 
     TEST(JSON_JsonValue) {
-        JsonValue v;
-        v = JsonValue(JsonObject());
-        v.object.members.set(JsonString("error"), JsonValue());
+        JsonValue v = JsonObject();
+        v.object.members.set(JsonString("error"), JsonNull());
         v.object.members.set(JsonString("active"), JsonBoolean());
 
         spargel_check(v.type == JsonValueType::object);
@@ -35,7 +34,7 @@ namespace {
         auto result = base::makeLeft<JsonValue, JsonParseError>();
 
         result = parseJson("null");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonValue()));
+        spargel_check(result.isLeft() && isEqual(result.left(), JsonNull()));
 
         result = parseJson("true");
         spargel_check(result.isLeft() && isEqual(result.left(), JsonBoolean(true)));
@@ -110,7 +109,7 @@ namespace {
         spargel_check(isEqual(array.elements[0], JsonBoolean(true)));
         spargel_check(isEqual(array.elements[1], JsonString("ABC")));
         spargel_check(isEqual(array.elements[2], JsonNumber(-123.456)));
-        spargel_check(isEqual(array.elements[3], JsonValue()));
+        spargel_check(isEqual(array.elements[3], JsonNull()));
         spargel_check(isEqual(array.elements[4], JsonBoolean(false)));
     }
 
@@ -127,7 +126,7 @@ namespace {
         spargel_check(result.isLeft() && result.left().type == JsonValueType::object);
         auto object = result.left().object;
         spargel_check(object.members.count() == 4);
-        spargel_check(isMemberEqual(object, JsonString("error"), JsonValue()));
+        spargel_check(isMemberEqual(object, JsonString("error"), JsonNull()));
         spargel_check(isMemberEqual(object, JsonString("name"), JsonString("Alice")));
         spargel_check(isMemberEqual(object, JsonString("age"), JsonNumber(20)));
         spargel_check(isMemberEqual(object, JsonString("happy"), JsonBoolean(true)));
@@ -173,7 +172,7 @@ namespace {
         spargel_check(v11.type == JsonValueType::object);
         spargel_check(isMemberEqual(v11.object, JsonString("index"), JsonNumber(0)));
         spargel_check(isMemberEqual(v11.object, JsonString("role"), JsonString("assistant")));
-        spargel_check(isMemberEqual(v11.object, JsonString("logprobs"), JsonValue()));
+        spargel_check(isMemberEqual(v11.object, JsonString("logprobs"), JsonNull()));
         spargel_check(isMemberEqual(v11.object, JsonString("finish_reason"), JsonString("stop")));
 
         auto* ptr2 = value.object.members.get(JsonString("usage"));
