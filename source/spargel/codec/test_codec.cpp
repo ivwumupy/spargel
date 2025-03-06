@@ -50,6 +50,13 @@ namespace {
             for (const auto& item : array) sum += item.value;
             return base::makeLeft<TestData, CodecError>(sum);
         }
+
+        base::Either<TestData, CodecError> makeMap(
+            const base::HashMap<base::string, TestData>& map) {
+            int sum = 0;
+            // TODO
+            return base::makeLeft<TestData, CodecError>(sum);
+        }
     };
 
     static_assert(EncodeBackend<EncodeBackendTest>);
@@ -57,28 +64,32 @@ namespace {
 }  // namespace
 
 TEST(Codec_Encode_Primitive) {
-    EncodeBackendTest encoder;
+    EncodeBackendTest backend;
     auto result = base::makeRight<TestData, CodecError>("");
 
-    result = CodecBoolean::encode(encoder, true);
+    result = CodecBoolean::encode(backend, true);
     spargel_check(result.isLeft() && result.left().value == 1);
-    result = CodecBoolean::encode(encoder, false);
+    result = CodecBoolean::encode(backend, false);
     spargel_check(result.isLeft() && result.left().value == 0);
 
-    result = CodecU32::encode(encoder, 123);
+    result = CodecU32::encode(backend, 123);
     spargel_check(result.isLeft() && result.left().value == 123);
-    result = CodecI32::encode(encoder, -321);
+    result = CodecI32::encode(backend, -321);
     spargel_check(result.isLeft() && result.left().value == -321);
 
-    result = CodecString::encode(encoder, base::string("ABC"));
+    result = CodecString::encode(backend, base::string("ABC"));
     spargel_check(result.isLeft() && result.left().value == 3);
+}
+
+TEST(Codec_Encode_Array) {
+    EncodeBackendTest backend;
 
     {
         base::vector<base::string> v;
         v.push("A");
         v.push("BC");
         v.push("DEF");
-        result = CodecArray<CodecString>::encode(encoder, base::move(v));
+        auto result = CodecArray<CodecString>::encode(backend, base::move(v));
         spargel_check(result.isLeft() && result.left().value == 1 + 2 + 3);
     }
     {
@@ -91,7 +102,31 @@ TEST(Codec_Encode_Primitive) {
         v2.push(3);
         v2.push(-4);
         v.push(base::move(v2));
-        result = CodecArray<CodecArray<CodecI32>>::encode(encoder, base::move(v));
+        auto result = CodecArray<CodecArray<CodecI32>>::encode(backend, base::move(v));
         spargel_check(result.isLeft() && result.left().value == (1 + -2) + (3 + -4));
+    }
+}
+
+TEST(Codec_Encode_Map) {
+    EncodeBackendTest backend;
+
+    {
+        auto result = encodeMap(backend);
+        spargel_check(result.isLeft());
+        // TODO
+    }
+    {
+        base::vector<u32> scores;
+        scores.push(98);
+        scores.push(87);
+        scores.push(92);
+        auto result =
+            encodeMap(backend,  //
+                      EncodeMapEntry::Normal<CodecString>("name", base::string("Alice")),
+                      EncodeMapEntry::Normal<CodecU32>("age", 20),
+                      EncodeMapEntry::Normal<CodecBoolean>("happy", true),
+                      EncodeMapEntry::Normal<CodecArray<CodecU32>>("scores", base::move(scores)));
+        spargel_check(result.isLeft());
+        // TODO
     }
 }

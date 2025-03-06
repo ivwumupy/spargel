@@ -5,56 +5,45 @@
 
 namespace spargel::base {
 
+    /*
+     * An instance of Constructor<T(Args...)> can be used as the constructor of T with the
+     * corresponding argument types
+     */
+    template <typename Signature>
+    struct Constructor;
+
+    template <typename T, typename... Args>
+    struct Constructor<T(Args...)> {
+        T operator()(Args&&... args) const { return T(base::forward<Args>(args)...); }
+    };
+
     namespace __curry {
 
-        template <usize N, typename F, typename... BoundArgs>
-        struct Curry;
-
-        template <typename F>
-        struct Curry<0, F> {
-            F f;
-
-            constexpr Curry(F&& f) : f(f) {}
-
-            template <typename... CallArgs>
-            constexpr auto operator()(CallArgs&&... args) {
-                return f(forward<CallArgs>(args)...);
-            }
-        };
-
         template <typename F, typename T>
-        struct Curry<1, F, T> {
+        struct Curried {
             F f;
             T t;
 
-            constexpr Curry(F&& f, T&& t) : f(f), t(t) {}
+            constexpr Curried(F&& f, T&& t) : f(f), t(t) {}
 
-            template <typename... CallArgs>
-            constexpr auto operator()(CallArgs&&... args) {
-                return f(t, forward<CallArgs>(args)...);
+            template <typename... Args>
+            constexpr auto operator()(Args&&... args) {
+                return f(base::forward<T>(t), base::forward<Args>(args)...);
             }
         };
 
-        template <usize N, typename F, typename T, typename... BoundArgs>
-        struct Curry<N, F, T, BoundArgs...> {
-            Curry<N - 1, F, BoundArgs...> g;
-            T t;
+        /*
+         *  bind a value to the first argument of f and generate a new function with fewer arguments
+         */
+        template <typename F, typename T, typename... Args>
+        constexpr Curried<F, T> curry(F&& f, T&& t) {
+            return Curried<F, T>(base::forward<F>(f), base::forward<T>(t));
+        }
 
-            constexpr Curry(F&& f, BoundArgs&&... args, T&& t)
-                : g(Curry<N - 1, F, BoundArgs...>(forward<F>(f), forward<BoundArgs>(args)...)),
-                  t(t) {}
-
-            template <typename... CallArgs>
-            constexpr auto operator()(CallArgs&&... args) {
-                return g(t, forward<CallArgs>(args)...);
-            }
-        };
-
-        template <typename F, typename... Args>
-        Curry(F&&, Args&&...) -> Curry<sizeof...(Args), F, Args...>;
+        // TODO: curryN(F&& f, BoundArgs... bound_args)
 
     }  // namespace __curry
 
-    using __curry::Curry;
+    using __curry::curry;
 
 }  // namespace spargel::base

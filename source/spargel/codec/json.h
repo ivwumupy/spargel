@@ -29,6 +29,8 @@ namespace spargel::codec {
         base::HashMap<JsonString, JsonValue> members;
 
         JsonObject() : members(base::default_allocator()) {}
+
+        JsonObject(const base::HashMap<JsonString, JsonValue>& members) : members(members) {}
     };
 
     struct JsonArray {
@@ -132,6 +134,11 @@ namespace spargel::codec {
         base::Either<JsonValue, JsonEncodeError> makeArray(const base::vector<JsonValue>& array) {
             return base::makeLeft<JsonArray, JsonEncodeError>(array);
         }
+
+        base::Either<JsonValue, JsonEncodeError> makeMap(
+            const base::HashMap<base::string, JsonValue>& map) {
+            return base::makeLeft<JsonObject, JsonEncodeError>(map);
+        }
     };
 
     // JSON decode backend
@@ -147,6 +154,9 @@ namespace spargel::codec {
         base::Either<base::string, JsonDecodeError> getString(const JsonValue& data);
 
         base::Either<base::vector<JsonValue>, JsonDecodeError> getArray(const JsonValue& data);
+
+        base::Either<base::Optional<JsonValue>, JsonDecodeError> getMember(const JsonValue& data,
+                                                                           const base::string& key);
     };
 
 }  // namespace spargel::codec

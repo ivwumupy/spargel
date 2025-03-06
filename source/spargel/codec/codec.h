@@ -2,15 +2,25 @@
 
 #include <spargel/base/concept.h>
 #include <spargel/base/either.h>
+#include <spargel/base/functional.h>
+#include <spargel/base/hash_map.h>
+#include <spargel/base/optional.h>
 #include <spargel/base/string.h>
 #include <spargel/base/vector.h>
 
 namespace spargel::codec {
 
-    // generic codec error class
+    /*
+     * generic codec error class
+     *
+     * Error classes for codec API can be easily built base upon this, since they are
+     * required to be constructable from error message.
+     */
     class CodecError {
     public:
         CodecError(const base::string& message) : _message(message) {}
+
+        CodecError(const base::string_view& message) : _message(message) {}
 
         CodecError(const char* message) : _message(message) {}
 
@@ -25,14 +35,23 @@ namespace spargel::codec {
     };
 
     /*
-     * Generic Encode/Decode API
+     * Generic Codec (Encode/Decode) API
      */
+
+    // We allow codec backend to change itself during operations, so we do not use "const"
+    // qualifier.
+
+    // Error classes for codec API should be directly constructable from messages.
+    template <typename E>
+    concept ConstructableFromMessage =
+        requires(const base::string& s) { E(s); } && requires(const base::string_view& s) { E(s); };
 
     // encode backend prototype
     template <typename EB /* encode backend type */>
     concept EncodeBackend = requires {
         typename EB::DataType;  /* backend data type */
         typename EB::ErrorType; /* encode error type */
+        requires ConstructableFromMessage<typename EB::ErrorType>;
     } && requires(EB& backend, bool b) {
         backend.makeBoolean(b);
         {
@@ -58,6 +77,11 @@ namespace spargel::codec {
         {
             backend.makeArray(array)
         } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+    } && requires(EB& backend, const base::HashMap<base::string, typename EB::DataType>& map) {
+        backend.makeMap(map);
+        {
+            backend.makeMap(map)
+        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     };
 
     // decode backend prototype
@@ -65,6 +89,7 @@ namespace spargel::codec {
     concept DecodeBackend = requires {
         typename DB::DataType;  /* backend data type */
         typename DB::ErrorType; /* decode error type */
+        requires ConstructableFromMessage<typename DB::ErrorType>;
     } && requires(DB& backend, const DB::DataType& data) {
         backend.getBoolean(data);
         {
@@ -86,9 +111,17 @@ namespace spargel::codec {
             backend.getArray(data)
         } -> base::ConvertibleTo<
               base::Either<base::vector<typename DB::DataType>, typename DB::ErrorType>>;
+    } && requires(DB& backend, const DB::DataType& data, const base::string& key) {
+        backend.getMember(data, key);
+        {
+            backend.getMember(data, key)
+        } -> base::ConvertibleTo<
+              base::Either<base::Optional<typename DB::DataType>, typename DB::ErrorType>>;
     };
 
-    // dummy encode/decode backend (also used for constraint checking)
+    // dummy encode/decode backend
+    //   used for constraint checking
+    //   also serves as an example
     namespace {
 
         struct DummyType {};
@@ -105,6 +138,9 @@ namespace spargel::codec {
             base::Either<DummyType, CodecError> makeString(const base::string& s);
 
             base::Either<DummyType, CodecError> makeArray(const base::vector<DummyType>& array);
+
+            base::Either<DummyType, CodecError> makeMap(
+                const base::HashMap<base::string, DummyType>& map);
         };
         static_assert(EncodeBackend<EncodeBackendDummy>);
 
@@ -120,6 +156,9 @@ namespace spargel::codec {
             base::Either<base::string, CodecError> getString(const DummyType& data);
 
             base::Either<base::vector<DummyType>, CodecError> getArray(const DummyType& data);
+
+            base::Either<base::Optional<DummyType>, CodecError> getMember(const DummyType& data,
+                                                                          const base::string& key);
         };
         static_assert(DecodeBackend<DecodeBackendDummy>);
 
@@ -148,7 +187,7 @@ namespace spargel::codec {
     };
 
     /*
-     * encoding/decoding of basic types
+     * codecs of basic types
      */
 
     struct CodecBoolean {
@@ -254,6 +293,217 @@ namespace spargel::codec {
             return base::makeLeft<Type, ErrorType>(base::move(tmp));
         }
     };
+
+    /*
+     * utils for encoding maps
+     */
+
+    namespace __encode_map {
+
+        struct EncodeMapEntry {
+            // the entry will always be encoded to the target map
+            template <Decoder E>
+            struct Normal {
+                base::string key;
+                E::Type value;
+
+                Normal(const base::string& key, const E::Type value) : key(key), value(value) {}
+                Normal(const base::string_view& key, const E::Type value)
+                    : key(key), value(value) {}
+            };
+
+            // the entry will be encoded to the taregt map only if it exists
+            template <Decoder E>
+            struct Optional {
+                base::string key;
+                base::Optional<typename E::Type> value;
+
+                Optional(const base::string& key, const base::Optional<typename E::Type>& value)
+                    : key(key), value(value) {}
+                Optional(const base::string_view& key,
+                         const base::Optional<typename E::Type>& value)
+                    : key(key), value(value) {}
+            };
+        };
+
+        // head for recursive definition: no entries at all
+        template <EncodeBackend EB>
+        base::Optional<typename EB::ErrorType> encodeToMap(
+            base::HashMap<base::string, typename EB::DataType>& map, EB& backend) {
+            return base::Optional<typename EB::ErrorType>();
+        }
+
+        // encode one normal entry
+        template <EncodeBackend EB, Encoder E, typename... Entries>
+        base::Optional<typename EB::ErrorType> encodeToMap(
+            base::HashMap<base::string, typename EB::DataType>& map, EB& backend,
+            EncodeMapEntry::Normal<E> entry, Entries... entries) {
+            auto result = E::template encode<EB>(backend, entry.value);
+            if (result.isRight()) return base::makeOptional<typename EB::ErrorType>(result.right());
+
+            map.set(entry.key, result.left());
+
+            return encodeToMap(map, backend, base::forward<Entries>(entries)...);
+        }
+
+        // encode one optional entry
+        template <EncodeBackend EB, Encoder E, typename... Entries>
+        base::Optional<typename EB::ErrorType> encodeToMap(
+            base::HashMap<base::string, typename EB::DataType>& map, EB& backend,
+            EncodeMapEntry::Optional<E> entry, Entries... entries) {
+            if (entry.value.hasValue()) {
+                auto result = E::template encode<EB>(backend, entry.value.value());
+                if (result.isRight())
+                    return base::makeOptional<typename EB::ErrorType>(result.right());
+
+                map.set(entry.key, result.left());
+            }
+
+            return encodeToMap(map, backend, base::forward<Entries>(entries)...);
+        }
+
+        // create map, call encodeToMap to encode all the entries, and return the map
+        template <EncodeBackend EB, typename... Encoders, typename... Entries>
+        base::Either<typename EB::DataType, typename EB::ErrorType> encodeMap(EB& backend,
+                                                                              Entries... entries) {
+            using DataType = EB::DataType;
+            using ErrorType = EB::ErrorType;
+
+            base::HashMap<base::string, DataType> map(base::default_allocator());  // FIXME
+            auto result =
+                encodeToMap<Encoders...>(map, backend, base::forward<Entries>(entries)...);
+            if (result.hasValue()) return base::makeRight<DataType, ErrorType>(result.value());
+            return backend.makeMap(base::move(map));
+        }
+
+    }  // namespace __encode_map
+
+    using __encode_map::EncodeMapEntry;
+
+    using __encode_map::encodeMap;
+
+    /*
+     * utils for decoding maps
+     */
+
+    namespace __decode_map {
+
+        struct DecodeMapEntry {
+            // the entry is required to exist
+            template <Decoder D>
+            struct Required {
+                base::string key;
+
+                Required(const base::string& key) : key(key) {}
+                Required(const base::string_view& key) : key(key) {}
+            };
+
+            // the entry is optional
+            template <Decoder D>
+            struct Optional {
+                base::string key;
+
+                Optional(const base::string& key) : key(key) {}
+                Optional(const base::string_view& key) : key(key) {}
+            };
+
+            // the entry is optional; if it does not exist, supply a default value as the decode
+            // result
+            template <Decoder D>
+            struct Default {
+                base::string key;
+                D::Type default_value;
+
+                Default(const base::string& key, const D::Type& default_value)
+                    : key(key), default_value(default_value) {}
+
+                Default(const base::string_view& key, const D::Type& default_value)
+                    : key(key), default_value(default_value) {}
+            };
+        };
+
+        // head for recursive definition: no entries at all
+        template <typename R, typename F, DecodeBackend DB>
+        base::Either<R, typename DB::ErrorType> decodeMap(F func, DB& backend,
+                                                          const typename DB::DataType& data) {
+            return base::makeLeft<R, typename DB::ErrorType>(func());
+        }
+
+        // decode one required entry
+        template <typename R, typename F, DecodeBackend DB, Decoder D, typename... Entries>
+        base::Either<R, typename DB::ErrorType> decodeMap(F func, DB& backend,
+                                                          const typename DB::DataType& data,
+                                                          DecodeMapEntry::Required<D> entry,
+                                                          Entries... entries) {
+            auto result = backend.getMember(data, entry.key);
+            if (result.isRight()) return base::makeRight<R, typename DB::ErrorType>(result.right());
+
+            auto optional = result.left();
+            if (optional.hasValue()) {
+                auto decode_result = D::template decode<DB>(backend, base::move(optional.value()));
+                if (decode_result.isRight())
+                    return base::makeRight<R, typename DB::ErrorType>(decode_result.right());
+
+                return decodeMap<R>(curry(func, base::move(decode_result.left())), backend, data,
+                                    base::forward<Entries>(entries)...);
+            } else {
+                return base::makeRight<R, typename DB::ErrorType>(
+                    base::string("required member \"") + entry.key + "\" not found");
+            }
+        }
+
+        // decode one optional entry
+        template <typename R, typename F, DecodeBackend DB, Decoder D, typename... Entries>
+        base::Either<R, typename DB::ErrorType> decodeMap(F func, DB& backend,
+                                                          const typename DB::DataType& data,
+                                                          DecodeMapEntry::Optional<D> entry,
+                                                          Entries... entries) {
+            auto result = backend.getMember(data, entry.key);
+            if (result.isRight()) return base::makeRight<R, typename DB::ErrorType>(result.right());
+
+            auto optional = result.left();
+            if (optional.hasValue()) {
+                auto decode_result = D::template decode<DB>(backend, base::move(optional.value()));
+                if (decode_result.isRight())
+                    return base::makeRight<R, typename DB::ErrorType>(decode_result.right());
+
+                return decodeMap<R>(curry(func, base::makeOptional<typename D::Type>(
+                                                    base::move(decode_result.left()))),
+                                    backend, data, base::forward<Entries>(entries)...);
+            } else {
+                return decodeMap<R>(curry(func, base::Optional<typename D::Type>()), backend, data,
+                                    base::forward<Entries>(entries)...);
+            }
+        }
+
+        // decode one optional entry with default value
+        template <typename R, typename F, DecodeBackend DB, Decoder D, typename... Entries>
+        base::Either<R, typename DB::ErrorType> decodeMap(F func, DB& backend,
+                                                          const typename DB::DataType& data,
+                                                          DecodeMapEntry::Default<D> entry,
+                                                          Entries... entries) {
+            auto result = backend.getMember(data, entry.key);
+            if (result.isRight()) return base::makeRight<R, typename DB::ErrorType>(result.right());
+
+            auto optional = result.left();
+            if (optional.hasValue()) {
+                auto decode_result = D::template decode<DB>(backend, base::move(optional.value()));
+                if (decode_result.isRight())
+                    return base::makeRight<R, typename DB::ErrorType>(decode_result.right());
+
+                return decodeMap<R>(curry(func, base::move(decode_result.left())), backend, data,
+                                    base::forward<Entries>(entries)...);
+            } else {
+                return decodeMap<R>(curry(func, entry.default_value), backend, data,
+                                    base::forward<Entries>(entries)...);
+            }
+        }
+
+    }  // namespace __decode_map
+
+    using __decode_map::DecodeMapEntry;
+
+    using __decode_map::decodeMap;
 
     /**
      * todo:

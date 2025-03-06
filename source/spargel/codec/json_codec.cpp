@@ -50,4 +50,17 @@ namespace spargel::codec {
             return base::makeRight<base::vector<JsonValue>, JsonDecodeError>("expected an array");
     }
 
+    base::Either<base::Optional<JsonValue>, JsonDecodeError> DecodeBackendJson::getMember(
+        const JsonValue& data, const base::string& key) {
+        if (data.type == JsonValueType::object) {
+            auto* ptr = data.object.members.get(key);
+            auto optional = base::Optional<JsonValue>();
+            if (ptr != nullptr) optional = base::makeOptional<JsonValue>(*ptr);
+            return base::makeLeft<base::Optional<JsonValue>, JsonDecodeError>(base::move(optional));
+        } else {
+            return base::makeRight<base::Optional<JsonValue>, JsonDecodeError>(
+                "expected an object");
+        }
+    }
+
 }  // namespace spargel::codec
