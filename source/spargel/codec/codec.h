@@ -434,8 +434,8 @@ namespace spargel::codec {
                 if (decode_result.isRight())
                     return base::makeRight<R, typename DB::ErrorType>(decode_result.right());
 
-                return decodeMap<R>(curry(func, base::move(decode_result.left())), backend, data,
-                                    base::forward<Entries>(entries)...);
+                return decodeMap<R>(base::move(curry(func, base::move(decode_result.left()))),
+                                    backend, data, base::forward<Entries>(entries)...);
             } else {
                 return base::makeRight<R, typename DB::ErrorType>(
                     base::string("required member \"") + entry.key + "\" not found");
@@ -457,11 +457,11 @@ namespace spargel::codec {
                 if (decode_result.isRight())
                     return base::makeRight<R, typename DB::ErrorType>(decode_result.right());
 
-                return decodeMap<R>(curry(func, base::makeOptional<typename D::Type>(
-                                                    base::move(decode_result.left()))),
+                return decodeMap<R>(base::move(curry(func, base::makeOptional<typename D::Type>(
+                                                               base::move(decode_result.left())))),
                                     backend, data, base::forward<Entries>(entries)...);
             } else {
-                return decodeMap<R>(curry(func, base::nullopt), backend, data,
+                return decodeMap<R>(base::move(curry(func, base::nullopt)), backend, data,
                                     base::forward<Entries>(entries)...);
             }
         }
@@ -481,10 +481,10 @@ namespace spargel::codec {
                 if (decode_result.isRight())
                     return base::makeRight<R, typename DB::ErrorType>(decode_result.right());
 
-                return decodeMap<R>(curry(func, base::move(decode_result.left())), backend, data,
-                                    base::forward<Entries>(entries)...);
+                return decodeMap<R>(base::move(curry(func, base::move(decode_result.left()))),
+                                    backend, data, base::forward<Entries>(entries)...);
             } else {
-                return decodeMap<R>(curry(func, entry.default_value), backend, data,
+                return decodeMap<R>(base::move(curry(func, entry.default_value)), backend, data,
                                     base::forward<Entries>(entries)...);
             }
         }

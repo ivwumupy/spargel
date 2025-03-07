@@ -26,7 +26,7 @@ namespace {
         if (gltf.bufferViews.hasValue())
             printf("bufferViews: %zu\n", gltf.bufferViews.value().count());
 
-        if (gltf.nodes.hasValue()) printf("nodes: %zu\n", gltf.nodes.value().count());
+        // if (gltf.nodes.hasValue()) printf("nodes: %zu\n", gltf.nodes.value().count());
 
         if (gltf.scenes.hasValue()) printf("scenes: %zu\n", gltf.scenes.value().count());
 
@@ -58,23 +58,14 @@ int main(int argc, char* argv[]) {
     fread(data, len, 1, fp);
     fclose(fp);
 
-    JsonValue json;
-    auto json_result = parseJson(data, len, json);
-    if (json_result.failed()) {
-        fprintf(stderr, "Failed to parse JSON: %s\n", json_result.message().data());
+    auto result = parseGlTF(data, len);
+    if (result.isRight()) {
+        fprintf(stderr, "Failed to parse glTF: %s\n", result.right().message().data());
         base::default_allocator()->free(data, len);
         return 1;
     }
 
-    GlTF gltf;
-    auto result = parseGlTF(json, gltf);
-    if (result.failed()) {
-        fprintf(stderr, "Failed to parse glTF: %s\n", result.message().data());
-        base::default_allocator()->free(data, len);
-        return 1;
-    }
-
-    dumpGlTF(gltf);
+    dumpGlTF(base::move(result.left()));
 
     base::default_allocator()->free(data, len);
 

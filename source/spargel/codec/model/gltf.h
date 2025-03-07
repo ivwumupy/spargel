@@ -11,7 +11,7 @@
 #include <spargel/base/optional.h>
 #include <spargel/base/string.h>
 #include <spargel/base/vector.h>
-#include <spargel/codec/json.h>
+#include <spargel/codec/codec.h>
 #include <spargel/math/matrix.h>
 #include <spargel/math/vector.h>
 
@@ -24,8 +24,8 @@ namespace spargel::codec::model {
     using math::Vector3f;
     using math::Vector4f;
 
-    using GlTFInteger = int;
-    using GlTFNumber = double;
+    using GlTFInteger = i32;
+    using GlTFNumber = f64;
     using GlTFString = base::string;
 
     /*
@@ -163,7 +163,7 @@ namespace spargel::codec::model {
         Optional<vector<GlTFBufferView>> bufferViews;
 
         // An array of nodes.
-        Optional<vector<GlTFNode>> nodes;
+        // Optional<vector<GlTFNode>> nodes;
 
         // The index of the default scene. This property MUST NOT be defined, when scenes is
         // undefined. (>= 0)
@@ -175,6 +175,6 @@ namespace spargel::codec::model {
 
     class GlTFDecodeError : public CodecError {};
 
-    base::Either<GlTF, GlTFDecodeError> parseGlTF(const JsonValue& json);
+    base::Either<GlTF, GlTFDecodeError> parseGlTF(const char* text, usize len);
 
 }  // namespace spargel::codec::model

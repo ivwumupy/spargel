@@ -62,6 +62,4 @@ spargel_add_executable(
     DEPS codec_json
 )
 
-if (0)
 add_subdirectory(model/)
-endif ()
