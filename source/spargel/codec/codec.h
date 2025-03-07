@@ -1,5 +1,6 @@
 #pragma once
 
+#include <spargel/base/attribute.h>
 #include <spargel/base/concept.h>
 #include <spargel/base/either.h>
 #include <spargel/base/functional.h>
@@ -7,6 +8,10 @@
 #include <spargel/base/optional.h>
 #include <spargel/base/string.h>
 #include <spargel/base/vector.h>
+
+
+// temp
+#include <tuple>
 
 namespace spargel::codec {
 
@@ -412,8 +417,144 @@ namespace spargel::codec {
             };
         };
 
+        namespace _impl {
+            template <typename T>
+            struct Uninitialized {
+                using Type = T;
+                template <typename... Args>
+                void init(Args&&... args) { base::construct_at(reinterpret_cast<T*>(&bytes), base::forward<Args>(args)...); }
+                T& get() { return *reinterpret_cast<T*>(&bytes); }
+                T const& get() const { return *reinterpret_cast<T const*>(&bytes); }
+                base::Byte bytes[sizeof(T)];
+            };
+            template <typename...> struct List;
+            template <typename, usize i> struct Get;
+            template <typename T, typename... Ts> struct Get<List<T, Ts...>, 0> { using Type = T; };
+            template <usize i, typename T, typename... Ts> struct Get<List<T, Ts...>, i> { using Type = Get<List<Ts...>, i - 1>::Type; };
+            template <typename T, typename S> struct ListCons;
+            template <typename T, typename... Ts>
+            struct ListCons<T, List<Ts...>> { using Type = List<T, Ts...>; };
+            template <typename...> struct TupleType;
+            template <> struct TupleType<> { using Type = List<>; };
+            template <typename T, typename... Ts>
+            struct TupleType<DecodeField::Required<T>, Ts...> {
+                using Type = ListCons<Uninitialized<typename T::Type>, typename TupleType<Ts...>::Type>::Type;
+            };
+            template <typename T, typename... Ts>
+            struct TupleType<DecodeField::Optional<T>, Ts...> {
+                using Type = ListCons<Uninitialized<base::Optional<typename T::Type>>, typename TupleType<Ts...>::Type>::Type;
+            };
+            template <typename T, typename... Ts>
+            struct TupleType<DecodeField::Default<T>, Ts...> {
+                using Type = ListCons<Uninitialized<typename T::Type>, typename TupleType<Ts...>::Type>::Type;
+            };
+            template <typename T> struct ListToTuple;
+            template <typename... Ts> struct ListToTuple<List<Ts...>> { using Type = std::tuple<Ts...>; };
+            template <typename T> struct IsRequired { static constexpr bool value = false; };
+            template <typename T> struct IsRequired<DecodeField::Required<T>> { static constexpr bool value = true; using Type = T; };
+            template <typename T> struct IsOptional { static constexpr bool value = false; };
+            template <typename T> struct IsOptional<DecodeField::Optional<T>> { static constexpr bool value = true; using Type = T; };
+            template <typename T> struct IsDefault { static constexpr bool value = false; };
+            template <typename T> struct IsDefault<DecodeField::Default<T>> { static constexpr bool value = true; using Type = T; };
+            template <usize i, usize N, typename DB, typename Tuple, typename L, typename E, typename I>
+                requires (i < N)
+            bool process(DB& backend, typename DB::DataType const& data, Tuple& t, E& e, I const& ins) {
+                bool success = false;
+                using T = typename Get<L, i>::Type;
+                auto& out = std::get<i>(t);
+                auto const& in = std::get<i>(ins);
+                if constexpr (IsOptional<T>::value) {
+                    auto result = backend.getMember(data, in.key);
+                    if (result.isRight()) { e.init(base::move(result.right())); }
+                    else {
+                        auto& optional = result.left();
+                        if (optional.hasValue()) {
+                            auto decode_result = IsOptional<T>::Type::template decode<DB>(backend, base::move(optional.value()));
+                            if (decode_result.isRight()) {
+                                e.init(decode_result.right());
+                            } else {
+                                success = true;
+                                out.init(base::makeOptional<typename IsOptional<T>::Type::Type>(base::move(decode_result.left())));
+                            }
+                        } else {
+                            success = true;
+                            out.init(base::nullopt);
+                        }
+                    }
+                } else
+                if constexpr (IsRequired<T>::value) {
+                    auto result = backend.getMember(data, in.key);
+                    if (result.isRight()) e.init(result.right());
+                    else {
+                        auto& optional = result.left();
+                        if (optional.hasValue()) {
+                            auto decode_result = IsRequired<T>::Type::template decode<DB>(backend, base::move(optional.value()));
+                            if (decode_result.isRight()) {
+                                e.init(decode_result.right());
+                            } else {
+                                success = true;
+                                out.init(base::move(decode_result.left()));
+                            }
+                        } else {
+                            e.init(base::string("required member \"") + in.key + "\" not found");
+                        }
+                    }
+                } else
+                if constexpr (IsDefault<T>::value) {
+                    auto result = backend.getMember(data, in.key);
+                    if (result.isRight()) e.init(result.right());
+                    else {
+                        auto& optional = result.left();
+                        if (optional.hasValue()) {
+                            auto decode_result = IsDefault<T>::Type::template decode<DB>(backend, base::move(optional.value()));
+                            if (decode_result.isRight()) {
+                                e.init(decode_result.right());
+                            } else {
+                                success = true;
+                                out.init(base::move(decode_result.left()));
+                            }
+                        } else {
+                            success = true;
+                            out.init(in.default_valu);
+                        }
+                    }
+                } else {
+                    return false;
+                }
+                return success && process<i + 1, N, DB, Tuple, L, E, I>(backend, data, t, e, ins);
+            }
+            template <usize i, usize N, typename DB, typename Tuple, typename L, typename E, typename I>
+                requires (i >= N)
+            bool process(DB& backend, typename DB::DataType const& data, Tuple& t, E& e, I const& ins) {
+                return true;
+            }
+            template <class F, class Tuple, usize... Is>
+            decltype(auto) construct(F func, Tuple&& tuple, std::index_sequence<Is...> ) {
+                return func(base::move(std::get<Is>(base::forward<Tuple>(tuple)).get())...);
+            }
+            template <class F, class Tuple>
+            decltype(auto) construct(F func, Tuple&& tuple) {
+                return construct<F>(func, base::forward<Tuple>(tuple), std::make_index_sequence<std::tuple_size<std::decay_t<Tuple>>::value>{});
+            }
+
+        }
+
+        template <typename R, typename F, DecodeBackend DB, typename... Entries>
+        base::Either<R, typename DB::ErrorType> decodeMap2(F func, DB& backend, typename DB::DataType const& data, Entries... entries) {
+            using namespace _impl;
+            using ListT = TupleType<Entries...>::Type;
+            using Tuple = ListToTuple<ListT>::Type;
+            constexpr usize N = sizeof...(Entries);
+            Tuple result;
+            Uninitialized<typename DB::ErrorType> error;
+            bool success = process<0, N, DB, Tuple, List<Entries...>, Uninitialized<typename DB::ErrorType>>(backend, data, result, error, std::make_tuple(entries...));
+            if (success) return base::makeLeft<R, typename DB::ErrorType>(construct<F>(func, base::move(result)));
+            else return base::makeRight<R, typename DB::ErrorType>(error.get());
+        }
+
         // head for recursive definition: no entries at all
         template <typename R, typename F, DecodeBackend DB>
+        // SPARGEL_ALWAYS_INLINE
         base::Either<R, typename DB::ErrorType> decodeMap(F func, DB& backend,
                                                           const typename DB::DataType& data) {
             return base::makeLeft<R, typename DB::ErrorType>(func());
@@ -421,6 +562,7 @@ namespace spargel::codec {
 
         // decode one required entry
         template <typename R, typename F, DecodeBackend DB, Decoder D, typename... Entries>
+        // SPARGEL_ALWAYS_INLINE
         base::Either<R, typename DB::ErrorType> decodeMap(F func, DB& backend,
                                                           const typename DB::DataType& data,
                                                           DecodeField::Required<D> entry,
@@ -444,6 +586,7 @@ namespace spargel::codec {
 
         // decode one optional entry
         template <typename R, typename F, DecodeBackend DB, Decoder D, typename... Entries>
+        // SPARGEL_ALWAYS_INLINE
         base::Either<R, typename DB::ErrorType> decodeMap(F func, DB& backend,
                                                           const typename DB::DataType& data,
                                                           DecodeField::Optional<D> entry,
@@ -468,6 +611,7 @@ namespace spargel::codec {
 
         // decode one optional entry with default value
         template <typename R, typename F, DecodeBackend DB, Decoder D, typename... Entries>
+        // SPARGEL_ALWAYS_INLINE
         base::Either<R, typename DB::ErrorType> decodeMap(F func, DB& backend,
                                                           const typename DB::DataType& data,
                                                           DecodeField::Default<D> entry,
