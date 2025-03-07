@@ -17,6 +17,7 @@ namespace spargel::base {
         T operator()(Args&&... args) const { return T(base::forward<Args>(args)...); }
     };
 
+    // old design
     namespace __curry {
 
         template <typename F, typename T>
@@ -45,5 +46,16 @@ namespace spargel::base {
     }  // namespace __curry
 
     using __curry::curry;
+
+    namespace __test {
+        // This also seems to work but is even worse
+        template <typename F, typename T>
+        constexpr auto curry(F&& f, T&& t) {
+            return [&f, &t](auto&&... args) {
+                return base::forward<F>(f)(base::forward<T>(t),
+                                           base::forward<decltype(args)>(args)...);
+            };
+        }
+    }  // namespace __test
 
 }  // namespace spargel::base

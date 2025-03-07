@@ -26,7 +26,7 @@ namespace {
         if (gltf.bufferViews.hasValue())
             printf("bufferViews: %zu\n", gltf.bufferViews.value().count());
 
-        // if (gltf.nodes.hasValue()) printf("nodes: %zu\n", gltf.nodes.value().count());
+        if (gltf.nodes.hasValue()) printf("nodes: %zu\n", gltf.nodes.value().count());
 
         if (gltf.scenes.hasValue()) printf("scenes: %zu\n", gltf.scenes.value().count());
 

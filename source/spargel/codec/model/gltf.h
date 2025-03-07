@@ -163,7 +163,7 @@ namespace spargel::codec::model {
         Optional<vector<GlTFBufferView>> bufferViews;
 
         // An array of nodes.
-        // Optional<vector<GlTFNode>> nodes;
+        Optional<vector<GlTFNode>> nodes;
 
         // The index of the default scene. This property MUST NOT be defined, when scenes is
         // undefined. (>= 0)
