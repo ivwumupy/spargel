@@ -222,6 +222,18 @@ add_test(
 )
 
 spargel_add_executable(
+    NAME tuple_test
+    PRIVATE tuple_test.cpp
+    DEPS
+        base
+        test_main
+)
+add_test(
+    NAME tuple_test
+    COMMAND tuple_test
+)
+
+spargel_add_executable(
     NAME vector_test
     PRIVATE vector_test.cpp
     DEPS
