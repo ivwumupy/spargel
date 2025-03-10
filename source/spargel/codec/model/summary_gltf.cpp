@@ -1,4 +1,5 @@
 #include <spargel/codec/model/gltf.h>
+#include <spargel/resource/directory.h>
 
 /* libc */
 #include <stdio.h>
@@ -21,6 +22,8 @@ namespace {
         if (asset.minVersion.hasValue())
             printf("  minVersion: \"%s\"\n", asset.minVersion.value().data());
 
+        if (gltf.accessors.hasValue()) printf("accessors: %zu\n", gltf.accessors.value().count());
+
         if (gltf.buffers.hasValue()) printf("buffers: %zu\n", gltf.buffers.value().count());
 
         if (gltf.bufferViews.hasValue())
@@ -40,34 +43,21 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // read file
-    FILE* fp = fopen(argv[1], "rb");
-    if (!fp) {
+    auto manager = resource::ResourceManagerDirectory("");
+    auto optional = manager.open(resource::ResourceId(base::string(argv[1])));
+    if (!optional.hasValue()) {
         fprintf(stderr, "Cannot open file \"%s\"\n", argv[1]);
         return 1;
     }
-    fseek(fp, 0, SEEK_END);
-    ssize len = ftell(fp);
-    if (len <= 0) {
-        fprintf(stderr, "Bad file size: %zu\n", len);
-        fclose(fp);
-        return 1;
-    }
-    char* data = (char*)base::default_allocator()->allocate(len);
-    fseek(fp, 0, SEEK_SET);
-    fread(data, len, 1, fp);
-    fclose(fp);
+    auto resource = base::move(optional.value());
 
-    auto result = parseGlTF(data, len);
-    if (result.isRight()) {
+    auto result = parseGlTF((char*)resource->mapData(), resource->size());
+    if (result.isLeft()) {
+        dumpGlTF(base::move(result.left()));
+        putchar('\n');
+    } else {
         fprintf(stderr, "Failed to parse glTF: %s\n", result.right().message().data());
-        base::default_allocator()->free(data, len);
-        return 1;
     }
-
-    dumpGlTF(base::move(result.left()));
-
-    base::default_allocator()->free(data, len);
 
     return 0;
 }

@@ -24,9 +24,67 @@ namespace spargel::codec::model {
     using math::Vector3f;
     using math::Vector4f;
 
+    using GlTFBoolean = bool;
     using GlTFInteger = i32;
     using GlTFNumber = f64;
     using GlTFString = base::string;
+
+    /*
+     * A typed view into a buffer view that contains raw binary data.
+     */
+    struct GlTFAccessor {
+        // The index of the buffer view. When undefined, the accessor MUST be initialized with
+        // zeros; sparse property or extensions MAY override zeros with actual values. (>=0)
+        Optional<GlTFInteger> bufferView;
+
+        // The offset relative to the start of the buffer view in bytes. This MUST be a multiple of
+        // the size of the component datatype. This property MUST NOT be defined when bufferView is
+        // undefined. (>=0)
+        // Default: 0.
+        Optional<GlTFInteger> byteOffset;
+
+        // The datatype of the accessor’s components. UNSIGNED_INT type MUST NOT be used for any
+        // accessor that is not referenced by mesh.primitive.indices.
+        // Allowed: 5120=BYTE, 5121=UNSIGNED_BYTE, 5122=SHORT, 5123=UNSIGNED_SHORT,
+        //   5125=UNSIGNED_INT, 5126=FLOAT
+        GlTFInteger componentType;
+
+        // Specifies whether integer data values are normalized (true) to [0, 1] (for unsigned
+        // types) or to [-1, 1] (for signed types) when they are accessed. This property MUST NOT be
+        // set to true for accessors with FLOAT or UNSIGNED_INT component type.
+        // Default: false.
+        Optional<GlTFBoolean> normalized;
+
+        // The number of elements referenced by this accessor, not to be confused with the number of
+        // bytes or number of components. (>=1)
+        GlTFInteger count;
+
+        // Specifies if the accessor’s elements are scalars, vectors, or matrices.
+        // Allowed: "SCALAR", "VEC2", "VEC3", "VEC4", "MAT2", "MAT3", "MAT4".
+        GlTFString type;
+
+        // Maximum value of each component in this accessor. Array elements MUST be treated as
+        // having the same data type as accessor’s componentType. Both min and max arrays have the
+        // same length. The length is determined by the value of the type property; it can be 1, 2,
+        // 3, 4, 9, or 16.
+        Optional<vector<GlTFNumber>> max;
+
+        // Minimum value of each component in this accessor. Array elements MUST be treated as
+        // having the same data type as accessor’s componentType. Both min and max arrays have the
+        // same length. The length is determined by the value of the type property; it can be 1, 2,
+        // 3, 4, 9, or 16.
+        Optional<vector<GlTFNumber>> min;
+
+        // TODO: sparse
+
+        // The user-defined name of this object. This is not necessarily unique, e.g., an accessor
+        // and a buffer could have the same name, or two accessors could even have the same name.
+        Optional<GlTFString> name;
+    };
+
+    /* TODO
+     * Sparse storage of accessor values that deviate from their initialization value.
+     */
 
     /*
      * Metadata about the glTF asset.
@@ -152,6 +210,9 @@ namespace spargel::codec::model {
      * The root object for a glTF asset.
      */
     struct GlTF {
+        // An array of accessors. An accessor is a typed view into a bufferView.
+        Optional<vector<GlTFAccessor>> accessors;
+
         // Metadata about the glTF asset.
         GlTFAsset asset;
 

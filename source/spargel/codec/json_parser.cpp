@@ -106,7 +106,6 @@ namespace spargel::codec {
         using base::makeLeft;
         using base::makeOptional;
         using base::makeRight;
-        using base::move;
         using base::nullopt;
 
         const auto UNEXPECTED_END = JsonParseError("unexpected end");
@@ -210,7 +209,7 @@ namespace spargel::codec {
                 /* null */
                 auto result = parseNull(ctx);
                 if (result.hasValue())
-                    return makeRight<JsonValue, JsonParseError>(move(result.value()));
+                    return makeRight<JsonValue, JsonParseError>(base::move(result.value()));
                 else
                     return makeLeft<JsonValue, JsonParseError>();
             }
@@ -530,19 +529,19 @@ namespace spargel::codec {
             bool minus;
             auto result = parseInteger(ctx, number, minus);
             if (result.hasValue())
-                return makeRight<JsonNumber, JsonParseError>(move(result.value()));
+                return makeRight<JsonNumber, JsonParseError>(base::move(result.value()));
 
             result = parseFraction(ctx, number);
             if (result.hasValue())
-                return makeRight<JsonNumber, JsonParseError>(move(result.value()));
+                return makeRight<JsonNumber, JsonParseError>(base::move(result.value()));
 
             result = parseExponent(ctx, number);
             if (result.hasValue())
-                return makeRight<JsonNumber, JsonParseError>(move(result.value()));
+                return makeRight<JsonNumber, JsonParseError>(base::move(result.value()));
 
             if (minus) number = -number;
 
-            return makeLeft<JsonNumber, JsonParseError>(move(number));
+            return makeLeft<JsonNumber, JsonParseError>(base::move(number));
         }
 
         /*
@@ -581,20 +580,20 @@ namespace spargel::codec {
         Either<JsonObject, JsonParseError> parseMembers(JsonParseContext& ctx) {
             auto& cursor = ctx.cursor;
 
-            JsonObject object;
+            base::HashMap<JsonString, JsonValue> members(base::default_allocator());
             while (!cursorIsEnd(cursor)) {
                 // member
                 JsonString key;
                 JsonValue value;
                 auto result = parseMember(ctx, key, value);
                 if (result.hasValue())
-                    return makeRight<JsonObject, JsonParseError>(move(result.value()));
+                    return makeRight<JsonObject, JsonParseError>(base::move(result.value()));
 
-                object.members.set(move(key), move(value));
+                members.set(base::move(key), base::move(value));
 
                 // ','
                 if (!cursorTryEatChar(cursor, ','))
-                    return makeLeft<JsonObject, JsonParseError>(move(object));
+                    return makeLeft<JsonObject, JsonParseError>(JsonObject(base::move(members)));
             }
 
             return makeRight<JsonObject, JsonParseError>(UNEXPECTED_END);
@@ -613,8 +612,9 @@ namespace spargel::codec {
 
             // string
             auto result_key = parseString(ctx);
-            if (result_key.isRight()) return makeOptional<JsonParseError>(move(result_key.right()));
-            key = result_key.left();
+            if (result_key.isRight())
+                return makeOptional<JsonParseError>(base::move(result_key.right()));
+            key = base::move(result_key.left());
 
             // ws
             eatWhitespaces(ctx);
@@ -625,8 +625,8 @@ namespace spargel::codec {
             // element
             auto result_value = parseElement(ctx);
             if (result_value.isRight())
-                return makeOptional<JsonParseError>(move(result_value.right()));
-            value = result_value.left();
+                return makeOptional<JsonParseError>(base::move(result_value.right()));
+            value = base::move(result_value.left());
 
             return nullopt;
         }
@@ -639,18 +639,18 @@ namespace spargel::codec {
         Either<JsonArray, JsonParseError> parseElements(JsonParseContext& ctx) {
             auto& cursor = ctx.cursor;
 
-            JsonArray array;
-            auto result = makeLeft<JsonValue, JsonParseError>();
+            base::vector<JsonValue> elements;
             while (!cursorIsEnd(cursor)) {
                 // element
-                result = parseElement(ctx);
-                if (result.isRight()) return makeRight<JsonArray, JsonParseError>(result.right());
+                auto result = parseElement(ctx);
+                if (result.isRight())
+                    return makeRight<JsonArray, JsonParseError>(base::move(result.right()));
 
-                array.elements.push(move(result.left()));
+                elements.push(base::move(result.left()));
 
                 // ','
                 if (!cursorTryEatChar(cursor, ','))
-                    return makeLeft<JsonArray, JsonParseError>(move(array));
+                    return makeLeft<JsonArray, JsonParseError>(JsonArray(base::move(elements)));
             }
 
             return makeRight<JsonArray, JsonParseError>(UNEXPECTED_END);

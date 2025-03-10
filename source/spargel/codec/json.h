@@ -33,6 +33,7 @@ namespace spargel::codec {
         JsonObject() : members(base::default_allocator()) {}
 
         JsonObject(const base::HashMap<JsonString, JsonValue>& members) : members(members) {}
+        JsonObject(base::HashMap<JsonString, JsonValue>&& members) : members(base::move(members)) {}
     };
 
     struct JsonArray {

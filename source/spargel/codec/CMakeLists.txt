@@ -59,7 +59,9 @@ add_test(
 spargel_add_executable(
     NAME dump_json
     PRIVATE dump_json.cpp
-    DEPS codec_json
+    DEPS
+        codec_json
+        resource
 )
 
 add_subdirectory(model/)

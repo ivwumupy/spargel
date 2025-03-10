@@ -221,8 +221,11 @@ namespace spargel::resource {
 #endif
 
     base::string ResourceManagerDirectory::_real_path(const ResourceId& id) {
-        base::string root = _root_path.length() == 0 ? base::string(".") : _root_path;
-        return root + PATH_SPLIT + id.path();
+        if (_root_path.length() == 0) {
+            return id.path();
+        } else {
+            return _root_path + PATH_SPLIT + id.path();
+        }
     }
 
     base::unique_ptr<ResourceManagerDirectory> makeRelativeManager(
