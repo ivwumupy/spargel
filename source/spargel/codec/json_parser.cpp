@@ -313,14 +313,18 @@ namespace spargel::codec {
 
             // characters
             base::vector<char> chars;
+            bool has_escape = false;
+            char const* begin = cursorGetPtr(cursor);
 
             while (!cursorIsEnd(cursor)) {
                 char ch = cursorGetChar(cursor);
                 char ch2 = cursorGetChar(cursor);
 
                 if (isGood(ch, ch2)) [[likely]] {
-                    chars.push(ch);
-                    chars.push(ch2);
+                    if (has_escape) {
+                        chars.push(ch);
+                        chars.push(ch2);
+                    }
                     continue;
                 } else {
                     // FIXME
@@ -329,12 +333,15 @@ namespace spargel::codec {
 
                 // '"'
                 if (ch == '"') {
+                    if (!has_escape) return makeLeft<JsonString, JsonParseError>(base::string_from_range(begin, cursorGetPtr(cursor) - 1));
+
                     return makeLeft<JsonString, JsonParseError>(
                         base::string_from_range(chars.begin(), chars.end()));
                 }
 
                 // '\'
                 if (ch == '\\') {
+                    has_escape = true;
                     if (cursorIsEnd(cursor))
                         return makeRight<JsonString, JsonParseError>("unfinished escape");
 
