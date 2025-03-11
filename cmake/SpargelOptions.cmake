@@ -22,7 +22,7 @@ else()
     set(SPARGEL_ENABLE_METAL_DEFAULT OFF)
 endif()
 
-spargel_add_option(SPARGEL_ENABLE_ADDRESSS_ANITIZER "enable address sanitizer" ON)
+spargel_add_option(SPARGEL_ENABLE_ADDRESS_SANITIZER "enable address sanitizer" ON)
 spargel_add_option(SPARGEL_ENABLE_ASSERT "enable assert()" ON)
 spargel_add_option(SPARGEL_ENABLE_COVERAGE "enable coverge" OFF)
 spargel_add_option(SPARGEL_ENABLE_LOG_ANSI_COLOR "enable ANSI color for logging" OFF)
