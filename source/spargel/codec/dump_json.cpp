@@ -30,8 +30,7 @@ namespace {
 
     void dumpString(const JsonString& string) {
         putchar('"');
-        printf("TODO");
-        // printf("%s", string.data());
+        printf("%s", string.data());
         putchar('"');
     }
 

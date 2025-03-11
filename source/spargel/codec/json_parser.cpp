@@ -278,9 +278,7 @@ namespace spargel::codec {
         }
 
         bool isGood(char c, char d) {
-            return (c != '"' && d != '"')
-                && (c != '\\' && d != '\\')
-                && (c >= 0x20 && d >= 0x20);
+            return (c != '"' && d != '"') && (c != '\\' && d != '\\') && (c >= 0x20 && d >= 0x20);
         }
 
         /*
@@ -319,7 +317,7 @@ namespace spargel::codec {
             while (!cursorIsEnd(cursor)) {
                 char ch = cursorGetChar(cursor);
                 char ch2 = cursorGetChar(cursor);
-                
+
                 if (isGood(ch, ch2)) [[likely]] {
                     continue;
                 } else {
