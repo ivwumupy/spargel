@@ -51,15 +51,16 @@ namespace spargel::base {
             // FIXME:
             // ArrayStorage does not hava a default constructor
             HashMap(HashMap&& other)
-                : _keys(ArrayStorage<K>(other._alloc)),
-                  _values(ArrayStorage<T>(other._alloc)),
+                : _status(other._alloc),
+                  _keys(other._alloc),
+                  _values(other._alloc),
                   _alloc{other._alloc} {
                 swap(*this, other);
             }
             HashMap& operator=(HashMap&& other) {
                 spargel_assert(_alloc == other._alloc);
 
-                HashMap tmp(move(other));
+                HashMap tmp(base::move(other));
                 swap(*this, tmp);
                 return *this;
             }
@@ -115,11 +116,11 @@ namespace spargel::base {
             friend void tag_invoke(tag<swap>, HashMap& lhs, HashMap& rhs) {
                 spargel_assert(lhs._alloc == rhs._alloc);
 
-                swap(lhs._capacity, rhs._capacity);
-                swap(lhs._count, rhs._count);
-                swap(lhs._status, rhs._status);
-                swap(lhs._keys, rhs._keys);
-                swap(lhs._values, rhs._values);
+                base::swap(lhs._capacity, rhs._capacity);
+                base::swap(lhs._count, rhs._count);
+                base::swap(lhs._status, rhs._status);
+                base::swap(lhs._keys, rhs._keys);
+                base::swap(lhs._values, rhs._values);
             }
 
         private:
@@ -150,8 +151,8 @@ namespace spargel::base {
                         usize new_i = findFreeSlot(_keys[i], new_cap, new_status);
 
                         new_status[new_i] = SlotStatus::used;
-                        construct_at(new_keys.getPtr(new_i), move(_keys[i]));
-                        construct_at(new_values.getPtr(new_i), move(_values[i]));
+                        construct_at<K>(new_keys.getPtr(new_i), base::move(_keys[i]));
+                        construct_at<T>(new_values.getPtr(new_i), base::move(_values[i]));
                     }
                 }
 
@@ -163,7 +164,7 @@ namespace spargel::base {
                 swap(_values, new_values);
             }
 
-            usize findFreeSlot(K const& key, usize cap, vector<SlotStatus> status) {
+            usize findFreeSlot(K const& key, usize cap, vector<SlotStatus> const& status) {
                 spargel_assert(cap > 0);
 
                 u64 h = hash(key);
