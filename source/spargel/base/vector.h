@@ -164,13 +164,16 @@ namespace spargel::base {
 #if spargel_has_builtin(__is_trivially_relocatable)
                     if constexpr (__is_trivially_relocatable(T)) {
                         memcpy(new_begin, _begin, old_count * sizeof(T));
-                    } else {
+                    } else
+#elif spargel_has_builtin(__is_trivially_copyable)
+                    if constexpr (__is_trivially_copyable(T)) {
+                        memcpy(new_begin, _begin, old_count * sizeof(T));
+                    } else
 #endif
+                    {
                         move_items(new_begin);
                         destruct_items();
-#if spargel_has_builtin(__is_trivially_relocatable)
                     }
-#endif
                     deallocate();
                 }
                 _begin = new_begin;
