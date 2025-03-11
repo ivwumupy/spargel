@@ -25,7 +25,10 @@ struct Student {
                 EncodeField::Optional<CodecString>("nickname", student.nickname),
                 EncodeField::Normal<CodecU32>("age", student.age),
                 EncodeField::Normal<CodecBoolean>("happy", student.happy),
-                EncodeField::Normal<CodecArray<CodecInRange<CodecF32, 0.0f, 100.0f>>>("scores", student.scores));
+                // TODO: Clang 16 bug
+                //
+                // EncodeField::Normal<CodecArray<CodecInRange<CodecF32, 0.0f, 100.0f>>>("scores", student.scores));
+                EncodeField::Normal<CodecArray<CodecF32>>("scores", student.scores));
             // clang-format on
         }
 
@@ -40,7 +43,10 @@ struct Student {
                 DecodeField::Optional<CodecString>("nickname"),
                 DecodeField::Required<CodecU32>("age"),
                 DecodeField::Required<CodecBoolean>("happy"),
-                DecodeField::Required<CodecArray<CodecInRange<CodecF32, 0.0f, 100.0f>>>("scores"));
+                // TODO: Clang 16 bug
+                //
+                // DecodeField::Required<CodecArray<CodecInRange<CodecF32, 0.0f, 100.0f>>>("scores"));
+                DecodeField::Required<CodecArray<CodecF32>>("scores"));
             // clang-format on
         }
     };

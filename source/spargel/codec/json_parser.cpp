@@ -319,6 +319,8 @@ namespace spargel::codec {
                 char ch2 = cursorGetChar(cursor);
 
                 if (isGood(ch, ch2)) [[likely]] {
+                    chars.push(ch);
+                    chars.push(ch2);
                     continue;
                 } else {
                     // FIXME

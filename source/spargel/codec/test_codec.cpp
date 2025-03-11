@@ -41,13 +41,17 @@ namespace {
     static_assert(EncoderDecoder<CodecGreaterEqual<CodecI32, 0>>);
     static_assert(EncoderDecoder<CodecLessThan<CodecI32, 0>>);
     static_assert(EncoderDecoder<CodecLessEqual<CodecI32, 0>>);
-    static_assert(EncoderDecoder<CodecGreaterThan<CodecF32, 0.0f>>);
-    static_assert(EncoderDecoder<CodecGreaterEqual<CodecF32, 0.0f>>);
-    static_assert(EncoderDecoder<CodecLessThan<CodecF64, 0.0>>);
-    static_assert(EncoderDecoder<CodecLessEqual<CodecF64, 0.0>>);
+    // TODO: Clang 16 bug
+    //
+    // static_assert(EncoderDecoder<CodecGreaterThan<CodecF32, 0.0f>>);
+    // static_assert(EncoderDecoder<CodecGreaterEqual<CodecF32, 0.0f>>);
+    // static_assert(EncoderDecoder<CodecLessThan<CodecF64, 0.0>>);
+    // static_assert(EncoderDecoder<CodecLessEqual<CodecF64, 0.0>>);
 
     static_assert(EncoderDecoder<CodecInRange<CodecI32, 0, 100>>);
-    static_assert(EncoderDecoder<CodecInRange<CodecF32, 0.0f, 100.0f>>);
+    // TODO: Clang 16 bug
+    //
+    // static_assert(EncoderDecoder<CodecInRange<CodecF32, 0.0f, 100.0f>>);
 
     struct TestData {
         u64 value;
