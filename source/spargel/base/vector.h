@@ -159,22 +159,36 @@ namespace spargel::base {
             void grow(usize need) {
                 usize old_count = count();
                 auto new_capacity = next_capacity(need);
-                T* new_begin = static_cast<T*>(_alloc->allocate(sizeof(T) * new_capacity));
+                T* new_begin = nullptr;
+#if spargel_has_builtin(__is_trivially_copyable)
+                if constexpr (__is_trivially_copyable(T)) {
+                    if (_begin == nullptr) {
+                        new_begin = static_cast<T*>(_alloc->allocate(sizeof(T) * new_capacity));
+                    } else {
+                        new_begin = static_cast<T*>(_alloc->resize(_begin, capacity() * sizeof(T), sizeof(T) * new_capacity));
+                    }
+                } else
+#endif
+                {
+                
+                new_begin = static_cast<T*>(_alloc->allocate(sizeof(T) * new_capacity));
                 if (_begin != nullptr) [[likely]] {
 #if spargel_has_builtin(__is_trivially_relocatable)
                     if constexpr (__is_trivially_relocatable(T)) {
                         memcpy(new_begin, _begin, old_count * sizeof(T));
                     } else
-#elif spargel_has_builtin(__is_trivially_copyable)
-                    if constexpr (__is_trivially_copyable(T)) {
-                        memcpy(new_begin, _begin, old_count * sizeof(T));
-                    } else
+//#elif spargel_has_builtin(__is_trivially_copyable)
+//                    if constexpr (__is_trivially_copyable(T)) {
+//                        memcpy(new_begin, _begin, old_count * sizeof(T));
+//                    } else
 #endif
                     {
                         move_items(new_begin);
                         destruct_items();
                     }
                     deallocate();
+                }
+
                 }
                 _begin = new_begin;
                 _end = _begin + old_count;
