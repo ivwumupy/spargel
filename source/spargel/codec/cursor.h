@@ -24,6 +24,10 @@ namespace spargel::codec {
         return ch;
     }
 
+    inline char const* cursorGetPtr(Cursor& cursor) {
+        return cursor.cur;
+    }
+
     /*
      * These funtions will move the cursor if succeeds,
      * otherwise the cursor will not move.

@@ -277,6 +277,12 @@ namespace spargel::codec {
             return result;
         }
 
+        bool isGood(char c, char d) {
+            return (c != '"' && d != '"')
+                && (c != '\\' && d != '\\')
+                && (c >= 0x20 && d >= 0x20);
+        }
+
         /*
          * string:
          *   '"' characters '"'
@@ -309,8 +315,18 @@ namespace spargel::codec {
 
             // characters
             base::vector<char> chars;
+
             while (!cursorIsEnd(cursor)) {
                 char ch = cursorGetChar(cursor);
+                char ch2 = cursorGetChar(cursor);
+                
+                if (isGood(ch, ch2)) [[likely]] {
+                    continue;
+                } else {
+                    // FIXME
+                    cursor.cur--;
+                }
+
                 // '"'
                 if (ch == '"') {
                     return makeLeft<JsonString, JsonParseError>(
