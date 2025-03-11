@@ -3,6 +3,7 @@
 #include <spargel/base/algorithm.h>
 #include <spargel/base/allocator.h>
 #include <spargel/base/assert.h>
+#include <spargel/base/attribute.h>
 #include <spargel/base/logging.h>
 #include <spargel/base/meta.h>
 #include <spargel/base/object.h>
@@ -59,7 +60,8 @@ namespace spargel::base {
 
             // construct and push back
             template <typename... Args>
-            void push(Args&&... args) {
+            SPARGEL_ALWAYS_INLINE
+            inline void push(Args&&... args) {
                 if (_end >= _capacity) [[unlikely]] {
                     grow(capacity() + 1);
                 }

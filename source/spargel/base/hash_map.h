@@ -195,11 +195,17 @@ namespace spargel::base {
             }
 
             void destructItems() {
-                for (usize i = 0; i < _capacity; i++) {
-                    if (_status[i] == SlotStatus::used) {
-                        destruct_at(_keys.getPtr(i));
-                        destruct_at(_values.getPtr(i));
+                auto p1 = _status.begin();
+                auto p2 = _keys.begin();
+                auto p3 = _values.begin();
+                while (p1 < _status.end()) {
+                    if (*p1 == SlotStatus::used) {
+                        destruct_at(p2);
+                        destruct_at(p3);
                     }
+                    p1++;
+                    p2++;
+                    p3++;
                 }
             }
 

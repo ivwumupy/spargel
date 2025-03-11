@@ -78,6 +78,9 @@ namespace spargel::base {
                 return reinterpret_cast<T const*>(_data + i * sizeof(T));
             }
 
+            T* begin() { return reinterpret_cast<T*>(_data); }
+            T const* begin() const { return reinterpret_cast<T const*>(_data); }
+
             /// Access the object by index.
             /// 
             /// Parameters:
