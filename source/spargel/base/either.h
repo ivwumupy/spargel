@@ -7,6 +7,21 @@ namespace spargel::base {
 
     namespace _either {
 
+        template <typename L>
+        struct Left {
+            L value;
+        };
+
+        template <typename R>
+        struct Right {
+            R value;
+        };
+
+        template <typename L>
+        Left(L const&) -> Left<L>;
+        template <typename L>
+        Left(L&&) -> Left<L>;
+
         template <typename L, typename R>
         class Either {
             using Type = SumType<L, R>;
@@ -14,6 +29,13 @@ namespace spargel::base {
         public:
             // Constructors
             Either() = default;
+
+            Either(Left<L> const& l) : Either(LeftTag<true>{}, l.value) {}
+            Either(Left<L>&& l) : Either(LeftTag<true>{}, base::move(l.value)) {}
+
+            Either(Right<R> const& r) : Either(LeftTag<false>{}, r.value) {}
+            Either(Right<R>&& r) : Either(LeftTag<false>{}, base::move(r.value)) {}
+
             Either(const Either&) = default;
 
             template <typename L2, typename R2>
@@ -74,5 +96,7 @@ namespace spargel::base {
     using _either::Either;
     using _either::makeLeft;
     using _either::makeRight;
+    using _either::Left;
+    using _either::Right;
 
 }  // namespace spargel::base

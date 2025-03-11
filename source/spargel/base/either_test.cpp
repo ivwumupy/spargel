@@ -52,3 +52,13 @@ TEST(Either_Access) {
         spargel_check(either.right().y == 0.123f);
     }
 }
+
+TEST(Either_Implicit) {
+    Either<int, bool> x = Left{123};
+    spargel_check(x.isLeft());
+    spargel_check(x.left() == 123);
+
+    x = Right{false};
+    spargel_check(x.isRight());
+    spargel_check(x.right() == false);
+}
