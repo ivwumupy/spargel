@@ -17,6 +17,7 @@ namespace spargel::base {
         constexpr char operator[](usize i) const { return _begin[i]; }
         constexpr usize length() const { return _end - _begin; }
         constexpr char const* begin() const { return _begin; }
+        constexpr char const* end() const { return _end; }
         constexpr char const* data() const { return _begin; }
 
         friend bool operator==(string_view const& lhs, string_view const& rhs) {
