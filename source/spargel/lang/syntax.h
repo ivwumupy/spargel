@@ -53,11 +53,18 @@ namespace spargel::lang {
         }
 
         usize length() const { return end - begin; }
+
+        base::string_view toStringView() const { return base::string_view(begin, end); }
     };
 
     enum class LexError {
         // The cursor has reached the end of the buffer. So there is nothing to lex.
         end_of_buffer,
+
+        // Null character is not allowed inside the buffer.
+        unexpected_null_byte,
+
+        // Usually some feature not implemented yet.
         internal_error,
     };
 
@@ -75,21 +82,31 @@ namespace spargel::lang {
         // Whether the end of buffer is reached.
         bool isEnd() const { return _cur >= _end; }
 
-        // Move forward.
-        void advance() {
-            if (isEnd()) return;
-            _cur++;
+        // Advance the cursor by `n`.
+        // 
+        // Note:
+        //  - The cursor stops at the end of the buffer.
+        //
+        void advance(usize n = 1) {
+            if (_cur + n >= _end) {
+                _cur = _end;
+            } else {
+                _cur += n;
+            }
         }
 
-        // Get the current byte.
-        char peekByte() const {
-            if (isEnd()) return 0;
-            return *_cur;
+        // Get the `n`-th byte from the current position. Return 0 if the `n`-th byte goes out the buffer.
+        char peekByte(usize n = 0) const {
+            if (_cur + n >= _end) return 0;
+            return *(_cur + n);
         }
 
         LexResult lex();
         LexResult lexNewline();
+        LexResult lexWhitespace();
+        LexResult lexLineComment();
         
+        // Keep advancing until the condition on the character is false.
         void eatWhile(auto&& f) {
             while (!isEnd()) {
                 if (!f(peekByte())) return;

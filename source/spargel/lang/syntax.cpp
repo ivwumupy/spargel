@@ -6,6 +6,7 @@ namespace spargel::lang {
     namespace {
 
         bool isNewline(char c) { return c == '\n' || c == '\r'; }
+        bool isWhitespace(char c) { return c == ' ' || c == '\t'; }
 
     }
 
@@ -15,14 +16,32 @@ namespace spargel::lang {
         char c = peekByte();
 
         switch (c) {
+            
+            // null byte
+            case 0:
+                return base::Right{LexError::unexpected_null_byte};
 
-        // newline
-        case '\n':
-        case '\r':
-            return lexNewline();
+            // newline
+            case '\n':
+            case '\r':
+                return lexNewline();
 
-        default:
-            break;
+            // whitespace
+            case ' ':
+            case '\t':
+                return lexWhitespace();
+
+            case '/': {
+                char next = peekByte(1);
+                if (next == '/') {
+                    return lexLineComment();
+                }
+                // TODO
+                break;
+            }
+
+            default:
+                break;
         }
 
         return base::Right{LexError::internal_error};
@@ -33,9 +52,31 @@ namespace spargel::lang {
 
         char const* begin = _cur;
         eatWhile([](char c) {
-            return c == '\n' || c == '\r';
+            return isNewline(c);
         });
         return base::Left{Token(TokenKind::newline, begin, _cur)};
+    }
+
+    Lexer::LexResult Lexer::lexWhitespace() {
+        spargel_check(isWhitespace(peekByte()));
+
+        char const* begin = _cur;
+        eatWhile([](char c) {
+            return isWhitespace(c);
+        });
+        return base::Left{Token(TokenKind::whitespace, begin, _cur)};
+    }
+
+    Lexer::LexResult Lexer::lexLineComment() {
+        spargel_check(peekByte() == '/' && peekByte(1) == '/');
+        
+        advance(2);
+
+        char const* begin = _cur;
+        eatWhile([](char c) {
+            return !isNewline(c);
+        });
+        return base::Left{Token(TokenKind::line_comment, begin, _cur)};
     }
 
 }
