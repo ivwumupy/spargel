@@ -22,6 +22,11 @@ namespace spargel::base {
         template <typename L>
         Left(L&&) -> Left<L>;
 
+        template <typename R>
+        Right(R const&) -> Right<R>;
+        template <typename R>
+        Right(R&&) -> Right<R>;
+
         template <typename L, typename R>
         class Either {
             using Type = SumType<L, R>;
