@@ -31,6 +31,18 @@ add_test(
 )
 
 spargel_add_executable(
+    NAME test_codec2
+    PRIVATE test_codec2.cpp
+    DEPS
+        codec
+        test_main
+)
+add_test(
+    NAME test_codec2
+    COMMAND test_codec2
+)
+
+spargel_add_executable(
     NAME test_json
     PRIVATE test_json.cpp
     DEPS

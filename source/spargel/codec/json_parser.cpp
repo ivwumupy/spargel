@@ -333,7 +333,9 @@ namespace spargel::codec {
 
                 // '"'
                 if (ch == '"') {
-                    if (!has_escape) return makeLeft<JsonString, JsonParseError>(base::string_from_range(begin, cursorGetPtr(cursor) - 1));
+                    if (!has_escape)
+                        return makeLeft<JsonString, JsonParseError>(
+                            base::string_from_range(begin, cursorGetPtr(cursor) - 1));
 
                     return makeLeft<JsonString, JsonParseError>(
                         base::string_from_range(chars.begin(), chars.end()));
