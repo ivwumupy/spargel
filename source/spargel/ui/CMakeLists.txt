@@ -7,7 +7,7 @@ spargel_add_library(
     PRIVATE_ANDROID
         ui_android.cpp
     PRIVATE_LINUX
-        text_linux.cpp
+        # text_linux.cpp
         ui_xcb.cpp
     PRIVATE_MACOS
         ui_mac.mm
@@ -22,18 +22,13 @@ if (SPARGEL_IS_ANDROID)
 endif ()
 
 if (SPARGEL_IS_LINUX)
-    find_package(X11)
-    if (X11_FOUND AND X11_xcb_FOUND)
-        target_include_directories(ui PRIVATE ${X11_INCLUDE_DIR} ${X11_xcb_INCLUDE_PATH})
-        target_link_libraries(ui PRIVATE ${X11_LIBRARIES} ${X11_xcb_LIB})
-    else ()
-        message(FATAL_ERROR "X11/Xcb not found")
-    endif ()
+
+    target_link_libraries(ui PRIVATE X11 xcb X11-xcb)
 
     if (SPARGEL_ENABLE_OPENGL)
-        find_package(OpenGL REQUIRED GLX)
-        target_link_libraries(ui PRIVATE OpenGL::GLX X11-xcb)
+        target_link_libraries(ui PRIVATE OpenGL::GLX)
     endif ()
+
 endif ()
 
 if (APPLE)

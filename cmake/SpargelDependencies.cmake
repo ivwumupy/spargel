@@ -38,12 +38,15 @@ if (SPARGEL_IS_ANDROID)
 endif ()
 
 if (SPARGEL_IS_LINUX)
-    # find_package(unwind REQUIRED)
 
-    find_package(Freetype REQUIRED)
-    # FIXME: Remove global configs.
-    include_directories(${FREETYPE_INCLUDE_DIRS})
-    link_libraries(${FREETYPE_LIBRARIES})
+    find_package(X11 REQUIRED)
+
+    if (SPARGEL_ENABLE_OPENGL)
+        find_package(OpenGL REQUIRED GLX)
+    endif ()
+
+    # TODO: find_package(Freetype REQUIRED)
+
 endif ()
 
 if (SPARGEL_IS_MACOS)

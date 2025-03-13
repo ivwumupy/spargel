@@ -3,7 +3,7 @@
 #include <spargel/base/vector.h>
 #include <spargel/config.h>
 #include <spargel/ui/platform.h>
-#include <spargel/ui/text_linux.h>
+#include <spargel/ui/ui_dummy.h>
 #include <spargel/ui/window.h>
 
 /* X11 */
@@ -32,7 +32,7 @@ namespace spargel::ui {
         base::unique_ptr<Window> makeWindow(u32 width, u32 height) override;
 
         base::unique_ptr<TextSystem> createTextSystem() override {
-            return base::make_unique<TextSystemLinux>();
+            return base::make_unique<TextSystemDummy>();
         }
 
     private:
