@@ -59,7 +59,9 @@ namespace spargel::ui {
     }
 
     PlatformXcb::~PlatformXcb() {
+#if SPARGEL_ENABLE_OPENGL
         XFree(_visual_info);
+#endif
 
         // should not do this
         // xcb_disconnect(_connection);
@@ -252,7 +254,9 @@ namespace spargel::ui {
         handle.xcb.window = _id;
 
         handle.xcb.display = _platform->_display;
+#if SPARGEL_ENABLE_OPENGL
         handle.xcb.visual_info = _platform->_visual_info;
+#endif
 
         return handle;
     }
