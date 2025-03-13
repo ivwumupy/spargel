@@ -36,8 +36,32 @@ namespace spargel::base {
         template <typename T, usize n>
         using Get = GetImpl<T, n>::Type;
 
+        template <typename T, typename L>
+        struct ConsImpl;
+
+        template <typename T, typename... Ts>
+        struct ConsImpl<T, TypeList<Ts...>> {
+            using Type = TypeList<T, Ts...>;
+        };
+
+        template <typename T, typename L>
+        using Cons = ConsImpl<T, L>::Type;
+
+        template <template <typename...> typename F, typename L>
+        struct ApplyImpl;
+
+        template <template <typename...> typename F, typename... Ts>
+        struct ApplyImpl<F, TypeList<Ts...>> {
+            using Type = F<Ts...>;
+        };
+
+        template <template <typename...> typename F, typename L>
+        using Apply = ApplyImpl<F, L>::Type;
+
     }  // namespace _type_list
 
+    using _type_list::Apply;
+    using _type_list::Cons;
     using _type_list::Get;
     using _type_list::Head;
     using _type_list::TypeList;
