@@ -35,7 +35,7 @@ RUN mkdir build \
         -DSPARGEL_GPU_ENABLE_VULKAN=OFF -DSPARGEL_ENABLE_OPENGL=OFF
 
 # build
-RUN cmake --build ./build
+RUN cmake --build ./build --parallel $(nproc)
 
 # test
 RUN cd build \
