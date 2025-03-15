@@ -81,34 +81,37 @@ namespace {
 }  // namespace
 
 TEST(Codec2_Encode_Primitive) {
-    EncodeBackendTest backend;
+    using EB = EncodeBackendTest;
+    EB backend;
     auto result = base::makeRight<TestData, CodecError>("");
 
-    result = EncoderNull(&backend).encode();
+    result = EncoderNull<EB>().encode(backend);
     spargel_check(result.isLeft() && result.left().value == 0);
 
-    result = EncoderBoolean(&backend).encode(true);
+    result = EncoderBoolean<EB>().encode(backend, true);
     spargel_check(result.isLeft() && result.left().value == 1);
-    result = EncoderBoolean(&backend).encode(false);
+    result = EncoderBoolean<EB>().encode(backend, false);
     spargel_check(result.isLeft() && result.left().value == 0);
 
-    result = EncoderI32(&backend).encode(-0x80000000);
+    result = EncoderI32<EB>().encode(backend, -0x80000000);
     spargel_check(result.isLeft() && (i32)result.left().value == (i32)-0x80000000);
-    result = CodecI32::encode(backend, 0x7FFFFFFF);
+    result = EncoderI32<EB>().encode(backend, 0x7FFFFFFF);
     spargel_check(result.isLeft() && result.left().value == 0x7FFFFFFF);
 
-    result = EncoderString(&backend).encode(base::string("ABC"));
+    result = EncoderString<EB>().encode(backend, base::string("ABC"));
     spargel_check(result.isLeft() && result.left().value == 3);
 }
 
 TEST(Codec2_Encode_Array) {
-    EncodeBackendTest backend;
+    using EB = EncodeBackendTest;
+    EB backend;
+
     {
         base::vector<base::string> v;
         v.push("A");
         v.push("BC");
         v.push("DEF");
-        auto result = EncoderString(&backend).arrayOf().encode(base::move(v));
+        auto result = EncoderString<EB>().arrayOf().encode(backend, base::move(v));
         spargel_check(result.isLeft() && result.left().value == 1 + 2 + 3);
     }
     {
@@ -121,7 +124,7 @@ TEST(Codec2_Encode_Array) {
         v2.push(3);
         v2.push(-4);
         v.push(base::move(v2));
-        auto result = EncoderI32(&backend).arrayOf().arrayOf().encode(base::move(v));
+        auto result = EncoderI32<EB>().arrayOf().arrayOf().encode(backend, base::move(v));
         spargel_check(result.isLeft() && (i32)result.left().value == (1 + -2) + (3 + -4));
     }
 }

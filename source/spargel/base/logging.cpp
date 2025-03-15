@@ -30,7 +30,11 @@
 namespace spargel::base {
 
     static char const* log_names[_LOG_COUNT] = {
-        "DEBUG", "INFO", "WARN", "ERROR", "FATAL",
+        "DEBUG",
+        "INFO",
+        "WARN",
+        "ERROR",
+        "FATAL",
     };
 
     struct log_timestamp {
@@ -73,17 +77,12 @@ namespace spargel::base {
     void log(int level, char const* file, char const* func, u32 line, char const* format, ...) {
         spargel_assert(level >= 0 && level < _LOG_COUNT);
 
-        char const* name = log_names[level];
-        struct log_timestamp time;
-        log_get_time(&time);
-
         va_list ap;
 
 #if !SPARGEL_IS_EMSCRIPTEN
 
-        char const* log_prefix = "";
-
 #if SPARGEL_ENABLE_LOG_ANSI_COLOR
+        char const* log_prefix;
         switch (level) {
         case 0:
             log_prefix = "\033[36m";
@@ -102,9 +101,13 @@ namespace spargel::base {
             log_prefix = "\033[0m";
             break;
         }
+        fputs(log_prefix, stderr);
 #endif  // SPARGEL_ENABLE_LOG_ANSI_COLOR
 
-        fputs(log_prefix, stderr);
+        char const* name = log_names[level];
+        struct log_timestamp time;
+        log_get_time(&time);
+
         fprintf(stderr, "[%02d%02d/%02d%02d%02d.%06d:%s:%s:%s:%u] ", time.mon, time.day, time.hour,
                 time.min, time.sec, time.usec, name, file, func, line);
 
@@ -121,6 +124,7 @@ namespace spargel::base {
 #endif  // !SPARGEL_IS_EMSCRIPTEN
 
 #if SPARGEL_IS_ANDROID
+
         int android_log_prio;
         switch (level) {
         case 0:
@@ -145,9 +149,9 @@ namespace spargel::base {
         va_start(ap, format);
         __android_log_vprint(android_log_prio, "spargel", format, ap);
         va_end(ap);
-#endif  // SPARGEL_IS_ANDROID
 
-#if SPARGEL_IS_EMSCRIPTEN
+#elif SPARGEL_IS_EMSCRIPTEN
+
         // FIXME
         char log_buf[4096];
 

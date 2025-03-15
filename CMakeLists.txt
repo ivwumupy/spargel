@@ -58,6 +58,12 @@ include(SpargelOptions)
 
 include(SpargelDependencies)
 
+##----------------
+## Static Analysis
+##----------------
+
+include(SpargelStaticAnalysis)
+
 ##------
 ## Misc
 ##------

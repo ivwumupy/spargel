@@ -21,3 +21,8 @@ CMakeUserPresets.json
 
 # swift
 .build/
+
+# docker
+.git
+/android
+/third_party

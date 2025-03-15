@@ -8,14 +8,10 @@
 #pragma once
 
 #include <spargel/base/tuple.h>
+#include <spargel/base/unique_ptr.h>
 #include <spargel/codec/codec.h>
 
 namespace spargel::codec {
-
-    class A {
-    public:
-        void say() {}
-    };
 
     template <EncodeBackend EB, typename T>
     class EncoderArray;
@@ -26,57 +22,64 @@ namespace spargel::codec {
         using DataType = EB::DataType;
         using ErrorType = EB::ErrorType;
 
-        Encoder2(EB* backend) : _backend(backend) {}
+        virtual ~Encoder2() = default;
 
-        virtual base::Either<DataType, ErrorType> encode(const T& object) const = 0;
+        virtual base::Either<DataType, ErrorType> encode(EB& backend, const T& object) const = 0;
 
-        EncoderArray<EB, T> arrayOf() { return EncoderArray(_backend, this); }
+        virtual base::unique_ptr<Encoder2> clone() const = 0;
 
-    protected:
-        EB* _backend;
+        EncoderArray<EB, T> arrayOf() { return EncoderArray<EB, T>(clone()); }
     };
 
     template <EncodeBackend EB>
     class EncoderNull : public Encoder2<EB, base::nullptr_t> {
     public:
-        EncoderNull(EB* backend) : Encoder2<EB, base::nullptr_t>(backend) {}
-
         base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-            const base::nullptr_t& ptr = nullptr) const override {
-            return this->_backend->makeNull();
+            EB& backend, const base::nullptr_t& ptr = nullptr) const override {
+            return backend.makeNull();
+        }
+
+        base::unique_ptr<Encoder2<EB, base::nullptr_t>> clone() const override {
+            return base::make_unique<EncoderNull<EB>>(*this);
         }
     };
 
     template <EncodeBackend EB>
     class EncoderBoolean : public Encoder2<EB, bool> {
     public:
-        EncoderBoolean(EB* backend) : Encoder2<EB, bool>(backend) {}
-
         base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-            const bool& b) const override {
-            return this->_backend->makeBoolean(b);
+            EB& backend, const bool& b) const override {
+            return backend.makeBoolean(b);
+        }
+
+        base::unique_ptr<Encoder2<EB, bool>> clone() const override {
+            return base::make_unique<EncoderBoolean<EB>>(*this);
         }
     };
 
     template <EncodeBackend EB>
     class EncoderI32 : public Encoder2<EB, i32> {
     public:
-        EncoderI32(EB* backend) : Encoder2<EB, i32>(backend) {}
-
         base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-            const i32& n) const override {
-            return this->_backend->makeI32(n);
+            EB& backend, const i32& n) const override {
+            return backend.makeI32(n);
+        }
+
+        base::unique_ptr<Encoder2<EB, i32>> clone() const override {
+            return base::make_unique<EncoderI32<EB>>(*this);
         }
     };
 
     template <EncodeBackend EB>
     class EncoderString : public Encoder2<EB, base::string> {
     public:
-        EncoderString(EB* backend) : Encoder2<EB, base::string>(backend) {}
-
         base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-            const base::string& s) const override {
-            return this->_backend->makeString(s);
+            EB& backend, const base::string& s) const override {
+            return backend.makeString(s);
+        }
+
+        base::unique_ptr<Encoder2<EB, base::string>> clone() const override {
+            return base::make_unique<EncoderString<EB>>(*this);
         }
     };
 
@@ -86,35 +89,25 @@ namespace spargel::codec {
         using ErrorType = EB::ErrorType;
 
     public:
-        EncoderArray(EB* backend, const Encoder2<EB, T>* encoder)
-            : Encoder2<EB, base::vector<T>>(backend), _encoder(encoder) {}
+        EncoderArray(base::unique_ptr<Encoder2<EB, T>>&& encoder) : _encoder(base::move(encoder)) {}
 
-        base::Either<DataType, ErrorType> encode(const base::vector<T>& v) const override {
+        base::Either<DataType, ErrorType> encode(
+            EB& backend, const base::vector<T>& v) const override {
             base::vector<DataType> array;
             for (auto& item : v) {
-                auto result = _encoder->encode(item);
+                auto result = _encoder->encode(backend, item);
                 if (result.isRight()) return base::Right(base::move(result.right()));
                 array.push(base::move(result.left()));
             }
-            return this->_backend->makeArray(base::move(array));
+            return backend.makeArray(base::move(array));
+        }
+
+        base::unique_ptr<Encoder2<EB, base::vector<T>>> clone() const override {
+            return base::make_unique<EncoderArray>(_encoder->clone());
         }
 
     private:
-        const Encoder2<EB, T>* _encoder;
-    };
-
-    template <EncodeBackend EB, typename T, typename F, typename... Fields>
-    class EncoderMap : public Encoder2<EB, T> {
-        using DataType = EB::DataType;
-        using ErrorType = EB::ErrorType;
-
-    public:
-        EncoderMap(EB* backend, const F& func) : Encoder2<EB, T>(backend), _func(func) {}
-
-        base::Either<DataType, ErrorType> encode(const base::vector<T>& v) const override {}
-
-    private:
-        F _func;
+        base::unique_ptr<Encoder2<EB, T>> _encoder;
     };
 
     template <EncodeBackend EB, DecodeBackend DB>

@@ -30,6 +30,23 @@ namespace spargel::base {
         template <typename... Ts>
         inline constexpr usize StorageSize = StorageSizeImpl<Ts...>::value;
 
+        template <typename... Ts>
+        struct AlignmentImpl;
+
+        template <typename T>
+        struct AlignmentImpl<T> {
+            static constexpr usize value = alignof(T);
+        };
+
+        template <typename T, typename... Ts>
+        struct AlignmentImpl<T, Ts...> {
+            static constexpr usize _rest = AlignmentImpl<Ts...>::value;
+            static constexpr usize value = alignof(T) > _rest ? alignof(T) : _rest;
+        };
+
+        template <typename... Ts>
+        inline constexpr usize Alignment = AlignmentImpl<Ts...>::value;
+
         template <usize n>
         struct IndexWrapper {};
 
@@ -104,7 +121,7 @@ namespace spargel::base {
                         swap(lhs.getValue<i>(), rhs.getValue<i>());
                     });
                 } else {
-                    Byte tmp[StorageSize<Ts...>];
+                    alignas(Alignment<Ts...>) Byte tmp[StorageSize<Ts...>];
                     visitByIndex<TypeCount>(lhs._index, [&]<usize i>(IndexWrapper<i>) {
                         visitByIndex<TypeCount>(rhs._index, [&]<usize j>(IndexWrapper<j>) {
                             using T1 = Get<Types, i>;
@@ -129,8 +146,7 @@ namespace spargel::base {
             template <typename T>
             T const* getPtr() const { return reinterpret_cast<T const*>(_bytes); }
 
-            // TODO: Alignment.
-            Byte _bytes[StorageSize<Ts...>];
+            alignas(Alignment<Ts...>) Byte _bytes[StorageSize<Ts...>];
 
             usize _index;
         };

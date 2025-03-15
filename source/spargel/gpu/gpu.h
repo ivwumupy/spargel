@@ -480,6 +480,7 @@ namespace spargel::gpu {
 
     class BindGroup {
     public:
+        virtual ~BindGroup() = default;
         virtual void setBuffer(u32 id, ObjectPtr<Buffer> buffer) = 0;
     };
 
@@ -487,11 +488,13 @@ namespace spargel::gpu {
 
     class Buffer {
     public:
+        virtual ~Buffer() = default;
         virtual void* mapAddr() = 0;
     };
 
     class CommandBuffer {
     public:
+        virtual ~CommandBuffer() = default;
         virtual ObjectPtr<RenderPassEncoder> beginRenderPass(
             RenderPassDescriptor const& descriptor) = 0;
         virtual void endRenderPass(ObjectPtr<RenderPassEncoder> encoder) = 0;
@@ -504,12 +507,14 @@ namespace spargel::gpu {
 
     class CommandQueue {
     public:
+        virtual ~CommandQueue() = default;
         virtual ObjectPtr<CommandBuffer> createCommandBuffer() = 0;
         virtual void destroyCommandBuffer(ObjectPtr<CommandBuffer>) = 0;
     };
 
     class ComputePassEncoder {
     public:
+        virtual ~ComputePassEncoder() = default;
         virtual void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) = 0;
         virtual void setComputePipeline2(ObjectPtr<ComputePipeline2> pipeline) = 0;
         virtual void setBindGroup(u32 index, ObjectPtr<BindGroup> group) = 0;
@@ -591,6 +596,7 @@ namespace spargel::gpu {
 
     class RenderPassEncoder {
     public:
+        virtual ~RenderPassEncoder() = default;
         virtual void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) = 0;
         virtual void setVertexBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) = 0;
         virtual void setFragmentBuffer(ObjectPtr<Buffer> buffer,
@@ -609,6 +615,7 @@ namespace spargel::gpu {
 
     class Surface {
     public:
+        virtual ~Surface() = default;
         virtual ObjectPtr<Texture> nextTexture() = 0;
         virtual float width() = 0;
         virtual float height() = 0;
@@ -616,6 +623,7 @@ namespace spargel::gpu {
 
     class Texture {
     public:
+        virtual ~Texture() = default;
         virtual void updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
                                   base::span<base::Byte> bytes) = 0;
     };

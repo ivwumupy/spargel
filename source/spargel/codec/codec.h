@@ -432,7 +432,7 @@ namespace spargel::codec {
                 T const& get() const { return *reinterpret_cast<T const*>(&bytes); }
 
                 bool initialized = false;
-                base::Byte bytes[sizeof(T)];
+                alignas(alignof(T)) base::Byte bytes[sizeof(T)];
             };
             template <typename...>
             struct List;

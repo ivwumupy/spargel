@@ -40,6 +40,12 @@ int main(int argc, char* argv[]) {
     } else if (backend == gpu::DeviceKind::vulkan) {
         blob = resource_manager->open(resource::ResourceId("demo_sum.spirv"));
     }
+
+    if (!blob.hasValue()) {
+        spargel_log_fatal("cannot load shader code");
+        return 1;
+    }
+
     auto library = device->createShaderLibrary(blob.value()->getSpan());
 
     spargel_log_info("shader library loaded");
