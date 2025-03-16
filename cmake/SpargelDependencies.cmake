@@ -40,7 +40,7 @@ if (SPARGEL_IS_ANDROID)
 endif ()
 
 if (SPARGEL_IS_LINUX)
-    if (SPARGEL_LINUX_DESKTOP)
+    if (SPARGEL_LINUX_IS_DESKTOP)
 
         find_package(X11 REQUIRED)
 

@@ -25,4 +25,3 @@ CMakeUserPresets.json
 # docker
 .git
 /android
-/third_party

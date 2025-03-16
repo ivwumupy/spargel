@@ -4,19 +4,6 @@
 #include <spargel/base/unique_ptr.h>
 #include <spargel/resource/resource.h>
 
-#if SPARGEL_FILE_MMAP
-
-#if SPARGEL_IS_WINDOWS
-typedef void* HANDLE;
-#endif
-
-#else
-
-// libc
-#include <stdio.h>
-
-#endif  // !SPARGEL_FILE_MMAP
-
 namespace spargel::resource {
 
     class ResourceManagerDirectory : public ResourceManager {

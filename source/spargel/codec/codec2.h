@@ -1,8 +1,6 @@
 /*
- * This implementation was inspired by Mojang's DataFixerUpper library.
- * Much of the design and implementation references the library.
- *
- * See LICENCE_Mojang_DataFixerUpper for original license.
+ * This implementation was inspired by https://github.com/Mojang/DataFixerUpper.
+ * See LICENCE_Mojang_DataFixerUpper.
  */
 
 #pragma once

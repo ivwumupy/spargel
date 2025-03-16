@@ -1,10 +1,3 @@
-
-if (SPARGEL_IS_LINUX)
-    if (SPARGEL_LINUX_DESKTOP)
-        set(UI_LINUX_SOURCES ui_xcb.cpp)
-    endif ()
-endif ()
-
 spargel_add_library(
     NAME ui
     PRIVATE
@@ -14,7 +7,6 @@ spargel_add_library(
     PRIVATE_ANDROID
         ui_android.cpp
     PRIVATE_LINUX
-        ${UI_LINUX_SOURCES}
     PRIVATE_MACOS
         ui_mac.mm
     PRIVATE_WINDOWS
@@ -22,13 +14,16 @@ spargel_add_library(
     DEPS base
 )
 
+
 if (SPARGEL_IS_ANDROID)
     get_target_property(ANDROID_GAME_ACTIVITY_INCLUDE game-activity::game-activity INTERFACE_INCLUDE_DIRECTORIES)
     target_include_directories(ui PRIVATE ${ANDROID_GAME_ACTIVITY_INCLUDE})
 endif ()
 
 if (SPARGEL_IS_LINUX)
-    if (SPARGEL_LINUX_DESKTOP)
+    if (SPARGEL_LINUX_IS_DESKTOP)
+
+        target_sources(ui PRIVATE ui_xcb.cpp)
 
         target_link_libraries(ui PRIVATE X11 xcb X11-xcb)
 

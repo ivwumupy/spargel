@@ -5,27 +5,28 @@
 #include <spargel/resource/directory.h>
 #include <spargel/util/path.h>
 
-// libc
-#include <string.h>
-
-#if SPARGEL_FILE_MMAP
+#if SPARGEL_USE_FILE_MMAP
 
 #if SPARGEL_IS_POSIX
-// POSIX
+
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
 #elif SPARGEL_IS_WINDOWS
 #include <windows.h>
 #endif
 
-#else  // SPARGEL_FILE_MMAP
+// libc
+#include <string.h>
+
+#else  // SPARGEL_USE_FILE_MMAP
 
 // libc
 #include <stdio.h>
 
-#endif  // SPARGEL_FILE_MMAP
+#endif  // SPARGEL_USE_FILE_MMAP
 
 #if SPARGEL_IS_POSIX
 #include <unistd.h>
@@ -46,7 +47,7 @@ namespace spargel::resource {
         void* mapData() override;
 
         usize _size;
-#if SPARGEL_FILE_MMAP
+#if SPARGEL_USE_FILE_MMAP
         void* _mapped;
 
 #if SPARGEL_IS_POSIX
@@ -69,7 +70,7 @@ namespace spargel::resource {
 #endif
     };
 
-#if SPARGEL_FILE_MMAP
+#if SPARGEL_USE_FILE_MMAP
 
     ResourceDirectory::~ResourceDirectory() {
         if (_mapped) {
@@ -173,7 +174,7 @@ namespace spargel::resource {
 #error unimplemented
 #endif  // SPARGEL_IS_POSIX
 
-#else   // SPARGEL_FILE_MMAP
+#else   // SPARGEL_USE_FILE_MMAP
 
     ResourceDirectory::~ResourceDirectory() { fclose(_fp); }
 
@@ -200,7 +201,7 @@ namespace spargel::resource {
         return base::makeOptional<base::unique_ptr<ResourceDirectory>>(
             base::make_unique<ResourceDirectory>(size, fp));
     }
-#endif  // SPARGEL_FILE_MMAP
+#endif  // SPARGEL_USE_FILE_MMAP
 
 #if SPARGEL_IS_POSIX
     bool ResourceManagerDirectory::has(const ResourceId& id) {

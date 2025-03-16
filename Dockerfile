@@ -27,7 +27,7 @@ COPY . .
 RUN mkdir build \
     && cmake -B./build -S. -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ \
-        -DSPARGEL_LINUX_DESKTOP=OFF -DSPARGEL_GPU_ENABLE_VULKAN=OFF
+        -DSPARGEL_LINUX_IS_DESKTOP=OFF -DSPARGEL_GPU_ENABLE_VULKAN=OFF
 
 # build
 RUN cmake --build ./build --parallel $(nproc)

@@ -114,35 +114,35 @@ if (SPARGEL_IS_MACOS)
         PRIVATE demo_gpu_mac.mm
         DEPS gpu resource ui
     )
-endif ()
 
-if (SPARGEL_ENABLE_METAL)
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shader.ir
-        COMMAND
-            xcrun metal -frecord-sources -o ${CMAKE_CURRENT_BINARY_DIR}/shader.ir -c ${CMAKE_CURRENT_SOURCE_DIR}/shader.metal
-        DEPENDS shader.metal
-    )
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib
-        COMMAND
-            xcrun metallib -o ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib ${CMAKE_CURRENT_BINARY_DIR}/shader.ir
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/shader.ir
-    )
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
-        COMMAND
-            cp ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib
-    )
-    add_custom_target(demo_gpu_metal_shaders
-        DEPENDS
-            ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
-    )
-    add_dependencies(demo_gpu demo_gpu_make_resources_dir demo_gpu_metal_shaders)
-    add_dependencies(demo_gpu_mac demo_gpu_make_resources_dir demo_gpu_metal_shaders)
-    add_dependencies(demo_tiles demo_gpu_make_resources_dir demo_gpu_metal_shaders)
-    add_dependencies(demo_sort demo_gpu_make_resources_dir demo_gpu_metal_shaders)
+    if (SPARGEL_ENABLE_METAL)
+        add_custom_command(
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shader.ir
+            COMMAND
+                xcrun metal -frecord-sources -o ${CMAKE_CURRENT_BINARY_DIR}/shader.ir -c ${CMAKE_CURRENT_SOURCE_DIR}/shader.metal
+            DEPENDS shader.metal
+        )
+        add_custom_command(
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib
+            COMMAND
+                xcrun metallib -o ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib ${CMAKE_CURRENT_BINARY_DIR}/shader.ir
+            DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/shader.ir
+        )
+        add_custom_command(
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
+            COMMAND
+                cp ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
+            DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/shader.metallib
+        )
+        add_custom_target(demo_gpu_metal_shaders
+            DEPENDS
+                ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
+        )
+        add_dependencies(demo_gpu demo_gpu_make_resources_dir demo_gpu_metal_shaders)
+        add_dependencies(demo_gpu_mac demo_gpu_make_resources_dir demo_gpu_metal_shaders)
+        add_dependencies(demo_tiles demo_gpu_make_resources_dir demo_gpu_metal_shaders)
+        add_dependencies(demo_sort demo_gpu_make_resources_dir demo_gpu_metal_shaders)
+    endif ()
 endif ()
 
 if (SPARGEL_GPU_ENABLE_DIRECTX)
