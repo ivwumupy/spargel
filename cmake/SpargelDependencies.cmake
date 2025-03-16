@@ -1,5 +1,7 @@
 include(FetchContent)
 
+find_package(Python COMPONENTS Interpreter)
+
 if (SPARGEL_ENABLE_OPENGL)
     if (SPARGEL_GIT_USE_SSH)
         set(GLAD_GIT_URL git@github.com:Dav1dde/glad.git)
