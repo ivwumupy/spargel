@@ -50,6 +50,13 @@ if (SPARGEL_IS_ANDROID)
     message(STATUS "Android build target: ${SPARGEL_ANDROID_TARGET}")
 endif ()
 
+if (SPARGEL_IS_LINUX)
+    spargel_add_option(SPARGEL_LINUX_DESKTOP "build for Linux desktop (X11/Wayland + OpenGL etc.)" ON)
+    if (NOT SPARGEL_LINUX_DESKTOP)
+        set(SPARGEL_ENABLE_OPENGL OFF)
+    endif ()
+endif ()
+
 if (SPARGEL_IS_WINDOWS)
     set(SPARGEL_VS_BUILD_TYPE Debug CACHE STRING "Visual Studio build type")
     message(STATUS "Visual Studio build type: ${SPARGEL_VS_BUILD_TYPE}")

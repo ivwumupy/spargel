@@ -40,15 +40,17 @@ if (SPARGEL_IS_ANDROID)
 endif ()
 
 if (SPARGEL_IS_LINUX)
+    if (SPARGEL_LINUX_DESKTOP)
 
-    find_package(X11 REQUIRED)
+        find_package(X11 REQUIRED)
 
-    if (SPARGEL_ENABLE_OPENGL)
-        find_package(OpenGL REQUIRED GLX)
+        if (SPARGEL_ENABLE_OPENGL)
+            find_package(OpenGL REQUIRED GLX)
+        endif ()
+
+        # TODO: find_package(Freetype REQUIRED)
+
     endif ()
-
-    # TODO: find_package(Freetype REQUIRED)
-
 endif ()
 
 if (SPARGEL_IS_MACOS)

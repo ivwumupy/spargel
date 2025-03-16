@@ -3,7 +3,7 @@
 
 namespace spargel::ui {
 
-#if SPARGEL_IS_LINUX
+#if SPARGEL_IS_LINUX && SPARGEL_LINUX_DESKTOP
     base::unique_ptr<Platform> makePlatformXcb();
 #elif SPARGEL_IS_MACOS
     base::unique_ptr<Platform> makePlatformAppKit();
@@ -14,7 +14,7 @@ namespace spargel::ui {
     base::unique_ptr<Platform> makePlatformDummy();
 
     base::unique_ptr<Platform> makePlatform() {
-#if SPARGEL_IS_LINUX
+#if SPARGEL_IS_LINUX && SPARGEL_LINUX_DESKTOP
         return makePlatformXcb();
 #elif SPARGEL_IS_MACOS
         return makePlatformAppKit();

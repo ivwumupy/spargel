@@ -1,3 +1,10 @@
+
+if (SPARGEL_IS_LINUX)
+    if (SPARGEL_LINUX_DESKTOP)
+        set(UI_LINUX_SOURCES ui_xcb.cpp)
+    endif ()
+endif ()
+
 spargel_add_library(
     NAME ui
     PRIVATE
@@ -7,8 +14,7 @@ spargel_add_library(
     PRIVATE_ANDROID
         ui_android.cpp
     PRIVATE_LINUX
-        # text_linux.cpp
-        ui_xcb.cpp
+        ${UI_LINUX_SOURCES}
     PRIVATE_MACOS
         ui_mac.mm
     PRIVATE_WINDOWS
@@ -22,13 +28,15 @@ if (SPARGEL_IS_ANDROID)
 endif ()
 
 if (SPARGEL_IS_LINUX)
+    if (SPARGEL_LINUX_DESKTOP)
 
-    target_link_libraries(ui PRIVATE X11 xcb X11-xcb)
+        target_link_libraries(ui PRIVATE X11 xcb X11-xcb)
 
-    if (SPARGEL_ENABLE_OPENGL)
-        target_link_libraries(ui PRIVATE OpenGL::GLX)
+        if (SPARGEL_ENABLE_OPENGL)
+            target_link_libraries(ui PRIVATE OpenGL::GLX)
+        endif ()
+
     endif ()
-
 endif ()
 
 if (APPLE)
