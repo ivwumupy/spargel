@@ -92,7 +92,7 @@ TEST(Lexer_Paren) {
 }
 
 TEST(Lexer_Identifer) {
-    Lexer l("hello _world");
+    Lexer l("hello _world t1_X23");
     Token tok;
     auto r = l.lex(tok);
     spargel_check(r == LexStatus::success);
@@ -104,6 +104,11 @@ TEST(Lexer_Identifer) {
     spargel_check(r == LexStatus::success);
     spargel_check(tok.kind == TokenKind::identifier);
     spargel_check(tok.content == "_world");
+    l.lex(tok);
+    r = l.lex(tok);
+    spargel_check(r == LexStatus::success);
+    spargel_check(tok.kind == TokenKind::identifier);
+    spargel_check(tok.content == "t1_X23");
 }
 
 TEST(Lexer_Keyword) {
