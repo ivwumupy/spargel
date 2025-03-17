@@ -46,6 +46,9 @@ namespace {
         result = parseJson("\"string\"");
         spargel_check(result.isLeft() && isEqual(result.left(), JsonString("string")));
 
+        result = parseJson("\"123\\n\\\"xyz\"");
+        spargel_check(result.isLeft() && isEqual(result.left(), JsonString("123\n\"xyz")));
+
         result = parseJson("\" \\\" \\\\ \\/ \\b \\f \\n \\r \\t \"");
         spargel_check(result.isLeft() &&
                       isEqual(result.left(), JsonString(" \" \\ / \b \f \n \r \t ")));
