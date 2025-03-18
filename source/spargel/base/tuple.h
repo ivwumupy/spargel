@@ -1,11 +1,14 @@
 #pragma once
 
+#include <spargel/base/meta.h>
 #include <spargel/base/type_list.h>
 
 namespace spargel::base {
+
     namespace _tuple {
+
         template <usize... Is>
-        struct IntegerSequence;
+        struct IntegerSequence {};
 
         template <typename T, usize I>
         struct Append;
@@ -45,9 +48,34 @@ namespace spargel::base {
             auto& get() {
                 return _storage.template get<i>();
             }
+
         private:
-            TupleStorage<TypeList<Ts...>, typename MakeSequence<sizeof...(Ts)>::Type> _storage; 
+            TupleStorage<TypeList<Ts...>, typename MakeSequence<sizeof...(Ts)>::Type> _storage;
         };
-    }
+
+        template <typename T>
+        struct TupleSize;
+
+        template <typename... Ts>
+        struct TupleSize<Tuple<Ts...>> {
+            static constexpr usize value = sizeof...(Ts);
+        };
+
+        template <typename F, typename T, usize... Is>
+        decltype(auto) applyImpl(F&& func, T&& tuple, IntegerSequence<Is...>) {
+            return base::move(func)(base::move(tuple).template get<Is>()...);
+        }
+
+        template <typename F, typename T>
+        decltype(auto) apply(F&& func, T&& tuple) {
+            return applyImpl(base::forward<F>(func), base::forward<T>(tuple),
+                             typename MakeSequence<TupleSize<base::decay<T>>::value>::Type{});
+        }
+
+    }  // namespace _tuple
+
     using _tuple::Tuple;
-}
+
+    using _tuple::apply;
+
+}  // namespace spargel::base

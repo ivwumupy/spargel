@@ -78,6 +78,15 @@ namespace {
 
     static_assert(EncodeBackend<EncodeBackendTest>);
 
+    struct Student {
+        base::string type = base::string("normal");
+        base::string name;
+        base::Optional<base::string> nickname;
+        u32 age;
+        bool happy;
+        base::vector<f32> scores;
+    };
+
 }  // namespace
 
 TEST(Codec2_Encode_Primitive) {
@@ -126,5 +135,25 @@ TEST(Codec2_Encode_Array) {
         v.push(base::move(v2));
         auto result = EncoderI32<EB>().arrayOf().arrayOf().encode(backend, base::move(v));
         spargel_check(result.isLeft() && (i32)result.left().value == (1 + -2) + (3 + -4));
+    }
+}
+
+TEST(Codec2_Encode_Map) {
+    using EB = EncodeBackendTest;
+    EB backend;
+
+    {
+        Student student;
+        student.name = "Alice";
+        student.age = 20;
+        student.happy = true;
+        base::vector<f32> scores;
+        scores.push(98);
+        scores.push(87.5f);
+        scores.push(92);
+        student.scores = base::move(scores);
+
+        auto a = EncoderString<EB>().fieldOf("a").forGetter<Student>(
+            [](const Student& student) { return student.type; });
     }
 }
