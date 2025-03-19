@@ -1,3 +1,4 @@
+#include <spargel/base/trace.h>
 #include <spargel/codec/json.h>
 #include <spargel/resource/directory.h>
 
@@ -60,6 +61,8 @@ namespace {
 }  // namespace
 
 int main(int argc, char* argv[]) {
+    spargel_trace_scope("main");
+
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
         return 1;

@@ -40,5 +40,7 @@
 
 #cmakedefine01 SPARGEL_USE_FILE_MMAP
 
+#cmakedefine01 SPARGEL_ENABLE_TRACING
+
 // Trace every allocation.
 // #cmakedefine01 SPARGEL_TRACE_ALLOCATION

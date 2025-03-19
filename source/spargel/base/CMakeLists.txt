@@ -7,6 +7,7 @@ spargel_add_library(
         string.cpp
         logging.cpp
         test.cpp
+        trace.cpp
     PRIVATE_POSIX
         platform_posix.cpp
     PRIVATE_ANDROID
