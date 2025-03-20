@@ -67,5 +67,7 @@ spargel_add_option(SPARGEL_GIT_USE_SSH "use ssh for git remote operations" OFF)
 spargel_add_option(SPARGEL_GPU_ENABLE_VULKAN "enable vulkan backend" ${SPARGEL_GPU_ENABLE_VULKAN_DEFAULT})
 spargel_add_option(SPARGEL_USE_FILE_MMAP "use file memory mapping (mmap)" ${SPARGEL_USE_FILE_MMAP_DEFAULT})
 
+spargel_add_option(SPARGEL_ENABLE_TRACING "enable tracing" OFF)
+
 # unused: spargel_add_option(SPARGEL_ENABLE_COVERAGE "enable coverge" OFF)
 # unused: spargel_add_option(SPARGEL_TRACE_ALLOCATION "trace allocation" OFF)
