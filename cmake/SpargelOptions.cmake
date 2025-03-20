@@ -63,7 +63,6 @@ spargel_add_option(SPARGEL_ENABLE_ASSERT "enable assert()" ON)
 spargel_add_option(SPARGEL_ENABLE_CLANG_TIDY "enable clang-tidy" OFF)
 spargel_add_option(SPARGEL_ENABLE_LOG_ANSI_COLOR "enable ANSI color for logging" OFF)
 spargel_add_option(SPARGEL_ENABLE_OPENGL "enable OpenGL backend" ${SPARGEL_ENABLE_OPENGL_DEFAULT})
-spargel_add_option(SPARGEL_GIT_USE_SSH "use ssh for git remote operations" OFF)
 spargel_add_option(SPARGEL_GPU_ENABLE_VULKAN "enable vulkan backend" ${SPARGEL_GPU_ENABLE_VULKAN_DEFAULT})
 spargel_add_option(SPARGEL_USE_FILE_MMAP "use file memory mapping (mmap)" ${SPARGEL_USE_FILE_MMAP_DEFAULT})
 

@@ -1,17 +1,14 @@
+#### Spargel Dependencies ####
+
 include(FetchContent)
 
 find_package(Python COMPONENTS Interpreter)
 
 if (SPARGEL_ENABLE_OPENGL)
-    if (SPARGEL_GIT_USE_SSH)
-        set(GLAD_GIT_URL git@github.com:Dav1dde/glad.git)
-    else ()
-        set(GLAD_GIT_URL https://github.com/Dav1dde/glad.git)
-    endif ()
 
     FetchContent_Declare(
         glad
-        GIT_REPOSITORY ${GLAD_GIT_URL}
+        GIT_REPOSITORY https://github.com/Dav1dde/glad.git
         GIT_TAG        v2.0.8
         GIT_SHALLOW    TRUE
         GIT_PROGRESS   TRUE
@@ -21,10 +18,10 @@ if (SPARGEL_ENABLE_OPENGL)
     if (NOT glad_POPULATED)
         message("Fetching glad")
         FetchContent_MakeAvailable(glad)
-
         add_subdirectory("${glad_SOURCE_DIR}/cmake" glad_cmake)
         glad_add_library(glad REPRODUCIBLE EXCLUDE_FROM_ALL LOADER API gl:core=3.3 EXTENSIONS)
     endif ()
+
 endif ()
 
 if (SPARGEL_GPU_ENABLE_VULKAN)
