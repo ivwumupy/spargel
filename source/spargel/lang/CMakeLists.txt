@@ -1,6 +1,7 @@
 spargel_add_library(
     NAME lang
     PRIVATE
+        lexer.cpp
     DEPS
         base
 )
