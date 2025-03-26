@@ -1,0 +1,9 @@
+open   std
+
+func main    
+() {
+    fib()
+    return;
+}
+
+func xyz() {}

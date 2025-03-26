@@ -3,14 +3,13 @@
 #include <spargel/base/command_line.h>
 #include <spargel/base/string.h>
 #include <spargel/base/string_view.h>
-#include <spargel/lang/syntax.h>
+#include <spargel/lang/lexer.h>
 #include <spargel/resource/directory.h>
 #include <spargel/resource/resource.h>
 
 using spargel::base::CommandLine;
 using spargel::base::string;
 using spargel::base::string_view;
-using spargel::lang::Lexer;
 using spargel::resource::ResourceId;
 using spargel::resource::ResourceManagerDirectory;
 
@@ -31,7 +30,6 @@ int main(int argc, char* argv[]) {
     auto source = string_view((char*)blob.value()->mapData(), (char*)blob.value()->mapData() + blob.value()->size());
 
     if (cmd.hasSwitch("lex")) {
-        Lexer lexer(source);
     }
 
     return 0;

@@ -233,4 +233,7 @@ namespace spargel::base {
 
     using __vector::vector;
 
+    template <typename T>
+    using Vector = vector<T>;
+
 }  // namespace spargel::base

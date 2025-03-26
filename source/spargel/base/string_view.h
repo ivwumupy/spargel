@@ -30,4 +30,6 @@ namespace spargel::base {
         char const* _end = nullptr;
     };
 
+    using StringView = string_view;
+
 }  // namespace spargel::base
