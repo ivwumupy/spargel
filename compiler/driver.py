@@ -16,6 +16,8 @@ def main():
     tokens = lex_source(source)
     node = parse_tokens(tokens)
     C.dump_node(node)
+    print("==== Reconstruct ====")
+    print(C.reconstruct_source(node))
     return 0
 
 if __name__ == '__main__':

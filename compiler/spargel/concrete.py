@@ -30,15 +30,15 @@ class OpenDecl:
     path: "Token"
     #path: "ModulePath"
 
-@dataclass
-class ModulePath:
-    """The path of a module.
-    """
-    segments: "[ModuleName]"
-
-@dataclass
-class ModuleName:
-    token: "Token"
+#@dataclass
+#class ModulePath:
+#    """The path of a module.
+#    """
+#    segments: "[ModuleName]"
+#
+#@dataclass
+#class ModuleName:
+#    token: "Token"
 
 @dataclass
 class FuncDecl:
@@ -253,4 +253,117 @@ def dump_node(node, level = 0):
     desc = short_desc(node)
     print(f"{prefix}|-{desc}")
     dump_children(node, level = level + 1)
+
+def _recons_tokarr(arr):
+    result = ""
+    for t in arr:
+        result += _recons_token(t)
+    return result
+
+def _recons_token(tok):
+    if tok is None:
+        return ""
+    result = (_recons_tokarr(tok.leading_trivia) + 
+              tok.text + 
+              _recons_tokarr(tok.trailing_trivia))
+    return result
+
+def reconstruct_array(arr):
+    result = ""
+    for n in arr:
+        result += reconstruct_source(n)
+    return result
+
+def reconstruct_source(node):
+    if node is None:
+        return ""
+    match node:
+        case SourceFile(items, eof_token):
+            return reconstruct_array(items)
+        case ModuleItem(item):
+            return reconstruct_source(item)
+        case OpenDecl(open_tok, path):
+            return _recons_token(open_tok) + _recons_token(path)
+        case FuncDecl(func_tok, name, func_sig, body):
+            return (
+                _recons_token(func_tok) +
+                _recons_token(name) +
+                reconstruct_source(func_sig) +
+                reconstruct_source(body)
+            )
+        case FuncSig(lparen_tok, params, rparen_tok):
+            return (
+                _recons_token(lparen_tok) +
+                reconstruct_source(params) +
+                _recons_token(rparen_tok)
+            )
+        case FuncParams(params):
+            return reconstruct_array(params)
+        case FuncParam(name, colon_tok, type, comma_tok):
+            return (
+                _recons_token(name) +
+                _recons_token(colon_tok) +
+                reconstruct_source(type) +
+                _recons_token(comma_tok)
+            )
+        case GroupedExpr(lparen_tok, expr, rparen_tok):
+            return (
+                _recons_token(lparen_tok) +
+                reconstruct_source(expr) +
+                _recons_token(rparen_tok)
+            )
+        case IdentExpr(tok):
+            return _recons_token(tok)
+        case LitExpr(tok):
+            return _recons_token(tok)
+        case AddExpr(left, add_tok, right):
+            return (
+                reconstruct_source(left) +
+                _recons_token(add_tok) +
+                reconstruct_source(right)
+            )
+        case CallExpr(func, lparen_tok, params, rparen_tok):
+            return (
+                reconstruct_source(func) +
+                _recons_token(lparen_tok) +
+                reconstruct_source(params) +
+                _recons_token(rparen_tok)
+            )
+        case CallParams(params):
+            return reconstruct_array(params)
+        case CallParam(expr, comma_tok):
+            return (
+                reconstruct_source(expr) +
+                _recons_token(comma_tok)
+            )
+        case BlockExpr(lbrace_tok, items, rbrace_tok):
+            result = ""
+            result += _recons_token(lbrace_tok)
+            result += reconstruct_array(items)
+            result += _recons_token(rbrace_tok)
+            return result
+        case BlockItem(item):
+            return reconstruct_source(item)
+        case ExprStmt(expr, semicolon_tok):
+            return (
+                reconstruct_source(expr) +
+                _recons_token(semicolon_tok)
+            )
+        case LetStmt(let_tok, name, equal_tok, expr, semicolon_tok):
+            return (
+                _recons_token(let_tok) +
+                _recons_token(name) +
+                _recons_token(equal_tok) +
+                reconstruct_source(expr) +
+                _recons_token(semicolon_tok)
+            )
+        case RetStmt(return_tok, expr, semicolon_tok):
+            return (
+                _recons_token(return_tok) +
+                reconstruct_source(expr) +
+                _recons_token(semicolon_tok)
+            )
+        case _:
+            return "?"
+
 
