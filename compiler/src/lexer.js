@@ -12,6 +12,8 @@ export const TokenKind = buildEnum([
 
     "Identifier",
 
+    "IntegerLiteral",
+
     "LeftBrace",
     "RightBrace",
     "LeftParen",
@@ -93,6 +95,22 @@ function isSemicolon(c) {
     return c === 0x3b; // ';'
 }
 
+function isDecimalDigit(c) {
+    return c >= 0x30 && c <= 0x39; // '0'-'9'
+}
+
+function isBinaryDigit(c) {
+    return c === 0x30 || c === 0x31; // '0' or '1'
+}
+
+function isHexDigit(c) {
+    return (
+        (c >= 0x30 && c <= 0x39) || // '0'-'9'
+        (c >= 0x41 && c <= 0x46) || // 'A'-'F'
+        (c >= 0x61 && c <= 0x66) // 'a'-'f'
+    );
+}
+
 function isTriviaToken(tok) {
     return (
         tok.kind === TokenKind.Newline ||
@@ -136,7 +154,7 @@ class Lexer {
 
     // start, end -- byte offset from the beginning of the buffer
     emitToken(kind, start, end) {
-        // console.log(`${kind}<${start}:${end}>`);
+        console.log(`${kind}<${start}:${end}>`);
         this.tokens.push({
             kind: kind,
             start: start,
@@ -179,6 +197,7 @@ class Lexer {
             { cond: isPeriod,           func: this.handlePeriod, },
             { cond: isSemicolon,        func: this.handleSemicolon, },
 
+            { cond: isDecimalDigit,     func: this.handleDigit, },
             { cond: isIdentifierBegin,  func: this.handleIdentifier, },
 
             { cond: x => true,          func: this.handleUnknown, },
@@ -233,6 +252,55 @@ class Lexer {
         const end = this.position;
 
         this.emitToken(TokenKind.Identifier, start, end);
+    }
+
+    handleBinaryInteger(start) {
+        // 0b0101010101
+        //  ^-pos
+        this.advance();
+        this.advanceWhile((c) => {
+            return isBinaryDigit(c);
+        });
+        const end = this.position;
+        this.emitToken(TokenKind.IntegerLiteral, start, end);
+    }
+
+    handleHexadecimalInteger(start) {
+        // 0x0123456789abcdef;
+        //  ^-pos
+        this.advance();
+        this.advanceWhile((c) => {
+            return isHexDigit(c);
+        });
+        const end = this.position;
+        this.emitToken(TokenKind.IntegerLiteral, start, end);
+    }
+
+    handleDecimalInteger(start) {
+        // 00123456789;
+        //  ^-pos
+        this.advance();
+        this.advanceWhile((c) => {
+            return isDecimalDigit(c);
+        });
+        const end = this.position;
+        this.emitToken(TokenKind.IntegerLiteral, start, end);
+    }
+
+    handleDigit() {
+        const start = this.position;
+        const first_ch = this.peek();
+        this.advance();
+        if (first_ch === 0x30) { // '0'
+            const c = this.peek();
+            if (c === 0x62) { // 'b'
+                this.handleBinaryInteger(start);
+            } else if (c === 0x78) { // 'x'
+                this.handleHexInteger(start);
+            } else if (isDigit(c)) { // decimal
+                this.handleDecimalInteger(start);
+            }
+        }
     }
 
     handleLeftParen() { this.handleOneChar(TokenKind.LeftParen); }

@@ -1,9 +1,15 @@
-open   std
+open std
 
-func main    
-() {
-    fib()
+// Warning:
+//   One cannot write `1+2`!!!
+//   Because `+2` will be parsed as an identifier.
+// 
+func main (argc: 1 + f(h), argv: 1.2 + (3 + 2)) {
+    let x = 1;
     return;
 }
+
+func foo(x): int
+    return x + 1;
 
 func xyz() {}
