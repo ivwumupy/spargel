@@ -142,7 +142,8 @@ class Parser:
         func_tok = self.eat(TokenKind.IDENTIFIER)
         name = self.eat(TokenKind.IDENTIFIER)
         func_sig = self.parse_func_sig()
-        return C.FuncDecl(func_tok, name, func_sig)
+        body = self.parse_expr()
+        return C.FuncDecl(func_tok, name, func_sig, body)
 
     def parse_func_sig(self):
         """
@@ -224,7 +225,10 @@ class Parser:
                 expr = self.parse_expr()
                 rparen_tok = self.eat(TokenKind.RIGHT_PAREN)
                 return C.GroupedExpr(lparen_tok, expr, rparen_tok)
+            case TokenKind.LEFT_BRACE:
+                return self.parse_block_expr()
             case _:
+                print(f"nud: {tok}")
                 raise Exception("internal error")
 
     # a fused lbp
@@ -264,7 +268,7 @@ class Parser:
                 return None
 
             case _:
-                print(tok)
+                print(f"nud: {tok}")
                 raise Exception("internal error")
 
     def parse_call_params(self):
@@ -279,10 +283,56 @@ class Parser:
 
     def parse_call_param(self):
         expr = self.parse_expr()
-        return C.CallParam(expr)
+        comma_tok = None
+        tok = self.peek()
+        if tok.kind == TokenKind.COMMA:
+            comma_tok = tok
+            self.advance()
+        return C.CallParam(expr, comma_tok)
 
     def parse_block_expr(self):
-        raise Exception("todo")
+        lbrace_tok = self.eat(TokenKind.LEFT_BRACE)
+        items = []
+        while not self.is_end():
+            tok = self.peek()
+            if tok.kind == TokenKind.RIGHT_BRACE:
+                break
+            item = self.parse_block_item()
+            items.append(item)
+        rbrace_tok = self.eat(TokenKind.RIGHT_BRACE)
+        return C.BlockExpr(lbrace_tok, items, rbrace_tok)
+
+    def parse_block_item(self):
+        tok = self.peek()
+        match tok.kind:
+            case TokenKind.IDENTIFIER if tok.keyword_candidate == KeywordKind.LET:
+                item = self.parse_let_stmt()
+                return C.BlockItem(item)
+            case TokenKind.IDENTIFIER if tok.keyword_candidate == KeywordKind.RETURN:
+                item = self.parse_ret_stmt()
+                return C.BlockItem(item)
+            case _:
+                item = self.parse_expr_stmt()
+                return C.BlockItem(item)
+
+    def parse_let_stmt(self):
+        let_tok = self.eat(TokenKind.IDENTIFIER)
+        name = self.eat(TokenKind.IDENTIFIER)
+        equal_tok = self.eat(TokenKind.EQUAL)
+        expr = self.parse_expr()
+        semicolon_tok = self.eat(TokenKind.SEMICOLON)
+        return C.LetStmt(let_tok, name, equal_tok, expr, semicolon_tok)
+
+    def parse_ret_stmt(self):
+        return_tok = self.eat(TokenKind.IDENTIFIER)
+        expr = self.parse_expr()
+        semicolon_tok = self.eat(TokenKind.SEMICOLON)
+        return C.RetStmt(return_tok, expr, semicolon_tok)
+
+    def parse_expr_stmt(self):
+        expr = self.parse_expr()
+        semicolon_tok = self.eat(TokenKind.SEMICOLON)
+        return C.ExprStmt(expr, semicolon_tok)
 
 def parse_tokens(tokens):
     parser = Parser(tokens)

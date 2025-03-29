@@ -326,6 +326,10 @@ def scan_keywords(toks):
                     _set_keyword(tok, KeywordKind.OPEN)
                 case "func":
                     _set_keyword(tok, KeywordKind.FUNC)
+                case "let":
+                    _set_keyword(tok, KeywordKind.LET)
+                case "return":
+                    _set_keyword(tok, KeywordKind.RETURN)
                 case _:
                     pass
 

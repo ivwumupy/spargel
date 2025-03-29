@@ -47,6 +47,7 @@ class FuncDecl:
     func_tok: "Token"
     name: "Token"
     func_sig: "FuncSig"
+    body: "Expr"
 
 @dataclass
 class FuncSig:
@@ -72,6 +73,18 @@ class FuncParam:
     comma_tok: "Token?"
 
 @dataclass
+class ImplDecl:
+    impl_tok: "Token"
+    name: "Token"
+    lbrace_tok: "Token"
+    funcs: "[FuncDecl]"
+    rbrace_tok: "Token"
+
+#######
+# Expr
+#
+
+@dataclass
 class GroupedExpr:
     """A parenthesized expression
     """
@@ -80,14 +93,14 @@ class GroupedExpr:
     rparen_tok: "Token"
 
 @dataclass
-class LitExpr:
-    """Literal expression
+class IdentExpr:
+    """Identifier expression
     """
     token: "Token"
 
 @dataclass
-class IdentExpr:
-    """Identifier expression
+class LitExpr:
+    """Literal expression
     """
     token: "Token"
 
@@ -111,25 +124,49 @@ class CallParams:
 @dataclass
 class CallParam:
     expr: "Expr"
+    comma_tok: "Token?"
 
 @dataclass
-class ImplDecl:
-    impl_tok: "Token"
-    name: "Token"
+class BlockExpr:
     lbrace_tok: "Token"
-    funcs: "[FuncDecl]"
+    items: "[BlockItem]"
     rbrace_tok: "Token"
+
+# Stmt = ExprStmt | LetStmt | RetStmt
+
+@dataclass
+class BlockItem:
+    item: "ExprStmt | LetStmt | RetStmt"
+
+@dataclass
+class ExprStmt:
+    expr: "Expr"
+    semicolon_tok: "Token"
+
+@dataclass
+class LetStmt:
+    let_tok: "Token"
+    name: "Token"
+    equal_tok: "Token"
+    expr: "Expr"
+    semicolon_tok: "Token"
+
+@dataclass
+class RetStmt:
+    return_tok: "Token"
+    expr: "Expr"
+    semicolon_tok: "Token"
 
 def short_desc(node):
     match node:
         case SourceFile(items, eof_tok):
             n = len(items)
             return f"SourceFile [{n} items]"
-        case ModuleItem():
+        case ModuleItem(item):
             return "ModuleItem"
         case OpenDecl(open_tok, path):
             return f"OpenDecl <path = {path.text}>"
-        case FuncDecl(func_tok, name):
+        case FuncDecl(func_tok, name, func_sig, body):
             return f"FuncDecl <name = {name.text}>"
         case FuncSig(lparen_tok, params, rparen_tok):
             # TODO
@@ -141,6 +178,8 @@ def short_desc(node):
             return f"FuncParam <name = {name.text}>"
         case AddExpr(left, add_tok, right):
             return f"AddExpr"
+        case IdentExpr(tok):
+            return f"IdentExpr <name = {tok.text}>"
         case LitExpr(tok):
             return f"Literal <value = {tok.text}>"
         case GroupedExpr(lparen_tok, expr, rparen_tok):
@@ -149,10 +188,18 @@ def short_desc(node):
             return "CallExpr"
         case CallParams(params):
             return "CallParams"
-        case CallParam(expr):
+        case CallParam(expr, comma_tok):
             return "CallParam"
-        case IdentExpr(tok):
-            return f"IdentExpr <name = {tok.text}>"
+        case BlockExpr(lbrace_tok, items, rbrace_tok):
+            return "BlockExpr"
+        case BlockItem(item):
+            return "BlockItem"
+        case ExprStmt(expr, semicolon_tok):
+            return "ExprStmt"
+        case LetStmt(let_tok, name, equal_tok, expr, semicolon_tok):
+            return f"LetStmt <name = {name.text}>"
+        case RetStmt(return_tok, expr, semicolon_tok):
+            return "RetStmt"
         case _:
             return "<Unknown>"
 
@@ -162,8 +209,9 @@ def dump_children(node, level):
             dump_array(items, level)
         case ModuleItem(item):
             dump_node(item, level)
-        case FuncDecl(func_tok, name, func_sig):
+        case FuncDecl(func_tok, name, func_sig, body):
             dump_node(func_sig, level)
+            dump_node(body, level)
         case FuncSig(lparen_tok, params, rparen_tok):
             dump_node(params, level)
         case FuncParams(params):
@@ -181,7 +229,17 @@ def dump_children(node, level):
             dump_node(params, level)
         case CallParams(params):
             dump_array(params, level)
-        case CallParam(expr):
+        case CallParam(expr, comma_tok):
+            dump_node(expr, level)
+        case BlockExpr(lbrace_tok, items, rbrace_tok):
+            dump_array(items, level)
+        case BlockItem(item):
+            dump_node(item, level)
+        case ExprStmt(expr, semicolon_tok):
+            dump_node(expr, level)
+        case LetStmt(let_tok, name, equal_tok, expr, semicolon_tok):
+            dump_node(expr, level)
+        case RetStmt(return_tok, expr, semicolon_tok):
             dump_node(expr, level)
         case _:
             pass
