@@ -12,9 +12,8 @@ namespace spargel::base {
             _get_executable_path(buf, len + 1);
         }
         buf[len] = '\0';
-        string s;
-        s._length = len;
-        s._data = buf;
+        string s = string_from_range(buf, buf + len);
+        base::default_allocator()->free(buf, PATH_MAX);
         return s;
     }
 

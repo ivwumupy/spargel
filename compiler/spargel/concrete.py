@@ -5,22 +5,36 @@ from dataclasses import dataclass
 
 import spargel.lexer as L
 
-@dataclass
+#@dataclass
 class SourceFile:
     """A source file.
 
-    Args:
-        items -- module items
-        eof_tok -- token for end of file
+    Fields:
+        items: [ModuleItem] -- module items
+        eof_tok: Token      -- token for end of file
     """
-    items: "[ModuleItem]"
-    eof_tok: "Token"
+    #items: "[ModuleItem]"
+    #eof_tok: "Token"
+
+    def __init__(self, items, eof_tok):
+        self.items = items
+        self.eof_tok = eof_tok
+
+    def short_desc(self):
+        n = len(self.items)
+        return f"SourceFile [{n} items]"
+
+# Decl = OpenDecl | FuncDecl | ImplDecl
+# TODO: Decl == ModuleItem?
 
 @dataclass
 class ModuleItem:
     """An item in a module.
     """
     item: "OpenDecl | FuncDecl | ImplDecl"
+
+    def short_desc(self):
+        return "ModuleItem"
 
 @dataclass
 class OpenDecl:
@@ -29,6 +43,9 @@ class OpenDecl:
     open_tok: "Token"
     path: "Token"
     #path: "ModulePath"
+
+    def short_desc(self):
+        return f"OpenDecl <path = {self.path.text}>"
 
 #@dataclass
 #class ModulePath:
@@ -49,6 +66,9 @@ class FuncDecl:
     func_sig: "FuncSig"
     body: "Expr"
 
+    def short_desc(self):
+        return f"FuncDecl <name = {self.name.text}>"
+
 @dataclass
 class FuncSig:
     """Function signature
@@ -57,11 +77,18 @@ class FuncSig:
     params: "FuncParams"
     rparen_tok: "Token"
 
+    def short_desc(self):
+        return "FuncSig"
+
 @dataclass
 class FuncParams:
     """Function parameters
     """
     params: "[FuncParam]"
+
+    def short_desc(self):
+        n = len(self.params)
+        return f"FuncParams [{n} params]"
 
 @dataclass
 class FuncParam:
@@ -72,6 +99,9 @@ class FuncParam:
     type: "Expr?"
     comma_tok: "Token?"
 
+    def short_desc(self):
+        return f"FuncParam <name = {self.name.text}>"
+
 @dataclass
 class ImplDecl:
     impl_tok: "Token"
@@ -79,6 +109,9 @@ class ImplDecl:
     lbrace_tok: "Token"
     funcs: "[FuncDecl]"
     rbrace_tok: "Token"
+
+    def short_desc(self):
+        return "ImplDecl"
 
 #######
 # Expr
@@ -92,11 +125,17 @@ class GroupedExpr:
     expr: "Expr"
     rparen_tok: "Token"
 
+    def short_desc(self):
+        return "GroupedExpr"
+
 @dataclass
 class IdentExpr:
     """Identifier expression
     """
     token: "Token"
+
+    def short_desc(self):
+        return f"IdentExpr <name = {self.token.text}>"
 
 @dataclass
 class LitExpr:
@@ -104,11 +143,17 @@ class LitExpr:
     """
     token: "Token"
 
+    def short_desc(self):
+        return f"LitExpr <value = {self.token.text}>"
+
 @dataclass
 class AddExpr:
     left: "Expr"
     add_tok: "Token"
     right: "Expr"
+
+    def short_desc(self):
+        return "AddExpr"
 
 @dataclass
 class CallExpr:
@@ -117,14 +162,24 @@ class CallExpr:
     params: "CallParams"
     rparen_tok: "Token"
 
+    def short_desc(self):
+        return "CallExpr"
+
 @dataclass
 class CallParams:
     params: "[CallParam]"
+
+    def short_desc(self):
+        n = len(self.params)
+        return f"CallParams [{n} params]"
 
 @dataclass
 class CallParam:
     expr: "Expr"
     comma_tok: "Token?"
+
+    def short_desc(self):
+        return "CallParam"
 
 @dataclass
 class BlockExpr:
@@ -132,16 +187,26 @@ class BlockExpr:
     items: "[BlockItem]"
     rbrace_tok: "Token"
 
+    def short_desc(self):
+        n = len(self.items)
+        return f"BlockExpr [{n} items]"
+
 # Stmt = ExprStmt | LetStmt | RetStmt
 
 @dataclass
 class BlockItem:
     item: "ExprStmt | LetStmt | RetStmt"
 
+    def short_desc(self):
+        return "BlockItem"
+
 @dataclass
 class ExprStmt:
     expr: "Expr"
     semicolon_tok: "Token"
+
+    def short_desc(self):
+        return "ExprStmt"
 
 @dataclass
 class LetStmt:
@@ -151,57 +216,64 @@ class LetStmt:
     expr: "Expr"
     semicolon_tok: "Token"
 
+    def short_desc(self):
+        return f"LetStmt <name = {self.name.text}"
+
 @dataclass
 class RetStmt:
     return_tok: "Token"
     expr: "Expr"
     semicolon_tok: "Token"
 
+    def short_desc(self):
+        return "RetStmt"
+
 def short_desc(node):
-    match node:
-        case SourceFile(items, eof_tok):
-            n = len(items)
-            return f"SourceFile [{n} items]"
-        case ModuleItem(item):
-            return "ModuleItem"
-        case OpenDecl(open_tok, path):
-            return f"OpenDecl <path = {path.text}>"
-        case FuncDecl(func_tok, name, func_sig, body):
-            return f"FuncDecl <name = {name.text}>"
-        case FuncSig(lparen_tok, params, rparen_tok):
-            # TODO
-            return "FuncSig [() -> Unit]"
-        case FuncParams(params):
-            n = len(params)
-            return f"FuncParams [{n} params]"
-        case FuncParam(name, colon_tok, type):
-            return f"FuncParam <name = {name.text}>"
-        case AddExpr(left, add_tok, right):
-            return f"AddExpr"
-        case IdentExpr(tok):
-            return f"IdentExpr <name = {tok.text}>"
-        case LitExpr(tok):
-            return f"Literal <value = {tok.text}>"
-        case GroupedExpr(lparen_tok, expr, rparen_tok):
-            return "GroupedExpr"
-        case CallExpr(func, lparen_tok, params, rparen_tok):
-            return "CallExpr"
-        case CallParams(params):
-            return "CallParams"
-        case CallParam(expr, comma_tok):
-            return "CallParam"
-        case BlockExpr(lbrace_tok, items, rbrace_tok):
-            return "BlockExpr"
-        case BlockItem(item):
-            return "BlockItem"
-        case ExprStmt(expr, semicolon_tok):
-            return "ExprStmt"
-        case LetStmt(let_tok, name, equal_tok, expr, semicolon_tok):
-            return f"LetStmt <name = {name.text}>"
-        case RetStmt(return_tok, expr, semicolon_tok):
-            return "RetStmt"
-        case _:
-            return "<Unknown>"
+    return node.short_desc()
+    #match node:
+    #    case SourceFile(items, eof_tok):
+    #        n = len(items)
+    #        return f"SourceFile [{n} items]"
+    #    case ModuleItem(item):
+    #        return "ModuleItem"
+    #    case OpenDecl(open_tok, path):
+    #        return f"OpenDecl <path = {path.text}>"
+    #    case FuncDecl(func_tok, name, func_sig, body):
+    #        return f"FuncDecl <name = {name.text}>"
+    #    case FuncSig(lparen_tok, params, rparen_tok):
+    #        # TODO
+    #        return "FuncSig [() -> Unit]"
+    #    case FuncParams(params):
+    #        n = len(params)
+    #        return f"FuncParams [{n} params]"
+    #    case FuncParam(name, colon_tok, type):
+    #        return f"FuncParam <name = {name.text}>"
+    #    case AddExpr(left, add_tok, right):
+    #        return f"AddExpr"
+    #    case IdentExpr(tok):
+    #        return f"IdentExpr <name = {tok.text}>"
+    #    case LitExpr(tok):
+    #        return f"Literal <value = {tok.text}>"
+    #    case GroupedExpr(lparen_tok, expr, rparen_tok):
+    #        return "GroupedExpr"
+    #    case CallExpr(func, lparen_tok, params, rparen_tok):
+    #        return "CallExpr"
+    #    case CallParams(params):
+    #        return "CallParams"
+    #    case CallParam(expr, comma_tok):
+    #        return "CallParam"
+    #    case BlockExpr(lbrace_tok, items, rbrace_tok):
+    #        return "BlockExpr"
+    #    case BlockItem(item):
+    #        return "BlockItem"
+    #    case ExprStmt(expr, semicolon_tok):
+    #        return "ExprStmt"
+    #    case LetStmt(let_tok, name, equal_tok, expr, semicolon_tok):
+    #        return f"LetStmt <name = {name.text}>"
+    #    case RetStmt(return_tok, expr, semicolon_tok):
+    #        return "RetStmt"
+    #    case _:
+    #        return "<Unknown>"
 
 def dump_children(node, level):
     match node:
