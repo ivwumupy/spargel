@@ -1,11 +1,11 @@
 import argparse
 import pathlib
 import sys
-# from pprint import pp
 
 from spargel.lexer import lex_source
 from spargel.parser import parse_tokens
 import spargel.concrete as C
+import spargel.abstract as A
 
 def main():
     parser = argparse.ArgumentParser()
@@ -15,9 +15,16 @@ def main():
     source = args.file.read_bytes()
     tokens = lex_source(source)
     node = parse_tokens(tokens)
-    C.dump_node(node)
-    print("==== Reconstruct ====")
-    print(C.reconstruct_source(node))
+    node.dump()
+    #print("==== Reconstruct ====")
+    #print(node.recons())
+    anode = node.abstract()
+    #print("==== AST ====")
+    #print(anode)
+    anode.resolve_names(mods = [A.std_mod])
+    anode.tyck()
+    print("==== CPP ====")
+    print(anode.cpp())
     return 0
 
 if __name__ == '__main__':

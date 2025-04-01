@@ -1,21 +1,26 @@
 """Concrete Syntax Tree
 """
 
-from dataclasses import dataclass
-
 import spargel.lexer as L
+import spargel.abstract as A
 
-#@dataclass
-class SourceFile:
+def _recons_arr(arr):
+    return ''.join([x.recons() for x in arr])
+
+class Node:
+    def dump(self, level = 0):
+        prefix = "| " * level
+        desc = self.short_desc()
+        print(f"{prefix}|-{desc}")
+        self.dump_children(level = level + 1)
+
+class SourceFile(Node):
     """A source file.
 
     Fields:
         items: [ModuleItem] -- module items
         eof_tok: Token      -- token for end of file
     """
-    #items: "[ModuleItem]"
-    #eof_tok: "Token"
-
     def __init__(self, items, eof_tok):
         self.items = items
         self.eof_tok = eof_tok
@@ -24,418 +29,556 @@ class SourceFile:
         n = len(self.items)
         return f"SourceFile [{n} items]"
 
+    def recons(self):
+        return _recons_arr(self.items) + self.eof_tok.recons()
+
+    def dump_children(self, level):
+        for item in self.items:
+            item.dump(level)
+
+    def abstract(self):
+        items = []
+        for x in self.items:
+            items.append(x.item.abstract())
+        opens = [i.item.abstract() for i in self.items if isinstance(i.item, OpenDecl)]
+        funcs = [i.item.abstract() for i in self.items if isinstance(i.item, FuncDecl)]
+        return A.SourceFile(opens, funcs)
+
 # Decl = OpenDecl | FuncDecl | ImplDecl
 # TODO: Decl == ModuleItem?
 
-@dataclass
-class ModuleItem:
+class ModuleItem(Node):
     """An item in a module.
+
+    Fields:
+        item: OpenDecl | FuncDecl | ImplDecl
     """
-    item: "OpenDecl | FuncDecl | ImplDecl"
+
+    def __init__(self, item):
+        self.item = item
 
     def short_desc(self):
         return "ModuleItem"
 
-@dataclass
-class OpenDecl:
+    def recons(self):
+        return self.item.recons()
+
+    def dump_children(self, level):
+        self.item.dump(level)
+
+class OpenDecl(Node):
     """An open declaration.
+
+    Fields:
+        open_tok: Token
+        path: Token
     """
-    open_tok: "Token"
-    path: "Token"
-    #path: "ModulePath"
+
+    def __init__(self, open_tok, path):
+        self.open_tok = open_tok
+        self.path = path
 
     def short_desc(self):
         return f"OpenDecl <path = {self.path.text}>"
 
-#@dataclass
+    def recons(self):
+        return self.open_tok.recons() + self.path.recons()
+
+    def dump_children(self, level):
+        pass
+
+    def abstract(self):
+        return A.OpenDecl(self.path.text)
+
 #class ModulePath:
 #    """The path of a module.
 #    """
 #    segments: "[ModuleName]"
 #
-#@dataclass
 #class ModuleName:
 #    token: "Token"
 
-@dataclass
-class FuncDecl:
+class FuncDecl(Node):
     """A function declaration.
+
+    Fields:
+        attr: Attr
+        func_tok: Token
+        name: Token
+        func_sig: FuncSig
+        body: Expr
     """
-    func_tok: "Token"
-    name: "Token"
-    func_sig: "FuncSig"
-    body: "Expr"
+
+    def __init__(self, attr, func_tok, name, func_sig, body):
+        self.attr = attr
+        self.func_tok = func_tok
+        self.name = name
+        self.func_sig = func_sig
+        self.body = body
 
     def short_desc(self):
         return f"FuncDecl <name = {self.name.text}>"
 
-@dataclass
-class FuncSig:
+    def recons(self):
+        result = ""
+        if self.attr is not None:
+            result += self.attr.recons()
+        result += self.func_tok.recons() + self.name.recons() + self.func_sig.recons() + self.body.recons()
+        return result
+
+    def dump_children(self, level):
+        if self.attr is not None:
+            self.attr.dump(level)
+        self.func_sig.dump(level)
+        self.body.dump(level)
+
+    def start_loc(self):
+        return (self.func_tok.line, self.func_tok.column)
+
+    def abstract(self):
+        params = []
+        for p in self.func_sig.params.params:
+            params.append(p.abstract())
+        return A.FuncDecl(self.name.text, params, self.func_sig.ret.abstract(), self.body.abstract())
+
+class FuncSig(Node):
     """Function signature
+
+    Fields:
+        lparen_tok: Token
+        params: FuncParams
+        rparen_tok: Token
     """
-    lparen_tok: "Token"
-    params: "FuncParams"
-    rparen_tok: "Token"
+
+    def __init__(self, lparen_tok, params, rparen_tok, colon_tok, ret):
+        self.lparen_tok = lparen_tok
+        self.params = params
+        self.rparen_tok = rparen_tok
+        self.colon_tok = colon_tok
+        self.ret = ret
 
     def short_desc(self):
         return "FuncSig"
 
-@dataclass
-class FuncParams:
+    def recons(self):
+        return self.lparen_tok.recons() + self.params.recons() + self.rparen_tok.recons()
+
+    def dump_children(self, level):
+        self.params.dump(level)
+
+class FuncParams(Node):
     """Function parameters
+
+    Fields:
+        params: [FuncParam]
     """
-    params: "[FuncParam]"
+
+    def __init__(self, params):
+        self.params = params
 
     def short_desc(self):
         n = len(self.params)
         return f"FuncParams [{n} params]"
 
-@dataclass
-class FuncParam:
+    def recons(self):
+        return _recons_arr(self.params)
+
+    def dump_children(self, level):
+        for p in self.params:
+            p.dump(level)
+
+class FuncParam(Node):
     """Function parameter
+
+    Fields:
+        attr: Attr
+        name: Token
+        colon_tok: Token?
+        type: Expr?
+        comma_tok: Token?
     """
-    name: "Token"
-    colon_tok: "Token?"
-    type: "Expr?"
-    comma_tok: "Token?"
+
+    def __init__(self, attr, name, colon_tok, type, comma_tok):
+        self.attr = attr
+        self.name = name
+        self.colon_tok = colon_tok
+        self.type = type
+        self.comma_tok = comma_tok
 
     def short_desc(self):
         return f"FuncParam <name = {self.name.text}>"
 
-@dataclass
-class ImplDecl:
-    impl_tok: "Token"
-    name: "Token"
-    lbrace_tok: "Token"
-    funcs: "[FuncDecl]"
-    rbrace_tok: "Token"
+    def recons(self):
+        result = ""
 
-    def short_desc(self):
-        return "ImplDecl"
+        if self.attr is not None:
+            result += self.attr.recons()
+        result += self.name.recons()
+        if self.colon_tok is not None:
+            result += self.colon_tok.recons()
+        if self.type is not None:
+            result += self.type.recons()
+        if self.comma_tok is not None:
+            result += self.comma_tok.recons()
+        return result
+
+    def dump_children(self, level):
+        if self.attr is not None:
+            self.attr.dump(level)
+        if self.type is not None:
+            self.type.dump(level)
+
+    def abstract(self):
+        return A.FuncParam(self.name.text, self.type.abstract())
 
 #######
 # Expr
 #
 
-@dataclass
-class GroupedExpr:
+class GroupedExpr(Node):
     """A parenthesized expression
+
+    Fields:
+        lparen_tok: Token
+        expr: Expr
+        rparen_tok: Token
     """
-    lparen_tok: "Token"
-    expr: "Expr"
-    rparen_tok: "Token"
+
+    def __init__(self, lparen_tok, expr, rparen_tok):
+        self.lparen_tok = lparen_tok
+        self.expr = expr
+        self.rparen_tok = rparen_tok
 
     def short_desc(self):
         return "GroupedExpr"
 
-@dataclass
-class IdentExpr:
+    def recons(self):
+        return self.lparen_tok.recons() + self.expr.recons() + self.rparen_tok.recons()
+
+    def dump_children(self, level):
+        self.expr.dump(level)
+
+class IdentExpr(Node):
     """Identifier expression
+
+    Fields:
+        token: Token
     """
-    token: "Token"
+
+    def __init__(self, token):
+        self.token = token
 
     def short_desc(self):
         return f"IdentExpr <name = {self.token.text}>"
 
-@dataclass
-class LitExpr:
+    def recons(self):
+        return self.token.recons()
+
+    def dump_children(self, level):
+        pass
+
+    def abstract(self):
+        return A.IdentExpr(self.token.text)
+
+class LitExpr(Node):
     """Literal expression
+
+    Fields:
+        token: Token
     """
-    token: "Token"
+
+    def __init__(self, token):
+        self.token = token
 
     def short_desc(self):
         return f"LitExpr <value = {self.token.text}>"
 
-@dataclass
-class AddExpr:
-    left: "Expr"
-    add_tok: "Token"
-    right: "Expr"
+    def recons(self):
+        return self.token.recons()
+
+    def dump_children(self, level):
+        pass
+
+    def abstract(self):
+        return A.LitExpr(self.token.text)
+
+class AddExpr(Node):
+    """
+    Fields:
+        left: Expr
+        add_tok: Token
+        right: Expr
+    """
+
+    def __init__(self, left, add_tok, right):
+        self.left = left
+        self.add_tok = add_tok
+        self.right = right
 
     def short_desc(self):
         return "AddExpr"
 
-@dataclass
-class CallExpr:
-    func: "Expr"
-    lparen_tok: "Token"
-    params: "CallParams"
-    rparen_tok: "Token"
+    def recons(self):
+        return self.left.recons() + self.add_tok.recons() + self.right.recons()
+
+    def dump_children(self, level):
+        self.left.dump(level)
+        self.right.dump(level)
+
+    def abstract(self):
+        return A.CallExpr(A.IdentExpr("add"), [self.left.abstract(), self.right.abstract()])
+
+class DivExpr(Node):
+    """
+    Fields:
+        left: Expr
+        div_tok: Token
+        right: Expr
+    """
+
+    def __init__(self, left, div_tok, right):
+        self.left = left
+        self.div_tok = div_tok
+        self.right = right
+
+    def short_desc(self):
+        return "DivExpr"
+
+    def recons(self):
+        return self.left.recons() + self.div_tok.recons() + self.right.recons()
+
+    def dump_children(self, level):
+        self.left.dump(level)
+        self.right.dump(level)
+
+class CallExpr(Node):
+    """
+    Fields:
+        func: "Expr"
+        lparen_tok: "Token"
+        params: "CallParams"
+        rparen_tok: "Token"
+    """
+
+    def __init__(self, func, lparen_tok, params, rparen_tok):
+        self.func = func
+        self.lparen_tok = lparen_tok
+        self.params = params
+        self.rparen_tok = rparen_tok
 
     def short_desc(self):
         return "CallExpr"
 
-@dataclass
-class CallParams:
-    params: "[CallParam]"
+    def recons(self):
+        return self.func.recons() + self.lparen_tok.recons() + self.params.recons() + self.rparen_tok.recons()
+
+    def dump_children(self, level):
+        self.func.dump(level)
+        self.params.dump(level)
+
+    def abstract(self):
+        params = [p.expr.abstract() for p in self.params.params]
+        return A.CallExpr(self.func.abstract(), params)
+
+class CallParams(Node):
+    """
+    Fields:
+        params: "[CallParam]"
+    """
+
+    def __init__(self, params):
+        self.params = params
 
     def short_desc(self):
         n = len(self.params)
         return f"CallParams [{n} params]"
 
-@dataclass
-class CallParam:
-    expr: "Expr"
-    comma_tok: "Token?"
+    def recons(self):
+        return _recons_arr(self.params)
+
+    def dump_children(self, level):
+        for p in self.params:
+            p.dump(level)
+
+class CallParam(Node):
+    """
+    Fields:
+        expr: "Expr"
+        comma_tok: "Token?"
+    """
+
+    def __init__(self, expr, comma_tok):
+        self.expr = expr
+        self.comma_tok = comma_tok
 
     def short_desc(self):
         return "CallParam"
 
-@dataclass
-class BlockExpr:
+    def recons(self):
+        result = self.expr.recons()
+        if self.comma_tok is not None:
+            result += self.comma_tok.recons()
+        return result
+
+    def dump_children(self, level):
+        self.expr.dump(level)
+
+class BlockExpr(Node):
+    """
     lbrace_tok: "Token"
     items: "[BlockItem]"
     rbrace_tok: "Token"
+    """
+
+    def __init__(self, lbrace_tok, items, rbrace_tok):
+        self.lbrace_tok = lbrace_tok
+        self.items = items
+        self.rbrace_tok = rbrace_tok
 
     def short_desc(self):
         n = len(self.items)
         return f"BlockExpr [{n} items]"
 
+    def recons(self):
+        return self.lbrace_tok.recons() + _recons_arr(self.items) + self.rbrace_tok.recons()
+
+    def dump_children(self, level):
+        for i in self.items:
+            i.dump(level)
+
+    def abstract(self):
+        items = [i.item.abstract() for i in self.items]
+        return A.BlockExpr(items)
+
+class TypeExpr(Node):
+    """
+    Fields:
+        expr: Expr
+    """
+
+    def __init__(self, expr):
+        self.expr = expr
+
+    def short_desc(self):
+        return "TypeExpr"
+
+    def recons(self):
+        return self.expr.recons()
+
+    def dump_children(self, level):
+        self.expr.dump(level)
+
+    def abstract(self):
+        return self.expr.abstract()
+
 # Stmt = ExprStmt | LetStmt | RetStmt
 
-@dataclass
-class BlockItem:
+class BlockItem(Node):
+    """
     item: "ExprStmt | LetStmt | RetStmt"
+    """
+
+    def __init__(self, item):
+        self.item = item
 
     def short_desc(self):
         return "BlockItem"
 
-@dataclass
-class ExprStmt:
+    def recons(self):
+        return self.item.recons()
+
+    def dump_children(self, level):
+        self.item.dump(level)
+
+class ExprStmt(Node):
+    """
     expr: "Expr"
     semicolon_tok: "Token"
+    """
+
+    def __init__(self, expr, semicolon_tok):
+        self.expr = expr
+        self.semicolon_tok = semicolon_tok
 
     def short_desc(self):
         return "ExprStmt"
 
-@dataclass
-class LetStmt:
+    def recons(self):
+        return self.expr.recons() + self.semicolon_tok.recons()
+
+    def dump_children(self, level):
+        self.expr.dump(level)
+
+    def abstract(self):
+        return self.expr.abstract()
+
+class LetStmt(Node):
+    """
     let_tok: "Token"
     name: "Token"
     equal_tok: "Token"
     expr: "Expr"
     semicolon_tok: "Token"
+    """
+
+    def __init__(self, let_tok, name, equal_tok, expr, semicolon_tok):
+        self.let_tok = let_tok
+        self.name = name
+        self.equal_tok = equal_tok
+        self.expr = expr
+        self.semicolon_tok = semicolon_tok
 
     def short_desc(self):
-        return f"LetStmt <name = {self.name.text}"
+        return f"LetStmt <name = {self.name.text}>"
 
-@dataclass
-class RetStmt:
+    def recons(self):
+        return self.let_tok.recons() + self.name.recons() + self.equal_tok.recons() + self.expr.recons() + self.semicolon_tok.recons()
+
+    def dump_children(self, level):
+        self.expr.dump(level)
+
+    def abstract(self):
+        return A.LetStmt(self.name.text, None, self.expr.abstract())
+
+class RetStmt(Node):
+    """
     return_tok: "Token"
     expr: "Expr"
     semicolon_tok: "Token"
+    """
+
+    def __init__(self, return_tok, expr, semicolon_tok):
+        self.return_tok = return_tok
+        self.expr = expr
+        self.semicolon_tok = semicolon_tok
 
     def short_desc(self):
         return "RetStmt"
 
-def short_desc(node):
-    return node.short_desc()
-    #match node:
-    #    case SourceFile(items, eof_tok):
-    #        n = len(items)
-    #        return f"SourceFile [{n} items]"
-    #    case ModuleItem(item):
-    #        return "ModuleItem"
-    #    case OpenDecl(open_tok, path):
-    #        return f"OpenDecl <path = {path.text}>"
-    #    case FuncDecl(func_tok, name, func_sig, body):
-    #        return f"FuncDecl <name = {name.text}>"
-    #    case FuncSig(lparen_tok, params, rparen_tok):
-    #        # TODO
-    #        return "FuncSig [() -> Unit]"
-    #    case FuncParams(params):
-    #        n = len(params)
-    #        return f"FuncParams [{n} params]"
-    #    case FuncParam(name, colon_tok, type):
-    #        return f"FuncParam <name = {name.text}>"
-    #    case AddExpr(left, add_tok, right):
-    #        return f"AddExpr"
-    #    case IdentExpr(tok):
-    #        return f"IdentExpr <name = {tok.text}>"
-    #    case LitExpr(tok):
-    #        return f"Literal <value = {tok.text}>"
-    #    case GroupedExpr(lparen_tok, expr, rparen_tok):
-    #        return "GroupedExpr"
-    #    case CallExpr(func, lparen_tok, params, rparen_tok):
-    #        return "CallExpr"
-    #    case CallParams(params):
-    #        return "CallParams"
-    #    case CallParam(expr, comma_tok):
-    #        return "CallParam"
-    #    case BlockExpr(lbrace_tok, items, rbrace_tok):
-    #        return "BlockExpr"
-    #    case BlockItem(item):
-    #        return "BlockItem"
-    #    case ExprStmt(expr, semicolon_tok):
-    #        return "ExprStmt"
-    #    case LetStmt(let_tok, name, equal_tok, expr, semicolon_tok):
-    #        return f"LetStmt <name = {name.text}>"
-    #    case RetStmt(return_tok, expr, semicolon_tok):
-    #        return "RetStmt"
-    #    case _:
-    #        return "<Unknown>"
+    def recons(self):
+        return self.return_tok.recons() + self.expr.recons() + self.semicolon_tok.recons()
 
-def dump_children(node, level):
-    match node:
-        case SourceFile(items, eof):
-            dump_array(items, level)
-        case ModuleItem(item):
-            dump_node(item, level)
-        case FuncDecl(func_tok, name, func_sig, body):
-            dump_node(func_sig, level)
-            dump_node(body, level)
-        case FuncSig(lparen_tok, params, rparen_tok):
-            dump_node(params, level)
-        case FuncParams(params):
-            dump_array(params, level)
-        case FuncParam(name, colon_tok, type):
-            if type is not None:
-                dump_node(type, level)
-        case AddExpr(left, add_tok, right):
-            dump_node(left, level)
-            dump_node(right, level)
-        case GroupedExpr(lparen_tok, expr, rparen_tok):
-            dump_node(expr, level)
-        case CallExpr(func, lparen_tok, params, rparen_tok):
-            dump_node(func, level)
-            dump_node(params, level)
-        case CallParams(params):
-            dump_array(params, level)
-        case CallParam(expr, comma_tok):
-            dump_node(expr, level)
-        case BlockExpr(lbrace_tok, items, rbrace_tok):
-            dump_array(items, level)
-        case BlockItem(item):
-            dump_node(item, level)
-        case ExprStmt(expr, semicolon_tok):
-            dump_node(expr, level)
-        case LetStmt(let_tok, name, equal_tok, expr, semicolon_tok):
-            dump_node(expr, level)
-        case RetStmt(return_tok, expr, semicolon_tok):
-            dump_node(expr, level)
-        case _:
-            pass
+    def dump_children(self, level):
+        self.expr.dump(level)
 
-def dump_array(arr, level):
-    for x in arr:
-        dump_node(x, level)
+    def abstract(self):
+        return A.RetStmt(self.expr.abstract())
 
-def dump_node(node, level = 0):
-    prefix = "| " * level
-    desc = short_desc(node)
-    print(f"{prefix}|-{desc}")
-    dump_children(node, level = level + 1)
+class Attr(Node):
+    """
+    Fields:
+        at_tok: Token
+        expr: Expr
+    """
+    def __init__(self, at_tok, expr):
+        self.at_tok = at_tok
+        self.expr = expr
 
-def _recons_tokarr(arr):
-    result = ""
-    for t in arr:
-        result += _recons_token(t)
-    return result
+    def short_desc(self):
+        return "Attr"
 
-def _recons_token(tok):
-    if tok is None:
-        return ""
-    result = (_recons_tokarr(tok.leading_trivia) + 
-              tok.text + 
-              _recons_tokarr(tok.trailing_trivia))
-    return result
+    def recons(self):
+        return self.at_tok.recons() + self.expr.recons()
 
-def reconstruct_array(arr):
-    result = ""
-    for n in arr:
-        result += reconstruct_source(n)
-    return result
-
-def reconstruct_source(node):
-    if node is None:
-        return ""
-    match node:
-        case SourceFile(items, eof_token):
-            return reconstruct_array(items)
-        case ModuleItem(item):
-            return reconstruct_source(item)
-        case OpenDecl(open_tok, path):
-            return _recons_token(open_tok) + _recons_token(path)
-        case FuncDecl(func_tok, name, func_sig, body):
-            return (
-                _recons_token(func_tok) +
-                _recons_token(name) +
-                reconstruct_source(func_sig) +
-                reconstruct_source(body)
-            )
-        case FuncSig(lparen_tok, params, rparen_tok):
-            return (
-                _recons_token(lparen_tok) +
-                reconstruct_source(params) +
-                _recons_token(rparen_tok)
-            )
-        case FuncParams(params):
-            return reconstruct_array(params)
-        case FuncParam(name, colon_tok, type, comma_tok):
-            return (
-                _recons_token(name) +
-                _recons_token(colon_tok) +
-                reconstruct_source(type) +
-                _recons_token(comma_tok)
-            )
-        case GroupedExpr(lparen_tok, expr, rparen_tok):
-            return (
-                _recons_token(lparen_tok) +
-                reconstruct_source(expr) +
-                _recons_token(rparen_tok)
-            )
-        case IdentExpr(tok):
-            return _recons_token(tok)
-        case LitExpr(tok):
-            return _recons_token(tok)
-        case AddExpr(left, add_tok, right):
-            return (
-                reconstruct_source(left) +
-                _recons_token(add_tok) +
-                reconstruct_source(right)
-            )
-        case CallExpr(func, lparen_tok, params, rparen_tok):
-            return (
-                reconstruct_source(func) +
-                _recons_token(lparen_tok) +
-                reconstruct_source(params) +
-                _recons_token(rparen_tok)
-            )
-        case CallParams(params):
-            return reconstruct_array(params)
-        case CallParam(expr, comma_tok):
-            return (
-                reconstruct_source(expr) +
-                _recons_token(comma_tok)
-            )
-        case BlockExpr(lbrace_tok, items, rbrace_tok):
-            result = ""
-            result += _recons_token(lbrace_tok)
-            result += reconstruct_array(items)
-            result += _recons_token(rbrace_tok)
-            return result
-        case BlockItem(item):
-            return reconstruct_source(item)
-        case ExprStmt(expr, semicolon_tok):
-            return (
-                reconstruct_source(expr) +
-                _recons_token(semicolon_tok)
-            )
-        case LetStmt(let_tok, name, equal_tok, expr, semicolon_tok):
-            return (
-                _recons_token(let_tok) +
-                _recons_token(name) +
-                _recons_token(equal_tok) +
-                reconstruct_source(expr) +
-                _recons_token(semicolon_tok)
-            )
-        case RetStmt(return_tok, expr, semicolon_tok):
-            return (
-                _recons_token(return_tok) +
-                reconstruct_source(expr) +
-                _recons_token(semicolon_tok)
-            )
-        case _:
-            return "?"
-
-
+    def dump_children(self, level):
+        self.expr.dump(level)

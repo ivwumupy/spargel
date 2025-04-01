@@ -17,7 +17,7 @@ FuncParams
     = FuncParam*
 
 FuncParam
-    = <IDENT> (<:> Expr)? <,>?
+    = <IDENT> (<:> TypeExpr)? <,>?
 
 FuncRet
     = <:> Expr
@@ -44,7 +44,10 @@ CallParam
     = Expr <,>?
 
 BlockExpr
-    = <{> BlockItem <}>
+    = <{> BlockItems <}>
+
+BlockItems
+    = BlockItem*
 
 BlockItem
     = Expr
@@ -61,6 +64,8 @@ import spargel.concrete as C
 from pprint import pp
 
 def is_module_item_start(tok):
+    if tok.kind == TokenKind.AT:
+        return True
     if tok.kind != TokenKind.IDENTIFIER:
         return False
     return tok.keyword_candidate in {
@@ -69,7 +74,7 @@ def is_module_item_start(tok):
     }
 
 def is_func_param_start(tok):
-    return tok.kind == TokenKind.IDENTIFIER
+    return tok.kind == TokenKind.IDENTIFIER or tok.kind == TokenKind.AT
 
 class Parser:
     def __init__(self, tokens):
@@ -117,15 +122,32 @@ class Parser:
         -> C.ModuleItem
         """
         tok = self.peek()
+        attr = None
+        if tok.kind == TokenKind.AT:
+            attr = self.parse_attr()
+            tok = self.peek()
         match tok.keyword_candidate:
             case KeywordKind.OPEN:
                 item = self.parse_open_decl()
                 return C.ModuleItem(item)
             case KeywordKind.FUNC:
-                item = self.parse_func_decl()
+                item = self.parse_func_decl(attr)
                 return C.ModuleItem(item)
             case _:
                 raise Exception("internal error")
+
+    def parse_attr(self):
+        at_tok = self.eat(TokenKind.AT)
+        name = self.eat(TokenKind.IDENTIFIER)
+
+        tok = self.peek()
+        if tok is not None and tok.kind == TokenKind.LEFT_PAREN:
+            lparen_tok = self.eat(TokenKind.LEFT_PAREN)
+            params = self.parse_call_params()
+            rparen_tok = self.eat(TokenKind.RIGHT_PAREN)
+            return C.Attr(at_tok, C.CallExpr(C.IdentExpr(name), lparen_tok, params, rparen_tok))
+        
+        return C.Attr(at_tok, C.IdentExpr(name))
 
     def parse_open_decl(self):
         """
@@ -135,7 +157,7 @@ class Parser:
         path = self.eat(TokenKind.IDENTIFIER)
         return C.OpenDecl(open_tok, path)
 
-    def parse_func_decl(self):
+    def parse_func_decl(self, attr):
         """
         -> C.FuncDecl
         """
@@ -143,7 +165,7 @@ class Parser:
         name = self.eat(TokenKind.IDENTIFIER)
         func_sig = self.parse_func_sig()
         body = self.parse_expr()
-        return C.FuncDecl(func_tok, name, func_sig, body)
+        return C.FuncDecl(attr, func_tok, name, func_sig, body)
 
     def parse_func_sig(self):
         """
@@ -152,7 +174,9 @@ class Parser:
         lparen_tok = self.eat(TokenKind.LEFT_PAREN)
         params = self.parse_func_params()
         rparen_tok = self.eat(TokenKind.RIGHT_PAREN)
-        return C.FuncSig(lparen_tok, params, rparen_tok)
+        colon_tok = self.eat(TokenKind.COLON)
+        ret = self.parse_expr()
+        return C.FuncSig(lparen_tok, params, rparen_tok, colon_tok, ret)
 
     def parse_func_params(self):
         """
@@ -171,6 +195,12 @@ class Parser:
         """
         -> C.FuncParam
         """
+        tok = self.peek()
+        attr = None
+
+        if tok.kind == TokenKind.AT:
+            attr = self.parse_attr()
+
         name = self.eat(TokenKind.IDENTIFIER)
         colon_tok = None
         type = None
@@ -180,14 +210,18 @@ class Parser:
         if tok.kind == TokenKind.COLON:
             colon_tok = tok
             self.advance()
-            type = self.parse_expr()
+            type = self.parse_type_expr()
 
         tok = self.peek()
         if tok.kind == TokenKind.COMMA:
             comma_tok = tok
             self.advance()
 
-        return C.FuncParam(name, colon_tok, type, comma_tok)
+        return C.FuncParam(attr, name, colon_tok, type, comma_tok)
+
+    def parse_type_expr(self):
+        expr = self.parse_expr()
+        return C.TypeExpr(expr)
 
     def parse_expr(self, min_lbp = 0):
         left = self.parse_expr_nud()
@@ -237,8 +271,10 @@ class Parser:
         match tok.kind:
             case TokenKind.IDENTIFIER if tok.text == "+":
                 return 1
-            case TokenKind.LEFT_PAREN:
+            case TokenKind.IDENTIFIER if tok.text == "/":
                 return 3
+            case TokenKind.LEFT_PAREN:
+                return 5
             case _:
                 return -1
 
@@ -252,6 +288,13 @@ class Parser:
                 self.advance()
                 right = self.parse_expr(min_lbp = 2)
                 return C.AddExpr(left, add_tok, right)
+
+            # the `/` operator
+            case TokenKind.IDENTIFIER if tok.text == "/":
+                div_tok = tok
+                self.advance()
+                right = self.parse_expr(min_lbp = 4)
+                return C.DivExpr(left, div_tok, right)
 
             # `(` in the non-prefix position; must be a func call
             case TokenKind.LEFT_PAREN:

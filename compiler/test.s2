@@ -4,12 +4,10 @@ open std
 //   One cannot write `1+2`!!!
 //   Because `+2` will be parsed as an identifier.
 // 
-func main (argc: 1 + f(h, 1+ 3) + 4, argv: 1.2 + (3 + 2)) {
-    let x = 1;
-    return x;
+func vertexShader(vid: int, iid: uint): int {
+    let p = vid + 1;
+    let q = add1(p)
+    return q;
 }
 
-func foo(x)
-    x + 1
-
-func xyz() {}
+func add1(x: int): int x + 1

@@ -1,4 +1,3 @@
-import dataclasses as DC
 import enum
 
 class TokenKind(enum.Enum):
@@ -37,20 +36,43 @@ class KeywordKind(enum.Enum):
     RETURN      = enum.auto()
     LET         = enum.auto()
 
-@DC.dataclass
 class Token:
-    kind: "TokenKind"
-    start: "int"
-    end: "int"
-    text: "str"
+    """
+    Fields:
+        kind: TokenKind
+        start: int
+        end: int
+        text: str
+        
+        line: int
+        column: int
+        
+        leading_trivia: [Token]
+        trailing_trivia: [Token]
 
-    line: "int" = -1
-    column: "int" = -1
+        keyword_candidate: KeywordKind?
+    """
 
-    leading_trivia: "[Token]" = DC.field(default_factory = list)
-    trailing_trivia: "[Token]" = DC.field(default_factory = list)
+    def __init__(self, kind, start, end, text):
+        self.kind = kind
+        self.start = start
+        self.end = end
+        self.text = text
+        self.line = -1
+        self.column = -1
+        self.leading_trivia= []
+        self.trailing_trivia = []
+        self.keyword_candidate = None
 
-    keyword_candidate: "KeywordKind?" = None
+    def recons(self):
+        leading = ''.join([tok.recons() for tok in self.leading_trivia])
+        trailing = ''.join([tok.recons() for tok in self.trailing_trivia])
+        return leading + self.text + trailing
+
+    def __str__(self):
+        return f"<Token {self.kind} {self.line}:{self.column} \"{self.text}\">"
+    def __repr__(self):
+        return str(self)
 
 def is_trivia_token(tok):
     return tok.kind in {
@@ -151,12 +173,15 @@ class Cursor:
                     self.handle_colon()
                 case "/":
                     self.handle_slash()
+                case "@":
+                    self.handle_at()
                 case c if is_dec_digit(c):
                     self.handle_number()
                 case c if is_ident_begin(c):
                     self.handle_identifier()
                 case _:
                     self.handle_unknown()
+        self.start = self.position
         self.emit(TokenKind.END_OF_FILE)
 
     def handle_newline(self):
@@ -210,6 +235,10 @@ class Cursor:
                 self.handle_line_comment()
             case _:
                 self.handle_identifier()
+
+    def handle_at(self):
+        self.advance()
+        self.emit(TokenKind.AT)
 
     def handle_line_comment(self):
         self.advance_while(lambda c: c != "\n")
@@ -296,6 +325,16 @@ def collect_trailing_trivia(toks, start):
         pos += 1
     return trailing, pos
 
+def annotate_loc(toks):
+    line_start = 0
+    line = 1
+    for tok in toks:
+        tok.line = line
+        tok.column = tok.start - line_start + 1
+        if tok.kind == TokenKind.NEWLINE:
+            line += 1
+            line_start = tok.start + 1
+        
 
 def fold_trivia(toks):
     pos = 0
@@ -337,6 +376,7 @@ def lex_source(s):
     cursor = Cursor(s)
     cursor.lex()
     tokens = cursor.tokens
+    annotate_loc(tokens)
     tokens = fold_trivia(tokens)
     scan_keywords(tokens)
     return tokens
