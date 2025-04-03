@@ -1,13 +1,11 @@
 open std
 
-// Warning:
-//   One cannot write `1+2`!!!
-//   Because `+2` will be parsed as an identifier.
-// 
 func vertexShader(vid: int, iid: uint): int {
     let p = vid + 1;
     let q = add1(p)
     return q;
 }
 
-func add1(x: int): int x + 1
+func add1(x: int): int {
+    return x + 1;
+}
