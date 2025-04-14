@@ -31,6 +31,7 @@ namespace spargel::base {
             using Type = Get<L, i>;
             Type data;
         };
+
         // L is a TypeList
         template <typename L, typename I>
         struct TupleStorage;
@@ -41,9 +42,12 @@ namespace spargel::base {
                 return TupleItem<i, L>::data;
             }
         };
+
         template <typename... Ts>
         class Tuple {
         public:
+            // TODO: constructors
+
             template <usize i>
             auto& get() {
                 return _storage.template get<i>();
@@ -63,7 +67,7 @@ namespace spargel::base {
 
         template <typename F, typename T, usize... Is>
         decltype(auto) applyImpl(F&& func, T&& tuple, IntegerSequence<Is...>) {
-            return base::move(func)(base::move(tuple).template get<Is>()...);
+            return base::forward<F>(func)(base::forward<T>(tuple).template get<Is>()...);
         }
 
         template <typename F, typename T>

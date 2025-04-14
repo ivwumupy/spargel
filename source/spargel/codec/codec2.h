@@ -5,9 +5,11 @@
 
 #pragma once
 
-#include <spargel/base/tuple.h>
 #include <spargel/base/unique_ptr.h>
 #include <spargel/codec/codec.h>
+
+// FIXME
+#include <tuple>
 
 namespace spargel::codec {
 
@@ -51,34 +53,13 @@ namespace spargel::codec {
     template <EncodeBackend EB, typename T>
     class Encoder2;
     template <EncodeBackend EB, typename T>
-    class EncoderArray;
+    class ArrayEncoder;
     template <EncodeBackend EB, typename S, typename T, typename F>
-    class EncoderRecordBuilder;
+    class RecordEncoderBuilder;
     template <EncodeBackend EB, typename T>
-    class FieldEncoderNormal;
-
-    namespace _encoder2 {
-
-        template <EncodeBackend EB, typename T>
-        class Error : public Encoder2<EB, T> {
-            using DataType = EB::DataType;
-            using ErrorType = EB::ErrorType;
-
-        public:
-            Error(const base::string& message) : _message(message) {}
-
-            base::Either<DataType, ErrorType> encode(EB& backend, const T& object) const {
-                return base::Right(_message);
-            }
-            base::unique_ptr<Encoder2<EB, T>> clone() const {
-                return base::make_unique<Error>(_message);
-            }
-
-        private:
-            base::string _message;
-        };
-
-    }  // namespace _encoder2
+    class NormalFieldEncoder;
+    template <EncodeBackend EB, typename T>
+    class OptionalFieldEncoder;
 
     template <EncodeBackend EB, typename T>
     class Encoder2 {
@@ -92,21 +73,38 @@ namespace spargel::codec {
 
         virtual base::unique_ptr<Encoder2> clone() const = 0;
 
-        FieldEncoderNormal<EB, T> fieldOf(base::string_view name) const {
-            return FieldEncoderNormal<EB, T>(name, clone());
+        NormalFieldEncoder<EB, T> fieldOf(base::string_view name) const {
+            return NormalFieldEncoder<EB, T>(name, clone());
         }
 
-        EncoderArray<EB, T> arrayOf() { return EncoderArray<EB, T>(clone()); }
+        OptionalFieldEncoder<EB, T> optionalFieldOf(base::string_view name) const {
+            return OptionalFieldEncoder<EB, T>(name, clone());
+        }
+
+        ArrayEncoder<EB, T> arrayOf() { return ArrayEncoder<EB, T>(clone()); }
+    };
+
+    template <EncodeBackend EB, typename T>
+    class ErrorEncoder : public Encoder2<EB, T> {
+    public:
+        ErrorEncoder(const base::string& message) : _message(message) {}
+
+        ErrorEncoder(const char* message) : _message(message) {}
+
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const T& object) const override {
+            return base::Right(typename EB::ErrorType(_message));
+        }
+
+        virtual base::unique_ptr<Encoder2<EB, T>> clone() const override {
+            return base::make_unique<ErrorEncoder>(_message);
+        }
 
     private:
-    public:
-        static base::unique_ptr<Encoder2> error(const base::string& message) {
-            return base::make_unique<_encoder2::Error<EB, T>>(message);
-        }
+        base::string _message;
     };
 
     template <EncodeBackend EB>
-    class EncoderNull : public Encoder2<EB, base::nullptr_t> {
+    class NullEncoder : public Encoder2<EB, base::nullptr_t> {
     public:
         base::Either<typename EB::DataType, typename EB::ErrorType> encode(
             EB& backend, const base::nullptr_t& ptr = nullptr) const override {
@@ -114,12 +112,12 @@ namespace spargel::codec {
         }
 
         base::unique_ptr<Encoder2<EB, base::nullptr_t>> clone() const override {
-            return base::make_unique<EncoderNull<EB>>(*this);
+            return base::make_unique<NullEncoder<EB>>();
         }
     };
 
     template <EncodeBackend EB>
-    class EncoderBoolean : public Encoder2<EB, bool> {
+    class BooleanEncoder : public Encoder2<EB, bool> {
     public:
         base::Either<typename EB::DataType, typename EB::ErrorType> encode(
             EB& backend, const bool& b) const override {
@@ -127,12 +125,25 @@ namespace spargel::codec {
         }
 
         base::unique_ptr<Encoder2<EB, bool>> clone() const override {
-            return base::make_unique<EncoderBoolean<EB>>(*this);
+            return base::make_unique<BooleanEncoder<EB>>();
         }
     };
 
     template <EncodeBackend EB>
-    class EncoderI32 : public Encoder2<EB, i32> {
+    class U32Encoder : public Encoder2<EB, u32> {
+    public:
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(
+            EB& backend, const u32& n) const override {
+            return backend.makeU32(n);
+        }
+
+        base::unique_ptr<Encoder2<EB, u32>> clone() const override {
+            return base::make_unique<U32Encoder<EB>>();
+        }
+    };
+
+    template <EncodeBackend EB>
+    class I32Encoder : public Encoder2<EB, i32> {
     public:
         base::Either<typename EB::DataType, typename EB::ErrorType> encode(
             EB& backend, const i32& n) const override {
@@ -140,12 +151,25 @@ namespace spargel::codec {
         }
 
         base::unique_ptr<Encoder2<EB, i32>> clone() const override {
-            return base::make_unique<EncoderI32<EB>>(*this);
+            return base::make_unique<I32Encoder<EB>>();
         }
     };
 
     template <EncodeBackend EB>
-    class EncoderString : public Encoder2<EB, base::string> {
+    class F32Encoder : public Encoder2<EB, f32> {
+    public:
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(
+            EB& backend, const f32& n) const override {
+            return backend.makeF32(n);
+        }
+
+        base::unique_ptr<Encoder2<EB, f32>> clone() const override {
+            return base::make_unique<F32Encoder<EB>>();
+        }
+    };
+
+    template <EncodeBackend EB>
+    class StringEncoder : public Encoder2<EB, base::string> {
     public:
         base::Either<typename EB::DataType, typename EB::ErrorType> encode(
             EB& backend, const base::string& s) const override {
@@ -153,17 +177,17 @@ namespace spargel::codec {
         }
 
         base::unique_ptr<Encoder2<EB, base::string>> clone() const override {
-            return base::make_unique<EncoderString<EB>>(*this);
+            return base::make_unique<StringEncoder<EB>>();
         }
     };
 
     template <EncodeBackend EB, typename T>
-    class EncoderArray : public Encoder2<EB, base::vector<T>> {
+    class ArrayEncoder : public Encoder2<EB, base::vector<T>> {
         using DataType = EB::DataType;
         using ErrorType = EB::ErrorType;
 
     public:
-        EncoderArray(base::unique_ptr<Encoder2<EB, T>>&& encoder) : _encoder(base::move(encoder)) {}
+        ArrayEncoder(base::unique_ptr<Encoder2<EB, T>>&& encoder) : _encoder(base::move(encoder)) {}
 
         base::Either<DataType, ErrorType> encode(
             EB& backend, const base::vector<T>& v) const override {
@@ -177,7 +201,7 @@ namespace spargel::codec {
         }
 
         base::unique_ptr<Encoder2<EB, base::vector<T>>> clone() const override {
-            return base::make_unique<EncoderArray>(_encoder->clone());
+            return base::make_unique<ArrayEncoder>(_encoder->clone());
         }
 
     private:
@@ -193,27 +217,30 @@ namespace spargel::codec {
 
         virtual base::unique_ptr<FieldEncoder> clone() const = 0;
 
-        template <typename S, typename F>
-        EncoderRecordBuilder<EB, S, T, F> forGetter(const F& getter) const {
-            return EncoderRecordBuilder<EB, S, T, F>(clone(), getter);
+        template <typename S, typename F /* S -> T */>
+        RecordEncoderBuilder<EB, S, T, F> forGetter(F getter) const {
+            return RecordEncoderBuilder<EB, S, T, F>(clone(), getter);
         }
     };
 
     template <EncodeBackend EB, typename T>
-    class FieldEncoderNormal : public FieldEncoder<EB, T> {
+    class NormalFieldEncoder : public FieldEncoder<EB, T> {
     public:
-        FieldEncoderNormal(const base::string& name, base::unique_ptr<Encoder2<EB, T>> encoder)
+        NormalFieldEncoder(const base::string& name, base::unique_ptr<Encoder2<EB, T>> encoder)
             : _name(name), _encoder(base::move(encoder)) {}
 
         base::Optional<typename EB::ErrorType> encode(EB& backend, RecordBuilder<EB>& builder, const T& object) const {
             auto result = _encoder->encode(backend, object);
-            if (result.isRight())
+            if (result.isRight()) {
                 return base::makeOptional<typename EB::ErrorType>(base::move(result.right()));
-            builder.add(_name, base::move(result.left()));
+            } else {
+                builder.add(_name, base::move(result.left()));
+                return base::nullopt;
+            }
         }
 
         base::unique_ptr<FieldEncoder<EB, T>> clone() const {
-            return base::make_unique<FieldEncoderNormal<EB, T>>(_name, _encoder->clone());
+            return base::make_unique<NormalFieldEncoder<EB, T>>(_name, _encoder->clone());
         }
 
     private:
@@ -221,43 +248,89 @@ namespace spargel::codec {
         base::unique_ptr<Encoder2<EB, T>> _encoder;
     };
 
-    template <EncodeBackend EB, typename S, typename T, typename F>
-    class EncoderRecordBuilder {
+    template <EncodeBackend EB, typename T>
+    class OptionalFieldEncoder : public FieldEncoder<EB, base::Optional<T>> {
     public:
-        EncoderRecordBuilder(base::unique_ptr<FieldEncoder<EB, T>>&& field_encoder, const F& getter)
+        OptionalFieldEncoder(const base::string& name, base::unique_ptr<Encoder2<EB, T>> encoder)
+            : _name(name), _encoder(base::move(encoder)) {}
+
+        base::Optional<typename EB::ErrorType> encode(EB& backend, RecordBuilder<EB>& builder, const base::Optional<T>& object) const {
+            if (object.hasValue()) {
+                auto result = _encoder->encode(backend, object.value());
+                if (result.isRight()) {
+                    return base::makeOptional<typename EB::ErrorType>(base::move(result.right()));
+                } else {
+                    builder.add(_name, base::move(result.left()));
+                    return base::nullopt;
+                }
+            } else {
+                return base::nullopt;
+            }
+        }
+
+        base::unique_ptr<FieldEncoder<EB, base::Optional<T>>> clone() const {
+            return base::make_unique<OptionalFieldEncoder<EB, T>>(_name, _encoder->clone());
+        }
+
+    private:
+        base::string _name;
+        base::unique_ptr<Encoder2<EB, T>> _encoder;
+    };
+
+    template <EncodeBackend EB, typename S, typename T, typename F /* S -> T */>
+    class RecordEncoderBuilder {
+    public:
+        RecordEncoderBuilder(base::unique_ptr<FieldEncoder<EB, T>>&& field_encoder, F getter)
             : field_encoder(base::move(field_encoder)), getter(getter) {}
 
+        RecordEncoderBuilder(const RecordEncoderBuilder& that) : field_encoder(that.field_encoder->clone()), getter(that.getter) {}
+
+    public:
         base::unique_ptr<FieldEncoder<EB, T>> field_encoder;
-        const F& getter;
+        F getter;
     };
 
     namespace _encoder_record {
 
-        template <EncodeBackend EB, typename S>
-        base::Optional<typename EB::ErrorType> encodeRecord(EB& backend, RecordBuilder<EB>& record_builder, const S& object) {}
+        template <EncodeBackend EB, typename S, typename... Builders>
+        base::Optional<typename EB::ErrorType> encodeRecord(EB& backend, RecordBuilder<EB>& record_builder, const S& object, const Builders&... builders) {
+            base::Optional<typename EB::ErrorType> error;
+            // magic fold expression that allows fast failing
+            bool success = ([&]() {
+                auto result = builders.field_encoder->encode(backend, record_builder, builders.getter(object));
+                if (result.hasValue()) {
+                    error = base::move(result);
+                    // This will cause the execution to fail fast, preventing encoding further entries.
+                    return false;
+                } else {
+                    return true;
+                }
+            }() && ...);
 
-        template <EncodeBackend EB, typename S, typename T, typename F, typename... Builders>
-        base::Optional<typename EB::ErrorType> encodeRecord(EB& backend, RecordBuilder<EB>& record_builder, const S& object,
-                                                            const EncoderRecordBuilder<EB, S, T, F>& builder, const Builders&... builders) {
-            auto optional = builder.field_encoder->encode(backend, record_builder, builder.getter(object));
-            if (optional.hasValue()) return optional;
-            return encodeRecord(backend, record_builder, object, builders...);
+            return success ? base::nullopt : error;
         }
 
     };  // namespace _encoder_record
 
     template <EncodeBackend EB, typename S, typename... Builders>
-    class EncoderRecord : public Encoder2<EB, S> {
+    class RecordEncoder : public Encoder2<EB, S> {
         using DataType = EB::DataType;
         using ErrorType = EB::ErrorType;
 
     public:
-        EncoderRecord(Builders&&... builders) : _builders(base::move(builders)...) {}
+        // FIXME: workaround
+        // It seems that we cannot partially infer template class type parameters from constructor argument types.
+        template <typename... Builders2>
+        static RecordEncoder<EB, S, Builders2...> group(const Builders2&... builders) {
+            return RecordEncoder<EB, S, Builders2...>(builders...);
+        }
+
+        RecordEncoder(const Builders&... builders) : _builders(builders...) {}
 
         base::Either<DataType, ErrorType> encode(EB& backend, const S& object) const override {
-            RecordBuilder<EB> record_builder;
-            auto optional = base::apply(
-                [&backend, &record_builder, &object](const Builders&... builders) {
+            RecordBuilderImpl<EB> record_builder;
+            auto optional = std::apply(
+                [&](const Builders&... builders) {
                     return _encoder_record::encodeRecord(backend, record_builder, object, builders...);
                 },
                 _builders);
@@ -269,10 +342,11 @@ namespace spargel::codec {
         }
 
         base::unique_ptr<Encoder2<EB, S>> clone() const override {
+            return std::apply([](const Builders&... builders) { return base::make_unique<RecordEncoder>(builders...); }, _builders);
         }
 
     private:
-        base::Tuple<Builders...> _builders;
+        std::tuple<Builders...> _builders;
     };
 
     template <EncodeBackend EB, DecodeBackend DB>

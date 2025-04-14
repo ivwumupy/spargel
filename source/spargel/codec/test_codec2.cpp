@@ -1,5 +1,6 @@
 #include <spargel/base/check.h>
 #include <spargel/base/test.h>
+#include <spargel/base/unique_ptr.h>
 #include <spargel/codec/codec2.h>
 
 // libc
@@ -85,29 +86,48 @@ namespace {
         u32 age;
         bool happy;
         base::vector<f32> scores;
+
+        template <EncodeBackend EB>
+        static auto encoder() {
+            return RecordEncoder<EB, Student>::group(
+                StringEncoder<EB>().fieldOf("type").template forGetter<Student>([](const Student& student) { return student.type; }),
+                StringEncoder<EB>().fieldOf("name").template forGetter<Student>([](const Student& student) { return student.name; }),
+                StringEncoder<EB>().optionalFieldOf("nickname").template forGetter<Student>([](const Student& student) { return student.nickname; }),
+                U32Encoder<EB>().fieldOf("age").template forGetter<Student>([](const Student& student) { return student.age; }),
+                BooleanEncoder<EB>().fieldOf("happy").template forGetter<Student>([](const Student& student) { return student.happy; }),
+                F32Encoder<EB>().arrayOf().fieldOf("scores").template forGetter<Student>([](const Student& student) { return student.scores; }));
+        }
     };
 
 }  // namespace
+
+TEST(Codec2_Encode_Error) {
+    using EB = EncodeBackendTest;
+    EB backend;
+
+    auto result = ErrorEncoder<EB, int>("error").encode(backend, 0);
+    spargel_check(result.isRight());
+}
 
 TEST(Codec2_Encode_Primitive) {
     using EB = EncodeBackendTest;
     EB backend;
     auto result = base::makeRight<TestData, CodecError>("");
 
-    result = EncoderNull<EB>().encode(backend);
+    result = NullEncoder<EB>().encode(backend);
     spargel_check(result.isLeft() && result.left().value == 0);
 
-    result = EncoderBoolean<EB>().encode(backend, true);
+    result = BooleanEncoder<EB>().encode(backend, true);
     spargel_check(result.isLeft() && result.left().value == 1);
-    result = EncoderBoolean<EB>().encode(backend, false);
+    result = BooleanEncoder<EB>().encode(backend, false);
     spargel_check(result.isLeft() && result.left().value == 0);
 
-    result = EncoderI32<EB>().encode(backend, -0x80000000);
+    result = I32Encoder<EB>().encode(backend, -0x80000000);
     spargel_check(result.isLeft() && (i32)result.left().value == (i32)-0x80000000);
-    result = EncoderI32<EB>().encode(backend, 0x7FFFFFFF);
+    result = I32Encoder<EB>().encode(backend, 0x7FFFFFFF);
     spargel_check(result.isLeft() && result.left().value == 0x7FFFFFFF);
 
-    result = EncoderString<EB>().encode(backend, base::string("ABC"));
+    result = StringEncoder<EB>().encode(backend, base::string("ABC"));
     spargel_check(result.isLeft() && result.left().value == 3);
 }
 
@@ -120,7 +140,7 @@ TEST(Codec2_Encode_Array) {
         v.push("A");
         v.push("BC");
         v.push("DEF");
-        auto result = EncoderString<EB>().arrayOf().encode(backend, base::move(v));
+        auto result = StringEncoder<EB>().arrayOf().encode(backend, base::move(v));
         spargel_check(result.isLeft() && result.left().value == 1 + 2 + 3);
     }
     {
@@ -133,7 +153,7 @@ TEST(Codec2_Encode_Array) {
         v2.push(3);
         v2.push(-4);
         v.push(base::move(v2));
-        auto result = EncoderI32<EB>().arrayOf().arrayOf().encode(backend, base::move(v));
+        auto result = I32Encoder<EB>().arrayOf().arrayOf().encode(backend, base::move(v));
         spargel_check(result.isLeft() && (i32)result.left().value == (1 + -2) + (3 + -4));
     }
 }
@@ -153,7 +173,33 @@ TEST(Codec2_Encode_Map) {
         scores.push(92);
         student.scores = base::move(scores);
 
-        auto a = EncoderString<EB>().fieldOf("a").forGetter<Student>(
-            [](const Student& student) { return student.type; });
+        auto result = Student::encoder<EB>().encode(backend, base::move(student));
+        spargel_check(result.isLeft());
+    }
+}
+
+TEST(Codec2_Encode_Map_FailFast) {
+    using EB = EncodeBackendTest;
+    EB backend;
+
+    {
+        int counter = 0;
+        auto result = RecordEncoder<EB, int>::group(
+                          BooleanEncoder<EB>().fieldOf("bool").forGetter<int>([&](int n) { counter++; return true; }),
+                          I32Encoder<EB>().fieldOf("i32").forGetter<int>([&](int n) { counter++; return 0; }),
+                          StringEncoder<EB>().fieldOf("string").forGetter<int>([&](int n) { counter++; return base::string("string"); }))
+                          .encode(backend, 0);
+        spargel_check(result.isLeft());
+        spargel_check(counter == 3);
+    }
+    {
+        int counter = 0;
+        auto result = RecordEncoder<EB, int>::group(
+                          BooleanEncoder<EB>().fieldOf("bool").forGetter<int>([&](int n) { counter++; return true; }),
+                          ErrorEncoder<EB, i32>("error").fieldOf("i32").forGetter<int>([&](int n) { counter++; return 0; }),
+                          StringEncoder<EB>().fieldOf("string").forGetter<int>([&](int n) { counter++; return base::string("string"); }))
+                          .encode(backend, 0);
+        spargel_check(result.isRight());
+        spargel_check(counter == 2);
     }
 }
