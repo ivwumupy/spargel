@@ -68,7 +68,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate a large JSON string by concatenating chunks')
     parser.add_argument('size', type=int, help='Total string size')
     parser.add_argument('--chunk-size', type=int,
-                        help='Max size per chunk (default=1MB). Use with --chunks for control')
+                        help='Max size per chunk (default=1MiB). Use with --chunks for control')
     parser.add_argument('--chunks', type=int, help='Number of chunks to split into')
     parser.add_argument('--escape_freq', type=float, help='Escape character frequency (0.0-1.0, default=0.01)',
                         default=0.01)
@@ -97,7 +97,7 @@ if __name__ == "__main__":
             # Use chunk-size based approach
             chunk_size = args.chunk_size if args.chunk_size else min(1024 * 1024, total_inner)
             if chunk_size <= 0:
-                chunk_size = 1024 * 1024  # Default to 1MB chunks
+                chunk_size = 1024 * 1024  # Default to 1MiB chunks
             num_chunks = max(1, (total_inner + chunk_size - 1) // chunk_size)
             base, extra = divmod(total_inner, num_chunks)
             chunk_sizes = [base + 1] * extra + [base] * (num_chunks - extra)

@@ -243,7 +243,7 @@ namespace spargel::codec::model {
         if (json_result.isRight())
             return base::makeRight<GlTF, GlTFDecodeError>(json_result.right().message());
 
-        DecodeBackendJson backend;
+        JsonDecodeBackend backend;
         auto result = CodecGlTF::decode(backend, base::move(json_result.left()));
         if (result.isLeft())
             return base::makeLeft<GlTF, GlTFDecodeError>(result.left());

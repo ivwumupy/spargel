@@ -99,7 +99,7 @@ namespace spargel::codec {
     class JsonDecodeError : public CodecError {};
 
     // JSON encode backend
-    struct EncodeBackendJson {
+    struct JsonEncodeBackend {
         using DataType = JsonValue;
         using ErrorType = JsonEncodeError;
 
@@ -158,7 +158,7 @@ namespace spargel::codec {
     };
 
     // JSON decode backend
-    struct DecodeBackendJson {
+    struct JsonDecodeBackend {
         using DataType = JsonValue;
         using ErrorType = JsonDecodeError;
 

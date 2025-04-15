@@ -55,7 +55,7 @@ struct Student {
 static_assert(Encoder<Student::Codec> && Decoder<Student::Codec>);
 
 TEST(JSON_Codec_Encode_Primitive) {
-    EncodeBackendJson backend;
+    JsonEncodeBackend backend;
     auto result = base::makeLeft<JsonValue, JsonEncodeError>();
 
     result = CodecNull::encode(backend);
@@ -102,7 +102,7 @@ TEST(JSON_Codec_Encode_Primitive) {
 }
 
 TEST(JSON_Codec_Decode_Primitive) {
-    DecodeBackendJson backend;
+    JsonDecodeBackend backend;
 
     {
         auto result = CodecNull::decode(backend, JsonNull());
@@ -164,7 +164,7 @@ TEST(JSON_Codec_Decode_Primitive) {
 }
 
 TEST(JSON_Codec_Encode_Array) {
-    EncodeBackendJson backend;
+    JsonEncodeBackend backend;
 
     {
         base::vector<base::string> v;
@@ -207,7 +207,7 @@ TEST(JSON_Codec_Encode_Array) {
 }
 
 TEST(JSON_Codec_Decode_Array) {
-    DecodeBackendJson backend;
+    JsonDecodeBackend backend;
 
     {
         auto result_json = parseJson("[123, 456, 789]");
@@ -239,7 +239,7 @@ TEST(JSON_Codec_Decode_Array) {
 }
 
 TEST(JSON_Codec_Encode_Map) {
-    EncodeBackendJson backend;
+    JsonEncodeBackend backend;
 
     {
         auto result = encodeMap(backend);
@@ -277,7 +277,7 @@ TEST(JSON_Codec_Encode_Map) {
 }
 
 TEST(JSON_Codec_Decode_Map) {
-    DecodeBackendJson backend;
+    JsonDecodeBackend backend;
 
     {
         const auto str =

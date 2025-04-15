@@ -66,6 +66,18 @@ add_test(
     COMMAND test_json_codec
 )
 
+spargel_add_executable(
+    NAME test_json_codec2
+    PRIVATE test_json_codec2.cpp
+    DEPS
+        codec_json
+        test_main
+)
+add_test(
+    NAME test_json_codec2
+    COMMAND test_json_codec2
+)
+
 # OTHER
 
 spargel_add_executable(

@@ -99,19 +99,20 @@ namespace {
         }
     };
 
+    using EB = EncodeBackendTest;
+
+    auto backend = EB();
+
+    auto studentEncoder = Student::encoder<EB>();
+
 }  // namespace
 
 TEST(Codec2_Encode_Error) {
-    using EB = EncodeBackendTest;
-    EB backend;
-
     auto result = ErrorEncoder<EB, int>("error").encode(backend, 0);
     spargel_check(result.isRight());
 }
 
 TEST(Codec2_Encode_Primitive) {
-    using EB = EncodeBackendTest;
-    EB backend;
     auto result = base::makeRight<TestData, CodecError>("");
 
     result = NullEncoder<EB>().encode(backend);
@@ -132,9 +133,6 @@ TEST(Codec2_Encode_Primitive) {
 }
 
 TEST(Codec2_Encode_Array) {
-    using EB = EncodeBackendTest;
-    EB backend;
-
     {
         base::vector<base::string> v;
         v.push("A");
@@ -159,9 +157,6 @@ TEST(Codec2_Encode_Array) {
 }
 
 TEST(Codec2_Encode_Map) {
-    using EB = EncodeBackendTest;
-    EB backend;
-
     {
         Student student;
         student.name = "Alice";
@@ -173,15 +168,12 @@ TEST(Codec2_Encode_Map) {
         scores.push(92);
         student.scores = base::move(scores);
 
-        auto result = Student::encoder<EB>().encode(backend, base::move(student));
+        auto result = studentEncoder.encode(backend, base::move(student));
         spargel_check(result.isLeft());
     }
 }
 
 TEST(Codec2_Encode_Map_FailFast) {
-    using EB = EncodeBackendTest;
-    EB backend;
-
     {
         int counter = 0;
         auto result = RecordEncoder<EB, int>::group(
