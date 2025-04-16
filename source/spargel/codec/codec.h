@@ -22,9 +22,8 @@ namespace spargel::codec {
      */
     class CodecError {
     public:
-        CodecError(base::string_view message) : _message(message) {}
-
         CodecError(const base::string& message) : _message(message) {}
+        CodecError(base::string_view message) : _message(message) {}
 
         const base::string& message() { return _message; }
 

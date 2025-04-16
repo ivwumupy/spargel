@@ -115,7 +115,7 @@ TEST(Codec2_Encode_Error) {
 TEST(Codec2_Encode_Primitive) {
     auto result = base::makeRight<TestData, CodecError>("");
 
-    result = NullEncoder<EB>().encode(backend);
+    result = NullEncoder<EB>().encode(backend, nullptr);
     spargel_check(result.isLeft() && result.left().value == 0);
 
     result = BooleanEncoder<EB>().encode(backend, true);
