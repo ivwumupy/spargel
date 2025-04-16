@@ -22,24 +22,22 @@ namespace spargel::codec {
      */
     class CodecError {
     public:
+        CodecError(base::string_view message) : _message(message) {}
+
         CodecError(const base::string& message) : _message(message) {}
-
-        CodecError(const base::string_view& message) : _message(message) {}
-
-        CodecError(const char* message) : _message(message) {}
 
         const base::string& message() { return _message; }
 
         friend CodecError operator+(const CodecError& error, const base::string_view& str) {
-            return CodecError(error._message + str);
+            return CodecError((error._message + str).view());
         }
 
         friend CodecError operator+(const CodecError& error, char ch) {
-            return CodecError(error._message + ch);
+            return CodecError((error._message + ch).view());
         }
 
         friend CodecError operator+(const CodecError& error1, const CodecError& error2) {
-            return CodecError(error1._message + error2._message);
+            return CodecError((error1._message + error2._message).view());
         }
 
     private:
@@ -55,8 +53,7 @@ namespace spargel::codec {
 
     // Error classes for codec API should be directly constructable from messages.
     template <typename E>
-    concept ConstructableFromMessage =
-        requires(const base::string& s) { E(s); } && requires(const base::string_view& s) { E(s); };
+    concept ConstructableFromMessage = requires(base::string_view s) { E(s); } && requires(const base::string& s) { E(s); };
 
     // encode backend prototype
     template <typename EB /* encode backend type */>
@@ -66,79 +63,49 @@ namespace spargel::codec {
         requires ConstructableFromMessage<typename EB::ErrorType>;
     } && requires(EB& backend) {
         backend.makeNull();
-        {
-            backend.makeNull()
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeNull() } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, bool b) {
         backend.makeBoolean(b);
-        {
-            backend.makeBoolean(b)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeBoolean(b) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, u8 n) {
         backend.makeU8(n);
-        {
-            backend.makeU8(n)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeU8(n) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, i8 n) {
         backend.makeI8(n);
-        {
-            backend.makeI8(n)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeI8(n) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, u16 n) {
         backend.makeU16(n);
-        {
-            backend.makeU16(n)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeU16(n) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, i16 n) {
         backend.makeI16(n);
-        {
-            backend.makeI16(n)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeI16(n) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, u32 n) {
         backend.makeU32(n);
-        {
-            backend.makeU32(n)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeU32(n) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, i32 n) {
         backend.makeI32(n);
-        {
-            backend.makeI32(n)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeI32(n) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, u64 n) {
         backend.makeU64(n);
-        {
-            backend.makeU64(n)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeU64(n) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, i64 n) {
         backend.makeI64(n);
-        {
-            backend.makeI64(n)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeI64(n) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, f32 v) {
         backend.makeF32(v);
-        {
-            backend.makeF32(v)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeF32(v) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, f64 v) {
         backend.makeF64(v);
-        {
-            backend.makeF64(v)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeF64(v) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, const base::string& s) {
         backend.makeString(s);
-        {
-            backend.makeString(s)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeString(s) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, const base::vector<typename EB::DataType>& array) {
         backend.makeArray(array);
-        {
-            backend.makeArray(array)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeArray(array) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, const base::HashMap<base::string, typename EB::DataType>& map) {
         backend.makeMap(map);
-        {
-            backend.makeMap(map)
-        } -> base::ConvertibleTo<base::Either<typename EB::DataType, typename EB::ErrorType>>;
+        { backend.makeMap(map) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     };
 
     // decode backend prototype
@@ -149,51 +116,41 @@ namespace spargel::codec {
         requires ConstructableFromMessage<typename DB::ErrorType>;
     } && requires(DB& backend, const DB::DataType& data) {
         backend.getNull(data);
-        { backend.getNull(data) } -> base::ConvertibleTo<base::Optional<typename DB::ErrorType>>;
+        { backend.getNull(data) } -> base::SameAs<base::Optional<typename DB::ErrorType>>;
 
         backend.getBoolean(data);
-        {
-            backend.getBoolean(data)
-        } -> base::ConvertibleTo<base::Either<bool, typename DB::ErrorType>>;
+        { backend.getBoolean(data) } -> base::SameAs<base::Either<bool, typename DB::ErrorType>>;
 
         backend.getU8(data);
-        { backend.getU8(data) } -> base::ConvertibleTo<base::Either<u8, typename DB::ErrorType>>;
+        { backend.getU8(data) } -> base::SameAs<base::Either<u8, typename DB::ErrorType>>;
         backend.getI8(data);
-        { backend.getI8(data) } -> base::ConvertibleTo<base::Either<i8, typename DB::ErrorType>>;
+        { backend.getI8(data) } -> base::SameAs<base::Either<i8, typename DB::ErrorType>>;
         backend.getU16(data);
-        { backend.getU16(data) } -> base::ConvertibleTo<base::Either<u16, typename DB::ErrorType>>;
+        { backend.getU16(data) } -> base::SameAs<base::Either<u16, typename DB::ErrorType>>;
         backend.getI16(data);
-        { backend.getI16(data) } -> base::ConvertibleTo<base::Either<i16, typename DB::ErrorType>>;
+        { backend.getI16(data) } -> base::SameAs<base::Either<i16, typename DB::ErrorType>>;
         backend.getU32(data);
-        { backend.getU32(data) } -> base::ConvertibleTo<base::Either<u32, typename DB::ErrorType>>;
+        { backend.getU32(data) } -> base::SameAs<base::Either<u32, typename DB::ErrorType>>;
         backend.getI32(data);
-        { backend.getI32(data) } -> base::ConvertibleTo<base::Either<i32, typename DB::ErrorType>>;
+        { backend.getI32(data) } -> base::SameAs<base::Either<i32, typename DB::ErrorType>>;
         backend.getU64(data);
-        { backend.getU64(data) } -> base::ConvertibleTo<base::Either<u64, typename DB::ErrorType>>;
+        { backend.getU64(data) } -> base::SameAs<base::Either<u64, typename DB::ErrorType>>;
         backend.getI64(data);
-        { backend.getI64(data) } -> base::ConvertibleTo<base::Either<i64, typename DB::ErrorType>>;
+        { backend.getI64(data) } -> base::SameAs<base::Either<i64, typename DB::ErrorType>>;
 
         backend.getF32(data);
-        { backend.getF32(data) } -> base::ConvertibleTo<base::Either<f32, typename DB::ErrorType>>;
+        { backend.getF32(data) } -> base::SameAs<base::Either<f32, typename DB::ErrorType>>;
         backend.getF64(data);
-        { backend.getF64(data) } -> base::ConvertibleTo<base::Either<f64, typename DB::ErrorType>>;
+        { backend.getF64(data) } -> base::SameAs<base::Either<f64, typename DB::ErrorType>>;
 
         backend.getString(data);
-        {
-            backend.getString(data)
-        } -> base::ConvertibleTo<base::Either<base::string, typename DB::ErrorType>>;
+        { backend.getString(data) } -> base::SameAs<base::Either<base::string, typename DB::ErrorType>>;
 
         backend.getArray(data);
-        {
-            backend.getArray(data)
-        } -> base::ConvertibleTo<
-              base::Either<base::vector<typename DB::DataType>, typename DB::ErrorType>>;
-    } && requires(DB& backend, const DB::DataType& data, const base::string& key) {
+        { backend.getArray(data) } -> base::SameAs<base::Either<base::vector<typename DB::DataType>, typename DB::ErrorType>>;
+    } && requires(DB& backend, const DB::DataType& data, base::string_view key) {
         backend.getMember(data, key);
-        {
-            backend.getMember(data, key)
-        } -> base::ConvertibleTo<
-              base::Either<base::Optional<typename DB::DataType>, typename DB::ErrorType>>;
+        { backend.getMember(data, key) } -> base::SameAs<base::Either<base::Optional<typename DB::DataType>, typename DB::ErrorType>>;
     };
 
     // dummy encode/decode backend
@@ -249,15 +206,14 @@ namespace spargel::codec {
             base::Either<u64, CodecError> getU64(const DummyType& data);
             base::Either<i64, CodecError> getI64(const DummyType& data);
 
-            base::Either<u64, CodecError> getF32(const DummyType& data);
-            base::Either<i64, CodecError> getF64(const DummyType& data);
+            base::Either<f32, CodecError> getF32(const DummyType& data);
+            base::Either<f64, CodecError> getF64(const DummyType& data);
 
             base::Either<base::string, CodecError> getString(const DummyType& data);
 
             base::Either<base::vector<DummyType>, CodecError> getArray(const DummyType& data);
 
-            base::Either<base::Optional<DummyType>, CodecError> getMember(const DummyType& data,
-                                                                          const base::string& key);
+            base::Either<base::Optional<DummyType>, CodecError> getMember(const DummyType& data, base::string_view key);
         };
         static_assert(DecodeBackend<DecodeBackendDummy>);
 
@@ -530,7 +486,7 @@ namespace spargel::codec {
                 auto& out = std::get<i>(t);
                 auto const& in = std::get<i>(ins);
 
-                auto result = backend.getMember(data, in.key);
+                auto result = backend.getMember(data, in.key.view());
                 if (result.isRight()) {
                     e.init(base::move(result.right()));
                 } else {

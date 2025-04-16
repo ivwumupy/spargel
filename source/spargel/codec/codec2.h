@@ -13,6 +13,12 @@
 
 namespace spargel::codec {
 
+    template <EncodeBackend EB, DecodeBackend DB>
+    struct CodecBackend {
+        EB encodeBackend;
+        DB decodeBackend;
+    };
+
     template <EncodeBackend EB>
     class RecordBuilder {
         using DataType = EB::DataType;
@@ -52,10 +58,15 @@ namespace spargel::codec {
 
     template <EncodeBackend EB, typename T>
     class Encoder2;
+
     template <EncodeBackend EB, typename T>
     class ArrayEncoder;
+    template <EncodeBackend EB, DecodeBackend DB, typename T>
+    class ArrayCodec;
+
     template <EncodeBackend EB, typename S, typename T, typename F>
     class RecordEncoderBuilder;
+
     template <EncodeBackend EB, typename T>
     class NormalFieldEncoder;
     template <EncodeBackend EB, typename T>
@@ -63,13 +74,10 @@ namespace spargel::codec {
 
     template <EncodeBackend EB, typename T>
     class Encoder2 {
-        using DataType = EB::DataType;
-        using ErrorType = EB::ErrorType;
-
     public:
         virtual ~Encoder2() = default;
 
-        virtual base::Either<DataType, ErrorType> encode(EB& backend, const T& object) const = 0;
+        virtual base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const T& object) const = 0;
 
         virtual base::unique_ptr<Encoder2> clone() const = 0;
 
@@ -82,6 +90,45 @@ namespace spargel::codec {
         }
 
         ArrayEncoder<EB, T> arrayOf() { return ArrayEncoder<EB, T>(clone()); }
+    };
+
+    template <DecodeBackend DB, typename T>
+    class Decoder2 {
+    public:
+        virtual ~Decoder2() = default;
+
+        virtual base::Either<T, typename DB::ErrorType> decode(DB& backend, const DB::DataType& data) const = 0;
+
+        virtual base::unique_ptr<Decoder2> clone() const = 0;
+    };
+
+    template <EncodeBackend EB, DecodeBackend DB, typename T>
+    struct Codec {
+    public:
+        virtual ~Codec() = default;
+
+        virtual base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const T& object) const = 0;
+
+        virtual base::unique_ptr<Codec> clone() const = 0;
+
+        ArrayCodec<EB, DB, T> arrayOf() { return ArrayCodec<EB, DB, T>(clone()); }
+    };
+
+    template <EncodeBackend EB, DecodeBackend DB, typename T, typename E, typename D>
+    // requires IsBaseOf<Encoder<EB, T>, E> && requires IsBaseOf<Decoder<DB, T>, D>
+    struct CodecFrom : Codec<EB, DB, T> {
+    public:
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const T& object) const override {
+            return encoder.encode(backend, object);
+        }
+
+        base::unique_ptr<Codec<EB, DB, T>> clone() const override {
+            return base::make_unique<CodecFrom>();
+        }
+
+    public:
+        E encoder;
+        // D decoder;
     };
 
     template <EncodeBackend EB, typename T>
@@ -103,11 +150,13 @@ namespace spargel::codec {
         base::string _message;
     };
 
+    template <EncodeBackend EB, DecodeBackend DB, typename T>
+    using ErrorCodec = CodecFrom<EB, DB, T, ErrorEncoder<EB, T>, void>;
+
     template <EncodeBackend EB>
     class NullEncoder : public Encoder2<EB, base::nullptr_t> {
     public:
-        base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-            EB& backend, const base::nullptr_t& ptr = nullptr) const override {
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const base::nullptr_t& ptr = nullptr) const override {
             return backend.makeNull();
         }
 
@@ -115,12 +164,23 @@ namespace spargel::codec {
             return base::make_unique<NullEncoder<EB>>();
         }
     };
+    template <DecodeBackend DB>
+    class NullDecoder : public Decoder2<DB, base::nullptr_t> {
+        base::Either<base::nullptr_t, typename DB::ErrorType> decode(DB& backend, const DB::DataType& data) const override {
+            ;
+        }
+
+        base::unique_ptr<Decoder2<DB, base::nullptr_t>> clone() const override {
+            ;
+        }
+    };
+    template <EncodeBackend EB, DecodeBackend DB>
+    using NullCodec = CodecFrom<EB, DB, base::nullptr_t, NullEncoder<EB>, void>;
 
     template <EncodeBackend EB>
     class BooleanEncoder : public Encoder2<EB, bool> {
     public:
-        base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-            EB& backend, const bool& b) const override {
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const bool& b) const override {
             return backend.makeBoolean(b);
         }
 
@@ -128,12 +188,13 @@ namespace spargel::codec {
             return base::make_unique<BooleanEncoder<EB>>();
         }
     };
+    template <EncodeBackend EB, DecodeBackend DB>
+    using BooleanCodec = CodecFrom<EB, DB, bool, BooleanEncoder<EB>, void>;
 
     template <EncodeBackend EB>
     class U32Encoder : public Encoder2<EB, u32> {
     public:
-        base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-            EB& backend, const u32& n) const override {
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const u32& n) const override {
             return backend.makeU32(n);
         }
 
@@ -145,8 +206,7 @@ namespace spargel::codec {
     template <EncodeBackend EB>
     class I32Encoder : public Encoder2<EB, i32> {
     public:
-        base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-            EB& backend, const i32& n) const override {
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const i32& n) const override {
             return backend.makeI32(n);
         }
 
@@ -158,8 +218,7 @@ namespace spargel::codec {
     template <EncodeBackend EB>
     class F32Encoder : public Encoder2<EB, f32> {
     public:
-        base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-            EB& backend, const f32& n) const override {
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const f32& n) const override {
             return backend.makeF32(n);
         }
 
@@ -171,8 +230,7 @@ namespace spargel::codec {
     template <EncodeBackend EB>
     class StringEncoder : public Encoder2<EB, base::string> {
     public:
-        base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-            EB& backend, const base::string& s) const override {
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const base::string& s) const override {
             return backend.makeString(s);
         }
 
@@ -183,15 +241,11 @@ namespace spargel::codec {
 
     template <EncodeBackend EB, typename T>
     class ArrayEncoder : public Encoder2<EB, base::vector<T>> {
-        using DataType = EB::DataType;
-        using ErrorType = EB::ErrorType;
-
     public:
         ArrayEncoder(base::unique_ptr<Encoder2<EB, T>>&& encoder) : _encoder(base::move(encoder)) {}
 
-        base::Either<DataType, ErrorType> encode(
-            EB& backend, const base::vector<T>& v) const override {
-            base::vector<DataType> array;
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const base::vector<T>& v) const override {
+            base::vector<typename EB::DataType> array;
             for (auto& item : v) {
                 auto result = _encoder->encode(backend, item);
                 if (result.isRight()) return base::Right(base::move(result.right()));
@@ -204,8 +258,28 @@ namespace spargel::codec {
             return base::make_unique<ArrayEncoder>(_encoder->clone());
         }
 
+        base::unique_ptr<Encoder2<EB, T>> encoder() {
+            return _encoder->clone();
+        }
+
     private:
         base::unique_ptr<Encoder2<EB, T>> _encoder;
+    };
+    template <EncodeBackend EB, DecodeBackend DB, typename T>
+    class ArrayCodec : Codec<EB, DB, base::vector<T>> {
+    public:
+        ArrayCodec(base::unique_ptr<Encoder2<EB, T>>&& encoder) : _array_encoder(base::move(encoder)) {}
+
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const base::vector<T>& object) const override {
+            return _array_encoder.encode(backend, object);
+        }
+
+        base::unique_ptr<Codec<EB, DB, T>> clone() const override {
+            return base::make_unique<CodecArray>(_array_encoder.encoder());
+        }
+
+    private:
+        ArrayEncoder<EB, T> _array_encoder;
     };
 
     template <EncodeBackend EB, typename T>
@@ -223,29 +297,63 @@ namespace spargel::codec {
         }
     };
 
+    template <DecodeBackend DB, typename T>
+    class FieldDecoder {
+    public:
+        virtual ~FieldDecoder() = default;
+
+        virtual base::Either<T, typename DB::ErrorType> decode(DB& backend, const DB::DataType& data) const = 0;
+
+        virtual base::unique_ptr<FieldDecoder> clone() const = 0;
+    };
+
     template <EncodeBackend EB, typename T>
     class NormalFieldEncoder : public FieldEncoder<EB, T> {
     public:
-        NormalFieldEncoder(const base::string& name, base::unique_ptr<Encoder2<EB, T>> encoder)
+        NormalFieldEncoder(base::string_view name, base::unique_ptr<Encoder2<EB, T>> encoder)
             : _name(name), _encoder(base::move(encoder)) {}
 
-        base::Optional<typename EB::ErrorType> encode(EB& backend, RecordBuilder<EB>& builder, const T& object) const {
+        base::Optional<typename EB::ErrorType> encode(EB& backend, RecordBuilder<EB>& builder, const T& object) const override {
             auto result = _encoder->encode(backend, object);
-            if (result.isRight()) {
-                return base::makeOptional<typename EB::ErrorType>(base::move(result.right()));
-            } else {
+            if (result.isLeft()) {
                 builder.add(_name, base::move(result.left()));
                 return base::nullopt;
+            } else {
+                return base::makeOptional<typename EB::ErrorType>(base::move(result.right()));
             }
         }
 
-        base::unique_ptr<FieldEncoder<EB, T>> clone() const {
-            return base::make_unique<NormalFieldEncoder<EB, T>>(_name, _encoder->clone());
+        base::unique_ptr<FieldEncoder<EB, T>> clone() const override {
+            return base::make_unique<NormalFieldEncoder<EB, T>>(_name.view(), _encoder->clone());
         }
 
     private:
         base::string _name;
         base::unique_ptr<Encoder2<EB, T>> _encoder;
+    };
+
+    template <DecodeBackend DB, typename T>
+    class NormalFieldDecoder : public FieldDecoder<DB, T> {
+    public:
+        NormalFieldDecoder(base::string_view name, base::unique_ptr<Decoder2<DB, T>> decoder)
+            : _name(name), _decoder(base::move(decoder)) {}
+
+        base::Either<T, typename DB::ErrorType> decode(DB& backend, const DB::DataType& data) const override {
+            T* ptr = backend.getMember(data, _name);
+            if (ptr != nullptr) {
+                return _decoder->decode(backend, data);
+            } else {
+                return base::Right(DB::ErrorType(base::string("cannot find member '") + _name + '\''));
+            }
+        }
+
+        base::unique_ptr<FieldDecoder<DB, T>> clone() const override {
+            return base::make_unique<NormalFieldDecoder<DB, T>>(_name.view(), _decoder->clone());
+        }
+
+    private:
+        base::string _name;
+        base::unique_ptr<Decoder2<DB, T>> _decoder;
     };
 
     template <EncodeBackend EB, typename T>
@@ -254,7 +362,7 @@ namespace spargel::codec {
         OptionalFieldEncoder(const base::string& name, base::unique_ptr<Encoder2<EB, T>> encoder)
             : _name(name), _encoder(base::move(encoder)) {}
 
-        base::Optional<typename EB::ErrorType> encode(EB& backend, RecordBuilder<EB>& builder, const base::Optional<T>& object) const {
+        base::Optional<typename EB::ErrorType> encode(EB& backend, RecordBuilder<EB>& builder, const base::Optional<T>& object) const override {
             if (object.hasValue()) {
                 auto result = _encoder->encode(backend, object.value());
                 if (result.isRight()) {
@@ -268,7 +376,7 @@ namespace spargel::codec {
             }
         }
 
-        base::unique_ptr<FieldEncoder<EB, base::Optional<T>>> clone() const {
+        base::unique_ptr<FieldEncoder<EB, base::Optional<T>>> clone() const override {
             return base::make_unique<OptionalFieldEncoder<EB, T>>(_name, _encoder->clone());
         }
 
@@ -347,12 +455,6 @@ namespace spargel::codec {
 
     private:
         std::tuple<Builders...> _builders;
-    };
-
-    template <EncodeBackend EB, DecodeBackend DB>
-    struct CodecBackend {
-        EB encodeBackend;
-        DB decodeBackend;
     };
 
 }  // namespace spargel::codec

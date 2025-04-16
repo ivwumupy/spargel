@@ -56,7 +56,7 @@ static_assert(Encoder<Student::Codec> && Decoder<Student::Codec>);
 
 TEST(JSON_Codec_Encode_Primitive) {
     JsonEncodeBackend backend;
-    auto result = base::makeLeft<JsonValue, JsonEncodeError>();
+    base::Either<JsonValue, JsonParseError> result = base::Left(JsonValue());
 
     result = CodecNull::encode(backend);
     spargel_check(result.isLeft() && isEqual(result.left(), JsonNull()));

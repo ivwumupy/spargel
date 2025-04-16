@@ -10,7 +10,7 @@
 #include <spargel/base/types.h>
 #include <spargel/base/vector.h>
 
-//
+// libc
 #include <string.h>
 
 namespace spargel::base {

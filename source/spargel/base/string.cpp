@@ -81,16 +81,16 @@ namespace spargel::base {
 
     }  // namespace _string
 
-    //string string_from_range(char const* begin, char const* end) {
-    //    string str;
-    //    str._length = end - begin;
-    //    if (str._length > 0) {
-    //        str._data = (char*)default_allocator()->allocate(str._length + 1);
-    //        memcpy(str._data, begin, str._length);
-    //        str._data[str._length] = 0;
-    //    }
-    //    return str;
-    //}
+    // string string_from_range(char const* begin, char const* end) {
+    //     string str;
+    //     str._length = end - begin;
+    //     if (str._length > 0) {
+    //         str._data = (char*)default_allocator()->allocate(str._length + 1);
+    //         memcpy(str._data, begin, str._length);
+    //         str._data[str._length] = 0;
+    //     }
+    //     return str;
+    // }
     //
 
     String string_from_range(char const* begin, char const* end) {

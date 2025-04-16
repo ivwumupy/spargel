@@ -2,7 +2,7 @@
 
 #include <spargel/base/types.h>
 
-//
+// libc
 #include <string.h>
 
 namespace spargel::base {

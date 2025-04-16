@@ -80,7 +80,7 @@ namespace spargel::codec {
         void move_from(JsonValue&& other);
     };
 
-    class JsonParseError : public CodecError {};
+    using JsonParseError = CodecError;
 
     /*
      * Parser
@@ -95,8 +95,8 @@ namespace spargel::codec {
      * (U64/I64). For large integers, use strings to represent them.
      */
 
-    class JsonEncodeError : public CodecError {};
-    class JsonDecodeError : public CodecError {};
+    using JsonEncodeError = CodecError;
+    using JsonDecodeError = CodecError;
 
     // JSON encode backend
     struct JsonEncodeBackend {
@@ -104,56 +104,55 @@ namespace spargel::codec {
         using ErrorType = JsonEncodeError;
 
         base::Either<JsonValue, JsonEncodeError> makeNull() {
-            return base::makeLeft<JsonValue, JsonEncodeError>(JsonNull());
+            return base::Left(JsonValue(JsonNull()));
         }
 
         base::Either<JsonValue, JsonEncodeError> makeBoolean(bool b) {
-            return base::makeLeft<JsonBoolean, JsonEncodeError>(JsonBoolean(b));
+            return base::Left(JsonValue(JsonBoolean(b)));
         }
 
         base::Either<JsonValue, JsonEncodeError> makeU8(u8 n) {
-            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+            return base::Left(JsonValue(JsonNumber(n)));
         }
         base::Either<JsonValue, JsonEncodeError> makeI8(i8 n) {
-            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+            return base::Left(JsonValue(JsonNumber(n)));
         }
         base::Either<JsonValue, JsonEncodeError> makeU16(u16 n) {
-            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+            return base::Left(JsonValue(JsonNumber(n)));
         }
         base::Either<JsonValue, JsonEncodeError> makeI16(i16 n) {
-            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+            return base::Left(JsonValue(JsonNumber(n)));
         }
         base::Either<JsonValue, JsonEncodeError> makeU32(u32 n) {
-            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+            return base::Left(JsonValue(JsonNumber(n)));
         }
         base::Either<JsonValue, JsonEncodeError> makeI32(i32 n) {
-            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+            return base::Left(JsonValue(JsonNumber(n)));
         }
         base::Either<JsonValue, JsonEncodeError> makeU64(u64 n) {
-            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+            return base::Left(JsonValue(JsonNumber(n)));
         }
         base::Either<JsonValue, JsonEncodeError> makeI64(i64 n) {
-            return base::makeLeft<JsonNumber, JsonEncodeError>(n);
+            return base::Left(JsonValue(JsonNumber(n)));
         }
 
         base::Either<JsonValue, JsonEncodeError> makeF32(f32 v) {
-            return base::makeLeft<JsonNumber, JsonEncodeError>(v);
+            return base::Left(JsonValue(JsonNumber(v)));
         }
         base::Either<JsonValue, JsonEncodeError> makeF64(f64 v) {
-            return base::makeLeft<JsonNumber, JsonEncodeError>(v);
+            return base::Left(JsonValue(JsonNumber(v)));
         }
 
         base::Either<JsonValue, JsonEncodeError> makeString(const base::string& s) {
-            return base::makeLeft<JsonString, JsonEncodeError>(s);
+            return base::Left(JsonValue(JsonString(s)));
         }
 
         base::Either<JsonValue, JsonEncodeError> makeArray(const base::vector<JsonValue>& array) {
-            return base::makeLeft<JsonArray, JsonEncodeError>(array);
+            return base::Left(JsonValue(JsonArray(array)));
         }
 
-        base::Either<JsonValue, JsonEncodeError> makeMap(
-            const base::HashMap<base::string, JsonValue>& map) {
-            return base::makeLeft<JsonObject, JsonEncodeError>(map);
+        base::Either<JsonValue, JsonEncodeError> makeMap(const base::HashMap<base::string, JsonValue>& map) {
+            return base::Left(JsonValue(JsonObject(map)));
         }
     };
 
@@ -182,8 +181,7 @@ namespace spargel::codec {
 
         base::Either<base::vector<JsonValue>, JsonDecodeError> getArray(const JsonValue& data);
 
-        base::Either<base::Optional<JsonValue>, JsonDecodeError> getMember(const JsonValue& data,
-                                                                           const base::string& key);
+        base::Either<base::Optional<JsonValue>, JsonDecodeError> getMember(const JsonValue& data, base::string_view key);
     };
 
 }  // namespace spargel::codec

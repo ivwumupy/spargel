@@ -1,8 +1,6 @@
 #include <spargel/codec/codec2.h>
 #include <spargel/codec/test_json.h>
 
-#include "json.h"
-
 namespace {
 
     struct Student {
@@ -34,7 +32,7 @@ namespace {
 }  // namespace
 
 TEST(JSON_Codec_Encode_Primitive) {
-    auto result = base::makeLeft<JsonValue, JsonEncodeError>();
+    base::Either<JsonValue, JsonParseError> result = base::Left(JsonValue());
 
     result = NullEncoder<EB>().encode(backend);
     spargel_check(result.isLeft() && isEqual(result.left(), JsonNull()));

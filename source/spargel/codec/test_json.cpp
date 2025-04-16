@@ -32,7 +32,7 @@ namespace {
     }
 
     TEST(JSON_Parse_Primitive) {
-        auto result = base::makeLeft<JsonValue, JsonParseError>();
+        base::Either<JsonValue, JsonParseError> result = base::Left(JsonValue());
 
         result = parseJson("null");
         spargel_check(result.isLeft() && isEqual(result.left(), JsonNull()));
@@ -100,7 +100,7 @@ namespace {
     }
 
     TEST(JSON_Parse_Array) {
-        auto result = base::makeLeft<JsonValue, JsonParseError>();
+        base::Either<JsonValue, JsonParseError> result = base::Left(JsonValue());
 
         result = parseJson("[]");
         spargel_check(result.isLeft() && result.left().type == JsonValueType::array);
@@ -118,7 +118,7 @@ namespace {
     }
 
     TEST(JSON_Parse_Object) {
-        auto result = base::makeLeft<JsonValue, JsonParseError>();
+        base::Either<JsonValue, JsonParseError> result = base::Left(JsonValue());
 
         result = parseJson("{}");
         spargel_check(result.isLeft() && result.left().type == JsonValueType::object);
@@ -137,7 +137,7 @@ namespace {
     }
 
     TEST(JSON_Parse_Composite) {
-        auto result = base::makeLeft<JsonValue, JsonParseError>();
+        base::Either<JsonValue, JsonParseError> result = base::Left(JsonValue());
         const char* str;
 
         str =

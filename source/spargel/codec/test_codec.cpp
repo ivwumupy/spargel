@@ -62,60 +62,60 @@ namespace {
         using ErrorType = CodecError;
 
         base::Either<TestData, CodecError> makeNull() {
-            return base::makeLeft<TestData, CodecError>(0);
+            return base::Left(TestData(0));
         }
 
         base::Either<TestData, CodecError> makeBoolean(bool b) {
-            return base::makeLeft<TestData, CodecError>(b ? 1 : 0);
+            return base::Left(TestData(b ? 1 : 0));
         }
 
         base::Either<TestData, CodecError> makeU8(u8 n) {
-            return base::makeLeft<TestData, CodecError>(n);
+            return base::Left(TestData(n));
         }
         base::Either<TestData, CodecError> makeI8(i8 n) {
-            return base::makeLeft<TestData, CodecError>(n);
+            return base::Left(TestData(n));
         }
         base::Either<TestData, CodecError> makeU16(u16 n) {
-            return base::makeLeft<TestData, CodecError>(n);
+            return base::Left(TestData(n));
         }
         base::Either<TestData, CodecError> makeI16(i16 n) {
-            return base::makeLeft<TestData, CodecError>(n);
+            return base::Left(TestData(n));
         }
         base::Either<TestData, CodecError> makeU32(u32 n) {
-            return base::makeLeft<TestData, CodecError>(n);
+            return base::Left(TestData(n));
         }
         base::Either<TestData, CodecError> makeI32(i32 n) {
-            return base::makeLeft<TestData, CodecError>(n);
+            return base::Left(TestData(n));
         }
         base::Either<TestData, CodecError> makeU64(u64 n) {
-            return base::makeLeft<TestData, CodecError>(n);
+            return base::Left(TestData(n));
         }
         base::Either<TestData, CodecError> makeI64(i64 n) {
-            return base::makeLeft<TestData, CodecError>(n);
+            return base::Left(TestData(n));
         }
 
         base::Either<TestData, CodecError> makeF32(f32 v) {
-            return base::makeLeft<TestData, CodecError>(v);
+            return base::Left(TestData(v));
         }
         base::Either<TestData, CodecError> makeF64(f64 v) {
-            return base::makeLeft<TestData, CodecError>(v);
+            return base::Left(TestData(v));
         }
 
         base::Either<TestData, CodecError> makeString(const base::string& s) {
-            return base::makeLeft<TestData, CodecError>((int)s.length());
+            return base::Left(TestData((int)s.length()));
         }
 
         base::Either<TestData, CodecError> makeArray(const base::vector<TestData>& array) {
             int sum = 0;
             for (const auto& item : array) sum += item.value;
-            return base::makeLeft<TestData, CodecError>(sum);
+            return base::Left(TestData(sum));
         }
 
         base::Either<TestData, CodecError> makeMap(
             const base::HashMap<base::string, TestData>& map) {
             int sum = 0;
             // TODO
-            return base::makeLeft<TestData, CodecError>(sum);
+            return base::Left(TestData(sum));
         }
     };
 
