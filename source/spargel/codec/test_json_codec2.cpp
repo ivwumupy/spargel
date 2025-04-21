@@ -15,7 +15,7 @@ namespace {
 
         template <EncodeBackend EB>
         static auto encoder() {
-            return RecordEncoder<EB, Student>::group(
+            return makeRecordEncoder<EB, Student>(
                 StringEncoder<EB>().fieldOf("type").template forGetter<Student>([](const Student& student) { return student.type; }),
                 StringEncoder<EB>().fieldOf("name").template forGetter<Student>([](const Student& student) { return student.name; }),
                 StringEncoder<EB>().optionalFieldOf("nickname").template forGetter<Student>([](const Student& student) { return student.nickname; }),
@@ -72,31 +72,31 @@ TEST(Json_Codec_Encode_Primitive) {
 
 TEST(Json_Codec_Decode_Primitive) {
     {
-        auto result = NullDecoder<DB>().decode(decodeBackend, JsonNull());
+        auto result = NullDecoder<DB>().decode(decodeBackend, JsonValue(JsonNull()));
         spargel_check(result.isLeft());
     }
     {
-        auto result = BooleanDecoder<DB>().decode(decodeBackend, JsonBoolean(true));
+        auto result = BooleanDecoder<DB>().decode(decodeBackend, JsonValue(JsonBoolean(true)));
         spargel_check(result.isLeft() && result.left() == true);
     }
     {
-        auto result = BooleanDecoder<DB>().decode(decodeBackend, JsonBoolean(false));
+        auto result = BooleanDecoder<DB>().decode(decodeBackend, JsonValue(JsonBoolean(false)));
         spargel_check(result.isLeft() && result.left() == false);
     }
     {
-        auto result = U32Decoder<DB>().decode(decodeBackend, JsonNumber(4294967295));
+        auto result = U32Decoder<DB>().decode(decodeBackend, JsonValue(JsonNumber(4294967295)));
         spargel_check(result.isLeft() && result.left() == 4294967295);
     }
     {
-        auto result = I32Decoder<DB>().decode(decodeBackend, JsonNumber(-2147483648));
+        auto result = I32Decoder<DB>().decode(decodeBackend, JsonValue(JsonNumber(-2147483648)));
         spargel_check(result.isLeft() && result.left() == -2147483648);
     }
     {
-        auto result = F32Decoder<DB>().decode(decodeBackend, JsonNumber(123.456f));
+        auto result = F32Decoder<DB>().decode(decodeBackend, JsonValue(JsonNumber(123.456f)));
         spargel_check(result.isLeft() && fabs(result.left() - 123.456f) < 1e-6f);
     }
     {
-        auto result = StringDecoder<DB>().decode(decodeBackend, JsonString("ABC"));
+        auto result = StringDecoder<DB>().decode(decodeBackend, JsonValue(JsonString("ABC")));
         spargel_check(result.isLeft() && result.left() == base::string("ABC"));
     }
 }

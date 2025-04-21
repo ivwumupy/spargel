@@ -15,7 +15,7 @@ namespace spargel::base {
 
     template <typename T, typename... Args>
     struct Constructor<T(Args...)> {
-        T operator()(Args&&... args) const { return T(base::forward<Args>(args)...); }
+        T operator()(Args... args) const { return T(args...); }
     };
 
     // old design
