@@ -1,7 +1,7 @@
 #pragma once
 
 #include <spargel/base/algorithm.h>
-#include <spargel/base/assert.h>
+#include <spargel/base/check.h>
 #include <spargel/base/meta.h>
 #include <spargel/base/object.h>
 #include <spargel/base/panic.h>
@@ -108,7 +108,10 @@ namespace spargel::base {
             }
 
             usize getIndex() const { return _index; }
-            void setIndex(usize i) { _index = i; }
+            void setIndex(usize i) {
+                spargel_check(i < TypeCount);
+                _index = i;
+            }
 
             template <usize i, typename T = Get<Types, i>>
             T& getValue() { return *getPtr<T>(); }

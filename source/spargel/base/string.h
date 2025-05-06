@@ -55,8 +55,14 @@ namespace spargel::base {
 
             ~string();
 
-            char& operator[](usize i) { return _data[i]; }
-            char const& operator[](usize i) const { return _data[i]; }
+            char& operator[](usize i) {
+                spargel_check(i < _length);
+                return _data[i];
+            }
+            char const& operator[](usize i) const {
+                spargel_check(i < _length);
+                return _data[i];
+            }
 
             usize length() const { return _length; }
             char* begin() { return _data; }

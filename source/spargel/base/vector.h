@@ -2,8 +2,8 @@
 
 #include <spargel/base/algorithm.h>
 #include <spargel/base/allocator.h>
-#include <spargel/base/assert.h>
 #include <spargel/base/attribute.h>
+#include <spargel/base/check.h>
 #include <spargel/base/logging.h>
 #include <spargel/base/meta.h>
 #include <spargel/base/object.h>
@@ -60,8 +60,7 @@ namespace spargel::base {
 
             // construct and push back
             template <typename... Args>
-            SPARGEL_ALWAYS_INLINE
-            inline void push(Args&&... args) {
+            SPARGEL_ALWAYS_INLINE inline void push(Args&&... args) {
                 if (_end >= _capacity) [[unlikely]] {
                     grow(capacity() + 1);
                 }
@@ -70,7 +69,7 @@ namespace spargel::base {
             }
 
             void pop() {
-                spargel_assert(_begin < _end);
+                spargel_check(_begin < _end);
                 _end--;
             }
 
@@ -115,11 +114,11 @@ namespace spargel::base {
             void set_count(usize count) { _end = _begin + count; }
 
             T& operator[](usize i) {
-                spargel_assert(_begin + i < _end);
+                spargel_check(_begin + i < _end);
                 return _begin[i];
             }
             T const& operator[](usize i) const {
-                spargel_assert(_begin + i < _end);
+                spargel_check(_begin + i < _end);
                 return _begin[i];
             }
 
@@ -172,25 +171,24 @@ namespace spargel::base {
                 } else
 #endif
                 {
-                
-                new_begin = static_cast<T*>(_alloc->allocate(sizeof(T) * new_capacity));
-                if (_begin != nullptr) [[likely]] {
-#if spargel_has_builtin(__is_trivially_relocatable)
-                    if constexpr (__is_trivially_relocatable(T)) {
-                        memcpy(new_begin, _begin, old_count * sizeof(T));
-                    } else
-//#elif spargel_has_builtin(__is_trivially_copyable)
-//                    if constexpr (__is_trivially_copyable(T)) {
-//                        memcpy(new_begin, _begin, old_count * sizeof(T));
-//                    } else
-#endif
-                    {
-                        move_items(new_begin);
-                        destruct_items();
-                    }
-                    deallocate();
-                }
 
+                    new_begin = static_cast<T*>(_alloc->allocate(sizeof(T) * new_capacity));
+                    if (_begin != nullptr) [[likely]] {
+#if spargel_has_builtin(__is_trivially_relocatable)
+                        if constexpr (__is_trivially_relocatable(T)) {
+                            memcpy(new_begin, _begin, old_count * sizeof(T));
+                        } else
+// #elif spargel_has_builtin(__is_trivially_copyable)
+//                     if constexpr (__is_trivially_copyable(T)) {
+//                         memcpy(new_begin, _begin, old_count * sizeof(T));
+//                     } else
+#endif
+                        {
+                            move_items(new_begin);
+                            destruct_items();
+                        }
+                        deallocate();
+                    }
                 }
                 _begin = new_begin;
                 _end = _begin + old_count;

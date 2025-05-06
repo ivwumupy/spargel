@@ -1,6 +1,7 @@
 #pragma once
 
 #include <spargel/base/algorithm.h>
+#include <spargel/base/check.h>
 #include <spargel/base/meta.h>
 #include <spargel/base/object.h>
 #include <spargel/base/tag_invoke.h>
@@ -60,9 +61,18 @@ namespace spargel::base {
 
             bool hasValue() const { return _status == Status::value; }
 
-            T& value() & { return *getPtr(); }
-            T const& value() const& { return *getPtr(); }
-            T&& value() && { return move(*getPtr()); }
+            T& value() & {
+                spargel_check(hasValue());
+                return *getPtr();
+            }
+            T const& value() const& {
+                spargel_check(hasValue());
+                return *getPtr();
+            }
+            T&& value() && {
+                spargel_check(hasValue());
+                return move(*getPtr());
+            }
 
             friend void tag_invoke(tag<swap>, Optional& lhs, Optional& rhs) {
                 if (lhs.hasValue() && rhs.hasValue()) {
