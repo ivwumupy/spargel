@@ -6,8 +6,6 @@
 // libc
 #include <math.h>
 
-#include "codec.h"
-
 using namespace spargel;
 using namespace spargel::codec;
 
@@ -15,7 +13,7 @@ namespace {
 
     struct TestData {};
 
-    struct EncodeBackendTest {
+    struct TestEncodeBackend {
         using DataType = TestData;
         using ErrorType = CodecError;
 
@@ -42,9 +40,9 @@ namespace {
         base::Either<TestData, CodecError> makeMap(const base::HashMap<base::string, TestData>& map) { return base::Left(TestData{}); }
     };
 
-    static_assert(EncodeBackend<EncodeBackendTest>);
+    static_assert(EncodeBackend<TestEncodeBackend>);
 
-    struct DecodeBackendTest {
+    struct TestDecodeBackend {
         using DataType = TestData;
         using ErrorType = CodecError;
 
@@ -75,7 +73,14 @@ namespace {
         }
     };
 
-    static_assert(DecodeBackend<DecodeBackendTest>);
+    static_assert(DecodeBackend<TestDecodeBackend>);
+
+    struct TestCodecBackend {
+        using EncodeBackend = TestEncodeBackend;
+        using DecodeBackend = TestDecodeBackend;
+    };
+
+    static_assert(CodecBackend<TestCodecBackend>);
 
     struct Student {
         base::string type = base::string("normal");
@@ -104,28 +109,42 @@ namespace {
         static auto decoder() {
             return makeRecordDecoder<DB, Student>(
                 Constructor(),
-                StringDecoder<DB>().fieldOf("type"),
+                StringDecoder<DB>().defaultFieldOf("type", base::string("normal")),
                 StringDecoder<DB>().fieldOf("name"),
                 StringDecoder<DB>().optionalFieldOf("nickname"),
                 U32Decoder<DB>().fieldOf("age"),
                 BooleanDecoder<DB>().fieldOf("happy"),
                 F32Decoder<DB>().arrayOf().fieldOf("scores"));
         }
+
+        template <CodecBackend B>
+        static auto codec() {
+            return makeRecordCodec<B, Student>(
+                Constructor(),
+                StringCodec<B>().defaultFieldOf("type", base::string("normal")).template forGetter<Student>([](const Student& student) { return student.type; }),
+                StringCodec<B>().fieldOf("name").template forGetter<Student>([](const Student& student) { return student.name; }),
+                StringCodec<B>().optionalFieldOf("nickname").template forGetter<Student>([](const Student& student) { return student.nickname; }),
+                U32Codec<B>().fieldOf("age").template forGetter<Student>([](const Student& student) { return student.age; }),
+                BooleanCodec<B>().fieldOf("happy").template forGetter<Student>([](const Student& student) { return student.happy; }),
+                F32Codec<B>().arrayOf().fieldOf("scores").template forGetter<Student>([](const Student& student) { return student.scores; }));
+        }
     };
 
-    using EB = EncodeBackendTest;
-    using DB = DecodeBackendTest;
+    using EB = TestEncodeBackend;
+    using DB = TestDecodeBackend;
+    using B = TestCodecBackend;
 
     auto encodeBackend = EB{};
     auto decodeBackend = DB{};
 
     auto studentEncoder = Student::encoder<EB>();
     auto studentDecoder = Student::decoder<DB>();
+    auto studentCodec = Student::codec<B>();
 
 }  // namespace
 
 TEST(Codec_Encode_Error) {
-    auto result = ErrorEncoder<EB, bool>("error").encode(encodeBackend, true);
+    auto result = ErrorEncoder<EB, bool>("encode error").encode(encodeBackend, true);
     spargel_check(result.isRight());
 }
 
@@ -148,6 +167,9 @@ TEST(Codec_Encode_Primitive) {
 
     result = StringEncoder<EB>().encode(encodeBackend, base::string("ABC"));
     spargel_check(result.isLeft());
+
+    result = StringCodec<B>().encode(encodeBackend, base::string("ABC"));
+    spargel_check(result.isLeft());
 }
 
 TEST(Codec_Decode_Primitive) {
@@ -165,6 +187,11 @@ TEST(Codec_Decode_Primitive) {
     }
     {
         auto result = StringDecoder<DB>().decode(decodeBackend, TestData{});
+        spargel_check(result.isLeft());
+    }
+
+    {
+        auto result = StringCodec<B>().decode(decodeBackend, TestData{});
         spargel_check(result.isLeft());
     }
 }
@@ -191,6 +218,15 @@ TEST(Codec_Encode_Array) {
         auto result = I32Encoder<EB>().arrayOf().arrayOf().encode(encodeBackend, base::move(v));
         spargel_check(result.isLeft());
     }
+
+    {
+        base::vector<base::string> v;
+        v.push("A");
+        v.push("BC");
+        v.push("DEF");
+        auto result = StringCodec<B>().arrayOf().encode(encodeBackend, base::move(v));
+        spargel_check(result.isLeft());
+    }
 }
 
 TEST(Codec_Decode_Array) {
@@ -202,9 +238,14 @@ TEST(Codec_Decode_Array) {
         auto result = StringDecoder<DB>().arrayOf().arrayOf().decode(decodeBackend, TestData{});
         spargel_check(result.isLeft());
     }
+
+    {
+        auto result = I32Codec<B>().arrayOf().decode(decodeBackend, TestData{});
+        spargel_check(result.isLeft());
+    }
 }
 
-TEST(Codec_Encode_Map) {
+TEST(Codec_Encode_Record) {
     {
         Student student;
         student.name = "Alice";
@@ -216,19 +257,27 @@ TEST(Codec_Encode_Map) {
         scores.push(92);
         student.scores = base::move(scores);
 
-        auto result = studentEncoder.encode(encodeBackend, base::move(student));
+        auto result = studentEncoder.encode(encodeBackend, student);
+        spargel_check(result.isLeft());
+
+        result = studentCodec.encode(encodeBackend, student);
         spargel_check(result.isLeft());
     }
 }
 
-TEST(Codec_Decode_Map) {
+TEST(Codec_Decode_Record) {
     {
         auto result = studentDecoder.decode(decodeBackend, TestData{});
         spargel_check(result.isLeft());
     }
+
+    {
+        auto result = studentCodec.decode(decodeBackend, TestData{});
+        spargel_check(result.isLeft());
+    }
 }
 
-TEST(Codec_Encode_Map_FailFast) {
+TEST(Codec_Encode_Record_FailFast) {
     {
         int counter = 0;
         auto result = makeRecordEncoder<EB, int>(

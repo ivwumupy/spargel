@@ -38,6 +38,9 @@ namespace spargel::base {
                 }
             }
 
+            T& operator*() { return *_ptr; }
+            T const& operator*() const { return *_ptr; }
+
             T* operator->() { return _ptr; }
             T const* operator->() const { return _ptr; }
 

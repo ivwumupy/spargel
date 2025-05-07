@@ -184,4 +184,9 @@ namespace spargel::codec {
         base::Either<base::Optional<JsonValue>, JsonDecodeError> getMember(const JsonValue& data, base::string_view key);
     };
 
+    struct JsonCodecBackend {
+        using EncodeBackend = JsonEncodeBackend;
+        using DecodeBackend = JsonDecodeBackend;
+    };
+
 }  // namespace spargel::codec
