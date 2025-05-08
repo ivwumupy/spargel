@@ -1,4 +1,5 @@
 #include <spargel/base/check.h>
+#include <spargel/base/string_view.h>
 #include <spargel/base/test.h>
 #include <spargel/base/unique_ptr.h>
 #include <spargel/codec/codec2.h>
@@ -8,6 +9,7 @@
 
 using namespace spargel;
 using namespace spargel::codec;
+using namespace spargel::base::literals;
 
 namespace {
 
@@ -97,36 +99,36 @@ namespace {
         template <EncodeBackend EB>
         static auto encoder() {
             return makeRecordEncoder<EB, Student>(
-                StringEncoder<EB>().fieldOf("type").template forGetter<Student>([](const Student& student) { return student.type; }),
-                StringEncoder<EB>().fieldOf("name").template forGetter<Student>([](const Student& student) { return student.name; }),
-                StringEncoder<EB>().optionalFieldOf("nickname").template forGetter<Student>([](const Student& student) { return student.nickname; }),
-                U32Encoder<EB>().fieldOf("age").template forGetter<Student>([](const Student& student) { return student.age; }),
-                BooleanEncoder<EB>().fieldOf("happy").template forGetter<Student>([](const Student& student) { return student.happy; }),
-                F32Encoder<EB>().arrayOf().fieldOf("scores").template forGetter<Student>([](const Student& student) { return student.scores; }));
+                StringEncoder<EB>().fieldOf("type"_sv).template forGetter<Student>([](const Student& student) { return student.type; }),
+                StringEncoder<EB>().fieldOf("name"_sv).template forGetter<Student>([](const Student& student) { return student.name; }),
+                StringEncoder<EB>().optionalFieldOf("nickname"_sv).template forGetter<Student>([](const Student& student) { return student.nickname; }),
+                U32Encoder<EB>().fieldOf("age"_sv).template forGetter<Student>([](const Student& student) { return student.age; }),
+                BooleanEncoder<EB>().fieldOf("happy"_sv).template forGetter<Student>([](const Student& student) { return student.happy; }),
+                F32Encoder<EB>().arrayOf().fieldOf("scores"_sv).template forGetter<Student>([](const Student& student) { return student.scores; }));
         }
 
         template <DecodeBackend DB>
         static auto decoder() {
             return makeRecordDecoder<DB, Student>(
                 Constructor(),
-                StringDecoder<DB>().defaultFieldOf("type", base::string("normal")),
-                StringDecoder<DB>().fieldOf("name"),
-                StringDecoder<DB>().optionalFieldOf("nickname"),
-                U32Decoder<DB>().fieldOf("age"),
-                BooleanDecoder<DB>().fieldOf("happy"),
-                F32Decoder<DB>().arrayOf().fieldOf("scores"));
+                StringDecoder<DB>().defaultFieldOf("type"_sv, base::string("normal")),
+                StringDecoder<DB>().fieldOf("name"_sv),
+                StringDecoder<DB>().optionalFieldOf("nickname"_sv),
+                U32Decoder<DB>().fieldOf("age"_sv),
+                BooleanDecoder<DB>().fieldOf("happy"_sv),
+                F32Decoder<DB>().arrayOf().fieldOf("scores"_sv));
         }
 
         template <CodecBackend B>
         static auto codec() {
             return makeRecordCodec<B, Student>(
                 Constructor(),
-                StringCodec<B>().defaultFieldOf("type", base::string("normal")).template forGetter<Student>([](const Student& student) { return student.type; }),
-                StringCodec<B>().fieldOf("name").template forGetter<Student>([](const Student& student) { return student.name; }),
-                StringCodec<B>().optionalFieldOf("nickname").template forGetter<Student>([](const Student& student) { return student.nickname; }),
-                U32Codec<B>().fieldOf("age").template forGetter<Student>([](const Student& student) { return student.age; }),
-                BooleanCodec<B>().fieldOf("happy").template forGetter<Student>([](const Student& student) { return student.happy; }),
-                F32Codec<B>().arrayOf().fieldOf("scores").template forGetter<Student>([](const Student& student) { return student.scores; }));
+                StringCodec<B>().defaultFieldOf("type"_sv, base::string("normal")).template forGetter<Student>([](const Student& student) { return student.type; }),
+                StringCodec<B>().fieldOf("name"_sv).template forGetter<Student>([](const Student& student) { return student.name; }),
+                StringCodec<B>().optionalFieldOf("nickname"_sv).template forGetter<Student>([](const Student& student) { return student.nickname; }),
+                U32Codec<B>().fieldOf("age"_sv).template forGetter<Student>([](const Student& student) { return student.age; }),
+                BooleanCodec<B>().fieldOf("happy"_sv).template forGetter<Student>([](const Student& student) { return student.happy; }),
+                F32Codec<B>().arrayOf().fieldOf("scores"_sv).template forGetter<Student>([](const Student& student) { return student.scores; }));
         }
     };
 
@@ -144,17 +146,17 @@ namespace {
 }  // namespace
 
 TEST(Codec_Encode_Error) {
-    auto result = ErrorEncoder<EB, bool>("encode error").encode(encodeBackend, true);
+    auto result = ErrorEncoder<EB, bool>("encode error"_sv).encode(encodeBackend, true);
     spargel_check(result.isRight());
 }
 
 TEST(Codec_Decode_Error) {
-    auto result = ErrorDecoder<DB, bool>("decode error").decode(decodeBackend, TestData{});
+    auto result = ErrorDecoder<DB, bool>("decode error"_sv).decode(decodeBackend, TestData{});
     spargel_check(result.isRight());
 }
 
 TEST(Codec_Encode_Primitive) {
-    auto result = base::makeRight<TestData, CodecError>("");
+    auto result = base::makeRight<TestData, CodecError>(""_sv);
 
     result = NullEncoder<EB>().encode(encodeBackend, nullptr);
     spargel_check(result.isLeft());
@@ -281,9 +283,9 @@ TEST(Codec_Encode_Record_FailFast) {
     {
         int counter = 0;
         auto result = makeRecordEncoder<EB, int>(
-                          BooleanEncoder<EB>().fieldOf("bool").forGetter<int>([&](int n) { counter++; return true; }),
-                          I32Encoder<EB>().fieldOf("i32").forGetter<int>([&](int n) { counter++; return 0; }),
-                          StringEncoder<EB>().fieldOf("string").forGetter<int>([&](int n) { counter++; return base::string("string"); }))
+                          BooleanEncoder<EB>().fieldOf("bool"_sv).forGetter<int>([&](int n) { counter++; return true; }),
+                          I32Encoder<EB>().fieldOf("i32"_sv).forGetter<int>([&](int n) { counter++; return 0; }),
+                          StringEncoder<EB>().fieldOf("string"_sv).forGetter<int>([&](int n) { counter++; return base::string("string"); }))
                           .encode(encodeBackend, 0);
         spargel_check(result.isLeft());
         spargel_check(counter == 3);
@@ -291,9 +293,9 @@ TEST(Codec_Encode_Record_FailFast) {
     {
         int counter = 0;
         auto result = makeRecordEncoder<EB, int>(
-                          BooleanEncoder<EB>().fieldOf("bool").forGetter<int>([&](int n) { counter++; return true; }),
-                          ErrorEncoder<EB, i32>("error").fieldOf("i32").forGetter<int>([&](int n) { counter++; return 0; }),
-                          StringEncoder<EB>().fieldOf("string").forGetter<int>([&](int n) { counter++; return base::string("string"); }))
+                          BooleanEncoder<EB>().fieldOf("bool"_sv).forGetter<int>([&](int n) { counter++; return true; }),
+                          ErrorEncoder<EB, i32>("error"_sv).fieldOf("i32"_sv).forGetter<int>([&](int n) { counter++; return 0; }),
+                          StringEncoder<EB>().fieldOf("string"_sv).forGetter<int>([&](int n) { counter++; return base::string("string"); }))
                           .encode(encodeBackend, 0);
         spargel_check(result.isRight());
         spargel_check(counter == 2);

@@ -1,25 +1,28 @@
+#include <spargel/base/string_view.h>
 #include <spargel/codec/json.h>
 
 namespace spargel::codec {
+
+    using namespace base::literals;
 
     static_assert(EncodeBackend<JsonEncodeBackend>);
     static_assert(DecodeBackend<JsonDecodeBackend>);
 
     base::Optional<JsonDecodeError> JsonDecodeBackend::getNull(const JsonValue& data) {
         if (data.type != JsonValueType::null) {
-            return base::makeOptional<JsonDecodeError>("expected null");
+            return base::makeOptional<JsonDecodeError>("expected null"_sv);
         }
         return base::nullopt;
     }
 
     base::Either<bool, JsonDecodeError> JsonDecodeBackend::getBoolean(const JsonValue& data) {
         if (data.type != JsonValueType::boolean)
-            return base::Right(JsonDecodeError("expected a boolean (true/false)"));
+            return base::Right(JsonDecodeError("expected a boolean (true/false)"_sv));
         else
             return base::Left(data.boolean);
     }
 
-    const char EXPECTED_NUMBER[] = "expected a number";
+    inline constexpr auto EXPECTED_NUMBER = "expected a number"_sv;
 
     base::Either<u8, JsonDecodeError> JsonDecodeBackend::getU8(const JsonValue& data) {
         if (data.type == JsonValueType::number) {
@@ -97,7 +100,7 @@ namespace spargel::codec {
         if (data.type == JsonValueType::string) {
             return base::Left(data.string);
         } else {
-            return base::Right(JsonDecodeError("expected a string"));
+            return base::Right(JsonDecodeError("expected a string"_sv));
         }
     }
 
@@ -105,7 +108,7 @@ namespace spargel::codec {
         if (data.type == JsonValueType::array) {
             return base::Left(data.array.elements);
         } else {
-            return base::Right(JsonDecodeError("expected an array"));
+            return base::Right(JsonDecodeError("expected an array"_sv));
         }
     }
 
@@ -114,7 +117,7 @@ namespace spargel::codec {
             auto* ptr = data.object.members.get(key);
             return base::Left(ptr != nullptr ? base::makeOptional<JsonValue>(*ptr) : base::nullopt);
         } else {
-            return base::Right(JsonDecodeError("expected an object"));
+            return base::Right(JsonDecodeError("expected an object"_sv));
         }
     }
 

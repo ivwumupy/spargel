@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 using namespace spargel;
+using namespace spargel::base::literals;
 
 static constexpr u32 count = 3;
 static constexpr float arr1[] = {1.0, 2.0, 3.0};
@@ -16,10 +17,10 @@ int main(int argc, char* argv[]) {
 
     auto resource_manager = resource::makeRelativeManager(base::string("resources"));
     gpu::DeviceKind backend = gpu::DeviceKind::unknown;
-    if (cmdline.hasSwitch("metal")) {
+    if (cmdline.hasSwitch("metal"_sv)) {
         backend = gpu::DeviceKind::metal;
     }
-    if (cmdline.hasSwitch("vulkan")) {
+    if (cmdline.hasSwitch("vulkan"_sv)) {
         backend = gpu::DeviceKind::vulkan;
     }
     auto device = gpu::makeDevice(backend);
@@ -36,9 +37,9 @@ int main(int argc, char* argv[]) {
     base::Optional<base::unique_ptr<resource::Resource>> blob;
 
     if (backend == gpu::DeviceKind::metal) {
-        blob = resource_manager->open(resource::ResourceId("shader.metallib"));
+        blob = resource_manager->open(resource::ResourceId("shader.metallib"_sv));
     } else if (backend == gpu::DeviceKind::vulkan) {
-        blob = resource_manager->open(resource::ResourceId("demo_sum.spirv"));
+        blob = resource_manager->open(resource::ResourceId("demo_sum.spirv"_sv));
     }
 
     if (!blob.hasValue()) {

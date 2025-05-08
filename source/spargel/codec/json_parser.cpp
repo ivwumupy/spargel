@@ -1,5 +1,6 @@
 #include <spargel/base/either.h>
 #include <spargel/base/optional.h>
+#include <spargel/base/string_view.h>
 #include <spargel/base/trace.h>
 #include <spargel/codec/cursor.h>
 #include <spargel/codec/json.h>
@@ -8,6 +9,8 @@
 #include <math.h>
 
 namespace spargel::codec {
+
+    using namespace base::literals;
 
     JsonValue::JsonValue(const JsonValue& other) { construct_from(other); }
 
@@ -109,7 +112,7 @@ namespace spargel::codec {
         using base::nullopt;
         using base::Optional;
 
-        const auto UNEXPECTED_END = JsonParseError("unexpected end");
+        const auto UNEXPECTED_END = JsonParseError("unexpected end"_sv);
 
         string char2hex(char ch) {
             const char hexDigits[] = "0123456789abcdef";
@@ -193,7 +196,7 @@ namespace spargel::codec {
 
             auto& cursor = ctx.cursor;
             if (cursorIsEnd(cursor))
-                return Right(JsonParseError("expected a value"));
+                return Right(JsonParseError("expected a value"_sv));
 
             char ch = cursorPeek(cursor);
             switch (ch) {
@@ -241,7 +244,7 @@ namespace spargel::codec {
 
             // '{' ws
             if (!cursorTryEatChar(cursor, '{'))
-                return Right(JsonParseError("expected a value"));
+                return Right(JsonParseError("expected a value"_sv));
             eatWhitespaces(ctx);
             if (cursorIsEnd(cursor))
                 return Right(JsonParseError(UNEXPECTED_END));
@@ -255,7 +258,7 @@ namespace spargel::codec {
             if (result.isRight())
                 return result;
             if (!cursorTryEatChar(cursor, '}'))
-                return Right(JsonParseError("expected '}'"));
+                return Right(JsonParseError("expected '}'"_sv));
 
             return result;
         }
@@ -272,7 +275,7 @@ namespace spargel::codec {
 
             // '[' ws
             if (!cursorTryEatChar(cursor, '['))
-                return Right(JsonParseError("expected '['"));
+                return Right(JsonParseError("expected '['"_sv));
             eatWhitespaces(ctx);
             if (cursorIsEnd(cursor))
                 return Right(JsonParseError(UNEXPECTED_END));
@@ -286,7 +289,7 @@ namespace spargel::codec {
             if (result.isRight())
                 return result;
             if (!cursorTryEatChar(cursor, ']'))
-                return Right(JsonParseError("expected ']'"));
+                return Right(JsonParseError("expected ']'"_sv));
 
             return result;
         }
@@ -331,7 +334,7 @@ namespace spargel::codec {
 
             // '"'
             if (!cursorTryEatChar(cursor, '"'))
-                return Right(JsonParseError("expected '\"'"));
+                return Right(JsonParseError("expected '\"'"_sv));
 
             // characters
             base::vector<char> chars;
@@ -352,7 +355,7 @@ namespace spargel::codec {
                 // '\'
                 if (ch == '\\') {
                     if (cursorIsEnd(cursor))
-                        return Right(JsonParseError("unfinished escape"));
+                        return Right(JsonParseError("unfinished escape"_sv));
 
                     ch = cursorGetChar(cursor);
                     switch (ch) {
@@ -381,7 +384,7 @@ namespace spargel::codec {
                         u16 code = 0;
                         for (int i = 0; i < 4; i++) {
                             if (cursorIsEnd(cursor))
-                                return Right(JsonParseError("expected a hex digit"));
+                                return Right(JsonParseError("expected a hex digit"_sv));
                             ch = cursorGetChar(cursor);
                             u8 v;
                             if ('0' <= ch && ch <= '9')
@@ -391,7 +394,7 @@ namespace spargel::codec {
                             else if ('a' <= ch && ch <= 'f')
                                 v = ch - 'a' + 0xa;
                             else
-                                return Right(JsonParseError("bad hex digit"));
+                                return Right(JsonParseError("bad hex digit"_sv));
                             code = code * 0x10 + v;
                         }
                         appendUtf8(chars, code);
@@ -470,7 +473,7 @@ namespace spargel::codec {
                 return nullopt;
             }
 
-            return makeOptional<JsonParseError>("expected a number");
+            return makeOptional<JsonParseError>("expected a number"_sv);
         }
 
         /*
@@ -491,7 +494,7 @@ namespace spargel::codec {
             // digits
             char ch = cursorPeek(cursor);
             if (!('0' <= ch && ch <= '9'))
-                return makeOptional<JsonParseError>("expected fractional part");
+                return makeOptional<JsonParseError>("expected fractional part"_sv);
             JsonNumber x = 0.1;
             while (!cursorIsEnd(cursor)) {
                 ch = cursorPeek(cursor);
@@ -535,7 +538,7 @@ namespace spargel::codec {
             // digits
             char ch = cursorPeek(cursor);
             if (!('0' <= ch && ch <= '9'))
-                return makeOptional<JsonParseError>("expected exponential part");
+                return makeOptional<JsonParseError>("expected exponential part"_sv);
             JsonNumber exponent = 0;
             while (!cursorIsEnd(cursor)) {
                 ch = cursorPeek(cursor);
@@ -595,7 +598,7 @@ namespace spargel::codec {
             } else if (cursorTryEatString(cursor, "false")) {
                 return Left(JsonBoolean(false));
             } else {
-                return Right(JsonParseError("expected \"true\" or \"false\""));
+                return Right(JsonParseError("expected \"true\" or \"false\""_sv));
             }
         }
 
@@ -610,7 +613,7 @@ namespace spargel::codec {
             if (cursorTryEatString(cursor, "null"))
                 return nullopt;
             else
-                return makeOptional<JsonParseError>("expected \"null\"");
+                return makeOptional<JsonParseError>("expected \"null\""_sv);
         }
 
         /*
@@ -665,7 +668,7 @@ namespace spargel::codec {
             eatWhitespaces(ctx);
 
             // ':'
-            if (!cursorTryEatChar(cursor, ':')) return makeOptional<JsonParseError>("expected ':'");
+            if (!cursorTryEatChar(cursor, ':')) return makeOptional<JsonParseError>("expected ':'"_sv);
 
             // element
             auto result_value = parseElement(ctx);

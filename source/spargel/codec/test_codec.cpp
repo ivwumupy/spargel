@@ -1,4 +1,5 @@
 #include <spargel/base/check.h>
+#include <spargel/base/string_view.h>
 #include <spargel/base/test.h>
 #include <spargel/codec/codec.h>
 
@@ -7,6 +8,7 @@
 
 using namespace spargel;
 using namespace spargel::codec;
+using namespace spargel::base::literals;
 
 namespace {
 
@@ -125,7 +127,7 @@ namespace {
 
 TEST(Codec_Encode_Primitive) {
     EncodeBackendTest backend;
-    auto result = base::makeRight<TestData, CodecError>("");
+    auto result = base::makeRight<TestData, CodecError>(""_sv);
 
     result = CodecNull::encode(backend, {});
     spargel_check(result.isLeft() && result.left().value == 0);
@@ -226,10 +228,10 @@ TEST(Codec_Encode_Map) {
         scores.push(92);
         auto result =
             encodeMap(backend,  //
-                      EncodeField::Normal<CodecString>("name", base::string("Alice")),
-                      EncodeField::Normal<CodecU32>("age", 20),
-                      EncodeField::Normal<CodecBoolean>("happy", true),
-                      EncodeField::Normal<CodecArray<CodecF32>>("scores", base::move(scores)));
+                      EncodeField::Normal<CodecString>("name"_sv, base::string("Alice")),
+                      EncodeField::Normal<CodecU32>("age"_sv, 20),
+                      EncodeField::Normal<CodecBoolean>("happy"_sv, true),
+                      EncodeField::Normal<CodecArray<CodecF32>>("scores"_sv, base::move(scores)));
         spargel_check(result.isLeft());
         // TODO
     }

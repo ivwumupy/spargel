@@ -8,6 +8,8 @@
 // libc
 #include <stdio.h>
 
+using namespace spargel::base::literals;
+
 static void put_hex(u8 ch) {
     const char hex_digits[] = "0123456789abcdef";
     putchar(hex_digits[ch >> 4]);
@@ -46,7 +48,7 @@ static void xxd_print(char* data, size_t size) {
 namespace spargel::entry {
 
     int simple_entry(simple_entry_data* entry_data) {
-        base::string_view path = "data.txt";
+        base::string_view path = "data.txt"_sv;
 
         auto resource = entry_data->resource_manager->open(resource::ResourceId(path));
         if (!resource.hasValue()) {

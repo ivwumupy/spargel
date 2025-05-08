@@ -13,7 +13,7 @@ namespace spargel::resource {
 
     class ResourceId {
     public:
-        static constexpr base::string_view default_namespace = "core";
+        static constexpr base::string_view default_namespace = base::string_view("core", 4);
 
         ResourceId(const base::string& ns, const base::string& path)
             : _namespace(ns), _path(path) {}

@@ -1,5 +1,8 @@
+#include <spargel/base/string_view.h>
 #include <spargel/codec/codec2.h>
 #include <spargel/codec/test_json.h>
+
+using namespace spargel::base::literals;
 
 namespace {
 
@@ -19,12 +22,12 @@ namespace {
         static auto codec() {
             return makeRecordCodec<B, Student>(
                 Constructor(),
-                StringCodec<B>().defaultFieldOf("type", base::string("normal")).template forGetter<Student>([](const Student& student) { return student.type; }),
-                StringCodec<B>().fieldOf("name").template forGetter<Student>([](const Student& student) { return student.name; }),
-                StringCodec<B>().optionalFieldOf("nickname").template forGetter<Student>([](const Student& student) { return student.nickname; }),
-                U32Codec<B>().fieldOf("age").template forGetter<Student>([](const Student& student) { return student.age; }),
-                BooleanCodec<B>().fieldOf("happy").template forGetter<Student>([](const Student& student) { return student.happy; }),
-                F32Codec<B>().arrayOf().fieldOf("scores").template forGetter<Student>([](const Student& student) { return student.scores; }));
+                StringCodec<B>().defaultFieldOf("type"_sv, base::string("normal")).template forGetter<Student>([](const Student& student) { return student.type; }),
+                StringCodec<B>().fieldOf("name"_sv).template forGetter<Student>([](const Student& student) { return student.name; }),
+                StringCodec<B>().optionalFieldOf("nickname"_sv).template forGetter<Student>([](const Student& student) { return student.nickname; }),
+                U32Codec<B>().fieldOf("age"_sv).template forGetter<Student>([](const Student& student) { return student.age; }),
+                BooleanCodec<B>().fieldOf("happy"_sv).template forGetter<Student>([](const Student& student) { return student.happy; }),
+                F32Codec<B>().arrayOf().fieldOf("scores"_sv).template forGetter<Student>([](const Student& student) { return student.scores; }));
         }
     };
 
@@ -40,12 +43,12 @@ namespace {
 }  // namespace
 
 TEST(Json_Codec_Encode_Error) {
-    auto result = ErrorCodec<B, bool>("encode error", "decode_error").encode(encodeBackend, true);
+    auto result = ErrorCodec<B, bool>("encode error"_sv, "decode_error"_sv).encode(encodeBackend, true);
     spargel_check(result.isRight());
 }
 
 TEST(Json_Codec_Decode_Error) {
-    auto result = ErrorCodec<B, bool>("encode error", "decode_error").decode(decodeBackend, JsonValue());
+    auto result = ErrorCodec<B, bool>("encode error"_sv, "decode_error"_sv).decode(decodeBackend, JsonValue());
     spargel_check(result.isRight());
 }
 

@@ -6,6 +6,7 @@
 
 using namespace spargel;
 using namespace spargel::gpu;
+using namespace spargel::base::literals;
 
 struct prepared_graph {
     enum class node_kind {
@@ -39,12 +40,12 @@ struct prepared_graph {
 
 int main() {
     prepared_graph graph;
-    graph.nodes.push(prepared_graph::node_kind::texture, 0, "surface.0");
-    graph.nodes.push(prepared_graph::node_kind::render, 0, "draw_triangle");
-    graph.nodes.push(prepared_graph::node_kind::texture, 1, "surface.1");
-    graph.nodes.push(prepared_graph::node_kind::present, 0, "present");
-    graph.nodes.push(prepared_graph::node_kind::render, 1, "draw_debug");
-    graph.nodes.push(prepared_graph::node_kind::texture, 2, "surface.2");
+    graph.nodes.push(prepared_graph::node_kind::texture, 0, "surface.0"_sv);
+    graph.nodes.push(prepared_graph::node_kind::render, 0, "draw_triangle"_sv);
+    graph.nodes.push(prepared_graph::node_kind::texture, 1, "surface.1"_sv);
+    graph.nodes.push(prepared_graph::node_kind::present, 0, "present"_sv);
+    graph.nodes.push(prepared_graph::node_kind::render, 1, "draw_debug"_sv);
+    graph.nodes.push(prepared_graph::node_kind::texture, 2, "surface.2"_sv);
     // the <<draw_triangle>> node
     graph.nodes[0].outputs.push(1);
     graph.nodes[1].inputs.push(0);

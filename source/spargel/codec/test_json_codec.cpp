@@ -1,4 +1,7 @@
+#include <spargel/base/string_view.h>
 #include <spargel/codec/test_json.h>
+
+using namespace spargel::base::literals;
 
 struct Student {
     base::string type = base::string("normal");
@@ -20,15 +23,15 @@ struct Student {
             EB& backend, const Student& student) {
             // clang-format off
             return encodeMap(backend,
-                EncodeField::Normal<CodecString>("type", student.type),
-                EncodeField::Normal<CodecString>("name", student.name),
-                EncodeField::Optional<CodecString>("nickname", student.nickname),
-                EncodeField::Normal<CodecU32>("age", student.age),
-                EncodeField::Normal<CodecBoolean>("happy", student.happy),
+                EncodeField::Normal<CodecString>("type"_sv, student.type),
+                EncodeField::Normal<CodecString>("name"_sv, student.name),
+                EncodeField::Optional<CodecString>("nickname"_sv, student.nickname),
+                EncodeField::Normal<CodecU32>("age"_sv, student.age),
+                EncodeField::Normal<CodecBoolean>("happy"_sv, student.happy),
                 // TODO: Clang 16 bug
                 //
                 // EncodeField::Normal<CodecArray<CodecInRange<CodecF32, 0.0f, 100.0f>>>("scores", student.scores));
-                EncodeField::Normal<CodecArray<CodecF32>>("scores", student.scores));
+                EncodeField::Normal<CodecArray<CodecF32>>("scores"_sv, student.scores));
             // clang-format on
         }
 
@@ -38,15 +41,15 @@ struct Student {
             // clang-format off
             return decodeMap<Student>(
                 Student::Constructor(), backend, data,
-                DecodeField::Default<CodecString>("type", base::string("normal")),
-                DecodeField::Required<CodecString>("name"),
-                DecodeField::Optional<CodecString>("nickname"),
-                DecodeField::Required<CodecU32>("age"),
-                DecodeField::Required<CodecBoolean>("happy"),
+                DecodeField::Default<CodecString>("type"_sv, base::string("normal")),
+                DecodeField::Required<CodecString>("name"_sv),
+                DecodeField::Optional<CodecString>("nickname"_sv),
+                DecodeField::Required<CodecU32>("age"_sv),
+                DecodeField::Required<CodecBoolean>("happy"_sv),
                 // TODO: Clang 16 bug
                 //
                 // DecodeField::Required<CodecArray<CodecInRange<CodecF32, 0.0f, 100.0f>>>("scores"));
-                DecodeField::Required<CodecArray<CodecF32>>("scores"));
+                DecodeField::Required<CodecArray<CodecF32>>("scores"_sv));
             // clang-format on
         }
     };

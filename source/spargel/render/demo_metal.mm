@@ -23,6 +23,7 @@
 #import <simd/simd.h>
 
 using namespace spargel;
+using namespace spargel::base::literals;
 
 using math::Matrix4x4f;
 using math::Point3f;
@@ -477,7 +478,7 @@ private:
         _resource = resource::makeRelativeManager(base::string("resources"));
 
         {
-            auto blob = _resource->open(resource::ResourceId("bunny.smesh"));
+            auto blob = _resource->open(resource::ResourceId("bunny.smesh"_sv));
             if (!blob.hasValue()) {
                 spargel_log_error("cannot load mesh");
                 spargel_panic_here();

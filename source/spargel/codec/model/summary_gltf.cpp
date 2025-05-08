@@ -7,6 +7,7 @@
 using namespace spargel;
 using namespace spargel::codec;
 using namespace spargel::codec::model;
+using namespace spargel::base::literals;
 
 namespace {
 
@@ -43,7 +44,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    auto manager = resource::ResourceManagerDirectory("");
+    auto manager = resource::ResourceManagerDirectory(""_sv);
     auto optional = manager.open(resource::ResourceId(base::string(argv[1])));
     if (!optional.hasValue()) {
         fprintf(stderr, "Cannot open file \"%s\"\n", argv[1]);

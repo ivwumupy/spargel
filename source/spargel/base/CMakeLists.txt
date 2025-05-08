@@ -186,6 +186,18 @@ add_test(
 )
 
 spargel_add_executable(
+    NAME string_view_test
+    PRIVATE string_view_test.cpp
+    DEPS
+        base
+        test_main
+)
+add_test(
+    NAME string_view_test
+    COMMAND string_view_test
+)
+
+spargel_add_executable(
     NAME sum_type_test
     PRIVATE sum_type_test.cpp
     DEPS

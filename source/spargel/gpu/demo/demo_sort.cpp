@@ -7,16 +7,17 @@
 #include <stdlib.h>
 
 using namespace spargel;
+using namespace spargel::base::literals;
 
 int main(int argc, char* argv[]) {
     base::CommandLine cmdline(argc, argv);
 
     auto resource_manager = resource::makeRelativeManager(base::string("resources"));
     gpu::DeviceKind backend = gpu::DeviceKind::unknown;
-    if (cmdline.hasSwitch("metal")) {
+    if (cmdline.hasSwitch("metal"_sv)) {
         backend = gpu::DeviceKind::metal;
     }
-    if (cmdline.hasSwitch("vulkan")) {
+    if (cmdline.hasSwitch("vulkan"_sv)) {
         backend = gpu::DeviceKind::vulkan;
     }
     auto device = gpu::makeDevice(backend);
@@ -37,9 +38,9 @@ int main(int argc, char* argv[]) {
     base::Optional<base::unique_ptr<resource::Resource>> blob;
 
     if (backend == gpu::DeviceKind::metal) {
-        blob = resource_manager->open(resource::ResourceId("shader.metallib"));
+        blob = resource_manager->open(resource::ResourceId("shader.metallib"_sv));
     } else if (backend == gpu::DeviceKind::vulkan) {
-        blob = resource_manager->open(resource::ResourceId("demo_sort.spirv"));
+        blob = resource_manager->open(resource::ResourceId("demo_sort.spirv"_sv));
     }
     auto library = device->createShaderLibrary(blob.value()->getSpan());
 

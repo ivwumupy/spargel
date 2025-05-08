@@ -1,5 +1,8 @@
+#include <spargel/base/string_view.h>
 #include <spargel/codec/json.h>
 #include <spargel/codec/model/gltf.h>
+
+using namespace spargel::base::literals;
 
 namespace spargel::codec::model {
 
@@ -22,7 +25,7 @@ namespace spargel::codec::model {
                         return base::makeLeft<Vector3f, typename DB::ErrorType>(base::move(v));
                     } else {
                         return base::makeRight<Vector3f, typename DB::ErrorType>(
-                            "Vector3f expected 3 numbers");
+                            "Vector3f expected 3 numbers"_sv);
                     }
                 } else {
                     return base::makeRight<Vector3f, typename DB::ErrorType>(result.right());
@@ -49,7 +52,7 @@ namespace spargel::codec::model {
                         return base::makeLeft<Vector4f, typename DB::ErrorType>(base::move(v));
                     } else {
                         return base::makeRight<Vector4f, typename DB::ErrorType>(
-                            "Vector4f expected 4 numbers");
+                            "Vector4f expected 4 numbers"_sv);
                     }
                 } else {
                     return base::makeRight<Vector4f, typename DB::ErrorType>(result.right());
@@ -73,7 +76,7 @@ namespace spargel::codec::model {
                         return base::makeLeft<Matrix4x4f, typename DB::ErrorType>(base::move(mat));
                     } else {
                         return base::makeRight<Matrix4x4f, typename DB::ErrorType>(
-                            "Matrix4x4f expected 16 numbers");
+                            "Matrix4x4f expected 16 numbers"_sv);
                     }
                 } else {
                     return base::makeRight<Matrix4x4f, typename DB::ErrorType>(result.right());
@@ -96,15 +99,15 @@ namespace spargel::codec::model {
             static base::Either<GlTFAccessor, typename DB::ErrorType> decode(
                 DB& backend, const typename DB::DataType& data) {
                 return decodeMap<GlTFAccessor>(Constructor(), backend, data,  //
-                                               DecodeField::Optional<CodecI32>("bufferView"),
-                                               DecodeField::Optional<CodecI32>("byteOffset"),
-                                               DecodeField::Required<CodecI32>("componentType"),
-                                               DecodeField::Optional<CodecBoolean>("normalized"),
-                                               DecodeField::Required<CodecI32>("count"),
-                                               DecodeField::Required<CodecString>("type"),
-                                               DecodeField::Optional<CodecArray<CodecF64>>("max"),
-                                               DecodeField::Optional<CodecArray<CodecF64>>("min"),
-                                               DecodeField::Optional<CodecString>("name"));
+                                               DecodeField::Optional<CodecI32>("bufferView"_sv),
+                                               DecodeField::Optional<CodecI32>("byteOffset"_sv),
+                                               DecodeField::Required<CodecI32>("componentType"_sv),
+                                               DecodeField::Optional<CodecBoolean>("normalized"_sv),
+                                               DecodeField::Required<CodecI32>("count"_sv),
+                                               DecodeField::Required<CodecString>("type"_sv),
+                                               DecodeField::Optional<CodecArray<CodecF64>>("max"_sv),
+                                               DecodeField::Optional<CodecArray<CodecF64>>("min"_sv),
+                                               DecodeField::Optional<CodecString>("name"_sv));
             }
         };
         static_assert(Decoder<CodecGlTFAccessor>);
@@ -120,10 +123,10 @@ namespace spargel::codec::model {
             static base::Either<GlTFAsset, typename DB::ErrorType> decode(
                 DB& backend, const typename DB::DataType& data) {
                 return decodeMap<GlTFAsset>(Constructor(), backend, data,  //
-                                            DecodeField::Optional<CodecString>("copyright"),
-                                            DecodeField::Optional<CodecString>("generator"),
-                                            DecodeField::Required<CodecString>("version"),
-                                            DecodeField::Optional<CodecString>("minVersion"));
+                                            DecodeField::Optional<CodecString>("copyright"_sv),
+                                            DecodeField::Optional<CodecString>("generator"_sv),
+                                            DecodeField::Required<CodecString>("version"_sv),
+                                            DecodeField::Optional<CodecString>("minVersion"_sv));
             }
         };
         static_assert(Decoder<CodecGlTFAsset>);
@@ -138,9 +141,9 @@ namespace spargel::codec::model {
             static base::Either<GlTFBuffer, typename DB::ErrorType> decode(
                 DB& backend, const typename DB::DataType& data) {
                 return decodeMap<GlTFBuffer>(Constructor(), backend, data,  //
-                                             DecodeField::Optional<CodecString>("uri"),
-                                             DecodeField::Required<CodecI32>("byteLength"),
-                                             DecodeField::Optional<CodecString>("name"));
+                                             DecodeField::Optional<CodecString>("uri"_sv),
+                                             DecodeField::Required<CodecI32>("byteLength"_sv),
+                                             DecodeField::Optional<CodecString>("name"_sv));
             }
         };
         static_assert(Decoder<CodecGlTFBuffer>);
@@ -157,12 +160,12 @@ namespace spargel::codec::model {
             static base::Either<GlTFBufferView, typename DB::ErrorType> decode(
                 DB& backend, const typename DB::DataType& data) {
                 return decodeMap<GlTFBufferView>(Constructor(), backend, data,  //
-                                                 DecodeField::Required<CodecI32>("buffer"),
-                                                 DecodeField::Optional<CodecI32>("byteOffset"),
-                                                 DecodeField::Required<CodecI32>("byteLength"),
-                                                 DecodeField::Optional<CodecI32>("byteStride"),
-                                                 DecodeField::Optional<CodecI32>("target"),
-                                                 DecodeField::Optional<CodecString>("name"));
+                                                 DecodeField::Required<CodecI32>("buffer"_sv),
+                                                 DecodeField::Optional<CodecI32>("byteOffset"_sv),
+                                                 DecodeField::Required<CodecI32>("byteLength"_sv),
+                                                 DecodeField::Optional<CodecI32>("byteStride"_sv),
+                                                 DecodeField::Optional<CodecI32>("target"_sv),
+                                                 DecodeField::Optional<CodecString>("name"_sv));
             }
         };
         static_assert(Decoder<CodecGlTFBufferView>);
@@ -181,16 +184,16 @@ namespace spargel::codec::model {
             static base::Either<GlTFNode, typename DB::ErrorType> decode(
                 DB& backend, const typename DB::DataType& data) {
                 return decodeMap<GlTFNode>(Constructor(), backend, data,  //
-                                           DecodeField::Optional<CodecI32>("camera"),
-                                           DecodeField::Optional<CodecArray<CodecI32>>("children"),
-                                           DecodeField::Optional<CodecI32>("skin"),
-                                           DecodeField::Optional<CodecMatrix4x4f>("matrix"),
-                                           DecodeField::Optional<CodecI32>("mesh"),
-                                           DecodeField::Optional<CodecVector4f>("rotation"),
-                                           DecodeField::Optional<CodecVector3f>("scale"),
-                                           DecodeField::Optional<CodecVector3f>("translation"),
-                                           DecodeField::Optional<CodecArray<CodecF64>>("weights"),
-                                           DecodeField::Optional<CodecString>("name"));
+                                           DecodeField::Optional<CodecI32>("camera"_sv),
+                                           DecodeField::Optional<CodecArray<CodecI32>>("children"_sv),
+                                           DecodeField::Optional<CodecI32>("skin"_sv),
+                                           DecodeField::Optional<CodecMatrix4x4f>("matrix"_sv),
+                                           DecodeField::Optional<CodecI32>("mesh"_sv),
+                                           DecodeField::Optional<CodecVector4f>("rotation"_sv),
+                                           DecodeField::Optional<CodecVector3f>("scale"_sv),
+                                           DecodeField::Optional<CodecVector3f>("translation"_sv),
+                                           DecodeField::Optional<CodecArray<CodecF64>>("weights"_sv),
+                                           DecodeField::Optional<CodecString>("name"_sv));
             }
         };
         static_assert(Decoder<CodecGlTFNode>);
@@ -205,8 +208,8 @@ namespace spargel::codec::model {
             static base::Either<GlTFScene, typename DB::ErrorType> decode(
                 DB& backend, const typename DB::DataType& data) {
                 return decodeMap<GlTFScene>(Constructor(), backend, data,  //
-                                            DecodeField::Optional<CodecArray<CodecI32>>("nodes"),
-                                            DecodeField::Optional<CodecString>("name"));
+                                            DecodeField::Optional<CodecArray<CodecI32>>("nodes"_sv),
+                                            DecodeField::Optional<CodecString>("name"_sv));
             }
         };
         static_assert(Decoder<CodecGlTFScene>);
@@ -225,13 +228,13 @@ namespace spargel::codec::model {
                 DB& backend, const typename DB::DataType& data) {
                 return decodeMap<GlTF>(
                     Constructor(), backend, data,  //
-                    DecodeField::Optional<CodecArray<CodecGlTFAccessor>>("accessors"),
-                    DecodeField::Required<CodecGlTFAsset>("asset"),
-                    DecodeField::Optional<CodecArray<CodecGlTFBuffer>>("buffers"),
-                    DecodeField::Optional<CodecArray<CodecGlTFBufferView>>("bufferViews"),
-                    DecodeField::Optional<CodecArray<CodecGlTFNode>>("nodes"),
-                    DecodeField::Optional<CodecI32>("scene"),
-                    DecodeField::Optional<CodecArray<CodecGlTFScene>>("scenes"));
+                    DecodeField::Optional<CodecArray<CodecGlTFAccessor>>("accessors"_sv),
+                    DecodeField::Required<CodecGlTFAsset>("asset"_sv),
+                    DecodeField::Optional<CodecArray<CodecGlTFBuffer>>("buffers"_sv),
+                    DecodeField::Optional<CodecArray<CodecGlTFBufferView>>("bufferViews"_sv),
+                    DecodeField::Optional<CodecArray<CodecGlTFNode>>("nodes"_sv),
+                    DecodeField::Optional<CodecI32>("scene"_sv),
+                    DecodeField::Optional<CodecArray<CodecGlTFScene>>("scenes"_sv));
             }
         };
         static_assert(Decoder<CodecGlTF>);

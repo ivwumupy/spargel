@@ -11,8 +11,9 @@ namespace spargel::base {
     public:
         constexpr string_view() = default;
         constexpr string_view(char const* begin, char const* end) : _begin{begin}, _end{end} {}
-        template <usize N>
-        constexpr string_view(char const (&str)[N]) : string_view(str, str + N - 1) {}
+        constexpr string_view(char const* begin, usize len) : _begin{begin}, _end{begin + len} {}
+        // template <usize N>
+        // constexpr string_view(char const (&str)[N]) : string_view(str, str + N - 1) {}
 
         constexpr char operator[](usize i) const { return _begin[i]; }
         constexpr usize length() const { return _end - _begin; }
@@ -31,5 +32,11 @@ namespace spargel::base {
     };
 
     using StringView = string_view;
+
+    namespace literals {
+        inline constexpr StringView operator""_sv(char const* begin, usize len) {
+            return StringView(begin, len);
+        }
+    }  // namespace literals
 
 }  // namespace spargel::base

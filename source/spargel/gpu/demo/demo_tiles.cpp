@@ -10,6 +10,7 @@
 
 using namespace spargel;
 using namespace spargel::gpu;
+using namespace spargel::base::literals;
 
 #define USE_VULKAN 0
 
@@ -104,7 +105,7 @@ public:
         _surface = _device->createSurface(_window);
 
 #if USE_METAL
-        auto blob = _manager->open(resource::ResourceId("shader.metallib"));
+        auto blob = _manager->open(resource::ResourceId("shader.metallib"_sv));
 
         _shader = _device->createShaderLibrary(blob.value()->getSpan());
 #endif
