@@ -5,6 +5,7 @@
 #include <spargel/ui/window.h>
 
 using namespace spargel;
+using namespace spargel::base::literals;
 
 // libc
 #include <stdlib.h>
@@ -85,8 +86,8 @@ int main() {
         sizeof(PIXELFORMATDESCRIPTOR),
         1,
         PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,  // Flags
-        PFD_TYPE_RGBA,  // The kind of framebuffer. RGBA or palette.
-        32,             // Colordepth of the framebuffer.
+        PFD_TYPE_RGBA,                                               // The kind of framebuffer. RGBA or palette.
+        32,                                                          // Colordepth of the framebuffer.
         0,
         0,
         0,
@@ -129,7 +130,7 @@ int main() {
     char infoLog[512];
 
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    auto vertexShaderCode = resource_manager->open(resource::ResourceId("demo_opengl.vs"));
+    auto vertexShaderCode = resource_manager->open(resource::ResourceId("demo_opengl.vs"_sv));
     if (!vertexShaderCode.hasValue()) {
         spargel_log_fatal("cannot open vertex shader file");
         spargel_panic_here();
@@ -146,7 +147,7 @@ int main() {
     }
 
     unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    auto fragmentShaderCode = resource_manager->open(resource::ResourceId("demo_opengl.fs"));
+    auto fragmentShaderCode = resource_manager->open(resource::ResourceId("demo_opengl.fs"_sv));
     if (!fragmentShaderCode.hasValue()) {
         spargel_log_fatal("cannot open fragment shader file");
         spargel_panic_here();
@@ -179,9 +180,9 @@ int main() {
 
     float vertices[] = {
         // positions         // colors
-        0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,  // bottom right
+        0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom right
         -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,  // bottom left
-        0.0f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f   // top
+        0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f     // top
     };
 
     unsigned int vao, vbo;

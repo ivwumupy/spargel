@@ -167,6 +167,12 @@ TEST(Codec_Encode_Primitive) {
     result = I32Encoder<EB>().encode(encodeBackend, 0);
     spargel_check(result.isLeft());
 
+    result = F32Encoder<EB>().encode(encodeBackend, 3.14f);
+    spargel_check(result.isLeft());
+
+    result = F64Encoder<EB>().encode(encodeBackend, 12345.6789);
+    spargel_check(result.isLeft());
+
     result = StringEncoder<EB>().encode(encodeBackend, base::string("ABC"));
     spargel_check(result.isLeft());
 
@@ -185,6 +191,14 @@ TEST(Codec_Decode_Primitive) {
     }
     {
         auto result = I32Decoder<DB>().decode(decodeBackend, TestData{});
+        spargel_check(result.isLeft());
+    }
+    {
+        auto result = F32Decoder<DB>().decode(decodeBackend, TestData{});
+        spargel_check(result.isLeft());
+    }
+    {
+        auto result = F64Decoder<DB>().decode(decodeBackend, TestData{});
         spargel_check(result.isLeft());
     }
     {

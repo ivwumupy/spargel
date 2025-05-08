@@ -16,3 +16,19 @@ TEST(String_Empty) {
     auto s3 = s1 + s2;
     spargel_check(s3 == s);
 }
+
+TEST(String_Copy_Zero) {
+    {
+        // fill the heap with data
+        vector<char> v;
+        for (int i = 0; i < 10000; i++) {
+            v.push('0');
+        }
+    }
+    {
+        string s1("ABC");
+        spargel_check(s1.data()[3] == '\0');
+        string s2(s1);
+        spargel_check(s2.data()[3] == '\0');
+    }
+}

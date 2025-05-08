@@ -368,6 +368,31 @@ namespace spargel::codec {
     using F32Codec = SimpleCodec<B, f32, F32Encoder<typename B::EncodeBackend>, F32Decoder<typename B::DecodeBackend>>;
 
     template <EncodeBackend EB>
+    class F64Encoder : public Encoder2<EB, f64> {
+    public:
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const f64& n) const override {
+            return backend.makeF64(n);
+        }
+
+        base::unique_ptr<Encoder2<EB, f64>> clone() const override {
+            return base::make_unique<F64Encoder<EB>>();
+        }
+    };
+    template <DecodeBackend DB>
+    class F64Decoder : public Decoder2<DB, f64> {
+    public:
+        base::Either<f64, typename DB::ErrorType> decode(DB& backend, const DB::DataType& data) const override {
+            return backend.getF64(data);
+        }
+
+        base::unique_ptr<Decoder2<DB, f64>> clone() const override {
+            return base::make_unique<F64Decoder<DB>>();
+        }
+    };
+    template <CodecBackend B>
+    using F64Codec = SimpleCodec<B, f64, F64Encoder<typename B::EncodeBackend>, F64Decoder<typename B::DecodeBackend>>;
+
+    template <EncodeBackend EB>
     class StringEncoder : public Encoder2<EB, base::string> {
     public:
         base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const base::string& s) const override {
@@ -559,9 +584,8 @@ namespace spargel::codec {
         base::Either<T, typename DB::ErrorType> decode(DB& backend, const DB::DataType& data) const override {
             auto memberResult = backend.getMember(data, _name.view());
             if (memberResult.isLeft()) {
-                auto optional = base::move(memberResult.left());
-                if (optional.hasValue()) {
-                    return _decoder->decode(backend, optional.value());
+                if (memberResult.left().hasValue()) {
+                    return _decoder->decode(backend, base::move(memberResult.left().value()));
                 } else {
                     return base::Right(typename DB::ErrorType(base::string("cannot find member '") + _name + '\''));
                 }

@@ -17,9 +17,9 @@ namespace spargel::resource {
 
         ResourceId(const base::string& ns, const base::string& path)
             : _namespace(ns), _path(path) {}
-        ResourceId(const base::string& path) : ResourceId(default_namespace, path) {}
+        ResourceId(const base::string& path) : _namespace(default_namespace), _path(path) {}
         ResourceId(base::string_view ns, base::string_view path) : _namespace(ns), _path(path) {}
-        ResourceId(base::string_view path) : ResourceId(default_namespace, path) {}
+        ResourceId(base::string_view path) : _namespace(default_namespace), _path(path) {}
 
         const base::string& ns() const { return _namespace; }
         const base::string& path() const { return _path; }
