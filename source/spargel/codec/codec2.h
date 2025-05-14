@@ -16,8 +16,8 @@ namespace spargel::codec {
 
     template <typename B /* codec backend type */>
     concept CodecBackend = requires {
-        typename B::EncodeBackend;
-        typename B::DecodeBackend;
+        typename B::EncodeBackendType;
+        typename B::DecodeBackendType;
     };
 
     template <EncodeBackend EB>
@@ -140,8 +140,8 @@ namespace spargel::codec {
     struct Codec {
     public:
         using type = T;
-        using EB = B::EncodeBackend;
-        using DB = B::DecodeBackend;
+        using EB = B::EncodeBackendType;
+        using DB = B::DecodeBackendType;
 
         Codec(base::unique_ptr<Encoder2<EB, T>>&& encoder, base::unique_ptr<Decoder2<DB, T>>&& decoder)
             : encoder(base::move(encoder)), decoder(base::move(decoder)) {}
@@ -230,8 +230,8 @@ namespace spargel::codec {
     public:
         ErrorCodec(base::string_view encode_message, base::string_view decode_message)
             : Codec<B, T>(
-                  base::make_unique<ErrorEncoder<typename B::EncodeBackend, T>>(encode_message),
-                  base::make_unique<ErrorDecoder<typename B::DecodeBackend, T>>(decode_message)) {}
+                  base::make_unique<ErrorEncoder<typename B::EncodeBackendType, T>>(encode_message),
+                  base::make_unique<ErrorDecoder<typename B::DecodeBackendType, T>>(decode_message)) {}
         ErrorCodec(const base::string& encode_message, const base::string& decode_message)
             : ErrorCodec(encode_message.view(), decode_message.view()) {}
     };
@@ -265,7 +265,7 @@ namespace spargel::codec {
         }
     };
     template <CodecBackend B>
-    using NullCodec = SimpleCodec<B, base::nullptr_t, NullEncoder<typename B::EncodeBackend>, NullDecoder<typename B::DecodeBackend>>;
+    using NullCodec = SimpleCodec<B, base::nullptr_t, NullEncoder<typename B::EncodeBackendType>, NullDecoder<typename B::DecodeBackendType>>;
 
     template <EncodeBackend EB>
     class BooleanEncoder : public Encoder2<EB, bool> {
@@ -290,7 +290,7 @@ namespace spargel::codec {
         }
     };
     template <CodecBackend B>
-    using BooleanCodec = SimpleCodec<B, bool, BooleanEncoder<typename B::EncodeBackend>, BooleanDecoder<typename B::DecodeBackend>>;
+    using BooleanCodec = SimpleCodec<B, bool, BooleanEncoder<typename B::EncodeBackendType>, BooleanDecoder<typename B::DecodeBackendType>>;
 
     template <EncodeBackend EB>
     class U32Encoder : public Encoder2<EB, u32> {
@@ -315,7 +315,7 @@ namespace spargel::codec {
         }
     };
     template <CodecBackend B>
-    using U32Codec = SimpleCodec<B, u32, U32Encoder<typename B::EncodeBackend>, U32Decoder<typename B::DecodeBackend>>;
+    using U32Codec = SimpleCodec<B, u32, U32Encoder<typename B::EncodeBackendType>, U32Decoder<typename B::DecodeBackendType>>;
 
     template <EncodeBackend EB>
     class I32Encoder : public Encoder2<EB, i32> {
@@ -340,7 +340,7 @@ namespace spargel::codec {
         }
     };
     template <CodecBackend B>
-    using I32Codec = SimpleCodec<B, i32, I32Encoder<typename B::EncodeBackend>, I32Decoder<typename B::DecodeBackend>>;
+    using I32Codec = SimpleCodec<B, i32, I32Encoder<typename B::EncodeBackendType>, I32Decoder<typename B::DecodeBackendType>>;
 
     template <EncodeBackend EB>
     class F32Encoder : public Encoder2<EB, f32> {
@@ -365,7 +365,7 @@ namespace spargel::codec {
         }
     };
     template <CodecBackend B>
-    using F32Codec = SimpleCodec<B, f32, F32Encoder<typename B::EncodeBackend>, F32Decoder<typename B::DecodeBackend>>;
+    using F32Codec = SimpleCodec<B, f32, F32Encoder<typename B::EncodeBackendType>, F32Decoder<typename B::DecodeBackendType>>;
 
     template <EncodeBackend EB>
     class F64Encoder : public Encoder2<EB, f64> {
@@ -390,7 +390,7 @@ namespace spargel::codec {
         }
     };
     template <CodecBackend B>
-    using F64Codec = SimpleCodec<B, f64, F64Encoder<typename B::EncodeBackend>, F64Decoder<typename B::DecodeBackend>>;
+    using F64Codec = SimpleCodec<B, f64, F64Encoder<typename B::EncodeBackendType>, F64Decoder<typename B::DecodeBackendType>>;
 
     template <EncodeBackend EB>
     class StringEncoder : public Encoder2<EB, base::string> {
@@ -415,7 +415,7 @@ namespace spargel::codec {
         }
     };
     template <CodecBackend B>
-    using StringCodec = SimpleCodec<B, base::string, StringEncoder<typename B::EncodeBackend>, StringDecoder<typename B::DecodeBackend>>;
+    using StringCodec = SimpleCodec<B, base::string, StringEncoder<typename B::EncodeBackendType>, StringDecoder<typename B::DecodeBackendType>>;
 
     template <EncodeBackend EB, typename T>
     class ArrayEncoder : public Encoder2<EB, base::vector<T>> {
@@ -474,8 +474,8 @@ namespace spargel::codec {
     };
     template <CodecBackend B, typename T>
     class ArrayCodec : public Codec<B, base::vector<T>> {
-        using EB = B::EncodeBackend;
-        using DB = B::DecodeBackend;
+        using EB = B::EncodeBackendType;
+        using DB = B::DecodeBackendType;
 
     public:
         ArrayCodec(base::unique_ptr<Encoder2<EB, T>>&& encoder, base::unique_ptr<Decoder2<DB, T>>&& decoder)
@@ -518,8 +518,8 @@ namespace spargel::codec {
     class FieldCodec {
     public:
         using type = T;
-        using EB = B::EncodeBackend;
-        using DB = B::DecodeBackend;
+        using EB = B::EncodeBackendType;
+        using DB = B::DecodeBackendType;
 
         FieldCodec(base::unique_ptr<FieldEncoder<EB, T>>&& encoder, base::unique_ptr<FieldDecoder<DB, T>> decoder)
             : encoder(base::move(encoder)), decoder(base::move(decoder)) {}
@@ -605,8 +605,8 @@ namespace spargel::codec {
 
     template <CodecBackend B, typename T>
     class NormalFieldCodec : public FieldCodec<B, T> {
-        using EB = B::EncodeBackend;
-        using DB = B::DecodeBackend;
+        using EB = B::EncodeBackendType;
+        using DB = B::DecodeBackendType;
 
     public:
         NormalFieldCodec(base::string_view name, base::unique_ptr<Encoder2<EB, T>>&& encoder, base::unique_ptr<Decoder2<DB, T>>&& decoder)
@@ -649,8 +649,8 @@ namespace spargel::codec {
 
     template <CodecBackend B, typename T>
     class DefaultFieldCodec : public FieldCodec<B, T> {
-        using EB = B::EncodeBackend;
-        using DB = B::DecodeBackend;
+        using EB = B::EncodeBackendType;
+        using DB = B::DecodeBackendType;
 
     public:
         DefaultFieldCodec(base::string_view name, base::unique_ptr<Encoder2<EB, T>>&& encoder, base::unique_ptr<Decoder2<DB, T>>&& decoder, const T& defaultValue)
@@ -726,8 +726,8 @@ namespace spargel::codec {
 
     template <CodecBackend B, typename T>
     class OptionalFieldCodec : public FieldCodec<B, base::Optional<T>> {
-        using EB = B::EncodeBackend;
-        using DB = B::DecodeBackend;
+        using EB = B::EncodeBackendType;
+        using DB = B::DecodeBackendType;
 
     public:
         OptionalFieldCodec(base::string_view name, base::unique_ptr<Encoder2<EB, T>>&& encoder, base::unique_ptr<Decoder2<DB, T>>&& decoder)
@@ -866,8 +866,8 @@ namespace spargel::codec {
 
     template <CodecBackend B, typename S, typename T, typename F /* S -> T */>
     class RecordCodecBuilder {
-        using EB = B::EncodeBackend;
-        using DB = B::DecodeBackend;
+        using EB = B::EncodeBackendType;
+        using DB = B::DecodeBackendType;
 
     public:
         RecordCodecBuilder(base::unique_ptr<FieldEncoder<EB, T>>&& encoder, base::unique_ptr<FieldDecoder<DB, T>>&& decoder, F&& getter)
@@ -880,8 +880,8 @@ namespace spargel::codec {
 
     template <CodecBackend B, typename S, typename F /* (Ts...) -> S */, typename... Builders /* RecordCodecBuilder */>
     static Codec<B, S> makeRecordCodec(F&& func, const Builders&... builders) {
-        auto encoder = makeRecordEncoder<typename B::EncodeBackend, S>(builders.encoderBuilder...);
-        auto decoder = makeRecordDecoder<typename B::DecodeBackend, S>(base::move(func), *builders.decoder...);
+        auto encoder = makeRecordEncoder<typename B::EncodeBackendType, S>(builders.encoderBuilder...);
+        auto decoder = makeRecordDecoder<typename B::DecodeBackendType, S>(base::move(func), *builders.decoder...);
         return Codec<B, S>(base::make_unique<decltype(encoder)>(base::move(encoder)), base::make_unique<decltype(decoder)>(base::move(decoder)));
     }
 

@@ -185,8 +185,8 @@ namespace spargel::codec {
     };
 
     struct JsonCodecBackend {
-        using EncodeBackend = JsonEncodeBackend;
-        using DecodeBackend = JsonDecodeBackend;
+        using EncodeBackendType = JsonEncodeBackend;
+        using DecodeBackendType = JsonDecodeBackend;
     };
 
 }  // namespace spargel::codec

@@ -78,8 +78,8 @@ namespace {
     static_assert(DecodeBackend<TestDecodeBackend>);
 
     struct TestCodecBackend {
-        using EncodeBackend = TestEncodeBackend;
-        using DecodeBackend = TestDecodeBackend;
+        using EncodeBackendType = TestEncodeBackend;
+        using DecodeBackendType = TestDecodeBackend;
     };
 
     static_assert(CodecBackend<TestCodecBackend>);
