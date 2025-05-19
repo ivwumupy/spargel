@@ -7,7 +7,7 @@
 using namespace spargel::base;
 
 TEST(HashMap_CopyConstructor) {
-    HashMap<int, int> z1(default_allocator());
+    HashMap<int, int> z1;
     z1.set(2, 100);
 
     auto z2(z1);
@@ -18,7 +18,7 @@ TEST(HashMap_CopyConstructor) {
     spargel_check(z3.get(2) != nullptr);
     spargel_check(*z3.get(2) == 100);
 
-    HashMap<string, string> z4(default_allocator());
+    HashMap<string, string> z4;
     z4.set(string("name"), string("Alice"));
 
     auto z5(z4);
@@ -31,7 +31,7 @@ TEST(HashMap_CopyConstructor) {
 }
 
 TEST(HashMap_MoveConstructor) {
-    HashMap<int, int> z1(default_allocator());
+    HashMap<int, int> z1;
     z1.set(2, 100);
 
     auto z2(move(z1));
@@ -42,7 +42,7 @@ TEST(HashMap_MoveConstructor) {
     spargel_check(z3.get(2) != nullptr);
     spargel_check(*z3.get(2) == 100);
 
-    HashMap<string, string> z4(default_allocator());
+    HashMap<string, string> z4;
     z4.set(string("name"), string("Alice"));
 
     auto z5(move(z4));
@@ -55,7 +55,7 @@ TEST(HashMap_MoveConstructor) {
 }
 
 TEST(HashMap_General) {
-    HashMap<int, int> x(default_allocator());
+    HashMap<int, int> x;
 
     spargel_check(x.count() == 0);
     spargel_check(x.get(100) == nullptr);
@@ -77,7 +77,7 @@ TEST(HashMap_General) {
         spargel_check(*x.get(i) == i * i);
     }
 
-    HashMap<string, string> y(default_allocator());
+    HashMap<string, string> y;
 
     spargel_check(y.count() == 0);
     spargel_check(y.get(string("name")) == nullptr);

@@ -1245,7 +1245,7 @@ namespace spargel::gpu {
     }
 
     DescriptorAllocator::DescriptorAllocator(DeviceVulkan* device)
-        : _device{device}, _procs{device->getProcTable()}, _suballocs(base::default_allocator()) {}
+        : _device{device}, _procs{device->getProcTable()} {}
 
     VkDescriptorSet DescriptorAllocator::allocate(DescriptorSetShape const& shape) {
         [[maybe_unused]] auto& suballoc = _suballocs.getOrConstruct(shape, _device, shape);

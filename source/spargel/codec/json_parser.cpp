@@ -626,7 +626,7 @@ namespace spargel::codec {
 
             auto& cursor = ctx.cursor;
 
-            base::HashMap<JsonString, JsonValue> members(base::default_allocator());
+            base::HashMap<JsonString, JsonValue> members;
             while (!cursorIsEnd(cursor)) {
                 // member
                 JsonString key;

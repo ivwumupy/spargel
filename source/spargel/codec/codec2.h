@@ -40,7 +40,7 @@ namespace spargel::codec {
         using ErrorType = EB::ErrorType;
 
     public:
-        RecordBuilderImpl() : _map(base::default_allocator()) {}
+        RecordBuilderImpl() {}
 
         void add(const base::string& name, const DataType& value) override {
             _map.set(name, value);

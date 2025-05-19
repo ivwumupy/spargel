@@ -288,7 +288,7 @@ namespace spargel::codec {
             using DataType = EB::DataType;
             using ErrorType = EB::ErrorType;
 
-            base::HashMap<base::string, DataType> map(base::default_allocator());  // FIXME
+            base::HashMap<base::string, DataType> map;  // FIXME
             auto result =
                 encodeToMap<Encoders...>(map, backend, base::forward<Entries>(entries)...);
             if (result.hasValue()) return base::makeRight<DataType, ErrorType>(result.value());

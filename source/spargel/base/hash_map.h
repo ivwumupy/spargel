@@ -19,7 +19,7 @@ namespace spargel::base {
         template <typename K, typename T>
         class HashMap {
         public:
-            HashMap(Allocator* alloc)
+            HashMap(Allocator* alloc = default_allocator())
                 : _status(alloc), _keys(alloc), _values(alloc), _alloc{alloc} {
                 spargel_assert(alloc != nullptr);
             }

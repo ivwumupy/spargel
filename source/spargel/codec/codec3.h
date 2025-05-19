@@ -2,6 +2,9 @@
 
 #include <spargel/codec/codec.h>
 
+// FIXME
+#include <tuple>
+
 namespace spargel::codec {
 
     template <typename B /* codec backend type */>
@@ -24,7 +27,7 @@ namespace spargel::codec {
     } && requires(E& encoder, E::BackendType& backend, const E::TargetType& object) {
         {
             encoder.encode(backend, object)
-        } -> base::ConvertibleTo<base::Either<typename E::BackendType::DataType, typename E::BackendType::ErrorType>>;
+        } -> base::SameAs<base::Either<typename E::BackendType::DataType, typename E::BackendType::ErrorType>>;
     };
 
     // decoder prototype
@@ -35,7 +38,7 @@ namespace spargel::codec {
     } && requires(D& decoder, D::BackendType& backend, const D::BackendType::DataType& data) {
         {
             decoder.decode(backend, data)
-        } -> base::ConvertibleTo<base::Either<typename D::TargetType, typename D::BackendType::ErrorType>>;
+        } -> base::SameAs<base::Either<typename D::TargetType, typename D::BackendType::ErrorType>>;
     };
 
     template <typename C>
@@ -45,11 +48,11 @@ namespace spargel::codec {
     } && requires(C& codec, C::BackendType::EncodeBackendType& backend, const C::TargetType& object) {
         {
             codec.encode(backend, object)
-        } -> base::ConvertibleTo<base::Either<typename C::BackendType::EncodeBackendType::DataType, typename C::BackendType::EncodeBackendType::ErrorType>>;
+        } -> base::SameAs<base::Either<typename C::BackendType::EncodeBackendType::DataType, typename C::BackendType::EncodeBackendType::ErrorType>>;
     } && requires(C& codec, C::BackendType::DecodeBackendType& backend, const C::BackendType::DecodeBackendType::DataType& data) {
         {
             codec.decode(backend, data)
-        } -> base::ConvertibleTo<base::Either<typename C::TargetType, typename C::BackendType::DecodeBackendType::ErrorType>>;
+        } -> base::SameAs<base::Either<typename C::TargetType, typename C::BackendType::DecodeBackendType::ErrorType>>;
     };
 
     template <typename C>
@@ -249,6 +252,58 @@ namespace spargel::codec {
     };
 
     template <EncodeBackend EB>
+    struct F32Encoder {
+        using TargetType = f32;
+        using BackendType = EB;
+
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, f32 x) {
+            return backend.makeF32(x);
+        }
+    };
+
+    template <DecodeBackend DB>
+    struct F32Decoder {
+        using TargetType = f32;
+        using BackendType = DB;
+
+        base::Either<f32, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
+            return backend.getF32(data);
+        }
+    };
+
+    template <CodecBackend B>
+    struct F32Codec : F32Encoder<typename B::EncodeBackendType>, F32Decoder<typename B::DecodeBackendType> {
+        using TargetType = f32;
+        using BackendType = B;
+    };
+
+    template <EncodeBackend EB>
+    struct F64Encoder {
+        using TargetType = f64;
+        using BackendType = EB;
+
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, f64 x) {
+            return backend.makeF64(x);
+        }
+    };
+
+    template <DecodeBackend DB>
+    struct F64Decoder {
+        using TargetType = f64;
+        using BackendType = DB;
+
+        base::Either<f64, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
+            return backend.getF64(data);
+        }
+    };
+
+    template <CodecBackend B>
+    struct F64Codec : F64Encoder<typename B::EncodeBackendType>, F64Decoder<typename B::DecodeBackendType> {
+        using TargetType = f64;
+        using BackendType = B;
+    };
+
+    template <EncodeBackend EB>
     struct StringEncoder {
         using TargetType = base::string;
         using BackendType = EB;
@@ -356,12 +411,178 @@ namespace spargel::codec {
         using TargetType = base::vector<typename C::TargetType>;
         using BackendType = C::BackendType;
 
-        ArrayCodec(const C& codec) : ArrayEncoder<AsEncoder<C>>(codec), ArrayDecoder<AsDecoder<C>>(codec) {}
+        ArrayCodec(const C& codec) : ArrayEncoder<E>(E(codec)), ArrayDecoder<D>(D(codec)) {}
     };
 
     template <Codec C>
     ArrayCodec<C> makeArrayCodec(const C& codec) { return ArrayCodec(codec); }
     template <Codec C>
     ArrayCodec<C> makeArrayCodec(C&& codec) { return ArrayCodec(base::move(codec)); }
+
+    template <typename B>
+    concept RecordBuilder = requires {
+        typename B::BackendType;
+    } && EncodeBackend<typename B::BackendType> && requires(B& builder, const base::string& name, const B::BackendType::DataType& value) {
+        builder.add(name, value);
+    } && requires(B& builder, const base::string& name, B::BackendType::DataType&& value) {
+        builder.add(name, base::move(value));
+    } && requires(B& builder, B::BackendType& backend) {
+        {
+            builder.build(backend)
+        } -> base::SameAs<base::Either<typename B::BackendType::DataType, typename B::BackendType::ErrorType>>;
+    };
+
+    template <EncodeBackend EB>
+    class RecordBuilderImpl {
+        using DataType = EB::DataType;
+        using ErrorType = EB::ErrorType;
+
+    public:
+        using BackendType = EB;
+
+        RecordBuilderImpl() {}
+
+        void add(const base::string& name, const DataType& value) {
+            _map.set(name, value);
+        }
+        void add(const base::string& name, DataType&& value) {
+            _map.set(name, base::move(value));
+        }
+
+        base::Either<DataType, ErrorType> build(EB& backend) {
+            return backend.makeMap(_map);
+        }
+
+    private:
+        base::HashMap<base::string, DataType> _map;
+    };
+
+    template <typename E>
+    concept FieldEncoder = requires {
+        typename E::TargetType;
+        typename E::BackendType;
+    } && requires(E& encoder, E::BackendType& backend, RecordBuilderImpl<typename E::BackendType>& builder, const E::TargetType& object) {
+        {
+            encoder.encode(backend, builder, object)
+        } -> base::SameAs<base::Optional<typename E::BackendType::ErrorType>>;
+    };
+
+    template <typename D>
+    concept FieldDecoder = requires {
+        typename D::TargetType;
+        typename D::BackendType;
+    } && requires(D& decoder, D::BackendType& backend, const D::BackendType::DataType& data) {
+        {
+            decoder.decode(backend, data)
+        } -> base::SameAs<base::Either<typename D::TargetType, typename D::BackendType::ErrorType>>;
+    };
+
+    template <RecordBuilder RB, Encoder3 E>
+        requires base::SameAs<typename RB::BackendType, typename E::BackendType>
+    class NormalFieldEncoder {
+        using T = E::TargetType;
+        using EB = E::BackendType;
+
+    public:
+        using TargetType = T;
+        using BackendType = EB;
+
+        NormalFieldEncoder(base::string_view name, const E& encoder) : _name(name), _encoder(encoder) {}
+
+        base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const T& object) {
+            auto result = _encoder->encode(backend, object);
+            if (result.isLeft()) {
+                builder.add(_name, base::move(result.left()));
+                return base::nullopt;
+            } else {
+                return base::makeOptional<typename EB::ErrorType>(base::move(result.right()));
+            }
+        }
+
+    private:
+        base::string _name;
+        E _encoder;
+    };
+
+    template <RecordBuilder RB, Encoder3 E>
+        requires base::SameAs<typename RB::BackendType, typename E::BackendType>
+    class OptionalFieldEncoder {
+        using T = E::TargetType;
+        using EB = E::BackendType;
+
+    public:
+        using TargetType = T;
+        using BackendType = EB;
+
+        OptionalFieldEncoder(base::string_view name, const E& encoder) : _name(name), _encoder(encoder) {}
+
+        base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const T& object) {
+            if (object.hasValue()) {
+                auto result = _encoder->encode(backend, object.value());
+                if (result.isRight()) {
+                    return base::makeOptional<typename EB::ErrorType>(base::move(result.right()));
+                } else {
+                    builder.add(_name, base::move(result.left()));
+                    return base::nullopt;
+                }
+            } else {
+                return base::nullopt;
+            }
+        }
+
+    private:
+        base::string _name;
+        E _encoder;
+    };
+
+    template <FieldEncoder E, typename S, typename T, typename F /* S -> T */>
+    struct RecordEncoderBuilder {
+        E encoder;
+        F getter;
+    };
+
+    template <EncodeBackend EB, typename S, typename... Builders>
+    class RecordEncoder {
+        using DataType = EB::DataType;
+        using ErrorType = EB::ErrorType;
+
+    public:
+        using TargetType = S;
+        using BackendType = EB;
+
+        RecordEncoder(const Builders&... builders) : _builders(builders...) {}
+        RecordEncoder(Builders&&... builders) : _builders(base::move(builders)...) {}
+
+        base::Either<DataType, ErrorType> encode(EB& backend, const S& object) {
+            return std::apply(
+                [&](const Builders&... builders) -> base::Either<DataType, ErrorType> {
+                    RecordBuilderImpl<EB> record_builder;
+                    base::Optional<ErrorType> error;
+
+                    // magic fold expression that allows fast failing
+                    bool success = ([&]() {
+                        const auto& builder = builders;
+                        auto result = builder.encoder->encode(backend, record_builder, builder.getter(object));
+                        if (result.hasValue()) {
+                            error = base::makeOptional<ErrorType>(base::move(result.value()));
+                            // This will cause the execution to fail fast, preventing encoding further entries.
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    }() && ...);
+
+                    if (success) {
+                        return record_builder.build(backend);
+                    } else {
+                        return base::Right(base::move(error.value()));
+                    }
+                },
+                _builders);
+        }
+
+    private:
+        std::tuple<Builders...> _builders;
+    };
 
 }  // namespace spargel::codec

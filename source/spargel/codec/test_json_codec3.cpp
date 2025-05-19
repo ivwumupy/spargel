@@ -43,6 +43,12 @@ TEST(Json_Codec_Encode_Primitive) {
     result = I32Codec<B>{}.encode(encodeBackend, -2147483648);
     spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(-2147483648)));
 
+    result = F32Codec<B>{}.encode(encodeBackend, 123.456f);
+    spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(123.456f)));
+
+    result = F64Codec<B>{}.encode(encodeBackend, 789.012);
+    spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(789.012)));
+
     result = StringCodec<B>{}.encode(encodeBackend, base::string("ABC"));
     spargel_check(result.isLeft() && isEqual(result.left(), JsonString("ABC")));
 }
@@ -67,6 +73,14 @@ TEST(Json_Codec_Decode_Primitive) {
     {
         auto result = I32Codec<B>{}.decode(decodeBackend, JsonValue(JsonNumber(-2147483648)));
         spargel_check(result.isLeft() && result.left() == -2147483648);
+    }
+    {
+        auto result = F32Codec<B>{}.decode(decodeBackend, JsonValue(JsonNumber(123.456f)));
+        spargel_check(result.isLeft() && fabs(result.left() - 123.456f) < 1e-6f);
+    }
+    {
+        auto result = F64Codec<B>{}.decode(decodeBackend, JsonValue(JsonNumber(789.012)));
+        spargel_check(result.isLeft() && fabs(result.left() - 789.012) < 1e-6f);
     }
     {
         auto result = StringCodec<B>{}.decode(decodeBackend, JsonValue(JsonString("ABC")));
