@@ -140,7 +140,7 @@ namespace spargel::base {
                 usize len = end - begin;
                 String result;
                 result._bytes.reserve(len + 1);
-                result._bytes.set_count(len);
+                result._bytes.set_count(len + 1);
                 memcpy(result._bytes.data(), begin, len);
                 result._bytes.data()[len] = 0;
                 return result;
@@ -170,14 +170,14 @@ namespace spargel::base {
             /*explicit*/ String(StringView view) : _alloc{default_allocator()} {
                 usize len = view.length();
                 _bytes.reserve(len + 1);
-                _bytes.set_count(len);
+                _bytes.set_count(len + 1);
                 memcpy(_bytes.data(), view.data(), len);
                 _bytes.data()[len] = 0;
             }
             explicit String(char const* cstr) : _alloc{default_allocator()} {
                 usize len = strlen(cstr);
                 _bytes.reserve(len + 1);
-                _bytes.set_count(len);
+                _bytes.set_count(len + 1);
                 memcpy(_bytes.data(), cstr, len);
                 _bytes.data()[len] = 0;
             }
@@ -188,7 +188,7 @@ namespace spargel::base {
             }
             explicit String(char ch) : _alloc{default_allocator()} {
                 _bytes.reserve(2);
-                _bytes.set_count(1);
+                _bytes.set_count(2);
                 _bytes.data()[0] = ch;
                 _bytes.data()[1] = 0;
             }
@@ -200,11 +200,11 @@ namespace spargel::base {
             char& operator[](usize i) { return _bytes[i]; }
             char const& operator[](usize i) const { return _bytes[i]; }
 
-            usize length() const { return _bytes.count(); }
+            usize length() const { return _bytes.count() - 1; }
             char* begin() { return _bytes.begin(); }
             char const* begin() const { return _bytes.begin(); }
-            char* end() { return _bytes.end(); }
-            char const* end() const { return _bytes.end(); }
+            char* end() { return _bytes.end() - 1; }
+            char const* end() const { return _bytes.end() - 1; }
             char* data() { return _bytes.data(); }
             char const* data() const { return _bytes.data(); }
             StringView view() const { return StringView(begin(), end()); }
@@ -217,7 +217,7 @@ namespace spargel::base {
                 usize len = lhs.length() + rhs.length();
                 String result(lhs._alloc);
                 result._bytes.reserve(len + 1);
-                result._bytes.set_count(len);
+                result._bytes.set_count(len + 1);
                 memcpy(result._bytes.data(), lhs.data(), lhs.length());
                 memcpy(result._bytes.data() + lhs.length(), rhs.data(), rhs.length());
                 result._bytes.data()[len] = 0;
@@ -232,12 +232,14 @@ namespace spargel::base {
             /// Get the `i`-th byte.
             Byte getByte(usize i) const { return (Byte)_bytes[i]; }
 
+            // FIXME: should not include the zero char at the end
+            // Idea: use slicing for vector
             span<Byte> bytes() const { return _bytes.toSpan().asBytes(); }
 
             usize getLength() const {
                 usize len = 0;
                 usize i = 0;
-                while (i < _bytes.count()) {
+                while (i < length()) {
                     Byte byte = _bytes[i];
                     if ((byte & 0b10000000) == 0) {
                         i += 1;
