@@ -32,6 +32,18 @@ namespace {
                 makeNormalEncodeField<Student>("happy"_sv, BooleanCodec{}, [](auto& o) { return o.happy; }),
                 makeNormalEncodeField<Student>("scores"_sv, makeVectorEncoder(F32Codec{}), [](auto& o) { return o.scores; }));
         }
+
+        template <DecodeBackend DB>
+        static auto decoder() {
+            return makeRecordDecoder<Student>(
+                base::Constructor<Student>{},
+                makeDefaultDecodeField("type"_sv, StringCodec{}, base::string("normal")),
+                makeNormalDecodeField("name"_sv, StringCodec{}),
+                makeOptionalDecodeField("nickname"_sv, StringCodec{}),
+                makeNormalDecodeField("age"_sv, U32Codec{}),
+                makeNormalDecodeField("happy"_sv, BooleanCodec{}),
+                makeNormalDecodeField("scores"_sv, makeVectorDecoder(F32Codec{})));
+        }
     };
 
 }  // namespace
@@ -209,5 +221,97 @@ TEST(Json_Codec_Encode_Record) {
         spargel_check(isEqual(array[0], JsonNumber(98)));
         spargel_check(isEqual(array[1], JsonNumber(87.5)));
         spargel_check(isEqual(array[2], JsonNumber(92)));
+    }
+}
+
+TEST(Json_Codec_Decode_Record) {
+    auto studentCodec = Student::decoder<DB>();
+
+    {
+        const auto str =
+            "{\n"
+            "  \"type\": \"normal\",\n"
+            "  \"name\": \"Alice\",\n"
+            "  \"age\": 20,\n"
+            "  \"happy\": true,\n"
+            "  \"scores\": [98, 87.5, 92]\n"
+            "}";
+        auto result_json = parseJson(str);
+        spargel_check(result_json.isLeft());
+
+        auto result = studentCodec.decode(decodeBackend, base::move(result_json.left()));
+        spargel_check(result.isLeft());
+
+        auto& student = result.left();
+        spargel_check(student.type == base::string("normal"));
+        spargel_check(student.name == base::string("Alice"));
+        spargel_check(!student.nickname.hasValue());
+        spargel_check(student.age == 20);
+        spargel_check(student.happy == true);
+        spargel_check(student.scores.count() == 3);
+        spargel_check(fabs(student.scores[0] - 98) < 1e-6f);
+        spargel_check(fabs(student.scores[1] - 87.5f) < 1e-6f);
+        spargel_check(fabs(student.scores[2] - 92) < 1e-6f);
+    }
+    {
+        const auto str =
+            "[\n"
+            "  {\n"
+            "    \"type\": \"normal\",\n"
+            "    \"name\": \"Alice\",\n"
+            "    \"age\": 20,\n"
+            "    \"happy\": true,\n"
+            "    \"scores\": [98, 87.5, 92]\n"
+            "  },\n"
+            "  {\n"
+            "    \"name\": \"Bob\",\n"
+            "    \"nickname\": \"Bomb\",\n"
+            "    \"age\": 18,\n"
+            "    \"happy\": false,\n"
+            "    \"scores\": [65.5]\n"
+            "  },\n"
+            "  {\n"
+            "    \"type\": \"exchange\",\n"
+            "    \"name\": \"David\",\n"
+            "    \"age\": 21,\n"
+            "    \"happy\": true,\n"
+            "    \"scores\": [99, 97.5]\n"
+            "  }\n"
+            "]";
+        auto result_json = parseJson(str);
+        spargel_check(result_json.isLeft());
+
+        auto result = makeVectorDecoder(studentCodec).decode(decodeBackend, base::move(result_json.left()));
+        spargel_check(result.isLeft());
+
+        auto& students = result.left();
+
+        spargel_check(students[0].type == base::string("normal"));
+        spargel_check(students[0].name == base::string("Alice"));
+        spargel_check(!students[0].nickname.hasValue());
+        spargel_check(students[0].age == 20);
+        spargel_check(students[0].happy == true);
+        spargel_check(students[0].scores.count() == 3);
+        spargel_check(fabs(students[0].scores[0] - 98) < 1e-6f);
+        spargel_check(fabs(students[0].scores[1] - 87.5f) < 1e-6f);
+        spargel_check(fabs(students[0].scores[2] - 92) < 1e-6f);
+
+        spargel_check(students[1].type == base::string("normal"));
+        spargel_check(students[1].name == base::string("Bob"));
+        spargel_check(students[1].nickname.hasValue() &&
+                      students[1].nickname.value() == base::string("Bomb"));
+        spargel_check(students[1].age == 18);
+        spargel_check(students[1].happy == false);
+        spargel_check(students[1].scores.count() == 1);
+        spargel_check(fabs(students[1].scores[0] - 65.5) < 1e-6f);
+
+        spargel_check(students[2].type == base::string("exchange"));
+        spargel_check(students[2].name == base::string("David"));
+        spargel_check(!students[2].nickname.hasValue());
+        spargel_check(students[2].age == 21);
+        spargel_check(students[2].happy == true);
+        spargel_check(students[2].scores.count() == 2);
+        spargel_check(fabs(students[2].scores[0] - 99) < 1e-6f);
+        spargel_check(fabs(students[2].scores[1] - 97.5f) < 1e-6f);
     }
 }

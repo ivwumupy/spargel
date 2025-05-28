@@ -43,18 +43,6 @@ add_test(
 )
 
 spargel_add_executable(
-    NAME test_codec3
-    PRIVATE test_codec3.cpp
-    DEPS
-        codec
-        test_main
-)
-add_test(
-    NAME test_codec3
-    COMMAND test_codec3
-)
-
-spargel_add_executable(
     NAME test_codec4
     PRIVATE test_codec4.cpp
     DEPS
@@ -100,18 +88,6 @@ spargel_add_executable(
 add_test(
     NAME test_json_codec2
     COMMAND test_json_codec2
-)
-
-spargel_add_executable(
-    NAME test_json_codec3
-    PRIVATE test_json_codec3.cpp
-    DEPS
-        codec_json
-        test_main
-)
-add_test(
-    NAME test_json_codec3
-    COMMAND test_json_codec3
 )
 
 spargel_add_executable(

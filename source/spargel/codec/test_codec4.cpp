@@ -97,6 +97,18 @@ namespace {
                 makeNormalEncodeField<Student>("happy"_sv, BooleanCodec{}, [](auto& o) { return o.happy; }),
                 makeNormalEncodeField<Student>("scores"_sv, makeVectorEncoder(F32Codec{}), [](auto& o) { return o.scores; }));
         }
+
+        template <DecodeBackend DB>
+        static auto decoder() {
+            return makeRecordDecoder<Student>(
+                base::Constructor<Student>{},
+                makeDefaultDecodeField("type"_sv, StringCodec{}, base::string("normal")),
+                makeNormalDecodeField("name"_sv, StringCodec{}),
+                makeOptionalDecodeField("nickname"_sv, StringCodec{}),
+                makeNormalDecodeField("age"_sv, U32Codec{}),
+                makeNormalDecodeField("happy"_sv, BooleanCodec{}),
+                makeNormalDecodeField("scores"_sv, makeVectorDecoder(F32Codec{})));
+        }
     };
 
     using EB = TestEncodeBackend;
@@ -133,9 +145,15 @@ namespace {
     static_assert(Codec<VectorCodec<VectorCodec<NullCodec>>>);
 
     static_assert(FieldEncoder<NormalFieldEncoder<NullCodec>>);
+    static_assert(FieldDecoder<NormalFieldDecoder<NullCodec>>);
+    static_assert(FieldCodec<NormalFieldCodec<NullCodec>>);
+
     static_assert(FieldEncoder<OptionalFieldEncoder<NullCodec>>);
+    static_assert(FieldDecoder<OptionalFieldDecoder<NullCodec>>);
+    static_assert(FieldCodec<OptionalFieldCodec<NullCodec>>);
 
     static_assert(Encoder4<decltype(Student::encoder<EB>())>);
+    static_assert(Decoder4<decltype(Student::decoder<DB>())>);
 
 }  // namespace
 
@@ -270,8 +288,14 @@ TEST(Codec_Encode_Record) {
 
         auto result = studentEncoder.encode(encodeBackend, student);
         spargel_check(result.isLeft());
+    }
+}
 
-        result = studentEncoder.encode(encodeBackend, student);
+TEST(Codec_Decode_Record) {
+    auto studentDecoder = Student::decoder<DB>();
+
+    {
+        auto result = studentDecoder.decode(decodeBackend, TestData{});
         spargel_check(result.isLeft());
     }
 }
