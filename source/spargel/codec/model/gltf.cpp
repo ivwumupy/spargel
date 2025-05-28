@@ -88,17 +88,10 @@ namespace spargel::codec::model {
         struct CodecGlTFAccessor {
             using Type = GlTFAccessor;
 
-            Optional<GlTFInteger> bufferView;
-            using Constructor = base::Constructor<GlTFAccessor(
-                const Optional<GlTFInteger>&, const Optional<GlTFInteger>&, const GlTFInteger&,
-                const Optional<GlTFBoolean>&, const GlTFInteger&, const GlTFString&,
-                const Optional<vector<GlTFNumber>>&, const Optional<vector<GlTFNumber>>&,
-                const Optional<GlTFString>)>;
-
             template <DecodeBackend DB>
             static base::Either<GlTFAccessor, typename DB::ErrorType> decode(
                 DB& backend, const typename DB::DataType& data) {
-                return decodeMap<GlTFAccessor>(Constructor(), backend, data,  //
+                return decodeMap<GlTFAccessor>(base::Constructor<GlTFAccessor>{}, backend, data,  //
                                                DecodeField::Optional<CodecI32>("bufferView"_sv),
                                                DecodeField::Optional<CodecI32>("byteOffset"_sv),
                                                DecodeField::Required<CodecI32>("componentType"_sv),
@@ -115,14 +108,10 @@ namespace spargel::codec::model {
         struct CodecGlTFAsset {
             using Type = GlTFAsset;
 
-            using Constructor = base::Constructor<GlTFAsset(
-                const Optional<GlTFString>&, const Optional<GlTFString>&, const GlTFString&,
-                const Optional<GlTFString>&)>;
-
             template <DecodeBackend DB>
             static base::Either<GlTFAsset, typename DB::ErrorType> decode(
                 DB& backend, const typename DB::DataType& data) {
-                return decodeMap<GlTFAsset>(Constructor(), backend, data,  //
+                return decodeMap<GlTFAsset>(base::Constructor<GlTFAsset>{}, backend, data,  //
                                             DecodeField::Optional<CodecString>("copyright"_sv),
                                             DecodeField::Optional<CodecString>("generator"_sv),
                                             DecodeField::Required<CodecString>("version"_sv),
@@ -134,13 +123,10 @@ namespace spargel::codec::model {
         struct CodecGlTFBuffer {
             using Type = GlTFBuffer;
 
-            using Constructor = base::Constructor<GlTFBuffer(
-                const Optional<GlTFString>&, GlTFInteger, const Optional<GlTFString>&)>;
-
             template <DecodeBackend DB>
             static base::Either<GlTFBuffer, typename DB::ErrorType> decode(
                 DB& backend, const typename DB::DataType& data) {
-                return decodeMap<GlTFBuffer>(Constructor(), backend, data,  //
+                return decodeMap<GlTFBuffer>(base::Constructor<GlTFBuffer>{}, backend, data,  //
                                              DecodeField::Optional<CodecString>("uri"_sv),
                                              DecodeField::Required<CodecI32>("byteLength"_sv),
                                              DecodeField::Optional<CodecString>("name"_sv));
@@ -151,15 +137,10 @@ namespace spargel::codec::model {
         struct CodecGlTFBufferView {
             using Type = GlTFBufferView;
 
-            using Constructor = base::Constructor<GlTFBufferView(
-                GlTFInteger, const Optional<GlTFInteger>&, GlTFInteger,
-                const Optional<GlTFInteger>&, const Optional<GlTFInteger>&,
-                const Optional<GlTFString>&)>;
-
             template <DecodeBackend DB>
             static base::Either<GlTFBufferView, typename DB::ErrorType> decode(
                 DB& backend, const typename DB::DataType& data) {
-                return decodeMap<GlTFBufferView>(Constructor(), backend, data,  //
+                return decodeMap<GlTFBufferView>(base::Constructor<GlTFBufferView>{}, backend, data,  //
                                                  DecodeField::Required<CodecI32>("buffer"_sv),
                                                  DecodeField::Optional<CodecI32>("byteOffset"_sv),
                                                  DecodeField::Required<CodecI32>("byteLength"_sv),
@@ -173,17 +154,10 @@ namespace spargel::codec::model {
         struct CodecGlTFNode {
             using Type = GlTFNode;
 
-            using Constructor = base::Constructor<GlTFNode(
-                const Optional<GlTFInteger>&, const Optional<vector<GlTFInteger>>&,
-                const Optional<GlTFInteger>&, const Optional<Matrix4x4f>&,
-                const Optional<GlTFInteger>&, const Optional<Vector4f>&, const Optional<Vector3f>&,
-                const Optional<Vector3f>&, const Optional<vector<GlTFNumber>>&,
-                const Optional<GlTFString>&)>;
-
             template <DecodeBackend DB>
             static base::Either<GlTFNode, typename DB::ErrorType> decode(
                 DB& backend, const typename DB::DataType& data) {
-                return decodeMap<GlTFNode>(Constructor(), backend, data,  //
+                return decodeMap<GlTFNode>(base::Constructor<GlTFNode>{}, backend, data,  //
                                            DecodeField::Optional<CodecI32>("camera"_sv),
                                            DecodeField::Optional<CodecArray<CodecI32>>("children"_sv),
                                            DecodeField::Optional<CodecI32>("skin"_sv),
@@ -201,13 +175,10 @@ namespace spargel::codec::model {
         struct CodecGlTFScene {
             using Type = GlTFScene;
 
-            using Constructor = base::Constructor<GlTFScene(const Optional<vector<GlTFInteger>>&,
-                                                            const Optional<GlTFString>&)>;
-
             template <DecodeBackend DB>
             static base::Either<GlTFScene, typename DB::ErrorType> decode(
                 DB& backend, const typename DB::DataType& data) {
-                return decodeMap<GlTFScene>(Constructor(), backend, data,  //
+                return decodeMap<GlTFScene>(base::Constructor<GlTFScene>{}, backend, data,  //
                                             DecodeField::Optional<CodecArray<CodecI32>>("nodes"_sv),
                                             DecodeField::Optional<CodecString>("name"_sv));
             }
@@ -217,17 +188,11 @@ namespace spargel::codec::model {
         struct CodecGlTF {
             using Type = GlTF;
 
-            using Constructor = base::Constructor<GlTF(
-                const Optional<vector<GlTFAccessor>>&, const GlTFAsset&,
-                const Optional<vector<GlTFBuffer>>&, const Optional<vector<GlTFBufferView>>&,
-                const Optional<vector<GlTFNode>>&, const Optional<GlTFInteger>&,
-                const Optional<vector<GlTFScene>>&)>;
-
             template <DecodeBackend DB>
             static base::Either<GlTF, typename DB::ErrorType> decode(
                 DB& backend, const typename DB::DataType& data) {
                 return decodeMap<GlTF>(
-                    Constructor(), backend, data,  //
+                    base::Constructor<GlTF>{}, backend, data,  //
                     DecodeField::Optional<CodecArray<CodecGlTFAccessor>>("accessors"_sv),
                     DecodeField::Required<CodecGlTFAsset>("asset"_sv),
                     DecodeField::Optional<CodecArray<CodecGlTFBuffer>>("buffers"_sv),

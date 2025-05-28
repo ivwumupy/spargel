@@ -6,16 +6,10 @@
 
 namespace spargel::base {
 
-    /*
-     * An instance of Constructor<T(Args...)> can be used as the constructor of T with the
-     * corresponding argument types
-     */
-    template <typename Signature>
-    struct Constructor;
-
-    template <typename T, typename... Args>
-    struct Constructor<T(Args...)> {
-        T operator()(Args... args) const { return T(args...); }
+    template <typename T>
+    struct Constructor {
+        template <typename... Args>
+        T operator()(Args... args) const { return T(base::forward<Args>(args)...); }
     };
 
     // old design

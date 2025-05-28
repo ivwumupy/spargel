@@ -11,10 +11,6 @@ struct Student {
     bool happy;
     base::vector<f32> scores;
 
-    using Constructor = base::Constructor<Student(const base::string&, const base::string&,
-                                                  const base::Optional<base::string>&, u32, bool,
-                                                  const base::vector<f32>&)>;
-
     struct Codec {
         using Type = Student;
 
@@ -40,7 +36,7 @@ struct Student {
             DB& backend, const typename DB::DataType& data) {
             // clang-format off
             return decodeMap<Student>(
-                Student::Constructor(), backend, data,
+                base::Constructor<Student>{}, backend, data,
                 DecodeField::Default<CodecString>("type"_sv, base::string("normal")),
                 DecodeField::Required<CodecString>("name"_sv),
                 DecodeField::Optional<CodecString>("nickname"_sv),

@@ -79,6 +79,26 @@ namespace {
 
     static_assert(CodecBackend<TestCodecBackend>);
 
+    struct Student {
+        base::string type = base::string("normal");
+        base::string name;
+        base::Optional<base::string> nickname;
+        u32 age;
+        bool happy;
+        base::vector<f32> scores;
+
+        template <EncodeBackend EB>
+        static auto encoder() {
+            return makeRecordEncoder<Student>(
+                makeNormalEncodeField<Student>("type"_sv, StringCodec{}, [](auto& o) { return o.type; }),
+                makeNormalEncodeField<Student>("name"_sv, StringCodec{}, [](auto& o) { return o.name; }),
+                makeOptionalEncodeField<Student>("nickname"_sv, StringCodec{}, [](auto& o) { return o.nickname; }),
+                makeNormalEncodeField<Student>("age"_sv, U32Codec{}, [](auto& o) { return o.age; }),
+                makeNormalEncodeField<Student>("happy"_sv, BooleanCodec{}, [](auto& o) { return o.happy; }),
+                makeNormalEncodeField<Student>("scores"_sv, makeVectorEncoder(F32Codec{}), [](auto& o) { return o.scores; }));
+        }
+    };
+
     using EB = TestEncodeBackend;
     using DB = TestDecodeBackend;
     using B = TestCodecBackend;
@@ -114,6 +134,8 @@ namespace {
 
     static_assert(FieldEncoder<NormalFieldEncoder<NullCodec>>);
     static_assert(FieldEncoder<OptionalFieldEncoder<NullCodec>>);
+
+    static_assert(Encoder4<decltype(Student::encoder<EB>())>);
 
 }  // namespace
 
@@ -229,5 +251,50 @@ TEST(Codec_Decode_Array) {
     {
         auto result = makeVectorCodec(I32Codec{}).decode(decodeBackend, TestData{});
         spargel_check(result.isLeft());
+    }
+}
+
+TEST(Codec_Encode_Record) {
+    auto studentEncoder = Student::encoder<EB>();
+
+    {
+        Student student;
+        student.name = "Alice";
+        student.age = 20;
+        student.happy = true;
+        base::vector<f32> scores;
+        scores.push(98);
+        scores.push(87.5f);
+        scores.push(92);
+        student.scores = base::move(scores);
+
+        auto result = studentEncoder.encode(encodeBackend, student);
+        spargel_check(result.isLeft());
+
+        result = studentEncoder.encode(encodeBackend, student);
+        spargel_check(result.isLeft());
+    }
+}
+
+TEST(Codec_Encode_Record_FailFast) {
+    {
+        int counter = 0;
+        auto result = makeRecordEncoder<int>(
+                          makeNormalEncodeField<int>("boo"_sv, BooleanCodec{}, [&](int n) {counter++; return true; }),
+                          makeNormalEncodeField<int>("i32"_sv, I32Codec{}, [&](int n) {counter++; return 0; }),
+                          makeNormalEncodeField<int>("string"_sv, StringCodec{}, [&](int n) {counter++; return "string"_sv; }))
+                          .encode(encodeBackend, 0);
+        spargel_check(result.isLeft());
+        spargel_check(counter == 3);
+    }
+    {
+        int counter = 0;
+        auto result = makeRecordEncoder<int>(
+                          makeNormalEncodeField<int>("boo"_sv, BooleanCodec{}, [&](int n) {counter++; return true; }),
+                          makeNormalEncodeField<int>("i32"_sv, ErrorEncoder<i32>("error"_sv), [&](int n) {counter++; return 0; }),
+                          makeNormalEncodeField<int>("string"_sv, StringCodec{}, [&](int n) {counter++; return "string"_sv; }))
+                          .encode(encodeBackend, 0);
+        spargel_check(result.isRight());
+        spargel_check(counter == 2);
     }
 }

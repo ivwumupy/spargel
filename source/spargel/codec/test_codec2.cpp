@@ -92,10 +92,6 @@ namespace {
         bool happy;
         base::vector<f32> scores;
 
-        using Constructor = base::Constructor<Student(const base::string&, const base::string&,
-                                                      const base::Optional<base::string>&, u32, bool,
-                                                      const base::vector<f32>&)>;
-
         template <EncodeBackend EB>
         static auto encoder() {
             return makeRecordEncoder<EB, Student>(
@@ -110,7 +106,7 @@ namespace {
         template <DecodeBackend DB>
         static auto decoder() {
             return makeRecordDecoder<DB, Student>(
-                Constructor(),
+                base::Constructor<Student>{},
                 StringDecoder<DB>().defaultFieldOf("type"_sv, base::string("normal")),
                 StringDecoder<DB>().fieldOf("name"_sv),
                 StringDecoder<DB>().optionalFieldOf("nickname"_sv),
@@ -122,7 +118,7 @@ namespace {
         template <CodecBackend B>
         static auto codec() {
             return makeRecordCodec<B, Student>(
-                Constructor(),
+                base::Constructor<Student>{},
                 StringCodec<B>().defaultFieldOf("type"_sv, base::string("normal")).template forGetter<Student>([](const Student& student) { return student.type; }),
                 StringCodec<B>().fieldOf("name"_sv).template forGetter<Student>([](const Student& student) { return student.name; }),
                 StringCodec<B>().optionalFieldOf("nickname"_sv).template forGetter<Student>([](const Student& student) { return student.nickname; }),

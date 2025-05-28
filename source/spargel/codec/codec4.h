@@ -2,6 +2,9 @@
 
 #include <spargel/codec/codec.h>
 
+// FIXME
+#include <tuple>
+
 namespace spargel::codec {
 
     template <typename B /* codec backend type */>
@@ -85,6 +88,7 @@ namespace spargel::codec {
         base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, base::nullptr_t ptr = nullptr) {
             return backend.makeNull();
         }
+
         template <DecodeBackend DB>
         base::Either<base::nullptr_t, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
             auto result = backend.getNull(data);
@@ -220,8 +224,7 @@ namespace spargel::codec {
     public:
         using TargetType = base::vector<T>;
 
-        VectorEncoder(const E& encoder) : _encoder(encoder) {}
-        VectorEncoder(E&& encoder) : _encoder(base::move(encoder)) {}
+        VectorEncoder(E&& encoder) : _encoder(base::forward<E>(encoder)) {}
 
         template <EncodeBackend EB>
         base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const base::vector<T>& v) {
@@ -233,9 +236,7 @@ namespace spargel::codec {
     };
 
     template <Encoder4 E>
-    VectorEncoder<E> makeVectorEncoder(const E& encoder) { return VectorEncoder(encoder); }
-    template <Encoder4 E>
-    VectorEncoder<E> makeVectorEncoder(E&& encoder) { return VectorEncoder(base::move(encoder)); }
+    VectorEncoder<E> makeVectorEncoder(E&& encoder) { return VectorEncoder<base::remove_reference<E>>(base::forward<E>(encoder)); }
 
     template <Decoder4 D>
     class VectorDecoder {
@@ -244,8 +245,7 @@ namespace spargel::codec {
     public:
         using TargetType = base::vector<T>;
 
-        VectorDecoder(const D& decoder) : _decoder(decoder) {}
-        VectorDecoder(D&& decoder) : _decoder(base::move(decoder)) {}
+        VectorDecoder(D&& decoder) : _decoder(base::forward<D>(decoder)) {}
 
         template <DecodeBackend DB>
         base::Either<base::vector<T>, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
@@ -257,9 +257,7 @@ namespace spargel::codec {
     };
 
     template <Decoder4 D>
-    VectorDecoder<D> makeVectorDecoder(const D& decoder) { return VectorDecoder(decoder); }
-    template <Decoder4 D>
-    VectorDecoder<D> makeVectorDecoder(D&& decoder) { return VectorDecoder(base::move(decoder)); }
+    VectorDecoder<D> makeVectorDecoder(D&& decoder) { return VectorDecoder<base::remove_reference<D>>(base::forward<D>(decoder)); }
 
     template <Codec C>
     class VectorCodec {
@@ -268,8 +266,7 @@ namespace spargel::codec {
     public:
         using TargetType = base::vector<T>;
 
-        VectorCodec(const C& codec) : _codec(codec) {}
-        VectorCodec(C&& codec) : _codec(base::move(codec)) {}
+        VectorCodec(C&& codec) : _codec(base::forward<C>(codec)) {}
 
         template <EncodeBackend EB>
         base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const base::vector<T>& v) {
@@ -286,9 +283,7 @@ namespace spargel::codec {
     };
 
     template <Codec C>
-    VectorCodec<C> makeVectorCodec(const C& codec) { return VectorCodec(codec); }
-    template <Codec C>
-    VectorCodec<C> makeVectorCodec(C&& codec) { return VectorCodec(base::move(codec)); }
+    VectorCodec<C> makeVectorCodec(C&& codec) { return VectorCodec<base::remove_reference<C>>(base::forward<C>(codec)); }
 
     template <typename B>
     concept RecordBuilder = requires {
@@ -349,11 +344,11 @@ namespace spargel::codec {
     public:
         using TargetType = T;
 
-        NormalFieldEncoder(base::string_view name, const E& encoder) : _name(name), _encoder(encoder) {}
+        NormalFieldEncoder(base::string_view name, E&& encoder) : _name(name), _encoder(base::forward<E>(encoder)) {}
 
         template <EncodeBackend EB, RecordBuilder RB>
         base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const T& object) {
-            auto result = _encoder->encode(backend, object);
+            auto result = _encoder.encode(backend, object);
             if (result.isLeft()) {
                 builder.add(_name, base::move(result.left()));
                 return base::nullopt;
@@ -372,14 +367,14 @@ namespace spargel::codec {
         using T = E::TargetType;
 
     public:
-        using TargetType = T;
+        using TargetType = base::Optional<T>;
 
-        OptionalFieldEncoder(base::string_view name, const E& encoder) : _name(name), _encoder(encoder) {}
+        OptionalFieldEncoder(base::string_view name, E&& encoder) : _name(name), _encoder(base::forward<E>(encoder)) {}
 
         template <EncodeBackend EB, RecordBuilder RB>
-        base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const T& object) {
+        base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const base::Optional<T>& object) {
             if (object.hasValue()) {
-                auto result = _encoder->encode(backend, object.value());
+                auto result = _encoder.encode(backend, object.value());
                 if (result.isRight()) {
                     return base::makeOptional<typename EB::ErrorType>(base::move(result.right()));
                 } else {
@@ -395,5 +390,70 @@ namespace spargel::codec {
         base::string _name;
         E _encoder;
     };
+
+    template <FieldEncoder FE, typename F /* S -> T */>
+    struct RecordEncoderBuilder {
+        FE field_encoder;
+        F getter;
+    };
+
+    template <typename S, Encoder4 E, typename F /* S -> E::TargetType */>
+    RecordEncoderBuilder<NormalFieldEncoder<E>, F> makeNormalEncodeField(base::string_view name, E&& encoder, F&& getter) {
+        return {.field_encoder = NormalFieldEncoder<base::remove_reference<E>>(name, base::forward<E>(encoder)), .getter = getter};
+    }
+
+    template <typename S, Encoder4 E, typename F /* S -> E::TargetType */>
+    RecordEncoderBuilder<OptionalFieldEncoder<E>, F> makeOptionalEncodeField(base::string_view name, E&& encoder, F&& getter) {
+        return {.field_encoder = OptionalFieldEncoder<base::remove_reference<E>>(name, base::forward<E>(encoder)), .getter = getter};
+    }
+
+    template <typename S, typename... Builders>
+    class RecordEncoder {
+    public:
+        using TargetType = S;
+
+        RecordEncoder(const Builders&... builders) : _builders(builders...) {}
+        RecordEncoder(Builders&&... builders) : _builders(base::move(builders)...) {}
+
+        template <EncodeBackend EB>
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const S& object) {
+            using DataType = EB::DataType;
+            using ErrorType = EB::ErrorType;
+
+            return std::apply(
+                [&](Builders&... builders) -> base::Either<DataType, ErrorType> {
+                    RecordBuilderImpl<EB> record_builder;
+                    base::Optional<ErrorType> error;
+
+                    // magic fold expression that allows fast failing
+                    bool success = ([&]() {
+                        auto& builder = builders;
+                        auto result = builder.field_encoder.encode(backend, record_builder, builder.getter(object));
+                        if (result.hasValue()) {
+                            error = base::makeOptional<ErrorType>(base::move(result.value()));
+                            // This will cause the execution to fail fast, preventing encoding further entries.
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    }() && ...);
+
+                    if (success) {
+                        return record_builder.build(backend);
+                    } else {
+                        return base::Right(base::move(error.value()));
+                    }
+                },
+                _builders);
+        }
+
+    private:
+        std::tuple<Builders...> _builders;
+    };
+
+    template <typename S, typename... Builders>
+    auto makeRecordEncoder(Builders&&... builders) {
+        return RecordEncoder<S, base::remove_reference<Builders>...>(base::forward<Builders>(builders)...);
+    }
 
 }  // namespace spargel::codec

@@ -88,11 +88,7 @@ namespace spargel::codec::model {
         };
 
         auto glTFAccessorDecoder = makeRecordDecoder<DB, GlTFAccessor>(
-            base::Constructor<GlTFAccessor(
-                const Optional<GlTFInteger>&, const Optional<GlTFInteger>&, const GlTFInteger&,
-                const Optional<GlTFBoolean>&, const GlTFInteger&, const GlTFString&,
-                const Optional<vector<GlTFNumber>>&, const Optional<vector<GlTFNumber>>&,
-                const Optional<GlTFString>)>(),
+            base::Constructor<GlTFAccessor>{},
             I32Decoder<DB>().optionalFieldOf("bufferView"_sv),
             I32Decoder<DB>().optionalFieldOf("byteOffset"_sv),
             I32Decoder<DB>().fieldOf("componentType"_sv),
@@ -104,26 +100,20 @@ namespace spargel::codec::model {
             StringDecoder<DB>().optionalFieldOf("name"_sv));
 
         auto glTFAssetDecoder = makeRecordDecoder<DB, GlTFAsset>(
-            base::Constructor<GlTFAsset(
-                const Optional<GlTFString>&, const Optional<GlTFString>&, const GlTFString&,
-                const Optional<GlTFString>&)>(),
+            base::Constructor<GlTFAsset>{},
             StringDecoder<DB>().optionalFieldOf("copyright"_sv),
             StringDecoder<DB>().optionalFieldOf("generator"_sv),
             StringDecoder<DB>().fieldOf("version"_sv),
             StringDecoder<DB>().optionalFieldOf("minVersion"_sv));
 
         auto glTFBufferDecoder = makeRecordDecoder<DB, GlTFBuffer>(
-            base::Constructor<GlTFBuffer(
-                const Optional<GlTFString>&, GlTFInteger, const Optional<GlTFString>&)>(),
+            base::Constructor<GlTFBuffer>{},
             StringDecoder<DB>().optionalFieldOf("uri"_sv),
             I32Decoder<DB>().fieldOf("byteLength"_sv),
             StringDecoder<DB>().optionalFieldOf("name"_sv));
 
         auto glTFBufferViewDecoder = makeRecordDecoder<DB, GlTFBufferView>(
-            base::Constructor<GlTFBufferView(
-                GlTFInteger, const Optional<GlTFInteger>&, GlTFInteger,
-                const Optional<GlTFInteger>&, const Optional<GlTFInteger>&,
-                const Optional<GlTFString>&)>(),
+            base::Constructor<GlTFBufferView>{},
             I32Decoder<DB>().fieldOf("buffer"_sv),
             I32Decoder<DB>().optionalFieldOf("byteOffset"_sv),
             I32Decoder<DB>().fieldOf("byteLength"_sv),
@@ -132,12 +122,7 @@ namespace spargel::codec::model {
             StringDecoder<DB>().optionalFieldOf("name"_sv));
 
         auto glTFNodeDecoder = makeRecordDecoder<DB, GlTFNode>(
-            base::Constructor<GlTFNode(
-                const Optional<GlTFInteger>&, const Optional<vector<GlTFInteger>>&,
-                const Optional<GlTFInteger>&, const Optional<Matrix4x4f>&,
-                const Optional<GlTFInteger>&, const Optional<Vector4f>&, const Optional<Vector3f>&,
-                const Optional<Vector3f>&, const Optional<vector<GlTFNumber>>&,
-                const Optional<GlTFString>&)>(),
+            base::Constructor<GlTFNode>{},
             I32Decoder<DB>().optionalFieldOf("camera"_sv),
             I32Decoder<DB>().arrayOf().optionalFieldOf("children"_sv),
             I32Decoder<DB>().optionalFieldOf("skin"_sv),
@@ -150,17 +135,12 @@ namespace spargel::codec::model {
             StringDecoder<DB>().optionalFieldOf("name"_sv));
 
         auto glTFSceneDecoder = makeRecordDecoder<DB, GlTFScene>(
-            base::Constructor<GlTFScene(const Optional<vector<GlTFInteger>>&,
-                                        const Optional<GlTFString>&)>(),
+            base::Constructor<GlTFScene>{},
             I32Decoder<DB>().arrayOf().optionalFieldOf("nodes"_sv),
             StringDecoder<DB>().optionalFieldOf("name"_sv));
 
         auto glTFDecoder = makeRecordDecoder<DB, GlTF>(
-            base::Constructor<GlTF(
-                const Optional<vector<GlTFAccessor>>&, const GlTFAsset&,
-                const Optional<vector<GlTFBuffer>>&, const Optional<vector<GlTFBufferView>>&,
-                const Optional<vector<GlTFNode>>&, const Optional<GlTFInteger>&,
-                const Optional<vector<GlTFScene>>&)>(),
+            base::Constructor<GlTF>{},
             glTFAccessorDecoder.arrayOf().optionalFieldOf("accessors"_sv),
             glTFAssetDecoder.fieldOf("asset"_sv),
             glTFBufferDecoder.arrayOf().optionalFieldOf("buffers"_sv),

@@ -17,12 +17,12 @@ struct A {
 
 TEST(Constructor) {
     {
-        Constructor<int(int)> ctor;
+        Constructor<int> ctor;
         auto a = ctor(123);
         spargel_check(a == 123);
     }
     {
-        Constructor<A(int, double)> ctor;
+        Constructor<A> ctor;
         auto a = ctor(123, 456.789);
         spargel_check(a.a == 123);
         spargel_check(a.b == 456.789);
@@ -53,7 +53,7 @@ TEST(Curry_Arg_Reference) {
 
 TEST(Constructor_Curry) {
     {
-        auto a = curry(Constructor<A(int, double)>(), 123)(456.789);
+        auto a = curry(Constructor<A>(), 123)(456.789);
         spargel_check(a.a == 123);
         spargel_check(a.b == 456.789);
     }

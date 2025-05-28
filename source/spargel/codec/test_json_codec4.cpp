@@ -8,8 +8,31 @@ namespace {
 
     static_assert(CodecBackend<JsonCodecBackend>);
 
+    using EB = JsonEncodeBackend;
+    using DB = JsonDecodeBackend;
+
     auto encodeBackend = JsonEncodeBackend();
     auto decodeBackend = JsonDecodeBackend();
+
+    struct Student {
+        base::string type = base::string("normal");
+        base::string name;
+        base::Optional<base::string> nickname;
+        u32 age;
+        bool happy;
+        base::vector<f32> scores;
+
+        template <EncodeBackend EB>
+        static auto encoder() {
+            return makeRecordEncoder<Student>(
+                makeNormalEncodeField<Student>("type"_sv, StringCodec{}, [](auto& o) { return o.type; }),
+                makeNormalEncodeField<Student>("name"_sv, StringCodec{}, [](auto& o) { return o.name; }),
+                makeOptionalEncodeField<Student>("nickname"_sv, StringCodec{}, [](auto& o) { return o.nickname; }),
+                makeNormalEncodeField<Student>("age"_sv, U32Codec{}, [](auto& o) { return o.age; }),
+                makeNormalEncodeField<Student>("happy"_sv, BooleanCodec{}, [](auto& o) { return o.happy; }),
+                makeNormalEncodeField<Student>("scores"_sv, makeVectorEncoder(F32Codec{}), [](auto& o) { return o.scores; }));
+        }
+    };
 
 }  // namespace
 
@@ -153,5 +176,38 @@ TEST(Json_Codec_Decode_Array) {
         spargel_check(array[0][1] == base::string("123"));
         spargel_check(array[1][0] == base::string("XYZ"));
         spargel_check(array[1][1] == base::string("789"));
+    }
+}
+
+TEST(Json_Codec_Encode_Record) {
+    auto studentCodec = Student::encoder<EB>();
+    {
+        Student student;
+        student.name = "Alice";
+        student.age = 20;
+        student.happy = true;
+        base::vector<f32> scores;
+        scores.push(98);
+        scores.push(87.5f);
+        scores.push(92);
+        student.scores = base::move(scores);
+
+        auto result = studentCodec.encode(encodeBackend, base::move(student));
+        spargel_check(result.isLeft());
+
+        auto& object = result.left().object;
+        spargel_check(isMemberEqual(object, JsonString("type"), JsonString("normal")));
+        spargel_check(isMemberEqual(object, JsonString("name"), JsonString("Alice")));
+        auto* p_nickname = object.members.get(JsonString("nickname"));
+        spargel_check(p_nickname == nullptr);
+        spargel_check(isMemberEqual(object, JsonString("age"), JsonNumber(20)));
+        spargel_check(isMemberEqual(object, JsonString("happy"), JsonBoolean(true)));
+        auto* p_array = object.members.get(JsonString("scores"));
+        spargel_check(p_array != nullptr && p_array->type == JsonValueType::array);
+        auto& array = p_array->array.elements;
+        spargel_check(array.count() == 3);
+        spargel_check(isEqual(array[0], JsonNumber(98)));
+        spargel_check(isEqual(array[1], JsonNumber(87.5)));
+        spargel_check(isEqual(array[2], JsonNumber(92)));
     }
 }
