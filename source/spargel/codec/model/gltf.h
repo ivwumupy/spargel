@@ -234,7 +234,11 @@ namespace spargel::codec::model {
         Optional<vector<GlTFScene>> scenes;
     };
 
-    class GlTFDecodeError : public CodecError {};
+    class GlTFDecodeError : public CodecError {
+    public:
+        GlTFDecodeError(const base::string& message) : CodecError(message) {}
+        GlTFDecodeError(base::string_view message) : CodecError(message) {}
+    };
 
     base::Either<GlTF, GlTFDecodeError> parseGlTF(const char* text, usize len);
 

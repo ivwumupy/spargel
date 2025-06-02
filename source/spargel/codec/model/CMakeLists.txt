@@ -14,6 +14,14 @@ spargel_add_library(
         codec_json
 )
 
+spargel_add_library(
+    NAME codec_gltf4
+    PRIVATE
+        gltf4.cpp
+    DEPS
+        codec_json
+)
+
 spargel_add_executable(
     NAME summary_gltf
     PRIVATE
@@ -29,5 +37,14 @@ spargel_add_executable(
         summary_gltf.cpp
     DEPS
         codec_gltf2
+        resource
+)
+
+spargel_add_executable(
+    NAME summary_gltf4
+    PRIVATE
+        summary_gltf.cpp
+    DEPS
+        codec_gltf4
         resource
 )
