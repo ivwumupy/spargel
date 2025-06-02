@@ -8,12 +8,6 @@ namespace {
 
     static_assert(CodecBackend<JsonCodecBackend>);
 
-    using EB = JsonEncodeBackend;
-    using DB = JsonDecodeBackend;
-
-    auto encodeBackend = JsonEncodeBackend();
-    auto decodeBackend = JsonDecodeBackend();
-
     struct Student {
         base::string type = base::string("normal");
         base::string name;
@@ -22,29 +16,25 @@ namespace {
         bool happy;
         base::vector<f32> scores;
 
-        template <EncodeBackend EB>
-        static auto encoder() {
-            return makeRecordEncoder<Student>(
-                makeNormalEncodeField<Student>("type"_sv, StringCodec{}, [](auto& o) { return o.type; }),
-                makeNormalEncodeField<Student>("name"_sv, StringCodec{}, [](auto& o) { return o.name; }),
-                makeOptionalEncodeField<Student>("nickname"_sv, StringCodec{}, [](auto& o) { return o.nickname; }),
-                makeNormalEncodeField<Student>("age"_sv, U32Codec{}, [](auto& o) { return o.age; }),
-                makeNormalEncodeField<Student>("happy"_sv, BooleanCodec{}, [](auto& o) { return o.happy; }),
-                makeNormalEncodeField<Student>("scores"_sv, makeVectorEncoder(F32Codec{}), [](auto& o) { return o.scores; }));
-        }
-
-        template <DecodeBackend DB>
-        static auto decoder() {
-            return makeRecordDecoder<Student>(
+        static auto codec() {
+            return makeRecordCodec<Student>(
                 base::Constructor<Student>{},
-                makeDefaultDecodeField("type"_sv, StringCodec{}, base::string("normal")),
-                makeNormalDecodeField("name"_sv, StringCodec{}),
-                makeOptionalDecodeField("nickname"_sv, StringCodec{}),
-                makeNormalDecodeField("age"_sv, U32Codec{}),
-                makeNormalDecodeField("happy"_sv, BooleanCodec{}),
-                makeNormalDecodeField("scores"_sv, makeVectorDecoder(F32Codec{})));
+                makeDefaultField<Student>("type"_sv, StringCodec{}, base::string("normal"), [](auto& o) { return o.type; }),
+                makeNormalField<Student>("name"_sv, StringCodec{}, [](auto& o) { return o.name; }),
+                makeOptionalField<Student>("nickname"_sv, StringCodec{}, [](auto& o) { return o.nickname; }),
+                makeNormalField<Student>("age"_sv, U32Codec{}, [](auto& o) { return o.age; }),
+                makeNormalField<Student>("happy"_sv, BooleanCodec{}, [](auto& o) { return o.happy; }),
+                makeNormalField<Student>("scores"_sv, makeVectorCodec(F32Codec{}), [](auto& o) { return o.scores; }));
         }
     };
+
+    using EB = JsonEncodeBackend;
+    using DB = JsonDecodeBackend;
+
+    auto encodeBackend = JsonEncodeBackend();
+    auto decodeBackend = JsonDecodeBackend();
+
+    auto studentCodec = Student::codec();
 
 }  // namespace
 
@@ -192,7 +182,6 @@ TEST(Json_Codec_Decode_Array) {
 }
 
 TEST(Json_Codec_Encode_Record) {
-    auto studentCodec = Student::encoder<EB>();
     {
         Student student;
         student.name = "Alice";
@@ -225,8 +214,6 @@ TEST(Json_Codec_Encode_Record) {
 }
 
 TEST(Json_Codec_Decode_Record) {
-    auto studentCodec = Student::decoder<DB>();
-
     {
         const auto str =
             "{\n"
@@ -281,7 +268,7 @@ TEST(Json_Codec_Decode_Record) {
         auto result_json = parseJson(str);
         spargel_check(result_json.isLeft());
 
-        auto result = makeVectorDecoder(studentCodec).decode(decodeBackend, base::move(result_json.left()));
+        auto result = makeVectorCodec(studentCodec).decode(decodeBackend, base::move(result_json.left()));
         spargel_check(result.isLeft());
 
         auto& students = result.left();
