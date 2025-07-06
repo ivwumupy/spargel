@@ -483,7 +483,7 @@ namespace spargel::ui {
             r.width =
                 CTRunGetTypographicBounds(run, CFRangeMake(0, count), NULL, NULL, NULL) * scale;
 
-            result.runs.push(base::move(r));
+            result.runs.emplace(base::move(r));
         }
 
         CFRelease(line);

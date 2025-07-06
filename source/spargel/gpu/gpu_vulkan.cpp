@@ -152,19 +152,19 @@ namespace spargel::gpu {
         }
 
         InstanceBuilder& addLayer(char const* name) {
-            _want_layers.push(name, true, nullptr);
+            _want_layers.emplace(name, true, nullptr);
             return *this;
         }
         InstanceBuilder& addLayer(char const* name, bool required, bool* enabled) {
-            _want_layers.push(name, required, enabled);
+            _want_layers.emplace(name, required, enabled);
             return *this;
         }
         InstanceBuilder& addExtension(char const* name) {
-            _want_exts.push(name, false, nullptr);
+            _want_exts.emplace(name, false, nullptr);
             return *this;
         }
         InstanceBuilder& addExtension(char const* name, bool required, bool* enabled) {
-            _want_exts.push(name, required, enabled);
+            _want_exts.emplace(name, required, enabled);
             return *this;
         }
 
@@ -224,7 +224,7 @@ namespace spargel::gpu {
                     }
                 }
                 if (found) {
-                    _use_layers.push(req.name);
+                    _use_layers.emplace(req.name);
                     spargel_log_info("using layer %s", req.name);
                 } else if (req.required) {
                     spargel_log_fatal("layer %s is required but cannot be found", req.name);
@@ -247,7 +247,7 @@ namespace spargel::gpu {
                     }
                 }
                 if (found) {
-                    _use_exts.push(req.name);
+                    _use_exts.emplace(req.name);
                     spargel_log_info("using extension %s", req.name);
                 } else if (req.required) {
                     spargel_log_fatal("extension %s is required but cannot be found", req.name);
@@ -410,11 +410,11 @@ namespace spargel::gpu {
         }
 
         DeviceBuilder& addExtension(char const* name) {
-            _want_exts.push(name, false, nullptr);
+            _want_exts.emplace(name, false, nullptr);
             return *this;
         }
         DeviceBuilder& addExtension(char const* name, bool required, bool* enabled) {
-            _want_exts.push(name, required, enabled);
+            _want_exts.emplace(name, required, enabled);
             return *this;
         }
 
@@ -446,7 +446,7 @@ namespace spargel::gpu {
                     }
                 }
                 if (found) {
-                    _use_exts.push(req.name);
+                    _use_exts.emplace(req.name);
                     spargel_log_info("using extension %s", req.name);
                 } else if (req.required) {
                     spargel_log_fatal("extension %s is required but cannot be found", req.name);
@@ -1076,7 +1076,7 @@ namespace spargel::gpu {
         for (usize i = 0; i < groups.count(); i++) {
             auto const& group = groups[i];
             auto id = group.location.vulkan.set_id;
-            _groups.push(i, id);
+            _groups.emplace(i, id);
             if (id > max_loc) {
                 max_loc = id;
             }
@@ -1094,12 +1094,12 @@ namespace spargel::gpu {
             bindings.clear();
             for (usize j = 0; j < group.arguments.count(); j++) {
                 auto const& arg = group.arguments[j];
-                bindings.push(/* binding = */ arg.id,
+                bindings.emplace(/* binding = */ arg.id,
                               /* descriptorType = */ translateBindEntryKind(arg.kind),
                               /* descriptorCount = */ 1,
                               /* stageFlags = */ VK_SHADER_STAGE_COMPUTE_BIT,
                               /* pImmutableSamplers = */ nullptr);
-                _args.push(i, arg.id, arg.kind);
+                _args.emplace(i, arg.id, arg.kind);
             }
 
             info.bindingCount = (u32)bindings.count();

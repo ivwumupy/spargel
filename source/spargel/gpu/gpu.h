@@ -635,7 +635,7 @@ namespace spargel::gpu {
     class BindGroupLayoutBuilder {
     public:
         void setStage(ShaderStage stage) { _stage = stage; }
-        void addEntry(u32 binding, BindEntryKind kind) { _entries.push(binding, kind); }
+        void addEntry(u32 binding, BindEntryKind kind) { _entries.emplace(binding, kind); }
 
         ObjectPtr<BindGroupLayout> build(Device* _device) {
             return _device->createBindGroupLayout(_stage, _entries.toSpan());
@@ -657,16 +657,16 @@ namespace spargel::gpu {
             _desc.fragment_shader.library = library;
             _desc.fragment_shader.entry = entry;
         }
-        void addVertexBuffer(usize stride) { _vertex_buffers.push(stride, VertexStepMode::vertex); }
+        void addVertexBuffer(usize stride) { _vertex_buffers.emplace(stride, VertexStepMode::vertex); }
         void addVertexBuffer(usize stride, VertexStepMode step_mode) {
-            _vertex_buffers.push(stride, step_mode);
+            _vertex_buffers.emplace(stride, step_mode);
         }
         void addVertexAttribute(VertexAttributeFormat format, u32 location, u32 buffer,
                                 u32 offset) {
-            _vertex_attributes.push(buffer, location, format, offset);
+            _vertex_attributes.emplace(buffer, location, format, offset);
         }
         void addColorAttachment(TextureFormat format, bool enable_blend) {
-            _color_attachments.push(format, enable_blend);
+            _color_attachments.emplace(format, enable_blend);
         }
 
         ObjectPtr<RenderPipeline> build(Device* device) {

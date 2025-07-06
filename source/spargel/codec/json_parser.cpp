@@ -121,19 +121,19 @@ namespace spargel::codec {
 
         void appendUtf8(base::vector<char>& chars, u32 code) {
             if (code <= 0x7f) {
-                chars.push(code);
+                chars.emplace(code);
             } else if (code <= 0x7ff) {
-                chars.push(0xc0 | (code >> 6));
-                chars.push(0x80 | (code & 0x3f));
+                chars.emplace(0xc0 | (code >> 6));
+                chars.emplace(0x80 | (code & 0x3f));
             } else if (code <= 0xffff) {
-                chars.push(0xe0 | (code >> 12));
-                chars.push(0x80 | ((code >> 6) & 0x3f));
-                chars.push(0x80 | (code & 0x3f));
+                chars.emplace(0xe0 | (code >> 12));
+                chars.emplace(0x80 | ((code >> 6) & 0x3f));
+                chars.emplace(0x80 | (code & 0x3f));
             } else if (code <= 0x10ffff) {
-                chars.push(0xf0 | (code >> 18));
-                chars.push(0x80 | ((code >> 12) & 0x3f));
-                chars.push(0x80 | ((code >> 6) & 0x3f));
-                chars.push(0x80 | (code & 0x3f));
+                chars.emplace(0xf0 | (code >> 18));
+                chars.emplace(0x80 | ((code >> 12) & 0x3f));
+                chars.emplace(0x80 | ((code >> 6) & 0x3f));
+                chars.emplace(0x80 | (code & 0x3f));
             }
         }
 
@@ -343,7 +343,7 @@ namespace spargel::codec {
                 char ch = cursorGetChar(cursor);
 
                 if (isGood(ch)) {
-                    chars.push(ch);
+                    chars.emplace(ch);
                     continue;
                 }
 
@@ -362,22 +362,22 @@ namespace spargel::codec {
                     case '\"':
                     case '\\':
                     case '/':  // why escape this?
-                        chars.push(ch);
+                        chars.emplace(ch);
                         break;
                     case 'b':
-                        chars.push('\b');
+                        chars.emplace('\b');
                         break;
                     case 'f':
-                        chars.push('\f');
+                        chars.emplace('\f');
                         break;
                     case 'n':
-                        chars.push('\n');
+                        chars.emplace('\n');
                         break;
                     case 'r':
-                        chars.push('\r');
+                        chars.emplace('\r');
                         break;
                     case 't':
-                        chars.push('\t');
+                        chars.emplace('\t');
                         break;
                     case 'u': {
                         // TODO: unicode
@@ -405,7 +405,7 @@ namespace spargel::codec {
                 } else if ((u8)ch >= 0x20) {
                     // TODO: unicode
                     // no problem for UTF-8
-                    chars.push(ch);
+                    chars.emplace(ch);
                 } else {
                     return Right(JsonParseError(string("invalid character 0x") + char2hex(ch)));
                 }
@@ -696,7 +696,7 @@ namespace spargel::codec {
                 if (result.isRight())
                     return Right(base::move(result.right()));
 
-                elements.push(base::move(result.left()));
+                elements.emplace(base::move(result.left()));
 
                 // ','
                 if (!cursorTryEatChar(cursor, ','))

@@ -40,25 +40,25 @@ struct prepared_graph {
 
 int main() {
     prepared_graph graph;
-    graph.nodes.push(prepared_graph::node_kind::texture, 0, "surface.0"_sv);
-    graph.nodes.push(prepared_graph::node_kind::render, 0, "draw_triangle"_sv);
-    graph.nodes.push(prepared_graph::node_kind::texture, 1, "surface.1"_sv);
-    graph.nodes.push(prepared_graph::node_kind::present, 0, "present"_sv);
-    graph.nodes.push(prepared_graph::node_kind::render, 1, "draw_debug"_sv);
-    graph.nodes.push(prepared_graph::node_kind::texture, 2, "surface.2"_sv);
+    graph.nodes.emplace(prepared_graph::node_kind::texture, 0, "surface.0"_sv);
+    graph.nodes.emplace(prepared_graph::node_kind::render, 0, "draw_triangle"_sv);
+    graph.nodes.emplace(prepared_graph::node_kind::texture, 1, "surface.1"_sv);
+    graph.nodes.emplace(prepared_graph::node_kind::present, 0, "present"_sv);
+    graph.nodes.emplace(prepared_graph::node_kind::render, 1, "draw_debug"_sv);
+    graph.nodes.emplace(prepared_graph::node_kind::texture, 2, "surface.2"_sv);
     // the <<draw_triangle>> node
-    graph.nodes[0].outputs.push(1);
-    graph.nodes[1].inputs.push(0);
-    graph.nodes[1].outputs.push(2);
-    graph.nodes[2].inputs.push(1);
+    graph.nodes[0].outputs.emplace(1);
+    graph.nodes[1].inputs.emplace(0);
+    graph.nodes[1].outputs.emplace(2);
+    graph.nodes[2].inputs.emplace(1);
     // the <<present>> node
-    graph.nodes[2].outputs.push(3);
-    graph.nodes[3].inputs.push(2);
+    graph.nodes[2].outputs.emplace(3);
+    graph.nodes[3].inputs.emplace(2);
     // the <<debug_draw>> node
-    graph.nodes[2].outputs.push(4);
-    graph.nodes[4].inputs.push(2);
-    graph.nodes[4].outputs.push(5);
-    graph.nodes[5].inputs.push(4);
+    graph.nodes[2].outputs.emplace(4);
+    graph.nodes[4].inputs.emplace(2);
+    graph.nodes[4].outputs.emplace(5);
+    graph.nodes[5].inputs.emplace(4);
 
     // <<present>> is what we need!
     graph.nodes[3].target = true;
@@ -88,7 +88,7 @@ int main() {
         auto& node = graph.nodes[i];
         if (node.refcount == 0 && !node.target) {
             node.culled = true;
-            tmp.push(i);
+            tmp.emplace(i);
             cull_count++;
             printf("    culled node <<%s>>\n", node.name.data());
         }
@@ -102,7 +102,7 @@ int main() {
             source.refcount--;
             if (source.refcount == 0) {
                 source.culled = true;
-                tmp.push(j);
+                tmp.emplace(j);
                 cull_count++;
                 printf("    culled node <<%s>>\n", source.name.data());
             }
@@ -128,17 +128,17 @@ int main() {
 
     for (usize i = 0; i < graph.nodes.count(); i++) {
         if (graph.nodes[i].target) {
-            tmp.push(i);
+            tmp.emplace(i);
         }
     }
     base::vector<u32> result;
     while (!tmp.empty()) {
         auto i = tmp[tmp.count() - 1];
         tmp.pop();
-        result.push(i);
+        result.emplace(i);
         auto& node = graph.nodes[i];
         for (usize j = 0; j < node.inputs.count(); j++) {
-            tmp.push(node.inputs[j]);
+            tmp.emplace(node.inputs[j]);
         }
     }
 

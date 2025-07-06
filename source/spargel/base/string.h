@@ -264,7 +264,7 @@ namespace spargel::base {
             // }
 
             // unsafe
-            void appendByte(Byte b) { _bytes.push((char)b); }
+            void appendByte(Byte b) { _bytes.emplace((char)b); }
 
             Allocator* getAllocator() { return _alloc; }
 

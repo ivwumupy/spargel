@@ -186,7 +186,7 @@ namespace spargel::ecs {
         for (ssize i = 0; i < desc->entity_count; i++) {
             ssize entity = world->entities.count();
             view->entities[i] = entity;
-            world->entities.push(archetype_id, offset + i);
+            world->entities.emplace(archetype_id, offset + i);
         }
 
         for (ssize i = 0; i < desc->component_count; i++) {

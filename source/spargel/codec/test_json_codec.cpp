@@ -167,9 +167,9 @@ TEST(JSON_Codec_Encode_Array) {
 
     {
         base::vector<base::string> v;
-        v.push("ABC");
-        v.push("123");
-        v.push("!@#$");
+        v.emplace("ABC");
+        v.emplace("123");
+        v.emplace("!@#$");
         auto result = CodecArray<CodecString>::encode(backend, base::move(v));
         spargel_check(result.isLeft() && result.left().type == JsonValueType::array);
 
@@ -182,13 +182,13 @@ TEST(JSON_Codec_Encode_Array) {
     {
         base::vector<base::vector<i32>> v;
         base::vector<i32> v1;
-        v1.push(1);
-        v1.push(2);
-        v.push(base::move(v1));
+        v1.emplace(1);
+        v1.emplace(2);
+        v.emplace(base::move(v1));
         base::vector<i32> v2;
-        v2.push(-3);
-        v2.push(-4);
-        v.push(base::move(v2));
+        v2.emplace(-3);
+        v2.emplace(-4);
+        v.emplace(base::move(v2));
         auto result = CodecArray<CodecArray<CodecI32>>::encode(backend, base::move(v));
         spargel_check(result.isLeft() && result.left().type == JsonValueType::array);
 
@@ -250,9 +250,9 @@ TEST(JSON_Codec_Encode_Map) {
         student.age = 20;
         student.happy = true;
         base::vector<f32> scores;
-        scores.push(98);
-        scores.push(87.5f);
-        scores.push(92);
+        scores.emplace(98);
+        scores.emplace(87.5f);
+        scores.emplace(92);
         student.scores = base::move(scores);
 
         auto result = Student::Codec::encode(backend, base::move(student));

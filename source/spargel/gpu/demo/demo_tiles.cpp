@@ -121,8 +121,8 @@ public:
         _pipeline = builder.build(_device.get());
 
         for (int i = 0; i < N; i++) {
-            _more_positions.push(VertexPosition::randPosition());
-            _more_colors.push(VertexColor::randColor());
+            _more_positions.emplace(VertexPosition::randPosition());
+            _more_colors.emplace(VertexColor::randColor());
         }
 
         _positions = _device->createBuffer(

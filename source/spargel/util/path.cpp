@@ -64,7 +64,7 @@ namespace spargel::util {
                 }
             }
 
-            components.push(base::string_from_range(s, cur));
+            components.emplace(base::string_from_range(s, cur));
         }
 
         return {.absolute = absolute, .directory = directory, .components = components};

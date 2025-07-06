@@ -428,7 +428,7 @@ namespace spargel::codec {
                 auto result = _encoder->encode(backend, item);
                 if (result.isRight())
                     return base::Right(base::move(result.right()));
-                array.push(base::move(result.left()));
+                array.emplace(base::move(result.left()));
             }
             return backend.makeArray(base::move(array));
         }
@@ -457,7 +457,7 @@ namespace spargel::codec {
                 auto result = _decoder->decode(backend, item);
                 if (result.isRight())
                     return base::Right(base::move(result.right()));
-                array.push(base::move(result.left()));
+                array.emplace(base::move(result.left()));
             }
 
             return base::Left(base::move(array));

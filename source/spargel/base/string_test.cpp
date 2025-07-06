@@ -63,7 +63,7 @@ TEST(String_Copy_Zero) {
         // fill the heap with data
         vector<char> v;
         for (int i = 0; i < 10000; i++) {
-            v.push('0');
+            v.emplace('0');
         }
     }
     {

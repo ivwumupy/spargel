@@ -61,7 +61,7 @@ class vector {
 
   // construct and push back
   template <typename... Args>
-  SPARGEL_ALWAYS_INLINE inline void push(Args&&... args) {
+  SPARGEL_ALWAYS_INLINE inline void emplace(Args&&... args) {
     if (_end >= _capacity) [[unlikely]] {
       grow(capacity() + 1);
     }
@@ -89,7 +89,7 @@ class vector {
     if (count > this->count()) {
       reserve(count);
       while (this->count() < count) {
-        push(T{});
+        emplace(T{});
       }
     } else {
       while (this->count() > count) {
@@ -102,7 +102,7 @@ class vector {
     if (count > this->count()) {
       reserve(count);
       while (this->count() < count) {
-        push(value);
+        emplace(value);
       }
     } else {
       while (this->count() > count) {

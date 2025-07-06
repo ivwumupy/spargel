@@ -204,7 +204,7 @@ public:
                 quad.size.height = info.height;
                 quad.cell_origin.x = info.x + 1;
                 quad.cell_origin.y = info.y + 1;
-                _vquads.push(quad);
+                _vquads.emplace(quad);
             }
             printf("\n");
             total_width += run.width;
@@ -259,7 +259,7 @@ public:
             _animating = !_animating;
             _window->setAnimating(_animating);
         } else {
-            _str.push(e.toChar());
+            _str.emplace(e.toChar());
             if (!_animating) {
                 _window->requestRedraw();
             }
@@ -350,7 +350,7 @@ private:
             spargel_panic_here();
         }
         u32 y = _cur_row;
-        _glyph_cache.push(id, x, y, bitmap.width, bitmap.height, raster.glyph_width,
+        _glyph_cache.emplace(id, x, y, bitmap.width, bitmap.height, raster.glyph_width,
                           raster.glyph_height, raster.descent);
         _atlas->updateRegion(x, y, bitmap.width, bitmap.height, bitmap.width,
                              bitmap.data.toSpan().asBytes());

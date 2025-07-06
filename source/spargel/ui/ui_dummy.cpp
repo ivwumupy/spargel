@@ -6,7 +6,7 @@ namespace spargel::ui {
         LineLayout layout;
         LayoutRun run;
         run.width = static_cast<float>(str.length()) * 10.0f;  // Dummy width
-        layout.runs.push(run);
+        layout.runs.emplace(run);
         return layout;
     }
 

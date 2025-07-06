@@ -220,9 +220,9 @@ namespace spargel::gpu {
             for (usize i = 0; i < groups.count(); i++) {
                 auto const& group = groups[i];
                 if (group.stage.has(ShaderStage::compute)) {
-                    _compute_groups.push(i, group.location.metal.buffer_id);
+                    _compute_groups.emplace(i, group.location.metal.buffer_id);
                     for (auto const& arg : group.arguments) {
-                        _compute_args.push(i, group.location.metal.buffer_id, arg.id, arg.kind);
+                        _compute_args.emplace(i, group.location.metal.buffer_id, arg.id, arg.kind);
                     }
                 }
             }
@@ -268,15 +268,15 @@ namespace spargel::gpu {
             for (usize i = 0; i < groups.count(); i++) {
                 auto const& group = groups[i];
                 if (group.stage.has(ShaderStage::vertex)) {
-                    _vert_groups.push(i, group.location.metal.buffer_id);
+                    _vert_groups.emplace(i, group.location.metal.buffer_id);
                     for (auto const& arg : group.arguments) {
-                        _vert_args.push(i, group.location.metal.buffer_id, arg.id, arg.kind);
+                        _vert_args.emplace(i, group.location.metal.buffer_id, arg.id, arg.kind);
                     }
                 }
                 if (group.stage.has(ShaderStage::fragment)) {
-                    _frag_groups.push(i, group.location.metal.buffer_id);
+                    _frag_groups.emplace(i, group.location.metal.buffer_id);
                     for (auto const& arg : group.arguments) {
-                        _frag_args.push(i, group.location.metal.buffer_id, arg.id, arg.kind);
+                        _frag_args.emplace(i, group.location.metal.buffer_id, arg.id, arg.kind);
                     }
                 }
             }

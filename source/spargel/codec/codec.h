@@ -798,7 +798,7 @@ namespace spargel::codec {
             for (const auto& item : array) {
                 auto result = Codec::template encode<EB>(backend, item);
                 if (result.isRight()) return result;
-                tmp.push(base::move(result.left()));
+                tmp.emplace(base::move(result.left()));
             }
 
             return backend.makeArray(base::move(tmp));
@@ -818,7 +818,7 @@ namespace spargel::codec {
             for (const auto& item : result_array.left()) {
                 auto result = Codec::template decode<DB>(backend, item);
                 if (result.isRight()) return base::makeRight<Type, ErrorType>(result.right());
-                tmp.push(base::move(result.left()));
+                tmp.emplace(base::move(result.left()));
             }
 
             return base::makeLeft<Type, ErrorType>(base::move(tmp));

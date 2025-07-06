@@ -13,8 +13,8 @@ namespace {
 
         JsonValue v2 = v;
         v2 = JsonValue(JsonArray());
-        v2.array.elements.push(JsonNumber(123.456));
-        v2.array.elements.push(JsonString("hello"));
+        v2.array.elements.emplace(JsonNumber(123.456));
+        v2.array.elements.emplace(JsonString("hello"));
 
         spargel_check(v2.type == JsonValueType::array);
         spargel_check(v2.array.elements.count() == 2);

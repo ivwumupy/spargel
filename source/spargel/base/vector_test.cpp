@@ -10,7 +10,7 @@ TEST(Vector_Basic) {
     spargel_check(v1.count() == 0);
     spargel_check(v1.capacity() == 0);
     for (u32 i = 1; i <= 100; i++) {
-        v1.push(i);
+        v1.emplace(i);
         spargel_check(v1.count() == i);
     }
     spargel_check(v1[50] == 51);

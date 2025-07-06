@@ -34,7 +34,7 @@ namespace spargel::base {
                 }
                 if (memcmp(arg, "--", 2) == 0) {
                     // arg is a switch
-                    _switches.push(arg + 2, arg + len);
+                    _switches.emplace(arg + 2, arg + len);
                 }
             }
         }
