@@ -657,7 +657,7 @@ namespace spargel::gpu {
         _procs.vkGetPhysicalDeviceMemoryProperties(_physical_device, &_memory_props);
         for (u32 i = 0; i < _memory_props.memoryHeapCount; i++) {
             auto const& heap = _memory_props.memoryHeaps[i];
-            spargel_log_info("memory heap [%u] : flags = %u, size = %lu", i, heap.flags, heap.size);
+            spargel_log_info("memory heap [%u] : flags = %u, size = %llu", i, heap.flags, heap.size);
         }
         for (u32 i = 0; i < _memory_props.memoryTypeCount; i++) {
             auto const& type = _memory_props.memoryTypes[i];
