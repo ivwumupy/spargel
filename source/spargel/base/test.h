@@ -6,7 +6,6 @@
 #include <spargel/base/vector.h>
 
 //
-#include <math.h>
 #include <stdio.h>
 
 namespace spargel::base {
