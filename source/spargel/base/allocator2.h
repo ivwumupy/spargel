@@ -1,19 +1,23 @@
 #pragma once
 
-#include "spargel/base/concept.h"
 #include "spargel/base/types.h"
+
+#include <stdlib.h>
 
 namespace spargel::base {
 
-    // Allocator 2
+  // Allocator 2
+  //
+  // struct Alloc {
+  //   auto alloc(usize size) -> void*;
+  //   auto resize(void* ptr, usize new_size) -> void*;
+  //   auto free(void* ptr) -> void;
+  // };
 
-    template <typename T>
-    concept Allocator2 = requires(T t, usize size) {
-        { t.alloc(size) } -> SameAs<void*>;
-    } && requires(T t, void* ptr, usize old_size, usize new_size) {
-        { t.resize(ptr, old_size, new_size) } -> SameAs<void*>;
-    } && requires(T t, void* ptr, usize size) {
-        { t.free(ptr, size) } -> SameAs<void>;
-    };
+  struct DefaultAllocator {
+    auto alloc(usize size) -> void* {
+      return ::malloc(size);
+    }
+  };
 
 }  // namespace spargel::base
