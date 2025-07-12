@@ -10,20 +10,20 @@ using namespace spargel;
 
 #define DEMO_EXPORT [[gnu::visibility("default")]]
 
-class DEMO_EXPORT demo_component final : public entry::component {
-public:
-    explicit demo_component(entry::launch_data* l) : entry::component(l) {}
+class DEMO_EXPORT demo_component final : public entry::Component {
+ public:
+  explicit demo_component(entry::LaunchData* l) : entry::Component(l) {}
 
-    void on_load() override {
-        _window = get_launch_data()->platform->makeWindow(500, 500);
-        _window->setTitle("Spargel - Component Demo");
-        spargel_log_info("demo component loaded");
-    }
+  void onLoad() override {
+    _window = getLaunchData()->platform->makeWindow(500, 500);
+    _window->setTitle("Spargel - Component Demo");
+    spargel_log_info("demo component loaded");
+  }
 
-private:
-    base::unique_ptr<ui::Window> _window;
+ private:
+  base::unique_ptr<ui::Window> _window;
 };
 
-extern "C" DEMO_EXPORT entry::component* _spargel_make_component(entry::launch_data* l) {
-    return base::default_allocator()->allocObject<demo_component>(l);
+extern "C" DEMO_EXPORT entry::Component* _spargel_make_component(entry::LaunchData* l) {
+  return base::default_allocator()->allocObject<demo_component>(l);
 }

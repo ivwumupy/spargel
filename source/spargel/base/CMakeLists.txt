@@ -76,184 +76,27 @@ spargel_add_executable(
 # TEST
 
 spargel_add_executable(
-    NAME array_storage_test
-    PRIVATE
-        array_storage_test.cpp
-    DEPS
-        base
-        test_main
+  NAME base_tests
+  PRIVATE
+    array_storage_test.cpp
+    either_test.cpp
+    functional_test.cpp
+    hash_map_test.cpp
+    hash_test.cpp
+    inline_array_test.cpp
+    meta_test.cpp
+    optional_test.cpp
+    string_test.cpp
+    string_view_test.cpp
+    sum_type_test.cpp
+    tagged_union_test.cpp
+    tuple_test.cpp
+    vector_test.cpp
+  DEPS
+    base
+    test_main
 )
 add_test(
-    NAME array_storage_test
-    COMMAND array_storage_test
-)
-
-spargel_add_executable(
-    NAME either_test
-    PRIVATE either_test.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME either_test
-    COMMAND either_test
-)
-
-spargel_add_executable(
-    NAME functional_test
-    PRIVATE functional_test.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME functional_test
-    COMMAND functional_test
-)
-
-spargel_add_executable(
-    NAME hash_test
-    PRIVATE
-        hash_test.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME hash_test
-    COMMAND hash_test
-)
-
-spargel_add_executable(
-    NAME hash_map_test
-    PRIVATE hash_map_test.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME hash_map_test
-    COMMAND hash_map_test
-)
-
-spargel_add_executable(
-    NAME inline_array_test
-    PRIVATE inline_array_test.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME inline_array_test
-    COMMAND inline_array_test
-)
-
-spargel_add_executable(
-    NAME meta_test
-    PRIVATE meta_test.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME meta_test
-    COMMAND meta_test
-)
-
-spargel_add_executable(
-    NAME optional_test
-    PRIVATE optional_test.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME optional_test
-    COMMAND optional_test
-)
-
-spargel_add_executable(
-    NAME string_test
-    PRIVATE string_test.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME string_test
-    COMMAND string_test
-)
-
-spargel_add_executable(
-    NAME string_view_test
-    PRIVATE string_view_test.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME string_view_test
-    COMMAND string_view_test
-)
-
-spargel_add_executable(
-    NAME sum_type_test
-    PRIVATE sum_type_test.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME sum_type_test
-    COMMAND sum_type_test
-)
-
-spargel_add_executable(
-    NAME tagged_union_test
-    PRIVATE tagged_union_test.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME tagged_union_test
-    COMMAND tagged_union_test
-)
-
-spargel_add_executable(
-    NAME test_demo
-    PRIVATE
-        test_demo.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME test_test
-    COMMAND test_demo
-)
-
-spargel_add_executable(
-    NAME tuple_test
-    PRIVATE tuple_test.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME tuple_test
-    COMMAND tuple_test
-)
-
-spargel_add_executable(
-    NAME vector_test
-    PRIVATE vector_test.cpp
-    DEPS
-        base
-        test_main
-)
-add_test(
-    NAME vector_test
-    COMMAND vector_test
+    NAME base_tests
+    COMMAND base_tests
 )

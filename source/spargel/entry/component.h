@@ -2,18 +2,19 @@
 
 namespace spargel::entry {
 
-    struct launch_data;
+struct LaunchData;
 
-    class component {
-    public:
-        explicit component(launch_data* l) : _launch_data{l} {}
+class Component {
+ public:
+  virtual ~Component() = default;
+  explicit Component(LaunchData* l) : _launch_data{l} {}
 
-        virtual void on_load() = 0;
+  virtual void onLoad() = 0;
 
-        launch_data* get_launch_data() { return _launch_data; }
+  LaunchData* getLaunchData() { return _launch_data; }
 
-    private:
-        launch_data* _launch_data;
-    };
+ private:
+  LaunchData* _launch_data;
+};
 
 }  // namespace spargel::entry

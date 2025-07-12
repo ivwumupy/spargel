@@ -4,7 +4,7 @@
 
 namespace spargel::entry {
 
-    struct launch_data {
+    struct LaunchData {
         ui::Platform* platform;
     };
 
