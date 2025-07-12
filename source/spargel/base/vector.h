@@ -153,6 +153,7 @@ class vector {
   }
 
  private:
+  // TODO: max size
   usize nextCapacity(usize count) {
     auto new_capacity = capacity() * 2;
     if (new_capacity < count) {

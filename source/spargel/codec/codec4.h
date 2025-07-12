@@ -722,11 +722,11 @@ namespace spargel::codec {
         };
 
         template <EncodeBackend EB, typename S, typename... Builders /* RecordEncoderBuilder || RecordCodecBuilder */>
-        base::Either<typename EB::DataType, typename EB::ErrorType> encodeRecord(EB& backend, const S& object, std::tuple<Builders...>& builders) {
+        base::Either<typename EB::DataType, typename EB::ErrorType> encodeRecord(EB& backend, const S& object, base::tuple<Builders...>& builders) {
             using DataType = EB::DataType;
             using ErrorType = EB::ErrorType;
 
-            return std::apply(
+            return base::apply(
                 [&](Builders&... builders) -> base::Either<DataType, ErrorType> {
                     RecordBuilderImpl<EB> record_builder;
                     base::Optional<ErrorType> error;
@@ -754,21 +754,21 @@ namespace spargel::codec {
         }
 
         template <DecodeBackend DB, typename S, typename F, typename... Builders, typename I, I... indices>
-        base::Either<S, typename DB::ErrorType> decodeRecordImpl(DB& backend, const typename DB::DataType& data, F& func, std::tuple<Builders...>& builders, std::integer_sequence<I, indices...>) {
+        base::Either<S, typename DB::ErrorType> decodeRecordImpl(DB& backend, const typename DB::DataType& data, F& func, base::tuple<Builders...>& builders, base::integer_sequence<I, indices...>) {
             using ErrorType = DB::ErrorType;
 
             base::Optional<ErrorType> error;
 
             // This hold decoded member values.
-            std::tuple<base::Optional<typename Builders::TargetType>...> values;
+            base::tuple<base::Optional<typename Builders::TargetType>...> values;
 
             bool success = ([&]() {
                 const auto i = indices;
-                auto& builder = std::get<i>(builders);
+                auto& builder = base::get<i>(builders);
                 auto result = DecoderFrom<base::remove_reference<decltype(builder)>>(builder).decoder.decode(backend, data);
                 using Type = base::Get<base::TypeList<typename Builders::TargetType...>, i>;
                 if (result.isLeft()) {
-                    std::get<i>(values) = base::makeOptional<Type>(base::move(result.left()));
+                    base::get<i>(values) = base::makeOptional<Type>(base::move(result.left()));
                     return true;
                 } else {
                     error = base::makeOptional<ErrorType>(base::move(result.right()));
@@ -777,7 +777,7 @@ namespace spargel::codec {
             }() && ...);
 
             if (success) {
-                return base::Left(std::apply(
+                return base::Left(base::apply(
                     [&](const base::Optional<typename Builders::TargetType>&... args) {
                         return func(args.value()...);
                     },
@@ -788,8 +788,8 @@ namespace spargel::codec {
         }
 
         template <DecodeBackend DB, typename S, typename F, typename... Builders /* RecordDecoderBuilder || RecordCodecBuilder */>
-        base::Either<S, typename DB::ErrorType> decodeRecord(DB& backend, const typename DB::DataType& data, F& func, std::tuple<Builders...>& decoders) {
-            return decodeRecordImpl<DB, S, F>(backend, data, func, decoders, std::index_sequence_for<Builders...>{});
+        base::Either<S, typename DB::ErrorType> decodeRecord(DB& backend, const typename DB::DataType& data, F& func, base::tuple<Builders...>& decoders) {
+            return decodeRecordImpl<DB, S, F>(backend, data, func, decoders, base::index_sequence_for<Builders...>{});
         }
 
     }  // namespace _record
@@ -808,7 +808,7 @@ namespace spargel::codec {
         }
 
     private:
-        std::tuple<Builders...> _builders;
+        base::tuple<Builders...> _builders;
     };
 
     template <typename S, typename... Builders>
@@ -831,7 +831,7 @@ namespace spargel::codec {
 
     private:
         F _func;
-        std::tuple<Builders...> _decoders;
+        base::tuple<Builders...> _decoders;
     };
 
     template <typename S, typename F, typename... Builders>
@@ -859,7 +859,7 @@ namespace spargel::codec {
 
     private:
         F _func;
-        std::tuple<Builders...> _builders;
+        base::tuple<Builders...> _builders;
     };
 
     template <typename S, typename F, typename... Builders>

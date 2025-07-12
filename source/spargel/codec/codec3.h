@@ -554,7 +554,7 @@ namespace spargel::codec {
         RecordEncoder(Builders&&... builders) : _builders(base::move(builders)...) {}
 
         base::Either<DataType, ErrorType> encode(EB& backend, const S& object) {
-            return std::apply(
+            return base::apply(
                 [&](const Builders&... builders) -> base::Either<DataType, ErrorType> {
                     RecordBuilderImpl<EB> record_builder;
                     base::Optional<ErrorType> error;
@@ -582,7 +582,7 @@ namespace spargel::codec {
         }
 
     private:
-        std::tuple<Builders...> _builders;
+        base::tuple<Builders...> _builders;
     };
 
 }  // namespace spargel::codec
