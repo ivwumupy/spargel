@@ -28,9 +28,11 @@ namespace __vector {
 template <typename T>
 class vector {
  public:
-  vector(Allocator* alloc = default_allocator()) : _alloc{alloc} {}
+  // vector(Allocator* alloc = default_allocator()) : _alloc{alloc} {}
+  vector() {}
 
-  vector(vector const& other) : _alloc{other._alloc} {
+  // vector(vector const& other) : _alloc{other._alloc} {
+  vector(vector const& other) {
     usize cnt = other.count();
     if (cnt > 0) {
       allocate(cnt);
@@ -43,7 +45,8 @@ class vector {
     return *this;
   }
 
-  vector(vector&& other) : _alloc{other._alloc} { swap(*this, other); }
+  // vector(vector&& other) : _alloc{other._alloc} { swap(*this, other); }
+  vector(vector&& other) { swap(*this, other); }
   vector& operator=(vector&& other) {
     vector tmp(move(other));
     swap(*this, tmp);
@@ -139,14 +142,14 @@ class vector {
 
   friend void tag_invoke(tag<swap>, vector& lhs, vector& rhs) {
     // todo: how to compare allocator?
-    if (lhs._alloc == rhs._alloc) [[likely]] {
-      swap(lhs._begin, rhs._begin);
-      swap(lhs._end, rhs._end);
-      swap(lhs._capacity, rhs._capacity);
-    } else [[unlikely]] {
-      spargel_log_fatal("unimplemented: swapping vectors with different allocators");
-      spargel_panic_here();
-    }
+    // if (lhs._alloc == rhs._alloc) [[likely]] {
+    swap(lhs._begin, rhs._begin);
+    swap(lhs._end, rhs._end);
+    swap(lhs._capacity, rhs._capacity);
+    // } else [[unlikely]] {
+    //   spargel_log_fatal("unimplemented: swapping vectors with different allocators");
+    //   spargel_panic_here();
+    // }
   }
 
  private:
@@ -165,15 +168,15 @@ class vector {
 #if spargel_has_builtin(__is_trivially_copyable)
     if constexpr (__is_trivially_copyable(T)) {
       if (_begin == nullptr) {
-        new_begin = static_cast<T*>(_alloc->allocate(sizeof(T) * new_capacity));
+        new_begin = static_cast<T*>(default_allocator()->allocate(sizeof(T) * new_capacity));
       } else {
-        new_begin = static_cast<T*>(_alloc->resize(_begin, capacity() * sizeof(T), sizeof(T) * new_capacity));
+        new_begin = static_cast<T*>(default_allocator()->resize(_begin, capacity() * sizeof(T), sizeof(T) * new_capacity));
       }
     } else
 #endif
     {
 
-      new_begin = static_cast<T*>(_alloc->allocate(sizeof(T) * new_capacity));
+      new_begin = static_cast<T*>(default_allocator()->allocate(sizeof(T) * new_capacity));
       if (_begin != nullptr) [[likely]] {
 #if spargel_has_builtin(__is_trivially_relocatable)
         if constexpr (__is_trivially_relocatable(T)) {
@@ -209,12 +212,12 @@ class vector {
   }
 
   void allocate(usize capacity) {
-    _begin = static_cast<T*>(_alloc->allocate(sizeof(T) * capacity));
+    _begin = static_cast<T*>(default_allocator()->allocate(sizeof(T) * capacity));
     _end = _begin;
     _capacity = _begin + capacity;
   }
 
-  void deallocate() { _alloc->free(_begin, sizeof(T) * capacity()); }
+  void deallocate() { default_allocator()->free(_begin, sizeof(T) * capacity()); }
 
   void copyRange(T const* begin, T const* end) {
     for (; begin < end; begin++, _end++) {
@@ -225,7 +228,7 @@ class vector {
   T* _begin = nullptr;
   T* _end = nullptr;
   T* _capacity = nullptr;
-  Allocator* _alloc = default_allocator();
+  // Allocator* _alloc = default_allocator();
 };
 
 }  // namespace __vector
