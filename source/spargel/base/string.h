@@ -139,25 +139,25 @@ class String {
   static String from_range(char const* begin, char const* end) {
     usize len = end - begin;
     String result;
-    result._bytes.reserve(len + 1);
-    result._bytes.set_count(len + 1);
+    //result._bytes.reserve(len + 1);
+    //result._bytes.set_count(len + 1);
+    result._bytes.reserve(len);
+    result._bytes.set_count(len);
     memcpy(result._bytes.data(), begin, len);
-    result._bytes.data()[len] = 0;
+    //result._bytes.data()[len] = 0;
     return result;
   }
 
-  String(Allocator* alloc = default_allocator()) : _alloc{alloc} {
-    spargel_assert(alloc != nullptr);
-  }
+  String() {}
 
-  String(String const& other) : _bytes(other._bytes), _alloc{other._alloc} {}
+  String(String const& other) : _bytes(other._bytes) {}
   String& operator=(String const& other) {
     String tmp(other);
     swap(*this, tmp);
     return *this;
   }
 
-  String(String&& other) : _bytes(base::move(other._bytes)), _alloc{other._alloc} {}
+  String(String&& other) : _bytes(base::move(other._bytes)) {}
   String& operator=(String&& other) {
     String tmp(base::move(other));
     swap(*this, tmp);
@@ -167,30 +167,31 @@ class String {
   ~String() = default;
 
   // migration from base::string
-  /*explicit*/ String(StringView view) : _alloc{default_allocator()} {
+  /*explicit*/ String(StringView view) {
     usize len = view.length();
-    _bytes.reserve(len + 1);
-    _bytes.set_count(len + 1);
+    //_bytes.reserve(len + 1);
+    //_bytes.set_count(len + 1);
+    _bytes.reserve(len);
+    _bytes.set_count(len);
     memcpy(_bytes.data(), view.data(), len);
-    _bytes.data()[len] = 0;
   }
-  explicit String(char const* cstr) : _alloc{default_allocator()} {
+  explicit String(char const* cstr) {
     usize len = strlen(cstr);
-    _bytes.reserve(len + 1);
-    _bytes.set_count(len + 1);
+    //_bytes.reserve(len + 1);
+    //_bytes.set_count(len + 1);
+    _bytes.reserve(len);
+    _bytes.set_count(len);
     memcpy(_bytes.data(), cstr, len);
-    _bytes.data()[len] = 0;
   }
   String& operator=(char const* cstr) {
     String tmp(cstr);
     swap(*this, tmp);
     return *this;
   }
-  explicit String(char ch) : _alloc{default_allocator()} {
-    _bytes.reserve(2);
-    _bytes.set_count(2);
+  explicit String(char ch) {
+    _bytes.reserve(1);
+    _bytes.set_count(1);
     _bytes.data()[0] = ch;
-    _bytes.data()[1] = 0;
   }
   String& operator=(char ch) {
     String tmp(ch);
@@ -200,11 +201,11 @@ class String {
   char& operator[](usize i) { return _bytes[i]; }
   char const& operator[](usize i) const { return _bytes[i]; }
 
-  usize length() const { return _bytes.count() - 1; }
+  usize length() const { return _bytes.count(); }
   char* begin() { return _bytes.begin(); }
   char const* begin() const { return _bytes.begin(); }
-  char* end() { return _bytes.end() - 1; }
-  char const* end() const { return _bytes.end() - 1; }
+  char* end() { return _bytes.end(); }
+  char const* end() const { return _bytes.end(); }
   char* data() { return _bytes.data(); }
   char const* data() const { return _bytes.data(); }
   StringView view() const { return StringView(begin(), end()); }
@@ -213,14 +214,16 @@ class String {
     return memcmp(lhs.data(), rhs.data(), lhs.length()) == 0;
   }
   friend String operator+(String const& lhs, String const& rhs) {
-    spargel_check(lhs._alloc == rhs._alloc);
+    //spargel_check(lhs._alloc == rhs._alloc);
     usize len = lhs.length() + rhs.length();
-    String result(lhs._alloc);
-    result._bytes.reserve(len + 1);
-    result._bytes.set_count(len + 1);
+    //String result(lhs._alloc);
+    String result;
+    //result._bytes.reserve(len + 1);
+    //result._bytes.set_count(len + 1);
+    result._bytes.reserve(len);
+    result._bytes.set_count(len);
     memcpy(result._bytes.data(), lhs.data(), lhs.length());
     memcpy(result._bytes.data() + lhs.length(), rhs.data(), rhs.length());
-    result._bytes.data()[len] = 0;
     return result;
   }
   // not efficient
@@ -266,11 +269,11 @@ class String {
   // unsafe
   void appendByte(Byte b) { _bytes.emplace((char)b); }
 
-  Allocator* getAllocator() { return _alloc; }
+  //Allocator* getAllocator() { return _alloc; }
 
   friend void tag_invoke(tag<swap>, String& lhs, String& rhs) {
     swap(lhs._bytes, rhs._bytes);
-    swap(lhs._alloc, rhs._alloc);
+    //swap(lhs._alloc, rhs._alloc);
   }
 
   friend void tag_invoke(tag<hash>, HashRun& r, String const& s) {
@@ -279,7 +282,19 @@ class String {
 
  private:
   vector<char> _bytes;
-  Allocator* _alloc;
+  //Allocator* _alloc;
+};
+
+struct CString {
+  char* data_;
+  usize len_;
+  CString(char const* beg, char const* end) {
+    len_ = end - beg;
+    data_ = reinterpret_cast<char*>(default_allocator()->allocate(len_ + 1));
+    ::memcpy(data_, beg, len_);
+    data_[len_] = 0;
+  }
+  ~CString() { default_allocator()->free(data_, len_ + 1); }
 };
 
 }  // namespace _string

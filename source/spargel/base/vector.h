@@ -166,6 +166,7 @@ class vector {
     usize old_count = count();
     auto new_capacity = nextCapacity(need);
     T* new_begin = nullptr;
+    // TODO
 #if spargel_has_builtin(__is_trivially_copyable)
     if constexpr (__is_trivially_copyable(T)) {
       if (_begin == nullptr) {

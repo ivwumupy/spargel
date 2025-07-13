@@ -6,8 +6,8 @@
 #include <spargel/base/test.h>
 #include <spargel/base/unique_ptr.h>
 
-using namespace spargel::base;
-
+namespace spargel::base {
+namespace {
 struct Foo {
     Foo(int x) { spargel_log_info("Foo()"); }
     ~Foo() { spargel_log_info("~Foo()"); }
@@ -40,3 +40,5 @@ TEST(Optional_Basic) {
     Optional<Foo> g = f;
     Optional<Foo> h = move(f);
 }
+} // namespace
+} // namespace spargel::base
