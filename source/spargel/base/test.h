@@ -26,10 +26,6 @@ namespace spargel::base {
 
         void runAll();
 
-        ~TestManager() {
-            spargel_log_debug("~TestM");
-        }
-
     private:
         struct TestEntry {
             char const* name;

@@ -7,8 +7,10 @@ namespace spargel::base {
 
     namespace _tuple {
 
+        template <typename T, T... Is>
+        struct IntegerSequence2 {};
         template <usize... Is>
-        struct IntegerSequence {};
+        using IntegerSequence = IntegerSequence2<usize, Is...>;
 
         template <typename T, usize I>
         struct Append;
@@ -103,7 +105,7 @@ namespace spargel::base {
         struct make_index_sequence : _tuple::MakeSequence<N>::Type {
         };
         template <typename T, T... Is>
-        using integer_sequence = index_sequence<Is...>;
+        using integer_sequence = _tuple::IntegerSequence2<T, Is...>;
         template <class... T>
         using index_sequence_for = make_index_sequence<sizeof...(T)>;
         template <typename T>

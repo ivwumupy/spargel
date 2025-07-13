@@ -57,6 +57,6 @@ namespace spargel::base {
             bool has_value_;
         };
     }  // namespace _expected
-    using _expected::Unexpected;
     using _expected::Expected;
+    using _expected::Unexpected;
 }  // namespace spargel::base

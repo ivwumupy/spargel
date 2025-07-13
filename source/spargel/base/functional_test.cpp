@@ -9,7 +9,8 @@ using namespace spargel::base;
 
 constexpr double f(int a, double b, int c) { return a + b + c; }
 
-static_assert(curry(f, 1)(2.5, 3) == 6.5);
+// static_assert(curry(f, 1)(2.5, 3) == 6.5); // MSVC does not like this.
+static_assert(curry([](int a, double b, int c) { return a + b + c; }, 1)(2.5, 3) == 6.5);
 
 struct A {
     int a;

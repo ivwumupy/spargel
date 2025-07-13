@@ -11,20 +11,18 @@ static bool dirname_equal(const char* path, const char* expected) {
 void test_dirname() {
     // absolute
 #if SPARGEL_IS_WINDOWS
-
-    // TODO
-    spargel_assert(dirname_equal("C:\\hello\\world").length() == 8);
-    spargel_assert(dirname_equal("D:\\hello\\world\\").length() == 14);
-
-#else  // SPARGEL_IS_WINDOWS
-
+    spargel_assert(dirname_equal("C:\\", "C:\\"));
+    spargel_assert(dirname_equal("D:\\hello", "D:\\"));
+    spargel_assert(dirname_equal("D:\\hello\\", "D:\\"));
+    spargel_assert(dirname_equal("C:\\hello\\world", "C:\\hello"));
+    spargel_assert(dirname_equal("D:\\hello\\world\\", "D:\\hello"));
+#else
     spargel_assert(dirname_equal("/", "/"));
     spargel_assert(dirname_equal("/hello", "/"));
     spargel_assert(dirname_equal("/hello/", "/"));
     spargel_assert(dirname_equal("/hello/world", "/hello"));
     spargel_assert(dirname_equal("/hello/world/", "/hello"));
-
-#endif  // SPARGEL_IS_WINDOWS
+#endif
 
     // relative
     spargel_assert(dirname_equal("", "."));

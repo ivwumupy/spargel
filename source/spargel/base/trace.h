@@ -7,7 +7,10 @@
 //
 #include <stdio.h>
 #include <string.h>
+
+#if SPARGEL_IS_POSIX
 #include <sys/time.h>
+#endif
 
 namespace spargel::base {
 
@@ -68,11 +71,17 @@ namespace spargel::base {
         }
 
     private:
+#if SPARGEL_IS_POSIX
         u64 getTimestamp() {
             struct timeval tv;
             gettimeofday(&tv, NULL);
             return tv.tv_usec;
         }
+#else
+        u64 getTimestamp() {
+            return 0;  // TODO
+        }
+#endif
 
         void flush() {
             fwrite(_buffer, _cur - _buffer, 1, _file);

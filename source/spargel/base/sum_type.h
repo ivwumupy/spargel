@@ -126,7 +126,7 @@ namespace spargel::base {
                 } else {
                     alignas(Alignment<Ts...>) Byte tmp[StorageSize<Ts...>];
                     visitByIndex<TypeCount>(lhs._index, [&]<usize i>(IndexWrapper<i>) {
-                        visitByIndex<TypeCount>(rhs._index, [&]<usize j>(IndexWrapper<j>) {
+                        visitByIndex<SumType::TypeCount /*MSVC wants this*/>(rhs._index, [&]<usize j>(IndexWrapper<j>) {
                             using T1 = Get<Types, i>;
                             using T2 = Get<Types, j>;
                             new (reinterpret_cast<T1*>(tmp)) T1(base::move(lhs.getValue<i>()));

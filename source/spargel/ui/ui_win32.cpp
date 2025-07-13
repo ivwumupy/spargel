@@ -79,7 +79,7 @@ namespace spargel::ui {
 
     WindowWin32::WindowWin32(PlatformWin32* platform, HWND hwnd)
         : _platform(platform), _hwnd(hwnd) {
-        platform->_windows.push(this);
+        platform->_windows.emplace(this);
     }
 
     WindowWin32::~WindowWin32() {
