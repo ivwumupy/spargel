@@ -23,7 +23,7 @@ namespace spargel::base {
         };
 
         template <auto t, typename C, typename... Cs>
-            requires (!is_same<C, Sentinel>)
+            requires(!is_same<C, Sentinel>)
         struct CollectTypes<Case<t, C>, Cs...> {
             using Type = Cons<C, typename CollectTypes<Cs...>::Type>;
         };
@@ -41,7 +41,7 @@ namespace spargel::base {
             static constexpr usize value = GetIndex<i + 1, t, Cs...>::value;
         };
 
-        template <usize i,typename... Cs>
+        template <usize i, typename... Cs>
         struct IndexToTag;
 
         template <auto t, typename T, typename... Cs>
@@ -111,9 +111,9 @@ namespace spargel::base {
             Storage _storage;
         };
 
-    }
+    }  // namespace _tagged_union
 
-    using _tagged_union::TaggedUnion;
     using _tagged_union::Case;
+    using _tagged_union::TaggedUnion;
 
 }  // namespace spargel::base

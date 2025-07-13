@@ -1,13 +1,13 @@
 #pragma once
 
-#include <spargel/config.h>
-#include <spargel/base/types.h>
 #include <spargel/base/allocator.h>
+#include <spargel/base/types.h>
+#include <spargel/config.h>
 
 //
 #include <stdio.h>
-#include <sys/time.h>
 #include <string.h>
+#include <sys/time.h>
 
 namespace spargel::base {
 
@@ -21,7 +21,7 @@ namespace spargel::base {
         EventKind kind;
         u64 timestamp;
     };
-    
+
     static_assert(sizeof(TraceEvent) == 80);
 
     class TraceEngine {
@@ -99,11 +99,11 @@ namespace spargel::base {
         char const* name;
     };
 
-}
+}  // namespace spargel::base
 
 #if SPARGEL_ENABLE_TRACING
 #define spargel_trace_scope(name) \
-    ::spargel::base::RegionTrace _trace_scope_## __LINE__ (name)
+    ::spargel::base::RegionTrace _trace_scope_##__LINE__(name)
 #else
 #define spargel_trace_scope(name)
 #endif

@@ -2,6 +2,9 @@
 #include <spargel/base/functional.h>
 #include <spargel/base/test.h>
 
+// libc
+#include <stdio.h>
+
 using namespace spargel::base;
 
 constexpr double f(int a, double b, int c) { return a + b + c; }

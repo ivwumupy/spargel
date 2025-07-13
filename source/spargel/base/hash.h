@@ -222,10 +222,10 @@ namespace spargel::base {
         inline void tag_invoke(hash, HashRun& r, i16 v) {
             r.combine(bitCast<i16, u16>(v));
         }
-        inline  void tag_invoke(hash, HashRun& r, i32 v) {
+        inline void tag_invoke(hash, HashRun& r, i32 v) {
             r.combine(bitCast<i32, u32>(v));
         }
-        inline  void tag_invoke(hash, HashRun& r, i64 v) {
+        inline void tag_invoke(hash, HashRun& r, i64 v) {
             r.combine(bitCast<i64, u64>(v));
         }
     }  // namespace __hash

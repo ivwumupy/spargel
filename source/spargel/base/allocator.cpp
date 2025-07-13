@@ -4,6 +4,7 @@
 // libc
 #include <stdlib.h>
 
+/*
 void* operator new(usize size, usize align) noexcept {
     return spargel::base::default_allocator()->allocate(size);
 }
@@ -23,14 +24,15 @@ void operator delete[](void* ptr, usize size, usize align) noexcept {
 void* operator new(usize size, usize align, spargel::base::Allocator* alloc) noexcept {
     return alloc->allocate(size);
 }
+*/
 
 namespace spargel::base {
 
     Allocator* default_allocator() { return LibCAllocator::getInstance(); }
 
     LibCAllocator* LibCAllocator::getInstance() {
-        static LibCAllocator inst;
-        return &inst;
+        static LibCAllocator* inst = new LibCAllocator();
+        return inst;
     }
 
     void* LibCAllocator::allocate(usize size) {

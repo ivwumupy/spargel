@@ -82,7 +82,7 @@ namespace spargel::base {
             T const* begin() const { return reinterpret_cast<T const*>(_data); }
 
             /// Access the object by index.
-            /// 
+            ///
             /// Parameters:
             ///     - `i` is the index.
             ///
@@ -99,7 +99,7 @@ namespace spargel::base {
             // T const* begin() const { return getPtr(0); }
             // T* end() { return getPtr(_count - 1); }
             // T const* end() const { return getPtr(_count - 1); }
-            
+
             Allocator* getAllocator() const { return _alloc; }
 
             /// Exchange storage.

@@ -7,4 +7,4 @@ namespace spargel::base {
         return &inst;
     }
 
-}
+}  // namespace spargel::base

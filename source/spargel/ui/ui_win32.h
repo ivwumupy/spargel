@@ -2,8 +2,8 @@
 
 #include <spargel/base/vector.h>
 #include <spargel/ui/platform.h>
-#include <spargel/ui/window.h>
 #include <spargel/ui/ui_dummy.h>
+#include <spargel/ui/window.h>
 
 // Windows
 #include <windows.h>

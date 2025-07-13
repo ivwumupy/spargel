@@ -76,5 +76,4 @@ namespace spargel::ui {
         WindowDelegate* _delegate = nullptr;
     };
 
-
 }  // namespace spargel::ui

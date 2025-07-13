@@ -38,7 +38,7 @@ namespace spargel::ui {
     ///
     /// The `View` hierarchy is backed by a `Layer` tree. Some (but not all) views are layer owning.
     /// Each `Layer` corresponds to a GPU texture.
-    /// 
+    ///
     class View {
     public:
         View();

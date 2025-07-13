@@ -292,7 +292,7 @@ private:
         }
         u32 y = _cur_row;
         _glyph_cache.emplace(id, x, y, bitmap.width, bitmap.height, raster.glyph_width,
-                          raster.glyph_height, raster.descent);
+                             raster.glyph_height, raster.descent);
         _atlas->updateRegion(x, y, bitmap.width, bitmap.height, bitmap.width,
                              bitmap.data.toSpan().asBytes());
 

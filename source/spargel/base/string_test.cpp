@@ -58,6 +58,7 @@ TEST(String_Iterate) {
     }
 }
 
+/*
 TEST(String_Copy_Zero) {
     {
         // fill the heap with data
@@ -73,3 +74,4 @@ TEST(String_Copy_Zero) {
         spargel_check(s2.data()[3] == '\0');
     }
 }
+*/

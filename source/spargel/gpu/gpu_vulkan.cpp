@@ -1095,10 +1095,10 @@ namespace spargel::gpu {
             for (usize j = 0; j < group.arguments.count(); j++) {
                 auto const& arg = group.arguments[j];
                 bindings.emplace(/* binding = */ arg.id,
-                              /* descriptorType = */ translateBindEntryKind(arg.kind),
-                              /* descriptorCount = */ 1,
-                              /* stageFlags = */ VK_SHADER_STAGE_COMPUTE_BIT,
-                              /* pImmutableSamplers = */ nullptr);
+                                 /* descriptorType = */ translateBindEntryKind(arg.kind),
+                                 /* descriptorCount = */ 1,
+                                 /* stageFlags = */ VK_SHADER_STAGE_COMPUTE_BIT,
+                                 /* pImmutableSamplers = */ nullptr);
                 _args.emplace(i, arg.id, arg.kind);
             }
 

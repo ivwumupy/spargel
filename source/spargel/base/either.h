@@ -99,9 +99,9 @@ namespace spargel::base {
     }  // namespace _either
 
     using _either::Either;
+    using _either::Left;
     using _either::makeLeft;
     using _either::makeRight;
-    using _either::Left;
     using _either::Right;
 
 }  // namespace spargel::base

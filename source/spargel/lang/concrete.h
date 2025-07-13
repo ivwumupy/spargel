@@ -14,4 +14,4 @@ namespace spargel::lang::concrete {
         }
     };
 
-}
+}  // namespace spargel::lang::concrete

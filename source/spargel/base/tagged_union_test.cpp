@@ -2,8 +2,8 @@
 #include <spargel/base/tagged_union.h>
 #include <spargel/base/test.h>
 
-using spargel::base::TaggedUnion;
 using spargel::base::Case;
+using spargel::base::TaggedUnion;
 
 enum class FooKind {
     Bar,
@@ -42,4 +42,3 @@ TEST(TaggedUnion_Basic) {
     spargel_check(match(x));
     spargel_check(!match(y));
 }
-

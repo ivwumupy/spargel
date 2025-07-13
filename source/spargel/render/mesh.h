@@ -10,5 +10,4 @@ namespace spargel::render {
         float z;
     };
 
-
 }  // namespace spargel::render
