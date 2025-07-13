@@ -280,7 +280,7 @@ namespace spargel::base {
                 ::memcpy(data_, beg, len_);
                 data_[len_] = 0;
             }
-            CString(String s) : CString(s.begin(), s.end()) {}
+            CString(const String& s) : CString(s.begin(), s.end()) {}
             ~CString() { default_allocator()->free(data_, len_ + 1); }
 
             auto data() const -> char const* { return data_; }
