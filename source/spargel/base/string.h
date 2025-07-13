@@ -14,8 +14,9 @@
 #include <string.h>
 
 namespace spargel::base {
-
     namespace _string {
+
+        /*
         struct string {
             string() = default;
 
@@ -93,6 +94,7 @@ namespace spargel::base {
             usize _length = 0;
             char* _data = nullptr;
         };
+        */
 
         // clang-format off
         /// A code point is a value in the Unicode codespace, i.e. an integer in the range [0, 10ffff].
@@ -139,12 +141,9 @@ namespace spargel::base {
             static String from_range(char const* begin, char const* end) {
                 usize len = end - begin;
                 String result;
-                // result._bytes.reserve(len + 1);
-                // result._bytes.set_count(len + 1);
                 result._bytes.reserve(len);
                 result._bytes.set_count(len);
                 memcpy(result._bytes.data(), begin, len);
-                // result._bytes.data()[len] = 0;
                 return result;
             }
 
@@ -169,16 +168,12 @@ namespace spargel::base {
             // migration from base::string
             /*explicit*/ String(StringView view) {
                 usize len = view.length();
-                //_bytes.reserve(len + 1);
-                //_bytes.set_count(len + 1);
                 _bytes.reserve(len);
                 _bytes.set_count(len);
                 memcpy(_bytes.data(), view.data(), len);
             }
-            explicit String(char const* cstr) {
+            /*explicit*/ String(char const* cstr) {
                 usize len = strlen(cstr);
-                //_bytes.reserve(len + 1);
-                //_bytes.set_count(len + 1);
                 _bytes.reserve(len);
                 _bytes.set_count(len);
                 memcpy(_bytes.data(), cstr, len);
@@ -198,6 +193,7 @@ namespace spargel::base {
                 swap(*this, tmp);
                 return *this;
             }
+
             char& operator[](usize i) { return _bytes[i]; }
             char const& operator[](usize i) const { return _bytes[i]; }
 
@@ -209,17 +205,14 @@ namespace spargel::base {
             char* data() { return _bytes.data(); }
             char const* data() const { return _bytes.data(); }
             StringView view() const { return StringView(begin(), end()); }
+
             friend bool operator==(String const& lhs, String const& rhs) {
                 if (lhs.length() != rhs.length()) return false;
                 return memcmp(lhs.data(), rhs.data(), lhs.length()) == 0;
             }
             friend String operator+(String const& lhs, String const& rhs) {
-                // spargel_check(lhs._alloc == rhs._alloc);
                 usize len = lhs.length() + rhs.length();
-                // String result(lhs._alloc);
                 String result;
-                // result._bytes.reserve(len + 1);
-                // result._bytes.set_count(len + 1);
                 result._bytes.reserve(len);
                 result._bytes.set_count(len);
                 memcpy(result._bytes.data(), lhs.data(), lhs.length());
@@ -235,8 +228,6 @@ namespace spargel::base {
             /// Get the `i`-th byte.
             Byte getByte(usize i) const { return (Byte)_bytes[i]; }
 
-            // FIXME: should not include the zero char at the end
-            // Idea: use slicing for vector
             span<Byte> bytes() const { return _bytes.toSpan().asBytes(); }
 
             usize getLength() const {
@@ -269,11 +260,8 @@ namespace spargel::base {
             // unsafe
             void appendByte(Byte b) { _bytes.emplace((char)b); }
 
-            // Allocator* getAllocator() { return _alloc; }
-
             friend void tag_invoke(tag<swap>, String& lhs, String& rhs) {
                 swap(lhs._bytes, rhs._bytes);
-                // swap(lhs._alloc, rhs._alloc);
             }
 
             friend void tag_invoke(tag<hash>, HashRun& r, String const& s) {
@@ -282,30 +270,33 @@ namespace spargel::base {
 
         private:
             vector<char> _bytes;
-            // Allocator* _alloc;
         };
 
-        struct CString {
-            char* data_;
-            usize len_;
+        class CString {
+        public:
             CString(char const* beg, char const* end) {
                 len_ = end - beg;
                 data_ = reinterpret_cast<char*>(default_allocator()->allocate(len_ + 1));
                 ::memcpy(data_, beg, len_);
                 data_[len_] = 0;
             }
+            CString(String s) : CString(s.begin(), s.end()) {}
             ~CString() { default_allocator()->free(data_, len_ + 1); }
+
+            auto data() const -> char const* { return data_; }
+
+        private:
+            char* data_;
+            usize len_;
         };
 
     }  // namespace _string
 
-    // using _string::string;
+    using _string::CString;
     using _string::String;
     using string = String;
 
     String string_from_range(char const* begin, char const* end);
-    // string string_from_range(char const* begin, char const* end);
-
 }  // namespace spargel::base
 
 // # Unicode
