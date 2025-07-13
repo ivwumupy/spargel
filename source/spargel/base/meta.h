@@ -55,51 +55,51 @@ namespace spargel::base {
 
 #if spargel_has_builtin(__is_same)
     template <typename S, typename T>
-    inline constexpr bool is_same = __is_same(S, T);
+    inline constexpr bool IsSame = __is_same(S, T);
 #else
-    namespace _is_same {
+    namespace detail {
         template <typename S, typename T>
-        struct is_same {
+        struct IsSameFallback {
             static constexpr bool value = false;
         };
         template <typename T>
-        struct is_same<T, T> {
+        struct IsSameFallback<T, T> {
             static constexpr bool value = true;
         };
-    }  // namespace _is_same
+    }  // namespace detail
     template <typename S, typename T>
-    inline constexpr bool is_same = _is_same::is_same<S, T>::value;
+    inline constexpr bool IsSame = detail::IsSameFallback<S, T>::value;
 #endif
 
 #if spargel_has_builtin(__remove_reference_t)
     template <typename T>
     using remove_reference = __remove_reference_t(T);
 #elif spargel_has_builtin(__remove_reference)
-    namespace _remove_reference {
+    namespace detail {
         template <typename T>
-        struct remove_reference {
+        struct RemoveReferenceFallback {
             using type = __remove_reference(T);
         };
-    }  // namespace _remove_reference
+    }  // namespace detail
     template <typename T>
-    using remove_reference = _remove_reference::remove_reference<T>::type;
+    using remove_reference = detail::RemoveReferenceFallback<T>::type;
 #else
-    namespace _remove_reference {
+    namespace detail {
         template <typename T>
-        struct remove_reference {
+        struct RemoveReferenceFallback {
             using type = T;
         };
         template <typename T>
-        struct remove_reference<T&> {
+        struct RemoveReferenceFallback<T&> {
             using type = T;
         };
         template <typename T>
-        struct remove_reference<T&&> {
+        struct RemoveReferenceFallback<T&&> {
             using type = T;
         };
-    }  // namespace _remove_reference
+    }  // namespace detail
     template <typename T>
-    using remove_reference = _remove_reference::remove_reference<T>::type;
+    using remove_reference = detail::RemoveReferenceFallback<T>::type;
 #endif
 
     template <typename T>

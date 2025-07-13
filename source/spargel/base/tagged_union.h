@@ -23,7 +23,7 @@ namespace spargel::base {
         };
 
         template <auto t, typename C, typename... Cs>
-            requires(!is_same<C, Sentinel>)
+            requires(!IsSame<C, Sentinel>)
         struct CollectTypes<Case<t, C>, Cs...> {
             using Type = Cons<C, typename CollectTypes<Cs...>::Type>;
         };
