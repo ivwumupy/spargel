@@ -1,3 +1,8 @@
+/*
+ * This implementation was inspired by https://github.com/Mojang/DataFixerUpper.
+ * See LICENCE_Mojang_DataFixerUpper.
+ */
+
 #pragma once
 
 #include <spargel/base/attribute.h>
@@ -10,9 +15,6 @@
 #include <spargel/base/string.h>
 #include <spargel/base/tuple.h>
 #include <spargel/base/vector.h>
-
-// temp
-// #include <tuple>
 
 namespace spargel::codec {
 
@@ -124,6 +126,18 @@ concept DecodeBackend = requires {
   { backend.getMember(data, key) } -> base::SameAs<base::Either<base::Optional<typename DB::DataType>, typename DB::ErrorType>>;
 };
 
+template <typename B /* codec backend type */>
+concept CodecBackend = requires {
+  typename B::EncodeBackendType;
+  typename B::DecodeBackendType;
+};
+
+template <EncodeBackend EB, DecodeBackend DB>
+struct CodecBackendOf {
+  using EncodeBackendType = EB;
+  using DecodeBackendType = DB;
+};
+
 // dummy encode/decode backend
 //   used for constraint checking
 //   also serves as an example
@@ -190,704 +204,846 @@ static_assert(DecodeBackend<DummyDecodeBackend>);
 
 }  // namespace
 
-// encoder prototype
-template <typename E>
-concept Encoder = requires { typename E::Type; } && requires(DummyEncodeBackend& backend,
-                                                             const E::Type& object) {
-  E::template encode<DummyEncodeBackend>(backend, object);
-  {
-    E::template encode<DummyEncodeBackend>(backend, object)
-  } -> base::ConvertibleTo<
-      base::Either<DummyEncodeBackend::DataType, DummyEncodeBackend::ErrorType>>;
+template <typename C>
+concept Encoder = requires {
+  typename C::TargetType;
+} && requires(C& codec, DummyEncodeBackend& backend, const C::TargetType& object) {
+  { codec.encode(backend, object) } -> base::SameAs<base::Either<DummyType, CodecError>>;
 };
 
-// decoder prototype
-template <typename D>
+template <typename C>
 concept Decoder = requires {
-  typename D::Type;
-} && requires(DummyDecodeBackend& backend, const DummyDecodeBackend::DataType& data) {
-  D::template decode<DummyDecodeBackend>(backend, data);
-  {
-    D::template decode<DummyDecodeBackend>(backend, data)
-  } -> base::ConvertibleTo<base::Either<typename D::Type, DummyDecodeBackend::ErrorType>>;
+  typename C::TargetType;
+} && requires(C& codec, DummyDecodeBackend& backend, const DummyType& data) {
+  { codec.decode(backend, data) } -> base::SameAs<base::Either<typename C::TargetType, CodecError>>;
 };
 
-template <typename Codec>
-concept EncoderDecoder = Encoder<Codec> && Decoder<Codec>;
-
-/*
- * utils for encoding maps
- */
-
-namespace __encode_map {
-
-struct EncodeField {
-  // the entry will always be encoded to the target map
-  template <Decoder E>
-  struct Normal {
-    base::string key;
-    E::Type value;
-
-    Normal(const base::string& key, const E::Type value) : key(key), value(value) {}
-    Normal(const base::string_view& key, const E::Type value)
-        : key(key), value(value) {}
-  };
-
-  // the entry will be encoded to the taregt map only if it exists
-  template <Decoder E>
-  struct Optional {
-    base::string key;
-    base::Optional<typename E::Type> value;
-
-    Optional(const base::string& key, const base::Optional<typename E::Type>& value)
-        : key(key), value(value) {}
-    Optional(const base::string_view& key,
-             const base::Optional<typename E::Type>& value)
-        : key(key), value(value) {}
-  };
-};
-
-// head for recursive definition: no entries at all
-template <EncodeBackend EB>
-base::Optional<typename EB::ErrorType> encodeToMap(
-    base::HashMap<base::string, typename EB::DataType>& map, EB& backend) {
-  return base::nullopt;
-}
-
-// encode one normal entry
-template <EncodeBackend EB, Encoder E, typename... Entries>
-base::Optional<typename EB::ErrorType> encodeToMap(
-    base::HashMap<base::string, typename EB::DataType>& map, EB& backend,
-    EncodeField::Normal<E> entry, Entries... entries) {
-  auto result = E::template encode<EB>(backend, entry.value);
-  if (result.isRight()) return base::makeOptional<typename EB::ErrorType>(result.right());
-
-  map.set(entry.key, result.left());
-
-  return encodeToMap(map, backend, base::forward<Entries>(entries)...);
-}
-
-// encode one optional entry
-template <EncodeBackend EB, Encoder E, typename... Entries>
-base::Optional<typename EB::ErrorType> encodeToMap(
-    base::HashMap<base::string, typename EB::DataType>& map, EB& backend,
-    EncodeField::Optional<E> entry, Entries... entries) {
-  if (entry.value.hasValue()) {
-    auto result = E::template encode<EB>(backend, entry.value.value());
-    if (result.isRight())
-      return base::makeOptional<typename EB::ErrorType>(result.right());
-
-    map.set(entry.key, result.left());
-  }
-
-  return encodeToMap(map, backend, base::forward<Entries>(entries)...);
-}
-
-// create map, call encodeToMap to encode all the entries, and return the map
-template <EncodeBackend EB, typename... Encoders, typename... Entries>
-base::Either<typename EB::DataType, typename EB::ErrorType> encodeMap(EB& backend,
-                                                                      Entries... entries) {
-  using DataType = EB::DataType;
-  using ErrorType = EB::ErrorType;
-
-  base::HashMap<base::string, DataType> map;  // FIXME
-  auto result =
-      encodeToMap<Encoders...>(map, backend, base::forward<Entries>(entries)...);
-  if (result.hasValue()) return base::makeRight<DataType, ErrorType>(result.value());
-  return backend.makeMap(base::move(map));
-}
-
-}  // namespace __encode_map
-
-using __encode_map::EncodeField;
-
-using __encode_map::encodeMap;
-
-/*
- * utils for decoding maps
- */
-
-namespace __decode_map {
-
-struct DecodeField {
-  // the entry is required to exist
-  template <Decoder D>
-  struct Required {
-    base::string key;
-
-    Required(const base::string& key) : key(key) {}
-    Required(const base::string_view& key) : key(key) {}
-  };
-
-  // the entry is optional
-  template <Decoder D>
-  struct Optional {
-    base::string key;
-
-    Optional(const base::string& key) : key(key) {}
-    Optional(const base::string_view& key) : key(key) {}
-  };
-
-  // the entry is optional; if it does not exist, supply a default value as the decode
-  // result
-  template <Decoder D>
-  struct Default {
-    base::string key;
-    D::Type default_value;
-
-    Default(const base::string& key, const D::Type& default_value)
-        : key(key), default_value(default_value) {}
-
-    Default(const base::string_view& key, const D::Type& default_value)
-        : key(key), default_value(default_value) {}
-  };
-};
-
-namespace _impl {
-template <typename T>
-struct Uninitialized {
-  using Type = T;
-  template <typename... Args>
-  void init(Args&&... args) {
-    base::construct_at(reinterpret_cast<T*>(&bytes), base::forward<Args>(args)...);
-    initialized = true;
-  }
-  ~Uninitialized() {
-    if (initialized) base::destruct_at((T*)bytes);
-  }
-  T& get() { return *reinterpret_cast<T*>(&bytes); }
-  T const& get() const { return *reinterpret_cast<T const*>(&bytes); }
-
-  bool initialized = false;
-  alignas(alignof(T)) base::Byte bytes[sizeof(T)];
-};
-template <typename...>
-struct List;
-template <typename, usize i>
-struct Get;
-template <typename T, typename... Ts>
-struct Get<List<T, Ts...>, 0> {
-  using Type = T;
-};
-template <usize i, typename T, typename... Ts>
-struct Get<List<T, Ts...>, i> {
-  using Type = Get<List<Ts...>, i - 1>::Type;
-};
-template <typename T, typename S>
-struct ListCons;
-template <typename T, typename... Ts>
-struct ListCons<T, List<Ts...>> {
-  using Type = List<T, Ts...>;
-};
-template <typename...>
-struct TupleType;
-template <>
-struct TupleType<> {
-  using Type = List<>;
-};
-template <typename T, typename... Ts>
-struct TupleType<DecodeField::Required<T>, Ts...> {
-  using Type = ListCons<Uninitialized<typename T::Type>,
-                        typename TupleType<Ts...>::Type>::Type;
-};
-template <typename T, typename... Ts>
-struct TupleType<DecodeField::Optional<T>, Ts...> {
-  using Type = ListCons<Uninitialized<base::Optional<typename T::Type>>,
-                        typename TupleType<Ts...>::Type>::Type;
-};
-template <typename T, typename... Ts>
-struct TupleType<DecodeField::Default<T>, Ts...> {
-  using Type = ListCons<Uninitialized<typename T::Type>,
-                        typename TupleType<Ts...>::Type>::Type;
-};
-template <typename T>
-struct ListToTuple;
-template <typename... Ts>
-struct ListToTuple<List<Ts...>> {
-  using Type = base::tuple<Ts...>;
-};
+template <typename C>
+concept Codec = Encoder<C> && Decoder<C>;
 
 template <typename T>
-struct IsRequired {
-  static constexpr bool value = false;
-};
-template <typename T>
-struct IsRequired<DecodeField::Required<T>> {
-  static constexpr bool value = true;
-};
-template <typename T>
-struct IsOptional {
-  static constexpr bool value = false;
-};
-template <typename T>
-struct IsOptional<DecodeField::Optional<T>> {
-  static constexpr bool value = true;
-};
-template <typename T>
-struct IsDefault {
-  static constexpr bool value = false;
-};
-template <typename T>
-struct IsDefault<DecodeField::Default<T>> {
-  static constexpr bool value = true;
-};
+class ErrorEncoder {
+ public:
+  using TargetType = T;
 
-template <typename T>
-struct FieldDecoderType {};
-template <typename T>
-struct FieldDecoderType<DecodeField::Required<T>> {
-  using Type = T;
-};
-template <typename T>
-struct FieldDecoderType<DecodeField::Optional<T>> {
-  using Type = T;
-};
-template <typename T>
-struct FieldDecoderType<DecodeField::Default<T>> {
-  using Type = T;
-};
-
-template <usize i, usize N, typename DB, typename Tuple, typename L, typename E,
-          typename I>
-  requires(i < N)
-bool process(DB& backend, typename DB::DataType const& data, Tuple& t, E& e,
-             I const& ins) {
-  bool success = false;
-  using T = typename Get<L, i>::Type;
-  auto& out = base::get<i>(t);
-  auto const& in = base::get<i>(ins);
-
-  auto result = backend.getMember(data, in.key.view());
-  if (result.isRight()) {
-    e.init(base::move(result.right()));
-  } else {
-    auto& optional = result.left();
-
-    if constexpr (IsRequired<T>::value) {
-      if (optional.hasValue()) {
-        auto decode_result = FieldDecoderType<T>::Type::template decode<DB>(
-            backend, base::move(optional.value()));
-        if (decode_result.isRight()) {
-          e.init(base::move(decode_result.right()));
-        } else {
-          success = true;
-          out.init(base::move(decode_result.left()));
-        }
-      } else {
-        e.init(base::string("required member \"") + in.key + "\" not found");
-      }
-    } else if constexpr (IsOptional<T>::value) {
-      if (optional.hasValue()) {
-        auto decode_result = FieldDecoderType<T>::Type::template decode<DB>(
-            backend, base::move(optional.value()));
-        if (decode_result.isRight()) {
-          e.init(base::move(decode_result.right()));
-        } else {
-          success = true;
-          out.init(
-              base::makeOptional<typename FieldDecoderType<T>::Type::Type>(
-                  base::move(decode_result.left())));
-        }
-      } else {
-        success = true;
-        out.init(base::nullopt);
-      }
-    } else if constexpr (IsDefault<T>::value) {
-      if (optional.hasValue()) {
-        auto decode_result = FieldDecoderType<T>::Type::template decode<DB>(
-            backend, base::move(optional.value()));
-        if (decode_result.isRight()) {
-          e.init(base::move(decode_result.right()));
-        } else {
-          success = true;
-          out.init(base::move(decode_result.left()));
-        }
-      } else {
-        success = true;
-        out.init(in.default_value);
-      }
-    } else {
-      return false;
-    }
-  }
-
-  return success && process<i + 1, N, DB, Tuple, L, E, I>(backend, data, t, e, ins);
-}
-template <usize i, usize N, typename DB, typename Tuple, typename L, typename E,
-          typename I>
-  requires(i >= N)
-bool process(DB& backend, typename DB::DataType const& data, Tuple& t, E& e,
-             I const& ins) {
-  return true;
-}
-
-template <class F, class Tuple, usize... Is>
-decltype(auto) construct(F func, Tuple&& tuple, base::index_sequence<Is...>) {
-  return func(base::move(base::get<Is>(base::forward<Tuple>(tuple)).get())...);
-}
-template <class F, class Tuple>
-decltype(auto) construct(F func, Tuple&& tuple) {
-  return construct<F>(
-      func, base::forward<Tuple>(tuple),
-      base::make_index_sequence<base::tuple_size<base::decay<Tuple>>::value>{});
-}
-
-}  // namespace _impl
-
-template <typename R, typename F, DecodeBackend DB, typename... Entries>
-base::Either<R, typename DB::ErrorType> decodeMap(const F& func, DB& backend,
-                                                  typename DB::DataType const& data,
-                                                  const Entries&... entries) {
-  using namespace _impl;
-  using ListT = TupleType<Entries...>::Type;
-  using Tuple = ListToTuple<ListT>::Type;
-  constexpr usize N = sizeof...(Entries);
-  Tuple result;
-  Uninitialized<typename DB::ErrorType> error;
-  bool success =
-      process<0, N, DB, Tuple, List<Entries...>, Uninitialized<typename DB::ErrorType>>(
-          backend, data, result, error, base::make_tuple(entries...));
-  if (success)
-    return base::makeLeft<R, typename DB::ErrorType>(
-        construct<F>(func, base::move(result)));
-  else
-    return base::makeRight<R, typename DB::ErrorType>(error.get());
-}
-
-}  // namespace __decode_map
-
-using __decode_map::DecodeField;
-
-using __decode_map::decodeMap;
-
-/*
- * codecs of basic types
- */
-
-struct CodecNull {
-  using Type = base::nullptr_t;
+  ErrorEncoder(const base::string& message) : _message(message) {}
+  ErrorEncoder(base::string_view message) : _message(message) {}
 
   template <EncodeBackend EB>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-      EB& backend, base::nullptr_t ptr = nullptr) {
+  base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const T& object) {
+    return base::Right(typename EB::ErrorType(_message));
+  }
+
+ private:
+  base::string _message;
+};
+
+template <typename T>
+class ErrorDecoder {
+ public:
+  using TargetType = T;
+
+  ErrorDecoder(const base::string& message) : _message(message) {}
+  ErrorDecoder(base::string_view message) : _message(message) {}
+
+  template <DecodeBackend DB>
+  base::Either<T, typename DB::ErrorType> decode(DB& backend, const DB::DataType& data) {
+    return base::Right(typename DB::ErrorType(_message));
+  }
+
+ private:
+  base::string _message;
+};
+
+template <typename T>
+class ErrorCodec : public ErrorEncoder<T>, public ErrorDecoder<T> {
+ public:
+  using TargetType = T;
+
+  ErrorCodec(const base::string& encode_message, const base::string& decode_message)
+      : ErrorEncoder<T>(encode_message), ErrorDecoder<T>(decode_message) {}
+  ErrorCodec(base::string_view encode_message, base::string_view decode_message)
+      : ErrorEncoder<T>(encode_message), ErrorDecoder<T>(decode_message) {}
+};
+
+struct NullCodec {
+  using TargetType = nullptr_t;
+
+  template <EncodeBackend EB>
+  base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, base::nullptr_t ptr = nullptr) {
     return backend.makeNull();
   }
 
   template <DecodeBackend DB>
-  static base::Either<base::nullptr_t, typename DB::ErrorType> decode(
-      DB& backend, const typename DB::DataType& data) {
+  base::Either<base::nullptr_t, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
     auto result = backend.getNull(data);
-    if (result.hasValue()) {
-      return base::makeRight<base::nullptr_t, typename DB::ErrorType>(result.value());
+    if (!result.hasValue()) {
+      return base::Left(nullptr);
+    } else {
+      return base::Right(base::move(result.value()));
     }
-    return base::makeLeft<base::nullptr_t, typename DB::ErrorType>(nullptr);
   }
 };
 
-struct CodecBoolean {
-  using Type = bool;
+struct BooleanCodec {
+  using TargetType = bool;
 
   template <EncodeBackend EB>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                            bool b) {
+  base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, bool b) {
     return backend.makeBoolean(b);
   }
 
   template <DecodeBackend DB>
-  static base::Either<bool, typename DB::ErrorType> decode(
-      DB& backend, const typename DB::DataType& data) {
+  base::Either<bool, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
     return backend.getBoolean(data);
   }
 };
 
-struct CodecU8 {
-  using Type = u8;
+struct U32Codec {
+  using TargetType = u32;
 
   template <EncodeBackend EB>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                            u8 n) {
-    return backend.makeU8(n);
-  }
-
-  template <DecodeBackend DB>
-  static base::Either<u8, typename DB::ErrorType> decode(DB& backend,
-                                                         const typename DB::DataType& data) {
-    return backend.getU8(data);
-  }
-};
-
-struct CodecI8 {
-  using Type = i8;
-
-  template <EncodeBackend EB>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                            i8 n) {
-    return backend.makeI8(n);
-  }
-
-  template <DecodeBackend DB>
-  static base::Either<i8, typename DB::ErrorType> decode(DB& backend,
-                                                         const typename DB::DataType& data) {
-    return backend.getI8(data);
-  }
-};
-
-struct CodecU16 {
-  using Type = u16;
-
-  template <EncodeBackend EB>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                            u16 n) {
-    return backend.makeU16(n);
-  }
-
-  template <DecodeBackend DB>
-  static base::Either<u16, typename DB::ErrorType> decode(DB& backend,
-                                                          const typename DB::DataType& data) {
-    return backend.getU16(data);
-  }
-};
-
-struct CodecI16 {
-  using Type = i16;
-
-  template <EncodeBackend EB>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                            i16 n) {
-    return backend.makeI16(n);
-  }
-
-  template <DecodeBackend DB>
-  static base::Either<i16, typename DB::ErrorType> decode(DB& backend,
-                                                          const typename DB::DataType& data) {
-    return backend.getI16(data);
-  }
-};
-
-struct CodecU32 {
-  using Type = u32;
-
-  template <EncodeBackend EB>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                            u32 n) {
+  base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, u32 n) {
     return backend.makeU32(n);
   }
 
   template <DecodeBackend DB>
-  static base::Either<u32, typename DB::ErrorType> decode(DB& backend,
-                                                          const typename DB::DataType& data) {
+  base::Either<u32, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
     return backend.getU32(data);
   }
 };
 
-struct CodecI32 {
-  using Type = i32;
+struct I32Codec {
+  using TargetType = i32;
 
   template <EncodeBackend EB>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                            i32 n) {
+  base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, i32 n) {
     return backend.makeI32(n);
   }
 
   template <DecodeBackend DB>
-  static base::Either<i32, typename DB::ErrorType> decode(DB& backend,
-                                                          const typename DB::DataType& data) {
+  base::Either<i32, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
     return backend.getI32(data);
   }
 };
 
-struct CodecU64 {
-  using Type = u64;
+struct F32Codec {
+  using TargetType = f32;
 
   template <EncodeBackend EB>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                            u64 n) {
-    return backend.makeU64(n);
+  base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, f32 x) {
+    return backend.makeF32(x);
   }
 
   template <DecodeBackend DB>
-  static base::Either<u64, typename DB::ErrorType> decode(DB& backend,
-                                                          const typename DB::DataType& data) {
-    return backend.getU64(data);
-  }
-};
-
-struct CodecI64 {
-  using Type = i64;
-
-  template <EncodeBackend EB>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                            i64 n) {
-    return backend.makeI64(n);
-  }
-
-  template <DecodeBackend DB>
-  static base::Either<i64, typename DB::ErrorType> decode(DB& backend,
-                                                          const typename DB::DataType& data) {
-    return backend.getI64(data);
-  }
-};
-
-struct CodecF32 {
-  using Type = f32;
-
-  template <EncodeBackend EB>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                            f32 v) {
-    return backend.makeF32(v);
-  }
-
-  template <DecodeBackend DB>
-  static base::Either<f32, typename DB::ErrorType> decode(DB& backend,
-                                                          const typename DB::DataType& data) {
+  base::Either<f32, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
     return backend.getF32(data);
   }
 };
 
-struct CodecF64 {
-  using Type = f64;
+struct F64Codec {
+  using TargetType = f64;
 
   template <EncodeBackend EB>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend,
-                                                                            f64 v) {
-    return backend.makeF64(v);
+  base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, f64 x) {
+    return backend.makeF64(x);
   }
 
   template <DecodeBackend DB>
-  static base::Either<f64, typename DB::ErrorType> decode(DB& backend,
-                                                          const typename DB::DataType& data) {
+  base::Either<f64, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
     return backend.getF64(data);
   }
 };
 
-struct CodecString {
-  using Type = base::string;
+struct StringCodec {
+  using TargetType = base::string;
 
   template <EncodeBackend EB>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-      EB& backend, const base::string& s) {
+  base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const base::string& s) {
     return backend.makeString(s);
   }
 
   template <DecodeBackend DB>
-  static base::Either<base::string, typename DB::ErrorType> decode(
-      DB& backend, const typename DB::DataType& data) {
+  base::Either<base::string, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
     return backend.getString(data);
   }
 };
 
-/*
- * useful codecs
- */
+namespace _vector {
 
-/*
- * Codec of an array of some type
- *
- * CodecArray<Codec> encodes/decodes an array, whose elements are encoded/decoded using
- * Codec.
- */
-template <typename Codec>
-  requires Encoder<Codec> || Decoder<Codec>
-struct CodecArray {
-  using ChildType = Codec::Type;
-  using Type = base::vector<ChildType>;
+template <Encoder E, EncodeBackend EB>
+base::Either<typename EB::DataType, typename EB::ErrorType> encodeVector(E& encoder, EB& backend, const base::vector<typename E::TargetType>& v) {
+  base::vector<typename EB::DataType> array;
+  for (auto& item : v) {
+    auto result = encoder.encode(backend, item);
+    if (result.isRight())
+      return base::Right(base::move(result.right()));
+    array.emplace(base::move(result.left()));
+  }
+  return backend.makeArray(base::move(array));
+}
+
+template <Decoder D, DecodeBackend DB>
+base::Either<base::vector<typename D::TargetType>, typename DB::ErrorType> decode(D& decoder, DB& backend, const typename DB::DataType& data) {
+  auto data_array = backend.getArray(data);
+  if (data_array.isRight())
+    return base::Right(base::move(data_array.right()));
+
+  base::vector<typename D::TargetType> array;
+  for (auto& item : data_array.left()) {
+    auto result = decoder.decode(backend, item);
+    if (result.isRight())
+      return base::Right(base::move(result.right()));
+    array.emplace(base::move(result.left()));
+  }
+
+  return base::Left(base::move(array));
+}
+
+}  // namespace _vector
+
+template <Encoder E>
+class VectorEncoder {
+  using T = typename E::TargetType;
+
+ public:
+  using TargetType = base::vector<T>;
+
+  template <typename E2>
+  VectorEncoder(E2&& encoder) : _encoder(base::forward<E2>(encoder)) {}
 
   template <EncodeBackend EB>
-    requires Encoder<Codec>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-      EB& backend, const Type& array) {
-    base::vector<typename EB::DataType> tmp;
-    for (const auto& item : array) {
-      auto result = Codec::template encode<EB>(backend, item);
-      if (result.isRight()) return result;
-      tmp.emplace(base::move(result.left()));
-    }
-
-    return backend.makeArray(base::move(tmp));
+  base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const base::vector<T>& v) {
+    return _vector::encodeVector(_encoder, backend, v);
   }
 
-  template <DecodeBackend DB>
-    requires Decoder<Codec>
-  static base::Either<Type, typename DB::ErrorType> decode(
-      DB& backend, const typename DB::DataType& data) {
-    using ErrorType = DB::ErrorType;
-
-    auto result_array = backend.getArray(data);
-    if (result_array.isRight())
-      return base::makeRight<Type, ErrorType>(result_array.right());
-
-    Type tmp;
-    for (const auto& item : result_array.left()) {
-      auto result = Codec::template decode<DB>(backend, item);
-      if (result.isRight()) return base::makeRight<Type, ErrorType>(result.right());
-      tmp.emplace(base::move(result.left()));
-    }
-
-    return base::makeLeft<Type, ErrorType>(base::move(tmp));
-  }
+ private:
+  E _encoder;
 };
 
-template <typename F, typename E>
-concept CheckFunctionFor =
-    (Encoder<E> || Decoder<E>) && requires(const F& func, const E::Type& v) {
-      func(v);
-      { func(v) } -> base::SameAs<bool>;
-    };
+template <typename E>
+auto makeVectorEncoder(E&& encoder) { return VectorEncoder<base::remove_reference<E>>(base::forward<E>(encoder)); }
 
-/*
- * middleware codec that checks if the value to be encoded/decoded value meets certain condition
- */
-template <typename Codec, auto check_func>
-  requires(Encoder<Codec> || Decoder<Codec>) && CheckFunctionFor<decltype(check_func), Codec>
-struct CodecCheck {
-  using Type = Codec::Type;
+template <Decoder D>
+class VectorDecoder {
+  using T = typename D::TargetType;
+
+ public:
+  using TargetType = base::vector<T>;
+
+  template <typename D2>
+  VectorDecoder(D2&& decoder) : _decoder(base::forward<D2>(decoder)) {}
+
+  template <DecodeBackend DB>
+  base::Either<base::vector<T>, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
+    return _vector::decode(_decoder, backend, data);
+  }
+
+ private:
+  D _decoder;
+};
+
+template <typename D>
+auto makeVectorDecoder(D&& decoder) { return VectorDecoder<base::remove_reference<D>>(base::forward<D>(decoder)); }
+
+template <Codec C>
+class VectorCodec {
+  using T = typename C::TargetType;
+
+ public:
+  using TargetType = base::vector<T>;
+
+  template <typename C2>
+  VectorCodec(C2&& codec) : _codec(base::forward<C2>(codec)) {}
 
   template <EncodeBackend EB>
-    requires Encoder<Codec>
-  static base::Either<typename EB::DataType, typename EB::ErrorType> encode(
-      EB& backend, const Type& object) {
-    if (check_func(object)) {
-      return Codec::template encode<EB>(backend, object);
-    } else {
-      return base::makeRight<typename EB::DataType, typename EB::ErrorType>(
-          "value to be encoded failed the condition check");
-    }
+  base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const base::vector<T>& v) {
+    return _vector::encodeVector(_codec, backend, v);
   }
 
   template <DecodeBackend DB>
-    requires Decoder<Codec>
-  static base::Either<Type, typename DB::ErrorType> decode(
-      DB& backend, const typename DB::DataType& data) {
-    auto result = Codec::template decode<DB>(backend, data);
-    if (result.isLeft()) {
-      if (check_func(result.left())) {
-        return result;
+  base::Either<base::vector<T>, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
+    return _vector::decode(_codec, backend, data);
+  }
+
+ private:
+  C _codec;
+};
+
+template <typename C>
+auto makeVectorCodec(C&& codec) { return VectorCodec<base::remove_reference<C>>(base::forward<C>(codec)); }
+
+template <typename B>
+concept RecordBuilder = requires {
+  typename B::BackendType;
+} && EncodeBackend<typename B::BackendType> && requires(B& builder, const base::string& name, const B::BackendType::DataType& value) {
+  builder.add(name, value);
+} && requires(B& builder, const base::string& name, B::BackendType::DataType&& value) {
+  builder.add(name, base::move(value));
+} && requires(B& builder, B::BackendType& backend) {
+  {
+    builder.build(backend)
+  } -> base::SameAs<base::Either<typename B::BackendType::DataType, typename B::BackendType::ErrorType>>;
+};
+
+template <EncodeBackend EB>
+class RecordBuilderImpl {
+  using DataType = EB::DataType;
+  using ErrorType = EB::ErrorType;
+
+ public:
+  using BackendType = EB;
+
+  RecordBuilderImpl() {}
+
+  void add(const base::string& name, const DataType& value) {
+    _map.set(name, value);
+  }
+  void add(const base::string& name, DataType&& value) {
+    _map.set(name, base::move(value));
+  }
+
+  base::Either<DataType, ErrorType> build(EB& backend) {
+    return backend.makeMap(_map);
+  }
+
+ private:
+  base::HashMap<base::string, DataType> _map;
+};
+
+template <typename E>
+concept FieldEncoder = requires {
+  typename E::TargetType;
+} && requires(E& encoder, DummyEncodeBackend& backend, RecordBuilderImpl<DummyEncodeBackend>& builder, const E::TargetType& object) {
+  { encoder.encode(backend, builder, object) } -> base::SameAs<base::Optional<CodecError>>;
+};
+
+template <typename D>
+concept FieldDecoder = requires {
+  typename D::TargetType;
+} && requires(D& decoder, DummyDecodeBackend& backend, const DummyType& data) {
+  { decoder.decode(backend, data) } -> base::SameAs<base::Either<typename D::TargetType, CodecError>>;
+};
+
+template <typename C>
+concept FieldCodec = FieldEncoder<C> && FieldDecoder<C>;
+
+namespace _field {
+
+template <Encoder E, EncodeBackend EB, RecordBuilder RB>
+base::Optional<typename EB::ErrorType> encodeNormalField(E& encoder, base::string_view name, EB& backend, RB& builder, const typename E::TargetType& object) {
+  auto result = encoder.encode(backend, object);
+  if (result.isLeft()) {
+    builder.add(name, base::move(result.left()));
+    return base::nullopt;
+  } else {
+    return base::makeOptional<typename EB::ErrorType>(base::move(result.right()));
+  }
+}
+
+template <Decoder D, DecodeBackend DB>
+base::Either<typename D::TargetType, typename DB::ErrorType> decodeNormalField(D& decoder, base::string_view name, DB& backend, const typename DB::DataType& data) {
+  auto result = backend.getMember(data, name);
+  if (result.isLeft()) {
+    if (result.left().hasValue()) {
+      return decoder.decode(backend, base::move(result.left().value()));
+    } else {
+      return base::Right(typename DB::ErrorType(base::string("cannot find member '") + name + '\''));
+    }
+  } else {
+    return base::Right(base::move(result.right()));
+  }
+}
+
+template <Decoder D, DecodeBackend DB>
+base::Either<typename D::TargetType, typename DB::ErrorType> decodeDefaultField(D& decoder, base::string_view name, DB& backend, const typename DB::DataType& data, const typename D::TargetType default_value) {
+  auto result = backend.getMember(data, name);
+  if (result.isLeft()) {
+    if (result.left().hasValue()) {
+      return decoder.decode(backend, base::move(result.left().value()));
+    } else {
+      return base::Left(default_value);
+    }
+  } else {
+    return base::Right(base::move(result.right()));
+  }
+}
+
+template <Encoder E, EncodeBackend EB, RecordBuilder RB>
+base::Optional<typename EB::ErrorType> encodeOptionalField(E& encoder, base::string_view name, EB& backend, RB& builder, const base::Optional<typename E::TargetType>& object) {
+  if (object.hasValue()) {
+    auto result = encoder.encode(backend, object.value());
+    if (result.isRight()) {
+      return base::makeOptional<typename EB::ErrorType>(base::move(result.right()));
+    } else {
+      builder.add(name, base::move(result.left()));
+      return base::nullopt;
+    }
+  } else {
+    return base::nullopt;
+  }
+}
+
+template <Decoder D, DecodeBackend DB>
+base::Either<base::Optional<typename D::TargetType>, typename DB::ErrorType> decodeOptionalField(D& decoder, base::string_view name, DB& backend, const typename DB::DataType& data) {
+  using T = D::TargetType;
+
+  auto memberResult = backend.getMember(data, name);
+  if (memberResult.isLeft()) {
+    auto optional = base::move(memberResult.left());
+    if (optional.hasValue()) {
+      auto result = decoder.decode(backend, optional.value());
+      if (result.isLeft()) {
+        return base::Left(base::makeOptional<T>(base::move(result.left())));
       } else {
-        return base::makeRight<Type, typename DB::ErrorType>(
-            "decoded value failed the condition check");
+        return base::Right(base::move(result.right()));
       }
     } else {
-      return result;
+      return base::Left(base::Optional<T>());
     }
+  } else {
+    return base::Right(base::move(memberResult.right()));
   }
+}
+
+}  // namespace _field
+
+template <Encoder E>
+class NormalFieldEncoder {
+  using T = E::TargetType;
+
+ public:
+  using TargetType = T;
+
+  template <typename E2>
+  NormalFieldEncoder(base::string_view name, E2&& encoder) : _name(name), _encoder(base::forward<E2>(encoder)) {}
+
+  template <EncodeBackend EB, RecordBuilder RB>
+  base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const T& object) {
+    return _field::encodeNormalField(_encoder, _name.view(), backend, builder, object);
+  }
+
+ private:
+  base::string _name;
+  E _encoder;
 };
 
-template <typename Codec, Codec::Type v>
-// some compilers (e.g. GCC) will fail if they see '>' here
-using CodecGreaterThan = CodecCheck<Codec, [](const Codec::Type& a) { return !(a <= v); }>;
+template <Decoder D>
+class NormalFieldDecoder {
+  using T = D::TargetType;
 
-template <typename Codec, Codec::Type v>
-using CodecGreaterEqual = CodecCheck<Codec, [](const Codec::Type& a) { return !(a < v); }>;
+ public:
+  using TargetType = T;
 
-template <typename Codec, Codec::Type v>
-using CodecLessThan = CodecCheck<Codec, [](const Codec::Type& a) { return a < v; }>;
+  template <typename D2>
+  NormalFieldDecoder(base::string_view name, D2&& decoder) : _name(name), _decoder(base::forward<D2>(decoder)) {}
 
-template <typename Codec, Codec::Type v>
-using CodecLessEqual = CodecCheck<Codec, [](const Codec::Type& a) { return a <= v; }>;
+  template <DecodeBackend DB>
+  base::Either<typename D::TargetType, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
+    return _field::decodeNormalField(_decoder, _name.view(), backend, data);
+  }
 
-template <typename Codec, Codec::Type min, Codec::Type max>
-  requires(min <= max)
-using CodecInRange =
-    CodecCheck<Codec, [](const Codec::Type& a) { return a >= min && a <= max; }>;
+ private:
+  base::string _name;
+  D _decoder;
+};
+
+template <Codec C>
+class NormalFieldCodec {
+  using T = C::TargetType;
+
+ public:
+  using TargetType = T;
+
+  template <typename C2>
+  NormalFieldCodec(base::string_view name, C2&& codec) : _name(name), _codec(base::forward<C2>(codec)) {}
+
+  template <EncodeBackend EB, RecordBuilder RB>
+  base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const T& object) {
+    return _field::encodeNormalField(_codec, _name.view(), backend, builder, object);
+  }
+
+  template <DecodeBackend DB>
+  base::Either<typename C::TargetType, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
+    return _field::decodeNormalField(_codec, _name.view(), backend, data);
+  }
+
+ private:
+  base::string _name;
+  C _codec;
+};
+
+// There is no "DefaultFieldEncoder". It does not make sense.
+
+template <Decoder D>
+class DefaultFieldDecoder {
+  using T = D::TargetType;
+
+ public:
+  using TargetType = T;
+
+  template <typename D2>
+  DefaultFieldDecoder(base::string_view name, D2&& decoder, const T& default_value) : _name(name), _decoder(base::forward<D2>(decoder)), _default_value(default_value) {}
+
+  template <DecodeBackend DB>
+  base::Either<typename D::TargetType, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
+    return _field::decodeDefaultField(_decoder, _name.view(), backend, data, _default_value);
+  }
+
+ private:
+  base::string _name;
+  D _decoder;
+  T _default_value;
+};
+
+template <Codec C>
+class DefaultFieldCodec {
+  using T = C::TargetType;
+
+ public:
+  using TargetType = T;
+
+  template <typename C2>
+  DefaultFieldCodec(base::string_view name, C2&& codec, const T& default_value) : _name(name), _codec(base::forward<C2>(codec)), _default_value(default_value) {}
+
+  template <EncodeBackend EB, RecordBuilder RB>
+  base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const T& object) {
+    return _field::encodeNormalField(_codec, _name.view(), backend, builder, object);
+  }
+
+  template <DecodeBackend DB>
+  base::Either<typename C::TargetType, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
+    return _field::decodeDefaultField(_codec, _name.view(), backend, data, _default_value);
+  }
+
+ private:
+  base::string _name;
+  C _codec;
+  T _default_value;
+};
+
+template <Encoder E>
+class OptionalFieldEncoder {
+  using T = E::TargetType;
+
+ public:
+  using TargetType = base::Optional<T>;
+
+  template <typename E2>
+  OptionalFieldEncoder(base::string_view name, E2&& encoder) : _name(name), _encoder(base::forward<E2>(encoder)) {}
+
+  template <EncodeBackend EB, RecordBuilder RB>
+  base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const base::Optional<T>& object) {
+    return _field::encodeOptionalField(_encoder, _name.view(), backend, builder, object);
+  }
+
+ private:
+  base::string _name;
+  E _encoder;
+};
+
+template <Decoder D>
+class OptionalFieldDecoder {
+  using T = D::TargetType;
+
+ public:
+  using TargetType = base::Optional<T>;
+
+  template <typename D2>
+  OptionalFieldDecoder(base::string_view name, D2&& decoder) : _name(name), _decoder(base::forward<D2>(decoder)) {}
+
+  template <DecodeBackend DB>
+  base::Either<typename base::Optional<T>, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
+    return _field::decodeOptionalField(_decoder, _name.view(), backend, data);
+  }
+
+ private:
+  base::string _name;
+  D _decoder;
+};
+
+template <Codec C>
+class OptionalFieldCodec {
+  using T = C::TargetType;
+
+ public:
+  using TargetType = base::Optional<T>;
+
+  template <typename C2>
+  OptionalFieldCodec(base::string_view name, C2&& codec) : _name(name), _codec(base::forward<C2>(codec)) {}
+
+  template <EncodeBackend EB, RecordBuilder RB>
+  base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const base::Optional<T>& object) {
+    return _field::encodeOptionalField(_codec, _name.view(), backend, builder, object);
+  }
+
+  template <DecodeBackend DB>
+  base::Either<typename base::Optional<T>, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
+    return _field::decodeOptionalField(_codec, _name.view(), backend, data);
+  }
+
+ private:
+  base::string _name;
+  C _codec;
+};
+
+template <FieldEncoder FE, typename F /* S -> T */>
+struct RecordEncoderBuilder {
+  using TargetType = FE::TargetType;
+
+  FE field_encoder;
+  F getter;
+};
+
+// wrapper class for type match
+template <FieldDecoder FD>
+struct RecordDecoderBuilder {
+  using TargetType = FD::TargetType;
+
+  FD field_decoder;
+};
+
+template <FieldCodec FC, typename F /* S -> T */>
+struct RecordCodecBuilder {
+  using TargetType = FC::TargetType;
+
+  FC field_codec;
+  F getter;
+};
+
+template <typename S, typename E, typename F /* S -> E::TargetType */>
+auto makeNormalEncodeField(base::string_view name, E&& encoder, F&& getter) {
+  return RecordEncoderBuilder<NormalFieldEncoder<base::remove_reference<E>>, base::remove_reference<F>>{
+      .field_encoder = NormalFieldEncoder<base::remove_reference<E>>(name, base::forward<E>(encoder)),
+      .getter = getter};
+}
+
+template <typename D>
+auto makeNormalDecodeField(base::string_view name, D&& decoder) {
+  return RecordDecoderBuilder<NormalFieldDecoder<base::remove_reference<D>>>{
+      .field_decoder = NormalFieldDecoder<base::remove_reference<D>>(name, base::forward<D>(decoder))};
+}
+
+template <typename S, typename C, typename F /* S -> C::TargetType */>
+auto makeNormalField(base::string_view name, C&& codec, F&& getter) {
+  return RecordCodecBuilder<NormalFieldCodec<base::remove_reference<C>>, base::remove_reference<F>>{
+      .field_codec = NormalFieldCodec<base::remove_reference<C>>(name, base::forward<C>(codec)),
+      .getter = getter};
+}
+
+template <typename D>
+auto makeDefaultDecodeField(base::string_view name, D&& decoder, const typename D::TargetType& default_value) {
+  return RecordDecoderBuilder<DefaultFieldDecoder<base::remove_reference<D>>>{
+      .field_decoder = DefaultFieldDecoder<base::remove_reference<D>>(name, base::forward<D>(decoder), default_value)};
+}
+
+template <typename S, typename C, typename F /* S -> C::TargetType */>
+auto makeDefaultField(base::string_view name, C&& codec, const typename C::TargetType& default_value, F&& getter) {
+  return RecordCodecBuilder<DefaultFieldCodec<base::remove_reference<C>>, base::remove_reference<F>>{
+      .field_codec = DefaultFieldCodec<base::remove_reference<C>>(name, base::forward<C>(codec), default_value),
+      .getter = getter};
+}
+
+template <typename S, typename E, typename F /* S -> E::TargetType */>
+auto makeOptionalEncodeField(base::string_view name, E&& encoder, F&& getter) {
+  return RecordEncoderBuilder<OptionalFieldEncoder<base::remove_reference<E>>, base::remove_reference<F>>{
+      .field_encoder = OptionalFieldEncoder<base::remove_reference<E>>(name, base::forward<E>(encoder)),
+      .getter = getter};
+}
+
+template <typename D>
+auto makeOptionalDecodeField(base::string_view name, D&& decoder) {
+  return RecordDecoderBuilder<OptionalFieldDecoder<base::remove_reference<D>>>{
+      .field_decoder = OptionalFieldDecoder<base::remove_reference<D>>(name, base::forward<D>(decoder))};
+}
+
+template <typename S, typename C, typename F /* S -> C::TargetType */>
+auto makeOptionalField(base::string_view name, C&& codec, F&& getter) {
+  return RecordCodecBuilder<OptionalFieldCodec<base::remove_reference<C>>, base::remove_reference<F>>{
+      .field_codec = OptionalFieldCodec<base::remove_reference<C>>(name, base::forward<C>(codec)),
+      .getter = getter};
+}
+
+namespace _record {
+
+template <typename T /* RecordEncoderBuilder || RecordCodecBuilder */>
+struct EncoderFrom;
+
+template <FieldEncoder FE, typename F>
+struct EncoderFrom<RecordEncoderBuilder<FE, F>> {
+  EncoderFrom(RecordEncoderBuilder<FE, F>& builder) : encoder(builder.field_encoder) {}
+
+  FE& encoder;
+};
+
+template <FieldCodec FC, typename F>
+struct EncoderFrom<RecordCodecBuilder<FC, F>> {
+  EncoderFrom(RecordCodecBuilder<FC, F>& builder) : encoder(builder.field_codec) {}
+
+  FC& encoder;
+};
+
+template <typename T /* RecordDecoderBuilder || RecordCodecBuilder */>
+struct DecoderFrom;
+
+template <FieldDecoder FD>
+struct DecoderFrom<RecordDecoderBuilder<FD>> {
+  DecoderFrom(RecordDecoderBuilder<FD>& builder) : decoder(builder.field_decoder) {}
+
+  FD& decoder;
+};
+
+template <FieldCodec FC, typename F>
+struct DecoderFrom<RecordCodecBuilder<FC, F>> {
+  DecoderFrom(RecordCodecBuilder<FC, F>& builder) : decoder(builder.field_codec) {}
+
+  FC& decoder;
+};
+
+template <EncodeBackend EB, typename S, typename... Builders /* RecordEncoderBuilder || RecordCodecBuilder */>
+base::Either<typename EB::DataType, typename EB::ErrorType> encodeRecord(EB& backend, const S& object, base::tuple<Builders...>& builders) {
+  using DataType = EB::DataType;
+  using ErrorType = EB::ErrorType;
+
+  return base::apply(
+      [&](Builders&... builders) -> base::Either<DataType, ErrorType> {
+        RecordBuilderImpl<EB> record_builder;
+        base::Optional<ErrorType> error;
+
+        // magic fold expression that allows fast failing
+        bool success = ([&]() {
+          auto& builder = builders;
+          auto result = EncoderFrom<base::remove_reference<decltype(builder)>>(builder).encoder.encode(backend, record_builder, builder.getter(object));
+          if (result.hasValue()) {
+            error = base::makeOptional<ErrorType>(base::move(result.value()));
+            // This will cause the execution to fail fast, preventing encoding further entries.
+            return false;
+          } else {
+            return true;
+          }
+        }() && ...);
+
+        if (success) {
+          return record_builder.build(backend);
+        } else {
+          return base::Right(base::move(error.value()));
+        }
+      },
+      builders);
+}
+
+template <DecodeBackend DB, typename S, typename F, typename... Builders, typename I, I... indices>
+base::Either<S, typename DB::ErrorType> decodeRecordImpl(DB& backend, const typename DB::DataType& data, F& func, base::tuple<Builders...>& builders, base::integer_sequence<I, indices...>) {
+  using ErrorType = DB::ErrorType;
+
+  base::Optional<ErrorType> error;
+
+  // This hold decoded member values.
+  base::tuple<base::Optional<typename Builders::TargetType>...> values;
+
+  bool success = ([&]() {
+    const auto i = indices;
+    auto& builder = base::get<i>(builders);
+    auto result = DecoderFrom<base::remove_reference<decltype(builder)>>(builder).decoder.decode(backend, data);
+    using Type = base::Get<base::TypeList<typename Builders::TargetType...>, i>;
+    if (result.isLeft()) {
+      base::get<i>(values) = base::makeOptional<Type>(base::move(result.left()));
+      return true;
+    } else {
+      error = base::makeOptional<ErrorType>(base::move(result.right()));
+      return false;
+    }
+  }() && ...);
+
+  if (success) {
+    return base::Left(base::apply(
+        [&](const base::Optional<typename Builders::TargetType>&... args) {
+          return func(args.value()...);
+        },
+        base::move(values)));
+  } else {
+    return base::Right(base::move(error.value()));
+  }
+}
+
+template <DecodeBackend DB, typename S, typename F, typename... Builders /* RecordDecoderBuilder || RecordCodecBuilder */>
+base::Either<S, typename DB::ErrorType> decodeRecord(DB& backend, const typename DB::DataType& data, F& func, base::tuple<Builders...>& decoders) {
+  return decodeRecordImpl<DB, S, F>(backend, data, func, decoders, base::index_sequence_for<Builders...>{});
+}
+
+}  // namespace _record
+
+template <typename S, typename... Builders /* RecordEncoderBuilder || RecordCodecBuilder */>
+class RecordEncoder {
+ public:
+  using TargetType = S;
+
+  template <typename... Builders2>
+  RecordEncoder(Builders2&&... builders) : _builders(base::forward<Builders2>(builders)...) {}
+
+  template <EncodeBackend EB>
+  base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const S& object) {
+    return _record::encodeRecord<EB, S, Builders...>(backend, object, _builders);
+  }
+
+ private:
+  base::tuple<Builders...> _builders;
+};
+
+template <typename S, typename... Builders>
+auto makeRecordEncoder(Builders&&... builders) {
+  return RecordEncoder<S, base::remove_reference<Builders>...>(base::forward<Builders>(builders)...);
+}
+
+template <typename S, typename F /* (Ts...) -> S */, typename... Builders /* RecordDecoderBuilder || RecordCodecBuilder */>
+class RecordDecoder {
+ public:
+  using TargetType = S;
+
+  template <typename... Builders2>
+  RecordDecoder(F&& func, Builders2&&... decoders) : _func(base::forward<F>(func)), _decoders(base::forward<Builders2>(decoders)...) {}
+
+  template <DecodeBackend DB>
+  base::Either<S, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
+    return _record::decodeRecord<DB, S, F, Builders...>(backend, data, _func, _decoders);
+  }
+
+ private:
+  F _func;
+  base::tuple<Builders...> _decoders;
+};
+
+template <typename S, typename F, typename... Builders>
+auto makeRecordDecoder(F&& func, Builders&&... builders) {
+  return RecordDecoder<S, base::remove_reference<F>, base::remove_reference<Builders>...>(base::forward<F>(func), base::forward<Builders>(builders)...);
+}
+
+template <typename S, typename F /* (Ts...) -> S */, typename... Builders /* RecordCodecBuilder */>
+class RecordCodec {
+ public:
+  using TargetType = S;
+
+  template <typename... Builders2>
+  RecordCodec(F&& func, Builders2&&... builders) : _func(base::forward<F>(func)), _builders(base::forward<Builders2>(builders)...) {}
+
+  template <EncodeBackend EB>
+  base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const S& object) {
+    return _record::encodeRecord<EB, S, Builders...>(backend, object, _builders);
+  }
+
+  template <DecodeBackend DB>
+  base::Either<S, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
+    return _record::decodeRecord<DB, S, F, Builders...>(backend, data, _func, _builders);
+  }
+
+ private:
+  F _func;
+  base::tuple<Builders...> _builders;
+};
+
+template <typename S, typename F, typename... Builders>
+auto makeRecordCodec(F&& func, Builders&&... builders) {
+  return RecordCodec<S, base::remove_reference<F>, base::remove_reference<Builders>...>(base::forward<F>(func), base::forward<Builders>(builders)...);
+}
 
 }  // namespace spargel::codec

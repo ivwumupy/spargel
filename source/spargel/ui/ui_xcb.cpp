@@ -233,7 +233,7 @@ namespace spargel::ui {
 
     WindowXcb::WindowXcb(PlatformXcb* platform, xcb_window_t id)
         : _platform(platform), _id(id), _closed(false) {
-        platform->_windows.push(this);
+        platform->_windows.emplace(this);
     }
 
     WindowXcb::~WindowXcb() {
