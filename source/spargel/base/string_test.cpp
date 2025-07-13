@@ -11,12 +11,13 @@ using namespace spargel::base::literals;
 namespace {
 
     bool compare(const string& s, const char* s_expected) {
-        return strcmp(s.data(), s_expected) == 0;
+        usize len = s.length();
+        return memcmp(s.data(), s_expected, len) == 0 && s_expected[len] == 0;
     }
 
 }  // namespace
 
-/* FIXME
+// FIXME
 TEST(String_Empty) {
     string s;
     spargel_check(s.length() == 0);
@@ -29,7 +30,6 @@ TEST(String_Empty) {
     auto s3 = s1 + s2;
     spargel_check(s3 == s);
 }
-*/
 
 TEST(String_Basic) {
     {
