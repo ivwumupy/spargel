@@ -16,8 +16,14 @@ namespace spargel::base {
     template <typename S, typename T>
     concept SameAs = base::IsSame<S, T>;
 
+#if spargel_has_builtin(__is_nothrow_destructible)
     template <typename T>
     concept Destructible = __is_nothrow_destructible(T);
+#else
+    template <typename T>
+    concept Destructible = true;
+#endif
+
     template <typename T, typename... Args>
     concept ConstructibleFrom = Destructible<T> && __is_constructible(T, Args...);
     // note:
@@ -37,7 +43,13 @@ namespace spargel::base {
         T{};
         ::new T;
     };
+
+#if spargel_has_builtin(__is_trivially_destructible)
     template <typename T>
     concept TriviallyDestructible = __is_trivially_destructible(T);
+#else
+    template <typename T>
+    concept TriviallyDestructible = true;
+#endif
 
 }  // namespace spargel::base

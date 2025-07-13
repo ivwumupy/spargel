@@ -192,7 +192,7 @@ namespace spargel::base {
     inline constexpr bool is_referenceable = __is_referenceable(T);
 #else
     template <typename T>
-    inline constexpr bool is_referenceable = requires { is_same<T&, T&>; };
+    inline constexpr bool is_referenceable = requires { IsSame<T&, T&>; };
 #endif
 
 #if spargel_has_builtin(__is_void)
@@ -200,7 +200,7 @@ namespace spargel::base {
     inline constexpr bool is_void = __is_void(T);
 #else
     template <typename T>
-    inline constexpr bool is_void = is_same<void, remove_cv<T>>;
+    inline constexpr bool is_void = IsSame<void, remove_cv<T>>;
 #endif
 
 #if spargel_has_builtin(__add_pointer)
