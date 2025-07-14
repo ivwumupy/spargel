@@ -73,6 +73,12 @@ spargel_add_executable(
     DEPS base
 )
 
+spargel_add_executable(
+    NAME coroutine_demo
+    PRIVATE coroutine_demo.cpp
+    DEPS base
+)
+
 # TEST
 
 spargel_add_executable(

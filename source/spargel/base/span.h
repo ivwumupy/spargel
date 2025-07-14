@@ -41,4 +41,7 @@ namespace spargel::base {
         return span<T>(arr, arr + N);
     }
 
+    template <typename T>
+    using Span = span<T>;
+
 }  // namespace spargel::base
