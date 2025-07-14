@@ -17,7 +17,7 @@ namespace spargel::math {
         Matrix4x4() = default;
 
         // clang-format off
-        SPARGEL_ALWAYS_INLINE Matrix4x4(T a11, T a21, T a31, T a41,
+         Matrix4x4(T a11, T a21, T a31, T a41,
                                         T a12, T a22, T a32, T a42,
                                         T a13, T a23, T a33, T a43,
                                         T a14, T a24, T a34, T a44)

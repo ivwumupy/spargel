@@ -6,6 +6,7 @@ spargel_add_library(
         platform.cpp
         string.cpp
         logging.cpp
+        task.cpp
         test.cpp
         trace.cpp
     PRIVATE_POSIX

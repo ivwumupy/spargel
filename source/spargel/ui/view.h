@@ -9,15 +9,6 @@ namespace spargel::ui {
 
     class View;
 
-    class Scene {
-    public:
-        void addQuad();
-    };
-
-    class Layer {
-    public:
-    };
-
     /// A LayoutManager is owned by a View. It manages how the View's children should be laid out
     /// within the View's content bounds.
     ///
@@ -44,10 +35,10 @@ namespace spargel::ui {
         View();
         virtual ~View();
 
-        base::span<View*> getChildren();
+        base::Span<View*> children();
 
         void addChild(View* v) {
-            _children.push(v);
+            _children.emplace(v);
             v->setParent(this);
         }
 

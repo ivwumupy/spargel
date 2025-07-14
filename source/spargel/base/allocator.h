@@ -4,14 +4,8 @@
 #include <spargel/base/meta.h>
 #include <spargel/base/object.h>
 #include <spargel/base/panic.h>
+#include <spargel/base/placement_new.h>  // IWYU pragma: keep
 #include <spargel/base/types.h>
-
-// libc
-#include <string.h>
-
-// the default placement new cannot be overrided
-// #include <new>  // IWYU pragma: export
-#include "spargel/base/placement_new.h"
 
 namespace spargel::base {
 
@@ -51,47 +45,47 @@ namespace spargel::base {
         void free(void* ptr, usize size) override;
     };
 
-    class ArenaAllocator final : public Allocator {
-    public:
-        ArenaAllocator(usize size, Allocator* alloc) : _alloc{alloc} {
-            _begin = reinterpret_cast<Byte*>(_alloc->allocate(size));
-            _end = _begin + size;
-            _cur = _begin;
-        }
-        ~ArenaAllocator() override { _alloc->free(_begin, _end - _begin); }
+    // class ArenaAllocator final : public Allocator {
+    // public:
+    //     ArenaAllocator(usize size, Allocator* alloc) : _alloc{alloc} {
+    //         _begin = reinterpret_cast<Byte*>(_alloc->allocate(size));
+    //         _end = _begin + size;
+    //         _cur = _begin;
+    //     }
+    //     ~ArenaAllocator() override { _alloc->free(_begin, _end - _begin); }
 
-        void* allocate(usize size) override {
-            if (_cur + size >= _end) [[unlikely]] {
-                spargel_log_fatal("arena out of space");
-                spargel_panic_here();
-            }
-            _cur += size;
-            return _cur;
-        }
+    //     void* allocate(usize size) override {
+    //         if (_cur + size >= _end) [[unlikely]] {
+    //             spargel_log_fatal("arena out of space");
+    //             spargel_panic_here();
+    //         }
+    //         _cur += size;
+    //         return _cur;
+    //     }
 
-        void* resize(void* ptr, usize old_size, usize new_size) override {
-            if (_cur - old_size == ptr) {
-                // this is the last allocation
-                _cur += new_size - old_size;
-                return ptr;
-            }
-            auto new_ptr = allocate(new_size);
-            memcpy(new_ptr, ptr, old_size);
-            return new_ptr;
-        }
+    //     void* resize(void* ptr, usize old_size, usize new_size) override {
+    //         if (_cur - old_size == ptr) {
+    //             // this is the last allocation
+    //             _cur += new_size - old_size;
+    //             return ptr;
+    //         }
+    //         auto new_ptr = allocate(new_size);
+    //         memcpy(new_ptr, ptr, old_size);
+    //         return new_ptr;
+    //     }
 
-        void free(void* ptr, usize size) override {
-            if (_cur - size == ptr) {
-                _cur = reinterpret_cast<Byte*>(ptr);
-            }
-        }
+    //     void free(void* ptr, usize size) override {
+    //         if (_cur - size == ptr) {
+    //             _cur = reinterpret_cast<Byte*>(ptr);
+    //         }
+    //     }
 
-    private:
-        Byte* _begin;
-        Byte* _end;
-        Byte* _cur;
-        Allocator* _alloc;
-    };
+    // private:
+    //     Byte* _begin;
+    //     Byte* _end;
+    //     Byte* _cur;
+    //     Allocator* _alloc;
+    // };
 
 }  // namespace spargel::base
 

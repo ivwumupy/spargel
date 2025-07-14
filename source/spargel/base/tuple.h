@@ -39,6 +39,10 @@ namespace spargel::base {
         struct TupleStorage;
         template <typename L, usize... Is>
         struct TupleStorage<L, IntegerSequence<Is...>> : TupleItem<Is, L>... {
+            TupleStorage() {}
+            template <typename... U>
+            requires(sizeof...(U) == sizeof...(Is))
+            TupleStorage(U&&... u)  : TupleItem<Is, L>{forward<U>(u)}... {}
             template <usize i>
             auto& get() {
                 return TupleItem<i, L>::data;
@@ -53,8 +57,12 @@ namespace spargel::base {
         class Tuple {
         public:
             // TODO: constructors
+            Tuple() {}
+
             template <typename... Us>
-            Tuple(Us&&... args) : _storage{forward<Us>(args)...} {}
+            Tuple(Us&&... args)
+                requires(sizeof...(Us) == sizeof...(Ts))
+                : _storage(forward<Us>(args)...) {}
 
             template <usize i>
             auto& get() {

@@ -9,7 +9,7 @@
 #elif defined(SPARGEL_IS_GCC)
 #define SPARGEL_ALWAYS_INLINE [[gnu::always_inline]]
 #elif defined(SPARGEL_IS_MSVC)
-#define SPARGEL_ALWAYS_INLINE /*__forceinline*/
+#define SPARGEL_ALWAYS_INLINE __forceinline
 #else
 #define SPARGEL_ALWAYS_INLINE
 #endif

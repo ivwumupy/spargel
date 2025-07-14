@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spargel/base/types.h>
+
 namespace std {
     template <typename T, typename... Args>
     struct coroutine_traits {
@@ -16,6 +18,7 @@ namespace std {
             return h;
         }
         constexpr coroutine_handle() noexcept = default;
+        constexpr coroutine_handle(nullptr_t) noexcept {}
 
         void operator()() const { __builtin_coro_resume(handle_); }
 
@@ -28,6 +31,8 @@ namespace std {
         void destroy() const {
             __builtin_coro_destroy(handle_);
         }
+
+        constexpr explicit operator bool() const noexcept { return handle_ != nullptr; }
 
     private:
         void* handle_ = nullptr;
@@ -47,6 +52,7 @@ namespace std {
         }
 
         constexpr coroutine_handle() noexcept = default;
+        constexpr coroutine_handle(nullptr_t) noexcept {}
 
         constexpr operator coroutine_handle<>() { return coroutine_handle<void>::from_address(handle_); }
 
@@ -64,7 +70,9 @@ namespace std {
 
         P& promise() const {
             return *static_cast<P*>(__builtin_coro_promise(handle_, alignof(P), false));
-          }
+        }
+
+        constexpr explicit operator bool() const noexcept { return handle_ != nullptr; }
 
     private:
         void* handle_ = nullptr;

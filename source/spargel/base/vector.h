@@ -28,10 +28,8 @@ namespace spargel::base {
         template <typename T>
         class vector {
         public:
-            // vector(Allocator* alloc = default_allocator()) : _alloc{alloc} {}
             vector() {}
 
-            // vector(vector const& other) : _alloc{other._alloc} {
             vector(vector const& other) {
                 usize cnt = other.count();
                 if (cnt > 0) {
@@ -45,7 +43,6 @@ namespace spargel::base {
                 return *this;
             }
 
-            // vector(vector&& other) : _alloc{other._alloc} { swap(*this, other); }
             vector(vector&& other) { swap(*this, other); }
             vector& operator=(vector&& other) {
                 vector tmp(move(other));
@@ -64,12 +61,20 @@ namespace spargel::base {
 
             // construct and push back
             template <typename... Args>
-            SPARGEL_ALWAYS_INLINE inline void emplace(Args&&... args) {
+            void emplace(Args&&... args) {
                 if (_end >= _capacity) [[unlikely]] {
                     grow(capacity() + 1);
                 }
                 construct_at(_end, forward<Args>(args)...);
                 _end++;
+            }
+
+            void push(T const& t) {
+                emplace(t);
+            }
+
+            void push(T&& t) {
+                emplace(move(t));
             }
 
             void pop() {
