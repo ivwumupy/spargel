@@ -2,6 +2,7 @@ spargel_add_library(
     NAME base
     PRIVATE
         allocator.cpp
+        deflate.cpp
         panic.cpp
         platform.cpp
         string.cpp

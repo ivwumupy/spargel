@@ -50,11 +50,11 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Cannot open file \"%s\"\n", argv[1]);
         return 1;
     }
-    auto resource = base::move(optional.value());
+    auto& resource = optional.value();
 
     auto result = parseGlTF((char*)resource->mapData(), resource->size());
     if (result.isLeft()) {
-        dumpGlTF(base::move(result.left()));
+        dumpGlTF(result.left());
         putchar('\n');
     } else {
         fprintf(stderr, "Failed to parse glTF: %s\n", result.right().message().data());
