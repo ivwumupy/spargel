@@ -7,21 +7,18 @@
 using namespace spargel::base;
 
 TEST(ArrayStorage_DefaultConstructor) {
-    ArrayStorage<int> y(nullptr);
+    ArrayStorage<int> y;
     spargel_check(y.getCount() == 0);
-    spargel_check(y.getAllocator() == nullptr);
 }
 
 TEST(ArrayStorage_ConstructByCapacity) {
-    ArrayStorage<int> x(10, default_allocator());
+    ArrayStorage<int> x{10};
     spargel_check(x.getCount() == 10);
-    spargel_check(x.getAllocator() == default_allocator());
 }
 
 TEST(ArrayStorage_MoveConstructor) {
-    ArrayStorage<int> x(10, default_allocator());
+    ArrayStorage<int> x{10};
     ArrayStorage<int> z(move(x));
     spargel_check(x.getCount() == 0);  // NOLINT(clang-analyzer-cplusplus.Move)
     spargel_check(z.getCount() == 10);
-    spargel_check(z.getAllocator() == default_allocator());
 }

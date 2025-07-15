@@ -19,18 +19,14 @@ namespace spargel::base {
         template <typename K, typename T>
         class HashMap {
         public:
-            HashMap(Allocator* alloc = default_allocator())
-                : _keys(alloc), _values(alloc), _alloc{alloc} {
-                spargel_assert(alloc != nullptr);
-            }
+            HashMap() = default;
 
             HashMap(HashMap const& other)
                 : _capacity{other._capacity},
                   _count{other._count},
                   _status(other._status),
-                  _keys(other._capacity, other._alloc),
-                  _values(other._capacity, other._alloc),
-                  _alloc{other._alloc} {
+                  _keys(other._capacity),
+                  _values(other._capacity) {
                 spargel_assert(_capacity == _status.count());
 
                 for (usize i = 0; i < _capacity; i++) {
@@ -41,8 +37,6 @@ namespace spargel::base {
                 }
             }
             HashMap& operator=(HashMap const& other) {
-                spargel_assert(_alloc == other._alloc);
-
                 HashMap tmp(other);
                 swap(*this, tmp);
                 return *this;
@@ -50,15 +44,10 @@ namespace spargel::base {
 
             // FIXME:
             // ArrayStorage does not hava a default constructor
-            HashMap(HashMap&& other)
-                : _keys(other._alloc),
-                  _values(other._alloc),
-                  _alloc{other._alloc} {
+            HashMap(HashMap&& other) {
                 swap(*this, other);
             }
             HashMap& operator=(HashMap&& other) {
-                spargel_assert(_alloc == other._alloc);
-
                 HashMap tmp(base::move(other));
                 swap(*this, tmp);
                 return *this;
@@ -113,8 +102,6 @@ namespace spargel::base {
             usize count() const { return _count; }
 
             friend void tag_invoke(tag<swap>, HashMap& lhs, HashMap& rhs) {
-                spargel_assert(lhs._alloc == rhs._alloc);
-
                 base::swap(lhs._capacity, rhs._capacity);
                 base::swap(lhs._count, rhs._count);
                 base::swap(lhs._status, rhs._status);
@@ -137,8 +124,8 @@ namespace spargel::base {
                 usize new_cap = nextCapacity();
 
                 base::vector<SlotStatus> new_status;
-                base::ArrayStorage<K> new_keys(new_cap, _alloc);
-                base::ArrayStorage<T> new_values(new_cap, _alloc);
+                base::ArrayStorage<K> new_keys{new_cap};
+                base::ArrayStorage<T> new_values{new_cap};
                 new_status.reserve(new_cap);
                 new_status.set_count(new_cap);
                 for (usize i = 0; i < new_cap; i++) {
@@ -219,7 +206,6 @@ namespace spargel::base {
             base::vector<SlotStatus> _status;
             base::ArrayStorage<K> _keys;
             base::ArrayStorage<T> _values;
-            Allocator* _alloc;
         };
 
     }  // namespace _hash_map
