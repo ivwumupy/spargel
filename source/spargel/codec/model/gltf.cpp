@@ -114,6 +114,26 @@ namespace spargel::codec::model {
             makeOptionalDecodeField("target"_sv, I32Codec{}),
             makeOptionalDecodeField("name"_sv, StringCodec{}));
 
+        auto glTFMeshPrimitiveAttributesDecoder = makeRecordDecoder<GlTFMeshPrimitiveAttributes>(
+            base::Constructor<GlTFMeshPrimitiveAttributes>{},
+            makeOptionalDecodeField("POSITION"_sv, I32Codec{}),
+            makeOptionalDecodeField("NORMAL"_sv, I32Codec{}),
+            makeOptionalDecodeField("TEXCOORD_0"_sv, I32Codec{}),
+            makeOptionalDecodeField("COLOR_0"_sv, I32Codec{}));
+
+        auto glTFMeshPrimitiveDecoder = makeRecordDecoder<GlTFMeshPrimitive>(
+            base::Constructor<GlTFMeshPrimitive>{},
+            makeNormalDecodeField("attributes"_sv, glTFMeshPrimitiveAttributesDecoder),
+            makeOptionalDecodeField("indices"_sv, I32Codec{}),
+            makeOptionalDecodeField("material"_sv, I32Codec{}),
+            makeOptionalDecodeField("mode"_sv, I32Codec{}));
+
+        auto glTFMeshDecoder = makeRecordDecoder<GlTFMesh>(
+            base::Constructor<GlTFMesh>{},
+            makeNormalDecodeField("primitives"_sv, makeVectorDecoder(glTFMeshPrimitiveDecoder)),
+            makeOptionalDecodeField("weights"_sv, makeVectorDecoder(F64Codec{})),
+            makeOptionalDecodeField("name"_sv, StringCodec{}));
+
         auto glTFNodeDecoder = makeRecordDecoder<GlTFNode>(
             base::Constructor<GlTFNode>{},
             makeOptionalDecodeField("camera"_sv, I32Codec{}),
@@ -138,6 +158,7 @@ namespace spargel::codec::model {
             makeNormalDecodeField("asset"_sv, glTFAssetDecoder),
             makeOptionalDecodeField("buffers"_sv, makeVectorDecoder(glTFBufferDecoder)),
             makeOptionalDecodeField("bufferViews"_sv, makeVectorDecoder(glTFBufferViewDecoder)),
+            makeOptionalDecodeField("meshes"_sv, makeVectorDecoder(glTFMeshDecoder)),
             makeOptionalDecodeField("nodes"_sv, makeVectorDecoder(glTFNodeDecoder)),
             makeOptionalDecodeField("scene"_sv, I32Codec{}),
             makeOptionalDecodeField("scenes"_sv, makeVectorDecoder(glTFSceneDecoder)));

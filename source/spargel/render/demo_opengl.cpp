@@ -21,43 +21,47 @@ using namespace spargel::base::literals;
 #error unimplemented
 #endif
 
-class delegate final : public ui::WindowDelegate {
-public:
-    void onRender() override {
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+namespace {
 
-        glUseProgram(program);
+    class Delegate final : public ui::WindowDelegate {
+    public:
+        void onRender() override {
+            glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
 
-        glBindVertexArray(vao);
+            glUseProgram(program);
 
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+            glBindVertexArray(vao);
 
-#if SPARGEL_IS_LINUX
-        glXSwapBuffers(_x_display, _x_window);
-#elif SPARGEL_IS_WINDOWS
-        wglSwapLayerBuffers(_win32_hdc, WGL_SWAP_MAIN_PLANE);
-#endif
-    }
-
-    unsigned int program;
-    unsigned int vao;
+            glDrawArrays(GL_TRIANGLES, 0, 3);
 
 #if SPARGEL_IS_LINUX
-    Display* _x_display;
-    int _x_window;
+            glXSwapBuffers(x_display, x_window);
 #elif SPARGEL_IS_WINDOWS
-    HDC _win32_hdc;
+            wglSwapLayerBuffers(win32_hdc, WGL_SWAP_MAIN_PLANE);
 #endif
-};
+        }
+
+        u32 program;
+        u32 vao;
+
+#if SPARGEL_IS_LINUX
+        Display* x_display;
+        int x_window;
+#elif SPARGEL_IS_WINDOWS
+        HDC win32_hdc;
+#endif
+    };
+
+}  // namespace
 
 int main() {
-    auto resource_manager = resource::makeRelativeManager(base::string("resources"));
+    auto resource_manager = resource::makeRelativeManager("resources"_sv);
 
     auto platform = ui::makePlatform();
     auto window = platform->makeWindow(800, 600);
-    delegate d;
-    window->setDelegate(&d);
+    Delegate delegate;
+    window->setDelegate(&delegate);
     window->setTitle("Spargel Demo - OpenGL");
 
     auto handle = window->getHandle();
@@ -67,8 +71,8 @@ int main() {
     auto x_display = (Display*)handle.xcb.display;
     auto x_visual_info = (XVisualInfo*)handle.xcb.visual_info;
 
-    d._x_display = x_display;
-    d._x_window = x_window;
+    delegate.x_display = x_display;
+    delegate.x_window = x_window;
 
     GLXContext glx_ctx = glXCreateContext(x_display, x_visual_info, nullptr, GL_TRUE);
     if (!glx_ctx) {
@@ -111,7 +115,7 @@ int main() {
         0};
 
     HDC win32_hdc = GetDC(hwnd);
-    d._win32_hdc = win32_hdc;
+    d.win32_hdc = win32_hdc;
 
     int pixelFormat;
     pixelFormat = ChoosePixelFormat(win32_hdc, &pfd);
@@ -129,7 +133,7 @@ int main() {
     int success;
     char infoLog[512];
 
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    u32 vertexShader = glCreateShader(GL_VERTEX_SHADER);
     auto vertexShaderCode = resource_manager->open(resource::ResourceId("demo_opengl.vs"_sv));
     if (!vertexShaderCode.hasValue()) {
         spargel_log_fatal("cannot open vertex shader file");
@@ -146,7 +150,7 @@ int main() {
         spargel_panic_here();
     }
 
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    u32 fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     auto fragmentShaderCode = resource_manager->open(resource::ResourceId("demo_opengl.fs"_sv));
     if (!fragmentShaderCode.hasValue()) {
         spargel_log_fatal("cannot open fragment shader file");
@@ -163,7 +167,7 @@ int main() {
         spargel_panic_here();
     }
 
-    unsigned int shaderProgram = glCreateProgram();
+    u32 shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
@@ -176,7 +180,7 @@ int main() {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    d.program = shaderProgram;
+    delegate.program = shaderProgram;
 
     float vertices[] = {
         // positions         // colors
@@ -185,7 +189,8 @@ int main() {
         0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f     // top
     };
 
-    unsigned int vao, vbo;
+    u32 vao, vbo;
+
     glGenVertexArrays(1, &vao);
 
     glGenBuffers(1, &vbo);
@@ -205,7 +210,7 @@ int main() {
 
     glBindVertexArray(0);
 
-    d.vao = vao;
+    delegate.vao = vao;
 
     platform->startLoop();
 

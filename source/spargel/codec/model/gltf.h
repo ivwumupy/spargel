@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <spargel/base/hash_map.h>
 #include <spargel/base/optional.h>
 #include <spargel/base/string.h>
 #include <spargel/base/vector.h>
@@ -17,6 +18,7 @@
 
 namespace spargel::codec::model {
 
+    using base::HashMap;
     using base::Optional;
     using base::vector;
 
@@ -152,6 +154,62 @@ namespace spargel::codec::model {
     };
 
     /*
+     * A set of primitives to be rendered.
+     */
+    struct GlTFMeshPrimitive;
+    struct GlTFMesh {
+        // An array of primitives, each defining geometry to be rendered.
+        vector<GlTFMeshPrimitive> primitives;
+
+        // Array of weights to be applied to the morph targets.
+        // The number of array elements MUST match the number of morph targets.
+        Optional<vector<GlTFNumber>> weights;
+
+        // The user-defined name of this object. This is not necessarily unique, e.g., an accessor
+        // and a buffer could have the same name, or two accessors could even have the same name.
+        Optional<GlTFString> name;
+    };
+
+    struct GlTFMeshPrimitiveAttributes {
+        // Unitless XYZ vertex positions
+        // VEC3; float
+        Optional<GlTFInteger> position;
+
+        // Normalized XYZ vertex normals
+        // VEC3; float
+        Optional<GlTFInteger> normal;
+
+        // ST texture coordinates
+        // VEC2; float, unsigned byte normalized, unsigned short normalized
+        Optional<GlTFInteger> texcoord_0;
+
+        // RGB or RGBA vertex color linear multiplier
+        // VEC3, VEC4; float, unsigned byte normalized, unsigned short normalized
+        Optional<GlTFInteger> color_0;
+    };
+
+    /*
+     * Geometry to be rendered with the given material.
+     */
+    struct GlTFMeshPrimitive {
+        // A plain JSON object, where each key corresponds to a mesh attribute semantic and each value is the
+        // index of the accessor containing attribute's data.
+        // (HashMap<GlTFString, GlTFInteger> attributes;)
+        GlTFMeshPrimitiveAttributes attributes;
+
+        // The index of the accessor that contains the vertex indices. (>=0)
+        Optional<GlTFInteger> indices;
+
+        // The index of the material to apply to this primitive when rendering. (>=0)
+        Optional<GlTFInteger> material;
+
+        // The topology type of primitives to render.
+        // Allowed: 0=POINTS, 1=LINES, 2=LINE_LOOP, 3=LINE_STRIP, 4=TRIANGLES, 5=TRIANGLE_STRIP, 6=TRIANGLE_FAN.
+        // Default: 4.
+        Optional<GlTFInteger> mode;
+    };
+
+    /*
      * A node in the node hierarchy.
      */
     struct GlTFNode {
@@ -222,6 +280,9 @@ namespace spargel::codec::model {
         // An array of bufferViews. A bufferView is a view into a buffer generally representing a
         // subset of the buffer.
         Optional<vector<GlTFBufferView>> bufferViews;
+
+        // An array of meshes. A mesh is a set of primitives to be rendered.
+        Optional<vector<GlTFMesh>> meshes;
 
         // An array of nodes.
         Optional<vector<GlTFNode>> nodes;

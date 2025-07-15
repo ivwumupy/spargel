@@ -1,7 +1,7 @@
 #pragma once
 
-#include "spargel/base/limits.h"
 #include "spargel/base/check.h"
+#include "spargel/base/limits.h"
 
 namespace spargel::base {
     namespace detail {

@@ -66,9 +66,21 @@ if (SPARGEL_ENABLE_OPENGL)
             ui
     )
 
+    spargel_add_executable(
+        NAME demo_gltf_opengl
+        PRIVATE
+            demo_gltf_opengl.cpp
+        DEPS
+            codec_gltf
+            glad
+            resource
+            ui
+    )
+
     if (SPARGEL_IS_WINDOWS)
         find_package(OpenGL REQUIRED)
         target_link_libraries(demo_opengl PRIVATE OpenGL::GL)
+        target_link_libraries(demo_gltf_opengl PRIVATE OpenGL::GL)
     endif ()
 
     add_custom_target(demo_opengl_shaders ALL

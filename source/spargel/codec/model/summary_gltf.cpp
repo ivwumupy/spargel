@@ -15,13 +15,13 @@ namespace {
         // asset
         auto& asset = gltf.asset;
         puts("asset:");
-        printf("  version: \"%s\"\n", asset.version.data());
+        printf("  version: \"%s\"\n", base::CString(asset.version).data());
         if (asset.copyright.hasValue())
-            printf("  copyright: \"%s\"\n", asset.copyright.value().data());
+            printf("  copyright: \"%s\"\n", base::CString(asset.copyright.value()).data());
         if (asset.generator.hasValue())
-            printf("  generator: \"%s\"\n", asset.generator.value().data());
+            printf("  generator: \"%s\"\n", base::CString(asset.generator.value()).data());
         if (asset.minVersion.hasValue())
-            printf("  minVersion: \"%s\"\n", asset.minVersion.value().data());
+            printf("  minVersion: \"%s\"\n", base::CString(asset.minVersion.value()).data());
 
         if (gltf.accessors.hasValue()) printf("accessors: %zu\n", gltf.accessors.value().count());
 
@@ -29,6 +29,8 @@ namespace {
 
         if (gltf.bufferViews.hasValue())
             printf("bufferViews: %zu\n", gltf.bufferViews.value().count());
+
+        if (gltf.meshes.hasValue()) printf("meshes: %zu\n", gltf.meshes.value().count());
 
         if (gltf.nodes.hasValue()) printf("nodes: %zu\n", gltf.nodes.value().count());
 
