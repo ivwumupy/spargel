@@ -94,6 +94,7 @@ spargel_add_executable(
     inline_array_test.cpp
     meta_test.cpp
     optional_test.cpp
+    ref_ptr_tests.cpp
     string_test.cpp
     string_view_test.cpp
     sum_type_test.cpp

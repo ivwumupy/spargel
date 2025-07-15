@@ -1,11 +1,8 @@
 #pragma once
 
 #include <spargel/base/meta.h>
+#include <spargel/base/placement_new.h>  // IWYU pragma: keep
 #include <spargel/base/types.h>
-
-//
-// #include <new>  // placement new
-#include "spargel/base/placement_new.h"
 
 namespace spargel::base {
 
