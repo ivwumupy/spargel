@@ -8,5 +8,5 @@
 #if SPARGEL_ENABLE_ASSERT
 #define spargel_dcheck(cond) spargel_check(cond)
 #else
-#define spargel_dcheck(cond)
+#define spargel_dcheck(cond) spargel_check(cond)
 #endif

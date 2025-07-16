@@ -81,6 +81,14 @@ spargel_add_executable(
     DEPS base
 )
 
+spargel_add_executable(
+    NAME deflate_demo
+    PRIVATE deflate_demo.cpp
+    DEPS
+        base
+        resource
+)
+
 # TEST
 
 spargel_add_executable(

@@ -29,10 +29,10 @@ namespace spargel::base {
     }  // namespace
     void DeflateDecompressor::decompress(Span<Byte> input, Vector<Byte>& out) {
         stream_ = BitStream(input.begin(), input.end());
-        while (true) {
+        // while (true) {
             // TODO
             decompressBlock(out);
-        }
+        // }
     }
     void DeflateDecompressor::decompressBlock(Vector<Byte>& out) {
         stream_.refill();
@@ -47,12 +47,16 @@ namespace spargel::base {
         // TODO
     }
     void DeflateDecompressor::plainBlock(Vector<Byte>& out) {
-        u16 len = stream_.readU16();
-        stream_.advanceBytes(2);
-        u16 nlen = stream_.readU16();
+        stream_.alignToBoundary();
+        u16 len = stream_.consumeU16();
+        u16 nlen = stream_.consumeU16();
         // TODO: Don't panic.
-        spargel_check(len == ~nlen);
-        stream_.alignAndCopy(len, out);
+        //
+        // NOTE:
+        //   `nlen` is promoted to int in the expression `~nlen`.
+        //   We need to mask the extended zeros.
+        spargel_check(len == checkedConvert<u16>(~nlen & 0x00FF));
+        stream_.copy(len, out);
     }
     //         least-significant bit
     // +--------+
@@ -65,7 +69,7 @@ namespace spargel::base {
     //
     // In other words, if one were to print out the compressed data as a
     // sequence of bytes, starting with the first byte at the right margin and
-    // proceeding to the *left*, with the most- significant bit of each byte on
+    // proceeding to the left, with the most-significant bit of each byte on
     // the left as usual, one would be able to parse the result from right to
     // left, with fixed-width elements in the correct MSB-to-LSB order and
     // Huffman codes in bit-reversed order (i.e., with the first bit of the

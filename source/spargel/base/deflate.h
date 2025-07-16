@@ -32,7 +32,7 @@ namespace spargel::base {
         class BitStream {
         public:
             BitStream() = default;
-            BitStream(u8 const* begin, u8 const* end) : next_{begin}, end_{end} {}
+            BitStream(u8 const* begin, u8 const* end) : begin_{begin}, next_{begin}, end_{end} {}
 
             // Fill the bit buffer as much as possible.
             void refill();
@@ -49,6 +49,8 @@ namespace spargel::base {
             //
             // NOTE: The bit buffer will be cleared.
             void alignToBoundary();
+            // Copy n bytes to output.
+            void copy(usize n, Vector<Byte>& output);
             // Align to the next byte boundary and copy n bytes to the output.
             void alignAndCopy(usize n, Vector<Byte>& output) {
                 alignToBoundary();
@@ -65,11 +67,19 @@ namespace spargel::base {
             // NOTE: This is unaligned load.
             // TODO: Benchmark.
             u16 readU16() {
+                spargel_check(bits_left_ == 0);
                 return (static_cast<u16>(next_[1]) << 8) | static_cast<u16>(next_[0]);
+            }
+            u16 consumeU16() {
+                u16 x = readU16();
+                advanceBytes(2);
+                return x;
             }
 
             u8 bit0() { return buffer_ & 0b1; }
             u8 bit21() { return (buffer_ >> 1) & 0b11; }
+
+            usize consumed() { return checkedConvert<usize>(next_ - begin_); }
 
         private:
             // equal to the number of bits of the buffer
@@ -78,9 +88,8 @@ namespace spargel::base {
             // It's equal to MAX_BITS_LEFT - 7, otherwise a new byte can be filled.
             static constexpr u8 CONSUMABLE_BITS = MAX_BITS_LEFT - 7;
 
-            // Copy n bytes to output.
-            void copy(usize n, Vector<Byte>& output);
-
+            // DEBUG
+            u8 const* begin_ = nullptr;
             u8 const* next_ = nullptr;
             u8 const* end_ = nullptr;
             // several bytes
