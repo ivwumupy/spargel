@@ -68,8 +68,13 @@ namespace spargel::base {
     using UniquePtr = unique_ptr<T>;
 
     template <typename T, typename... Args>
-    unique_ptr<T> make_unique(Args&&... args) {
+    UniquePtr<T> makeUnique(Args&&... args) {
         return unique_ptr<T>(default_allocator()->allocObject<T>(forward<Args>(args)...));
+    }
+
+    template <typename T, typename... Args>
+    unique_ptr<T> make_unique(Args&&... args) {
+        return makeUnique<T>(forward<Args>(args)...);
     }
 
 }  // namespace spargel::base

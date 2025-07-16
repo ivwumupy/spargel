@@ -87,9 +87,10 @@ namespace spargel::base {
                 _end = _begin;
             }
 
-            void reserve(usize capacity) {
-                if (_begin + capacity > _capacity) {
-                    grow(capacity);
+            // Ensure that the vector can hold `n` elements without reallocation.
+            void reserve(usize n) {
+                if (_begin + n > _capacity) {
+                    grow(n);
                 }
             }
 
