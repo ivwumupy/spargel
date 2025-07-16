@@ -8,29 +8,23 @@
 #if SPARGEL_USE_FILE_MMAP
 
 #if SPARGEL_IS_POSIX
-
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
 #elif SPARGEL_IS_WINDOWS
 #include <windows.h>
 #endif
-
-// libc
-#include <string.h>
-
-#else  // SPARGEL_USE_FILE_MMAP
-
-// libc
-#include <stdio.h>
 
 #endif  // SPARGEL_USE_FILE_MMAP
 
 #if SPARGEL_IS_POSIX
 #include <unistd.h>
 #endif
+
+// libc
+#include <stdio.h>
+#include <string.h>
 
 namespace spargel::resource {
 
@@ -136,7 +130,7 @@ namespace spargel::resource {
                 return nullptr;
             }
             _mapping_handle = CreateFileMappingA(_file_handle, nullptr, PAGE_READONLY,
-                                                 HIWORD(_size), LOWORD(_size), nullptr);
+                                                 (unsigned long long)_size >> 32, _size & 0xffffffff, nullptr);
             if (!_mapping_handle) {
                 spargel_log_error("cannot create file mapping");
                 return nullptr;

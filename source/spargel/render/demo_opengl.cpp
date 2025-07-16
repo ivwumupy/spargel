@@ -115,7 +115,7 @@ int main() {
         0};
 
     HDC win32_hdc = GetDC(hwnd);
-    d.win32_hdc = win32_hdc;
+    delegate.win32_hdc = win32_hdc;
 
     int pixelFormat;
     pixelFormat = ChoosePixelFormat(win32_hdc, &pfd);

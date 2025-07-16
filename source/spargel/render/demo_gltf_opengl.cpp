@@ -19,6 +19,8 @@ using namespace spargel::base::literals;
 
 #if SPARGEL_IS_LINUX
 #include <GL/glx.h>
+#elif SPARGEL_IS_WINDOWS
+#include <windows.h>
 #else
 #error unimplemented
 #endif
@@ -53,12 +55,12 @@ namespace {
             0.0f, math::sin(camera_angle), math::cos(camera_angle), 0.0f,
             0.0f, 0.0f, 0.0f, 1.0f);
 
-    float near = 0.01f, far = 100.0f, tanFov = 1.0f, aspect = 800.0f / 600.0f;
+    float z_near = 0.01f, z_far = 100.0f, tanFov = 1.0f, aspect = 800.0f / 600.0f;
     auto mProjection = math::Matrix4x4f(
         1.0f / (tanFov * aspect), 0.0f, 0.0f, 0.0f,
         0.0f, 1.0f / tanFov, 0.0f, 0.0f,
-        0.0f, 0.0f, -(far + near) / (far - near), -1.0f,
-        0.0f, 0.0f, -2 * far * near / (far - near), 0.0f);
+        0.0f, 0.0f, -(z_far + z_near) / (z_far - z_near), -1.0f,
+        0.0f, 0.0f, -2 * z_far * z_near / (z_far - z_near), 0.0f);
 
     class Delegate final : public ui::WindowDelegate {
     public:
@@ -93,6 +95,8 @@ namespace {
 
 #if SPARGEL_IS_LINUX
             glXSwapBuffers(x_display, x_window);
+#elif SPARGEL_IS_WINDOWS
+            wglSwapLayerBuffers(win32_hdc, WGL_SWAP_MAIN_PLANE);
 #endif
         }
 
@@ -101,6 +105,8 @@ namespace {
 #if SPARGEL_IS_LINUX
         Display* x_display;
         int x_window;
+#elif SPARGEL_IS_WINDOWS
+        HDC win32_hdc;
 #endif
     };
 
@@ -399,6 +405,46 @@ int main(int argc, char* argv[]) {
         spargel_log_fatal("cannot make GL context current");
         spargel_panic_here();
     }
+#elif SPARGEL_IS_WINDOWS
+    auto hwnd = (HWND)handle.win32.hwnd;
+    PIXELFORMATDESCRIPTOR pfd = {
+        sizeof(PIXELFORMATDESCRIPTOR),
+        1,
+        PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,  // Flags
+        PFD_TYPE_RGBA,                                               // The kind of framebuffer. RGBA or palette.
+        32,                                                          // Colordepth of the framebuffer.
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        24,  // Number of bits for the depthbuffer
+        8,   // Number of bits for the stencilbuffer
+        0,   // Number of Aux buffers in the framebuffer.
+        PFD_MAIN_PLANE,
+        0,
+        0,
+        0,
+        0};
+
+    HDC win32_hdc = GetDC(hwnd);
+    delegate.win32_hdc = win32_hdc;
+
+    int pixelFormat;
+    pixelFormat = ChoosePixelFormat(win32_hdc, &pfd);
+    SetPixelFormat(win32_hdc, pixelFormat, &pfd);
+
+    HGLRC wgl_ctx = wglCreateContext(win32_hdc);
+
+    wglMakeCurrent(win32_hdc, wgl_ctx);
 #endif
 
     spargel_log_info("Glad generator version: %s", GLAD_GENERATOR_VERSION);
@@ -421,6 +467,8 @@ int main(int argc, char* argv[]) {
 
 #if SPARGEL_IS_LINUX
     glXDestroyContext(x_display, glx_ctx);
+#elif SPARGEL_IS_WINDOWS
+    wglDeleteContext(wgl_ctx);
 #endif
 
     return 0;

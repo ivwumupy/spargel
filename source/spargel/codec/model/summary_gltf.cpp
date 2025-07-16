@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
         dumpGlTF(result.left());
         putchar('\n');
     } else {
-        fprintf(stderr, "Failed to parse glTF: %s\n", result.right().message().data());
+        fprintf(stderr, "Failed to parse glTF: %s\n", base::CString(result.right().message()).data());
     }
 
     return 0;

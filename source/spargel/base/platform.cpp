@@ -4,7 +4,7 @@
 namespace spargel::base {
 
     // FIXME
-    string get_executable_path() {
+    String get_executable_path() {
         char* buf = (char*)base::default_allocator()->allocate(PATH_MAX);
         usize len = _get_executable_path(buf, PATH_MAX);
         if (len >= PATH_MAX) {
@@ -12,7 +12,7 @@ namespace spargel::base {
             _get_executable_path(buf, len + 1);
         }
         buf[len] = '\0';
-        string s = string_from_range(buf, buf + len);
+        String s = string_from_range(buf, buf + len);
         base::default_allocator()->free(buf, PATH_MAX);
         return s;
     }
