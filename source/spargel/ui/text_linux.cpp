@@ -40,7 +40,7 @@ namespace spargel::ui {
     TextSystemLinux::~TextSystemLinux() {}
 
     // TODO
-    LineLayout TextSystemLinux::layoutLine(base::string_view str) {
+    LineLayout TextSystemLinux::layoutLine(base::StringView str) {
         LayoutRun run;
         run.width = 0;
 

@@ -102,7 +102,7 @@ namespace spargel::codec {
     }
 
     namespace {
-        using base::string;
+        using base::String;
 
         using base::Either;
         using base::Left;
@@ -114,9 +114,9 @@ namespace spargel::codec {
 
         const auto UNEXPECTED_END = JsonParseError("unexpected end"_sv);
 
-        string char2hex(char ch) {
+        String char2hex(char ch) {
             const char hexDigits[] = "0123456789abcdef";
-            return string(hexDigits[(ch >> 4) & 0xf]) + hexDigits[ch & 0xf];
+            return String(hexDigits[(ch >> 4) & 0xf]) + hexDigits[ch & 0xf];
         }
 
         void appendUtf8(base::vector<char>& chars, u32 code) {
@@ -227,7 +227,7 @@ namespace spargel::codec {
                 if ((ch >= '0' && ch <= '9') || ch == '-') {
                     return parseNumber(ctx);
                 } else {
-                    return Right(JsonParseError(string("unexpected character: '") + ch + '\''));
+                    return Right(JsonParseError(String("unexpected character: '") + ch + '\''));
                 }
             }
         }
@@ -400,14 +400,14 @@ namespace spargel::codec {
                         appendUtf8(chars, code);
                     } break;
                     default:
-                        return Right(JsonParseError(string("unexpected escape character: '") + ch + '\''));
+                        return Right(JsonParseError(String("unexpected escape character: '") + ch + '\''));
                     }
                 } else if ((u8)ch >= 0x20) {
                     // TODO: unicode
                     // no problem for UTF-8
                     chars.emplace(ch);
                 } else {
-                    return Right(JsonParseError(string("invalid character 0x") + char2hex(ch)));
+                    return Right(JsonParseError(String("invalid character 0x") + char2hex(ch)));
                 }
             }
 

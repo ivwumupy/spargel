@@ -221,7 +221,7 @@ namespace spargel::resource {
     }
 #endif
 
-    base::string ResourceManagerDirectory::_real_path(const ResourceId& id) {
+    base::String ResourceManagerDirectory::_real_path(const ResourceId& id) {
         if (_root_path.length() == 0) {
             return id.path();
         } else {
@@ -230,10 +230,10 @@ namespace spargel::resource {
     }
 
     base::unique_ptr<ResourceManagerDirectory> makeRelativeManager(
-        const base::string& resources_dir) {
-        base::string root_path = util::dirname(base::get_executable_path());
+        const base::String& resources_dir) {
+        base::String root_path = util::dirname(base::get_executable_path());
         if (resources_dir.length() > 0)
-            root_path = root_path + PATH_SPLIT + base::string(resources_dir);
+            root_path = root_path + PATH_SPLIT + base::String(resources_dir);
         return base::make_unique<ResourceManagerDirectory>(root_path.view());
     }
 

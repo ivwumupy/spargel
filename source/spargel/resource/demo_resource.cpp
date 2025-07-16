@@ -43,9 +43,9 @@ static void xxd_print(char* data, size_t size) {
 }
 
 int main() {
-    auto resource_manager = resource::makeRelativeManager(base::string("resources"));
+    auto resource_manager = resource::makeRelativeManager(base::String("resources"));
 
-    base::string_view path = "dir/abc.txt"_sv;
+    base::StringView path = "dir/abc.txt"_sv;
 
     auto resource = resource_manager->open(resource::ResourceId(path));
     if (!resource.hasValue()) {

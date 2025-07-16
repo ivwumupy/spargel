@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     }
 
     auto manager = resource::ResourceManagerDirectory(""_sv);
-    auto optional = manager.open(resource::ResourceId(base::string(argv[1])));
+    auto optional = manager.open(resource::ResourceId(base::String(argv[1])));
     if (!optional.hasValue()) {
         fprintf(stderr, "Cannot open file \"%s\"\n", argv[1]);
         return 1;

@@ -56,24 +56,24 @@ namespace spargel::base {
     };
     class TaskRunner {
     public:
-          // bind the current thread to the runner
-          void bindCurrentThread();
+        // bind the current thread to the runner
+        void bindCurrentThread();
 
-          void postTask(Task&& t);
-          // Example:
-          //   Event e1, e2;
-          //   int a = 1;
-          //   postTask([&a, e1, e2]() -> Task {
-          //     co_await e1;
-          //     a = 2;
-          //     e2.notify();
-          //   });
-          //   postTask([&a, e2]() -> Task {
-          //     co_await e2;
-          //     a = 3;
-          //   });
-          //   e1.notify();
-          template <typename F>
-          void postTask(F&& f);
+        void postTask(Task&& t);
+        // Example:
+        //   Event e1, e2;
+        //   int a = 1;
+        //   postTask([&a, e1, e2]() -> Task {
+        //     co_await e1;
+        //     a = 2;
+        //     e2.notify();
+        //   });
+        //   postTask([&a, e2]() -> Task {
+        //     co_await e2;
+        //     a = 3;
+        //   });
+        //   e1.notify();
+        template <typename F>
+        void postTask(F&& f);
     };
-} // namespace spargel::base
+}  // namespace spargel::base

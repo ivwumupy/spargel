@@ -19,7 +19,7 @@ namespace spargel::codec {
 
     struct JsonNull {};
 
-    using JsonString = base::string;
+    using JsonString = base::String;
 
     using JsonNumber = double;
 
@@ -143,7 +143,7 @@ namespace spargel::codec {
             return base::Left(JsonValue(JsonNumber(v)));
         }
 
-        base::Either<JsonValue, JsonEncodeError> makeString(const base::string& s) {
+        base::Either<JsonValue, JsonEncodeError> makeString(const base::String& s) {
             return base::Left(JsonValue(JsonString(s)));
         }
 
@@ -151,7 +151,7 @@ namespace spargel::codec {
             return base::Left(JsonValue(JsonArray(array)));
         }
 
-        base::Either<JsonValue, JsonEncodeError> makeMap(const base::HashMap<base::string, JsonValue>& map) {
+        base::Either<JsonValue, JsonEncodeError> makeMap(const base::HashMap<base::String, JsonValue>& map) {
             return base::Left(JsonValue(JsonObject(map)));
         }
     };
@@ -177,11 +177,11 @@ namespace spargel::codec {
         base::Either<f32, JsonDecodeError> getF32(const JsonValue& data);
         base::Either<f64, JsonDecodeError> getF64(const JsonValue& data);
 
-        base::Either<base::string, JsonDecodeError> getString(const JsonValue& data);
+        base::Either<base::String, JsonDecodeError> getString(const JsonValue& data);
 
         base::Either<base::vector<JsonValue>, JsonDecodeError> getArray(const JsonValue& data);
 
-        base::Either<base::Optional<JsonValue>, JsonDecodeError> getMember(const JsonValue& data, base::string_view key);
+        base::Either<base::Optional<JsonValue>, JsonDecodeError> getMember(const JsonValue& data, base::StringView key);
     };
 
     struct JsonCodecBackend {

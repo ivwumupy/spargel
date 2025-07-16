@@ -9,9 +9,9 @@ namespace {
     static_assert(CodecBackend<JsonCodecBackend>);
 
     struct Student {
-        base::string type = base::string("normal");
-        base::string name;
-        base::Optional<base::string> nickname;
+        base::String type = base::String("normal");
+        base::String name;
+        base::Optional<base::String> nickname;
         u32 age;
         bool happy;
         base::vector<f32> scores;
@@ -19,7 +19,7 @@ namespace {
         static auto codec() {
             return makeRecordCodec<Student>(
                 base::Constructor<Student>{},
-                makeDefaultField<Student>("type"_sv, StringCodec{}, base::string("normal"), [](auto& o) { return o.type; }),
+                makeDefaultField<Student>("type"_sv, StringCodec{}, base::String("normal"), [](auto& o) { return o.type; }),
                 makeNormalField<Student>("name"_sv, StringCodec{}, [](auto& o) { return o.name; }),
                 makeOptionalField<Student>("nickname"_sv, StringCodec{}, [](auto& o) { return o.nickname; }),
                 makeNormalField<Student>("age"_sv, U32Codec{}, [](auto& o) { return o.age; }),
@@ -72,7 +72,7 @@ TEST(Json_Codec_Encode_Primitive) {
     result = F64Codec{}.encode(encodeBackend, 789.012);
     spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(789.012)));
 
-    result = StringCodec{}.encode(encodeBackend, base::string("ABC"));
+    result = StringCodec{}.encode(encodeBackend, base::String("ABC"));
     spargel_check(result.isLeft() && isEqual(result.left(), JsonString("ABC")));
 }
 
@@ -107,13 +107,13 @@ TEST(Json_Codec_Decode_Primitive) {
     }
     {
         auto result = StringCodec{}.decode(decodeBackend, JsonValue(JsonString("ABC")));
-        spargel_check(result.isLeft() && result.left() == base::string("ABC"));
+        spargel_check(result.isLeft() && result.left() == base::String("ABC"));
     }
 }
 
 TEST(Json_Codec_Encode_Array) {
     {
-        base::vector<base::string> v;
+        base::vector<base::String> v;
         v.emplace("ABC");
         v.emplace("123");
         v.emplace("!@#$");
@@ -174,10 +174,10 @@ TEST(Json_Codec_Decode_Array) {
         spargel_check(result.isLeft());
 
         auto& array = result.left();
-        spargel_check(array[0][0] == base::string("ABC"));
-        spargel_check(array[0][1] == base::string("123"));
-        spargel_check(array[1][0] == base::string("XYZ"));
-        spargel_check(array[1][1] == base::string("789"));
+        spargel_check(array[0][0] == base::String("ABC"));
+        spargel_check(array[0][1] == base::String("123"));
+        spargel_check(array[1][0] == base::String("XYZ"));
+        spargel_check(array[1][1] == base::String("789"));
     }
 }
 
@@ -230,8 +230,8 @@ TEST(Json_Codec_Decode_Record) {
         spargel_check(result.isLeft());
 
         auto& student = result.left();
-        spargel_check(student.type == base::string("normal"));
-        spargel_check(student.name == base::string("Alice"));
+        spargel_check(student.type == base::String("normal"));
+        spargel_check(student.name == base::String("Alice"));
         spargel_check(!student.nickname.hasValue());
         spargel_check(student.age == 20);
         spargel_check(student.happy == true);
@@ -273,8 +273,8 @@ TEST(Json_Codec_Decode_Record) {
 
         auto& students = result.left();
 
-        spargel_check(students[0].type == base::string("normal"));
-        spargel_check(students[0].name == base::string("Alice"));
+        spargel_check(students[0].type == base::String("normal"));
+        spargel_check(students[0].name == base::String("Alice"));
         spargel_check(!students[0].nickname.hasValue());
         spargel_check(students[0].age == 20);
         spargel_check(students[0].happy == true);
@@ -283,17 +283,17 @@ TEST(Json_Codec_Decode_Record) {
         spargel_check(fabs(students[0].scores[1] - 87.5f) < 1e-6f);
         spargel_check(fabs(students[0].scores[2] - 92) < 1e-6f);
 
-        spargel_check(students[1].type == base::string("normal"));
-        spargel_check(students[1].name == base::string("Bob"));
+        spargel_check(students[1].type == base::String("normal"));
+        spargel_check(students[1].name == base::String("Bob"));
         spargel_check(students[1].nickname.hasValue() &&
-                      students[1].nickname.value() == base::string("Bomb"));
+                      students[1].nickname.value() == base::String("Bomb"));
         spargel_check(students[1].age == 18);
         spargel_check(students[1].happy == false);
         spargel_check(students[1].scores.count() == 1);
         spargel_check(fabs(students[1].scores[0] - 65.5) < 1e-6f);
 
-        spargel_check(students[2].type == base::string("exchange"));
-        spargel_check(students[2].name == base::string("David"));
+        spargel_check(students[2].type == base::String("exchange"));
+        spargel_check(students[2].name == base::String("David"));
         spargel_check(!students[2].nickname.hasValue());
         spargel_check(students[2].age == 21);
         spargel_check(students[2].happy == true);

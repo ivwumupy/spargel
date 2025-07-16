@@ -114,7 +114,7 @@ namespace spargel::ui {
         TextSystemAppKit();
         ~TextSystemAppKit();
 
-        LineLayout layoutLine(base::string_view str) override;
+        LineLayout layoutLine(base::StringView str) override;
         RasterResult rasterizeGlyph(GlyphId id) override;
 
     private:

@@ -165,7 +165,7 @@ namespace spargel::base {
 
             ~String() = default;
 
-            // migration from base::string
+            // migration from base::String
             /*explicit*/ String(StringView view) {
                 usize len = view.length();
                 _bytes.reserve(len);
@@ -280,6 +280,7 @@ namespace spargel::base {
                 ::memcpy(data_, beg, len_);
                 data_[len_] = 0;
             }
+            CString(StringView view) : CString(view.begin(), view.end()) {}
             CString(const String& s) : CString(s.begin(), s.end()) {}
             ~CString() { default_allocator()->free(data_, len_ + 1); }
 

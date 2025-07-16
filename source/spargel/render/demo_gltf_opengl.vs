@@ -3,10 +3,12 @@
 layout (location = 0) in vec3 aPosition;
 layout (location = 1) in vec3 aNormal;
 
+uniform mat4 uMVP;
+
 out vec3 color;
 
 void main()
 {
-    gl_Position = vec4(aPosition, 1.0);
-    color = aNormal;
+    gl_Position = uMVP * vec4(aPosition, 1.0);
+    color = abs(aNormal);
 }

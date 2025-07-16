@@ -26,12 +26,12 @@ namespace spargel::codec {
      */
     class CodecError {
     public:
-        CodecError(const base::string& message) : _message(message) {}
-        CodecError(base::string_view message) : _message(message) {}
+        CodecError(const base::String& message) : _message(message) {}
+        CodecError(base::StringView message) : _message(message) {}
 
-        const base::string& message() { return _message; }
+        const base::String& message() { return _message; }
 
-        friend CodecError operator+(const CodecError& error, const base::string_view& str) {
+        friend CodecError operator+(const CodecError& error, const base::StringView& str) {
             return CodecError((error._message + str).view());
         }
 
@@ -44,7 +44,7 @@ namespace spargel::codec {
         }
 
     private:
-        base::string _message;
+        base::String _message;
     };
 
     /*
@@ -56,7 +56,7 @@ namespace spargel::codec {
 
     // Error classes for codec API should be directly constructable from messages.
     template <typename E>
-    concept ConstructableFromMessage = requires(base::string_view s) { E(s); } && requires(const base::string& s) { E(s); };
+    concept ConstructableFromMessage = requires(base::StringView s) { E(s); } && requires(const base::String& s) { E(s); };
 
     // encode backend prototype
     template <typename EB /* encode backend type */>
@@ -88,11 +88,11 @@ namespace spargel::codec {
         { backend.makeF32(v) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, f64 v) {
         { backend.makeF64(v) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
-    } && requires(EB& backend, const base::string& s) {
+    } && requires(EB& backend, const base::String& s) {
         { backend.makeString(s) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     } && requires(EB& backend, const base::vector<typename EB::DataType>& array) {
         { backend.makeArray(array) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
-    } && requires(EB& backend, const base::HashMap<base::string, typename EB::DataType>& map) {
+    } && requires(EB& backend, const base::HashMap<base::String, typename EB::DataType>& map) {
         { backend.makeMap(map) } -> base::SameAs<base::Either<typename EB::DataType, typename EB::ErrorType>>;
     };
 
@@ -119,10 +119,10 @@ namespace spargel::codec {
         { backend.getF32(data) } -> base::SameAs<base::Either<f32, typename DB::ErrorType>>;
         { backend.getF64(data) } -> base::SameAs<base::Either<f64, typename DB::ErrorType>>;
 
-        { backend.getString(data) } -> base::SameAs<base::Either<base::string, typename DB::ErrorType>>;
+        { backend.getString(data) } -> base::SameAs<base::Either<base::String, typename DB::ErrorType>>;
 
         { backend.getArray(data) } -> base::SameAs<base::Either<base::vector<typename DB::DataType>, typename DB::ErrorType>>;
-    } && requires(DB& backend, const DB::DataType& data, base::string_view key) {
+    } && requires(DB& backend, const DB::DataType& data, base::StringView key) {
         { backend.getMember(data, key) } -> base::SameAs<base::Either<base::Optional<typename DB::DataType>, typename DB::ErrorType>>;
     };
 
@@ -165,12 +165,12 @@ namespace spargel::codec {
             base::Either<DummyType, CodecError> makeF32(f32 v);
             base::Either<DummyType, CodecError> makeF64(f64 v);
 
-            base::Either<DummyType, CodecError> makeString(const base::string& s);
+            base::Either<DummyType, CodecError> makeString(const base::String& s);
 
             base::Either<DummyType, CodecError> makeArray(const base::vector<DummyType>& array);
 
             base::Either<DummyType, CodecError> makeMap(
-                const base::HashMap<base::string, DummyType>& map);
+                const base::HashMap<base::String, DummyType>& map);
         };
         static_assert(EncodeBackend<DummyEncodeBackend>);
 
@@ -194,11 +194,11 @@ namespace spargel::codec {
             base::Either<f32, CodecError> getF32(const DummyType& data);
             base::Either<f64, CodecError> getF64(const DummyType& data);
 
-            base::Either<base::string, CodecError> getString(const DummyType& data);
+            base::Either<base::String, CodecError> getString(const DummyType& data);
 
             base::Either<base::vector<DummyType>, CodecError> getArray(const DummyType& data);
 
-            base::Either<base::Optional<DummyType>, CodecError> getMember(const DummyType& data, base::string_view key);
+            base::Either<base::Optional<DummyType>, CodecError> getMember(const DummyType& data, base::StringView key);
         };
         static_assert(DecodeBackend<DummyDecodeBackend>);
 
@@ -226,8 +226,8 @@ namespace spargel::codec {
     public:
         using TargetType = T;
 
-        ErrorEncoder(const base::string& message) : _message(message) {}
-        ErrorEncoder(base::string_view message) : _message(message) {}
+        ErrorEncoder(const base::String& message) : _message(message) {}
+        ErrorEncoder(base::StringView message) : _message(message) {}
 
         template <EncodeBackend EB>
         base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const T& object) {
@@ -235,7 +235,7 @@ namespace spargel::codec {
         }
 
     private:
-        base::string _message;
+        base::String _message;
     };
 
     template <typename T>
@@ -243,8 +243,8 @@ namespace spargel::codec {
     public:
         using TargetType = T;
 
-        ErrorDecoder(const base::string& message) : _message(message) {}
-        ErrorDecoder(base::string_view message) : _message(message) {}
+        ErrorDecoder(const base::String& message) : _message(message) {}
+        ErrorDecoder(base::StringView message) : _message(message) {}
 
         template <DecodeBackend DB>
         base::Either<T, typename DB::ErrorType> decode(DB& backend, const DB::DataType& data) {
@@ -252,7 +252,7 @@ namespace spargel::codec {
         }
 
     private:
-        base::string _message;
+        base::String _message;
     };
 
     template <typename T>
@@ -260,9 +260,9 @@ namespace spargel::codec {
     public:
         using TargetType = T;
 
-        ErrorCodec(const base::string& encode_message, const base::string& decode_message)
+        ErrorCodec(const base::String& encode_message, const base::String& decode_message)
             : ErrorEncoder<T>(encode_message), ErrorDecoder<T>(decode_message) {}
-        ErrorCodec(base::string_view encode_message, base::string_view decode_message)
+        ErrorCodec(base::StringView encode_message, base::StringView decode_message)
             : ErrorEncoder<T>(encode_message), ErrorDecoder<T>(decode_message) {}
     };
 
@@ -356,15 +356,15 @@ namespace spargel::codec {
     };
 
     struct StringCodec {
-        using TargetType = base::string;
+        using TargetType = base::String;
 
         template <EncodeBackend EB>
-        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const base::string& s) {
+        base::Either<typename EB::DataType, typename EB::ErrorType> encode(EB& backend, const base::String& s) {
             return backend.makeString(s);
         }
 
         template <DecodeBackend DB>
-        base::Either<base::string, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
+        base::Either<base::String, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
             return backend.getString(data);
         }
     };
@@ -476,9 +476,9 @@ namespace spargel::codec {
     template <typename B>
     concept RecordBuilder = requires {
         typename B::BackendType;
-    } && EncodeBackend<typename B::BackendType> && requires(B& builder, const base::string& name, const B::BackendType::DataType& value) {
+    } && EncodeBackend<typename B::BackendType> && requires(B& builder, const base::String& name, const B::BackendType::DataType& value) {
         builder.add(name, value);
-    } && requires(B& builder, const base::string& name, B::BackendType::DataType&& value) {
+    } && requires(B& builder, const base::String& name, B::BackendType::DataType&& value) {
         builder.add(name, base::move(value));
     } && requires(B& builder, B::BackendType& backend) {
         {
@@ -496,10 +496,10 @@ namespace spargel::codec {
 
         RecordBuilderImpl() {}
 
-        void add(const base::string& name, const DataType& value) {
+        void add(const base::String& name, const DataType& value) {
             _map.set(name, value);
         }
-        void add(const base::string& name, DataType&& value) {
+        void add(const base::String& name, DataType&& value) {
             _map.set(name, base::move(value));
         }
 
@@ -508,7 +508,7 @@ namespace spargel::codec {
         }
 
     private:
-        base::HashMap<base::string, DataType> _map;
+        base::HashMap<base::String, DataType> _map;
     };
 
     template <typename E>
@@ -531,7 +531,7 @@ namespace spargel::codec {
     namespace _field {
 
         template <Encoder E, EncodeBackend EB, RecordBuilder RB>
-        base::Optional<typename EB::ErrorType> encodeNormalField(E& encoder, base::string_view name, EB& backend, RB& builder, const typename E::TargetType& object) {
+        base::Optional<typename EB::ErrorType> encodeNormalField(E& encoder, base::StringView name, EB& backend, RB& builder, const typename E::TargetType& object) {
             auto result = encoder.encode(backend, object);
             if (result.isLeft()) {
                 builder.add(name, base::move(result.left()));
@@ -542,13 +542,13 @@ namespace spargel::codec {
         }
 
         template <Decoder D, DecodeBackend DB>
-        base::Either<typename D::TargetType, typename DB::ErrorType> decodeNormalField(D& decoder, base::string_view name, DB& backend, const typename DB::DataType& data) {
+        base::Either<typename D::TargetType, typename DB::ErrorType> decodeNormalField(D& decoder, base::StringView name, DB& backend, const typename DB::DataType& data) {
             auto result = backend.getMember(data, name);
             if (result.isLeft()) {
                 if (result.left().hasValue()) {
                     return decoder.decode(backend, base::move(result.left().value()));
                 } else {
-                    return base::Right(typename DB::ErrorType(base::string("cannot find member '") + name + '\''));
+                    return base::Right(typename DB::ErrorType(base::String("cannot find member '") + name + '\''));
                 }
             } else {
                 return base::Right(base::move(result.right()));
@@ -556,7 +556,7 @@ namespace spargel::codec {
         }
 
         template <Decoder D, DecodeBackend DB>
-        base::Either<typename D::TargetType, typename DB::ErrorType> decodeDefaultField(D& decoder, base::string_view name, DB& backend, const typename DB::DataType& data, const typename D::TargetType default_value) {
+        base::Either<typename D::TargetType, typename DB::ErrorType> decodeDefaultField(D& decoder, base::StringView name, DB& backend, const typename DB::DataType& data, const typename D::TargetType default_value) {
             auto result = backend.getMember(data, name);
             if (result.isLeft()) {
                 if (result.left().hasValue()) {
@@ -570,7 +570,7 @@ namespace spargel::codec {
         }
 
         template <Encoder E, EncodeBackend EB, RecordBuilder RB>
-        base::Optional<typename EB::ErrorType> encodeOptionalField(E& encoder, base::string_view name, EB& backend, RB& builder, const base::Optional<typename E::TargetType>& object) {
+        base::Optional<typename EB::ErrorType> encodeOptionalField(E& encoder, base::StringView name, EB& backend, RB& builder, const base::Optional<typename E::TargetType>& object) {
             if (object.hasValue()) {
                 auto result = encoder.encode(backend, object.value());
                 if (result.isRight()) {
@@ -585,7 +585,7 @@ namespace spargel::codec {
         }
 
         template <Decoder D, DecodeBackend DB>
-        base::Either<base::Optional<typename D::TargetType>, typename DB::ErrorType> decodeOptionalField(D& decoder, base::string_view name, DB& backend, const typename DB::DataType& data) {
+        base::Either<base::Optional<typename D::TargetType>, typename DB::ErrorType> decodeOptionalField(D& decoder, base::StringView name, DB& backend, const typename DB::DataType& data) {
             using T = D::TargetType;
 
             auto memberResult = backend.getMember(data, name);
@@ -616,7 +616,7 @@ namespace spargel::codec {
         using TargetType = T;
 
         template <typename E2>
-        NormalFieldEncoder(base::string_view name, E2&& encoder) : _name(name), _encoder(base::forward<E2>(encoder)) {}
+        NormalFieldEncoder(base::StringView name, E2&& encoder) : _name(name), _encoder(base::forward<E2>(encoder)) {}
 
         template <EncodeBackend EB, RecordBuilder RB>
         base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const T& object) {
@@ -624,7 +624,7 @@ namespace spargel::codec {
         }
 
     private:
-        base::string _name;
+        base::String _name;
         E _encoder;
     };
 
@@ -636,7 +636,7 @@ namespace spargel::codec {
         using TargetType = T;
 
         template <typename D2>
-        NormalFieldDecoder(base::string_view name, D2&& decoder) : _name(name), _decoder(base::forward<D2>(decoder)) {}
+        NormalFieldDecoder(base::StringView name, D2&& decoder) : _name(name), _decoder(base::forward<D2>(decoder)) {}
 
         template <DecodeBackend DB>
         base::Either<typename D::TargetType, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
@@ -644,7 +644,7 @@ namespace spargel::codec {
         }
 
     private:
-        base::string _name;
+        base::String _name;
         D _decoder;
     };
 
@@ -656,7 +656,7 @@ namespace spargel::codec {
         using TargetType = T;
 
         template <typename C2>
-        NormalFieldCodec(base::string_view name, C2&& codec) : _name(name), _codec(base::forward<C2>(codec)) {}
+        NormalFieldCodec(base::StringView name, C2&& codec) : _name(name), _codec(base::forward<C2>(codec)) {}
 
         template <EncodeBackend EB, RecordBuilder RB>
         base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const T& object) {
@@ -669,7 +669,7 @@ namespace spargel::codec {
         }
 
     private:
-        base::string _name;
+        base::String _name;
         C _codec;
     };
 
@@ -683,7 +683,7 @@ namespace spargel::codec {
         using TargetType = T;
 
         template <typename D2>
-        DefaultFieldDecoder(base::string_view name, D2&& decoder, const T& default_value) : _name(name), _decoder(base::forward<D2>(decoder)), _default_value(default_value) {}
+        DefaultFieldDecoder(base::StringView name, D2&& decoder, const T& default_value) : _name(name), _decoder(base::forward<D2>(decoder)), _default_value(default_value) {}
 
         template <DecodeBackend DB>
         base::Either<typename D::TargetType, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
@@ -691,7 +691,7 @@ namespace spargel::codec {
         }
 
     private:
-        base::string _name;
+        base::String _name;
         D _decoder;
         T _default_value;
     };
@@ -704,7 +704,7 @@ namespace spargel::codec {
         using TargetType = T;
 
         template <typename C2>
-        DefaultFieldCodec(base::string_view name, C2&& codec, const T& default_value) : _name(name), _codec(base::forward<C2>(codec)), _default_value(default_value) {}
+        DefaultFieldCodec(base::StringView name, C2&& codec, const T& default_value) : _name(name), _codec(base::forward<C2>(codec)), _default_value(default_value) {}
 
         template <EncodeBackend EB, RecordBuilder RB>
         base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const T& object) {
@@ -717,7 +717,7 @@ namespace spargel::codec {
         }
 
     private:
-        base::string _name;
+        base::String _name;
         C _codec;
         T _default_value;
     };
@@ -730,7 +730,7 @@ namespace spargel::codec {
         using TargetType = base::Optional<T>;
 
         template <typename E2>
-        OptionalFieldEncoder(base::string_view name, E2&& encoder) : _name(name), _encoder(base::forward<E2>(encoder)) {}
+        OptionalFieldEncoder(base::StringView name, E2&& encoder) : _name(name), _encoder(base::forward<E2>(encoder)) {}
 
         template <EncodeBackend EB, RecordBuilder RB>
         base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const base::Optional<T>& object) {
@@ -738,7 +738,7 @@ namespace spargel::codec {
         }
 
     private:
-        base::string _name;
+        base::String _name;
         E _encoder;
     };
 
@@ -750,7 +750,7 @@ namespace spargel::codec {
         using TargetType = base::Optional<T>;
 
         template <typename D2>
-        OptionalFieldDecoder(base::string_view name, D2&& decoder) : _name(name), _decoder(base::forward<D2>(decoder)) {}
+        OptionalFieldDecoder(base::StringView name, D2&& decoder) : _name(name), _decoder(base::forward<D2>(decoder)) {}
 
         template <DecodeBackend DB>
         base::Either<typename base::Optional<T>, typename DB::ErrorType> decode(DB& backend, const typename DB::DataType& data) {
@@ -758,7 +758,7 @@ namespace spargel::codec {
         }
 
     private:
-        base::string _name;
+        base::String _name;
         D _decoder;
     };
 
@@ -770,7 +770,7 @@ namespace spargel::codec {
         using TargetType = base::Optional<T>;
 
         template <typename C2>
-        OptionalFieldCodec(base::string_view name, C2&& codec) : _name(name), _codec(base::forward<C2>(codec)) {}
+        OptionalFieldCodec(base::StringView name, C2&& codec) : _name(name), _codec(base::forward<C2>(codec)) {}
 
         template <EncodeBackend EB, RecordBuilder RB>
         base::Optional<typename EB::ErrorType> encode(EB& backend, RB& builder, const base::Optional<T>& object) {
@@ -783,7 +783,7 @@ namespace spargel::codec {
         }
 
     private:
-        base::string _name;
+        base::String _name;
         C _codec;
     };
 
@@ -812,53 +812,53 @@ namespace spargel::codec {
     };
 
     template <typename S, typename E, typename F /* S -> E::TargetType */>
-    auto makeNormalEncodeField(base::string_view name, E&& encoder, F&& getter) {
+    auto makeNormalEncodeField(base::StringView name, E&& encoder, F&& getter) {
         return RecordEncoderBuilder<NormalFieldEncoder<base::remove_reference<E>>, base::remove_reference<F>>{
             .field_encoder = NormalFieldEncoder<base::remove_reference<E>>(name, base::forward<E>(encoder)),
             .getter = getter};
     }
 
     template <typename D>
-    auto makeNormalDecodeField(base::string_view name, D&& decoder) {
+    auto makeNormalDecodeField(base::StringView name, D&& decoder) {
         return RecordDecoderBuilder<NormalFieldDecoder<base::remove_reference<D>>>{
             .field_decoder = NormalFieldDecoder<base::remove_reference<D>>(name, base::forward<D>(decoder))};
     }
 
     template <typename S, typename C, typename F /* S -> C::TargetType */>
-    auto makeNormalField(base::string_view name, C&& codec, F&& getter) {
+    auto makeNormalField(base::StringView name, C&& codec, F&& getter) {
         return RecordCodecBuilder<NormalFieldCodec<base::remove_reference<C>>, base::remove_reference<F>>{
             .field_codec = NormalFieldCodec<base::remove_reference<C>>(name, base::forward<C>(codec)),
             .getter = getter};
     }
 
     template <typename D>
-    auto makeDefaultDecodeField(base::string_view name, D&& decoder, const typename D::TargetType& default_value) {
+    auto makeDefaultDecodeField(base::StringView name, D&& decoder, const typename D::TargetType& default_value) {
         return RecordDecoderBuilder<DefaultFieldDecoder<base::remove_reference<D>>>{
             .field_decoder = DefaultFieldDecoder<base::remove_reference<D>>(name, base::forward<D>(decoder), default_value)};
     }
 
     template <typename S, typename C, typename F /* S -> C::TargetType */>
-    auto makeDefaultField(base::string_view name, C&& codec, const typename C::TargetType& default_value, F&& getter) {
+    auto makeDefaultField(base::StringView name, C&& codec, const typename C::TargetType& default_value, F&& getter) {
         return RecordCodecBuilder<DefaultFieldCodec<base::remove_reference<C>>, base::remove_reference<F>>{
             .field_codec = DefaultFieldCodec<base::remove_reference<C>>(name, base::forward<C>(codec), default_value),
             .getter = getter};
     }
 
     template <typename S, typename E, typename F /* S -> E::TargetType */>
-    auto makeOptionalEncodeField(base::string_view name, E&& encoder, F&& getter) {
+    auto makeOptionalEncodeField(base::StringView name, E&& encoder, F&& getter) {
         return RecordEncoderBuilder<OptionalFieldEncoder<base::remove_reference<E>>, base::remove_reference<F>>{
             .field_encoder = OptionalFieldEncoder<base::remove_reference<E>>(name, base::forward<E>(encoder)),
             .getter = getter};
     }
 
     template <typename D>
-    auto makeOptionalDecodeField(base::string_view name, D&& decoder) {
+    auto makeOptionalDecodeField(base::StringView name, D&& decoder) {
         return RecordDecoderBuilder<OptionalFieldDecoder<base::remove_reference<D>>>{
             .field_decoder = OptionalFieldDecoder<base::remove_reference<D>>(name, base::forward<D>(decoder))};
     }
 
     template <typename S, typename C, typename F /* S -> C::TargetType */>
-    auto makeOptionalField(base::string_view name, C&& codec, F&& getter) {
+    auto makeOptionalField(base::StringView name, C&& codec, F&& getter) {
         return RecordCodecBuilder<OptionalFieldCodec<base::remove_reference<C>>, base::remove_reference<F>>{
             .field_codec = OptionalFieldCodec<base::remove_reference<C>>(name, base::forward<C>(codec)),
             .getter = getter};

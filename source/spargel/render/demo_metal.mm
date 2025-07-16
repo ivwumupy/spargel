@@ -475,7 +475,7 @@ private:
     void _Setup() {
         NSError* error;
 
-        _resource = resource::makeRelativeManager(base::string("resources"));
+        _resource = resource::makeRelativeManager("resources"_sv);
 
         {
             auto blob = _resource->open(resource::ResourceId("bunny.smesh"_sv));

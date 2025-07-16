@@ -48,7 +48,7 @@ static void xxd_print(char* data, size_t size) {
 namespace spargel::entry {
 
     int simple_entry(simple_entry_data* entry_data) {
-        base::string_view path = "data.txt"_sv;
+        base::StringView path = "data.txt"_sv;
 
         auto resource = entry_data->resource_manager->open(resource::ResourceId(path));
         if (!resource.hasValue()) {

@@ -29,7 +29,7 @@ namespace spargel::codec::model {
     using GlTFBoolean = bool;
     using GlTFInteger = i32;
     using GlTFNumber = f64;
-    using GlTFString = base::string;
+    using GlTFString = base::String;
 
     /*
      * A typed view into a buffer view that contains raw binary data.
@@ -297,8 +297,8 @@ namespace spargel::codec::model {
 
     class GlTFDecodeError : public CodecError {
     public:
-        GlTFDecodeError(const base::string& message) : CodecError(message) {}
-        GlTFDecodeError(base::string_view message) : CodecError(message) {}
+        GlTFDecodeError(const base::String& message) : CodecError(message) {}
+        GlTFDecodeError(base::StringView message) : CodecError(message) {}
     };
 
     base::Either<GlTF, GlTFDecodeError> parseGlTF(const char* text, usize len);

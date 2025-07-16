@@ -11,11 +11,11 @@ using namespace spargel::base::literals;
 
 int main() {
     base::vector<base::unique_ptr<resource::ResourceManager>> managers;
-    managers.emplace(resource::makeRelativeManager(base::string("resources2")));
-    managers.emplace(resource::makeRelativeManager(base::string("resources")));
+    managers.emplace(resource::makeRelativeManager(base::String("resources2")));
+    managers.emplace(resource::makeRelativeManager(base::String("resources")));
     auto manager = resource::ResourceManagerOverlay(base::move(managers));
 
-    base::string_view path1 = "dir/abc.txt"_sv;
+    base::StringView path1 = "dir/abc.txt"_sv;
 
     auto resource1 = manager.open(resource::ResourceId(path1));
     if (!resource1.hasValue()) {
@@ -28,7 +28,7 @@ int main() {
     for (usize i = 0; i < resource1.value()->size(); i++) putchar(data1[i]);
     putchar('\n');
 
-    base::string_view path2 = "hello.txt"_sv;
+    base::StringView path2 = "hello.txt"_sv;
 
     auto resource2 = manager.open(resource::ResourceId(path2));
     if (!resource2.hasValue()) {

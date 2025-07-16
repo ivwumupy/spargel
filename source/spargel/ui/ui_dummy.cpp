@@ -2,7 +2,7 @@
 
 namespace spargel::ui {
 
-    LineLayout TextSystemDummy::layoutLine(base::string_view str) {
+    LineLayout TextSystemDummy::layoutLine(base::StringView str) {
         LineLayout layout;
         LayoutRun run;
         run.width = static_cast<float>(str.length()) * 10.0f;  // Dummy width

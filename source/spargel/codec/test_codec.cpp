@@ -30,11 +30,11 @@ namespace {
         base::Either<TestData, CodecError> makeF32(f32 v) { return base::Left(TestData{}); }
         base::Either<TestData, CodecError> makeF64(f64 v) { return base::Left(TestData{}); }
 
-        base::Either<TestData, CodecError> makeString(const base::string& s) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeString(const base::String& s) { return base::Left(TestData{}); }
 
         base::Either<TestData, CodecError> makeArray(const base::vector<TestData>& array) { return base::Left(TestData{}); }
 
-        base::Either<TestData, CodecError> makeMap(const base::HashMap<base::string, TestData>& map) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeMap(const base::HashMap<base::String, TestData>& map) { return base::Left(TestData{}); }
     };
 
     static_assert(EncodeBackend<TestEncodeBackend>);
@@ -59,13 +59,13 @@ namespace {
         base::Either<f32, CodecError> getF32(const TestData& data) { return base::Left((f32)0); }
         base::Either<f64, CodecError> getF64(const TestData& data) { return base::Left((f64)0); }
 
-        base::Either<base::string, CodecError> getString(const TestData& data) { return base::Left(base::string("")); }
+        base::Either<base::String, CodecError> getString(const TestData& data) { return base::Left(base::String("")); }
 
         base::Either<base::vector<TestData>, CodecError> getArray(const TestData& data) {
             return base::Left(base::vector<TestData>{});
         }
 
-        base::Either<base::Optional<TestData>, CodecError> getMember(const TestData& data, base::string_view key) {
+        base::Either<base::Optional<TestData>, CodecError> getMember(const TestData& data, base::StringView key) {
             return base::Left(base::makeOptional<TestData>());
         }
     };
@@ -80,9 +80,9 @@ namespace {
     static_assert(CodecBackend<TestCodecBackend>);
 
     struct Student {
-        base::string type = base::string("normal");
-        base::string name;
-        base::Optional<base::string> nickname;
+        base::String type = base::String("normal");
+        base::String name;
+        base::Optional<base::String> nickname;
         u32 age;
         bool happy;
         base::vector<f32> scores;
@@ -100,7 +100,7 @@ namespace {
         static auto decoder() {
             return makeRecordDecoder<Student>(
                 base::Constructor<Student>{},
-                makeDefaultDecodeField("type"_sv, StringCodec{}, base::string("normal")),
+                makeDefaultDecodeField("type"_sv, StringCodec{}, base::String("normal")),
                 makeNormalDecodeField("name"_sv, StringCodec{}),
                 makeOptionalDecodeField("nickname"_sv, StringCodec{}),
                 makeNormalDecodeField("age"_sv, U32Codec{}),
@@ -111,7 +111,7 @@ namespace {
         static auto codec() {
             return makeRecordCodec<Student>(
                 base::Constructor<Student>{},
-                makeDefaultField<Student>("type"_sv, StringCodec{}, base::string("normal"), [](auto& o) { return o.type; }),
+                makeDefaultField<Student>("type"_sv, StringCodec{}, base::String("normal"), [](auto& o) { return o.type; }),
                 makeNormalField<Student>("name"_sv, StringCodec{}, [](auto& o) { return o.name; }),
                 makeOptionalField<Student>("nickname"_sv, StringCodec{}, [](auto& o) { return o.nickname; }),
                 makeNormalField<Student>("age"_sv, U32Codec{}, [](auto& o) { return o.age; }),
@@ -239,7 +239,7 @@ TEST(Codec_Decode_Primitive) {
 
 TEST(Codec_Encode_Array) {
     {
-        base::vector<base::string> v;
+        base::vector<base::String> v;
         v.emplace("A");
         v.emplace("BC");
         v.emplace("DEF");
@@ -261,7 +261,7 @@ TEST(Codec_Encode_Array) {
     }
 
     {
-        base::vector<base::string> v;
+        base::vector<base::String> v;
         v.emplace("A");
         v.emplace("BC");
         v.emplace("DEF");

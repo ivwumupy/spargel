@@ -316,7 +316,7 @@ int main() {
         auto filename = "scene.gltf"_sv;
         auto optional = resource_manager->open(resource::ResourceId(filename));
         if (!optional.hasValue()) {
-            spargel_log_fatal("Cannot open file \"%s\"\n", base::CString(filename.begin(), filename.end()).data());
+            spargel_log_fatal("Cannot open file \"%s\"\n", base::CString(filename).data());
             return 1;
         }
         auto& resource = optional.value();

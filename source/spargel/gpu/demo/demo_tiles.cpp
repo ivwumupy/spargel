@@ -234,7 +234,7 @@ private:
 
 int main() {
     auto platform = ui::makePlatform();
-    auto resource_manager = resource::makeRelativeManager(base::string("resources"));
+    auto resource_manager = resource::makeRelativeManager(base::String("resources"));
 
     auto window = platform->makeWindow(500, 500);
     window->setTitle("Spargel Engine - GPU");

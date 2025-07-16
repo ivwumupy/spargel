@@ -16,11 +16,11 @@ struct prepared_graph {
         buffer,
     };
     struct node_info {
-        node_info(node_kind k, u32 i, base::string_view n) : kind{k}, index{i}, name{n} {}
+        node_info(node_kind k, u32 i, base::StringView n) : kind{k}, index{i}, name{n} {}
 
         node_kind kind;
         u32 index;
-        base::string_view name;
+        base::StringView name;
         u32 refcount = 0;
         bool culled = false;
         bool target = false;

@@ -3,8 +3,8 @@
 
 namespace spargel::util {
 
-    base::string dirname(const base::string& path) {
-        if (path.length() == 0) return base::string(".");
+    base::String dirname(const base::String& path) {
+        if (path.length() == 0) return base::String(".");
 
         const char* data = path.data();
         const char* cur = path.end() - 1;
@@ -17,9 +17,9 @@ namespace spargel::util {
         // Handle case where all characters were separators
         if (cur < path.begin()) {
             if (path.length() > 0 && *path.begin() == PATH_SPLIT) {
-                return base::string("/");
+                return base::String("/");
             } else {
-                return base::string(".");
+                return base::String(".");
             }
         }
 
@@ -29,7 +29,7 @@ namespace spargel::util {
         }
 
         // If no separator found, return "."
-        if (cur < path.begin()) return base::string(".");
+        if (cur < path.begin()) return base::String(".");
 
         // If we're at root, return "/"
         if (cur == path.begin() && *cur == PATH_SPLIT) {
@@ -40,7 +40,7 @@ namespace spargel::util {
         return base::string_from_range(data, cur);
     }
 
-    ParsedPath parsePath(const base::string& path) {
+    ParsedPath parsePath(const base::String& path) {
         if (path.length() == 0) return {.absolute = false, .directory = false, .components = {}};
 
         const char* data = path.data();
@@ -48,7 +48,7 @@ namespace spargel::util {
 
         bool absolute = data[0] == '/';
         bool directory = false;
-        base::vector<base::string> components;
+        base::vector<base::String> components;
 
         for (; cur < path.end(); cur++) {
             if (*cur == '/') continue;

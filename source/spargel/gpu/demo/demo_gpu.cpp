@@ -177,7 +177,7 @@ public:
     void onRender() override {
         // spargel_log_info("%lu", _glyph_cache.count());
 
-        auto layout_result = _text_system->layoutLine(base::string_view(_str.begin(), _str.end()));
+        auto layout_result = _text_system->layoutLine(base::StringView(_str.begin(), _str.end()));
 
         _vquads.clear();
         float total_width = 0;
@@ -334,7 +334,7 @@ private:
 
 int main() {
     auto platform = ui::makePlatform();
-    auto resource_manager = resource::makeRelativeManager(base::string("resources"));
+    auto resource_manager = resource::makeRelativeManager(base::String("resources"));
     auto text_system = platform->createTextSystem();
 
     auto window = platform->makeWindow(500, 500);

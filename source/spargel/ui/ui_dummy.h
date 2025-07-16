@@ -18,7 +18,7 @@ namespace spargel::ui {
 
     class TextSystemDummy final : public TextSystem {
     public:
-        LineLayout layoutLine(base::string_view str) override;
+        LineLayout layoutLine(base::StringView str) override;
         RasterResult rasterizeGlyph(GlyphId id) override;
     };
 

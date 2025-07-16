@@ -13,20 +13,20 @@ namespace spargel::resource {
 
     class ResourceId {
     public:
-        static constexpr base::string_view default_namespace = base::string_view("core", 4);
+        static constexpr base::StringView default_namespace = base::StringView("core", 4);
 
-        ResourceId(const base::string& ns, const base::string& path)
+        ResourceId(const base::String& ns, const base::String& path)
             : _namespace(ns), _path(path) {}
-        ResourceId(const base::string& path) : _namespace(default_namespace), _path(path) {}
-        ResourceId(base::string_view ns, base::string_view path) : _namespace(ns), _path(path) {}
-        ResourceId(base::string_view path) : _namespace(default_namespace), _path(path) {}
+        ResourceId(const base::String& path) : _namespace(default_namespace), _path(path) {}
+        ResourceId(base::StringView ns, base::StringView path) : _namespace(ns), _path(path) {}
+        ResourceId(base::StringView path) : _namespace(default_namespace), _path(path) {}
 
-        const base::string& ns() const { return _namespace; }
-        const base::string& path() const { return _path; }
+        const base::String& ns() const { return _namespace; }
+        const base::String& path() const { return _path; }
 
     private:
-        base::string _namespace;
-        base::string _path;
+        base::String _namespace;
+        base::String _path;
     };
 
     class Resource;

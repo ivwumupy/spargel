@@ -39,7 +39,7 @@ namespace spargel::ui {
     public:
         virtual ~TextSystem() = default;
 
-        virtual LineLayout layoutLine(base::string_view str) = 0;
+        virtual LineLayout layoutLine(base::StringView str) = 0;
         /// warning: alpha only
         virtual RasterResult rasterizeGlyph(GlyphId id) = 0;
     };

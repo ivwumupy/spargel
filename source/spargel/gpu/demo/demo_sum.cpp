@@ -15,7 +15,7 @@ static constexpr float arr2[] = {4.0, 5.0, 6.0};
 int main(int argc, char* argv[]) {
     base::CommandLine cmdline(argc, argv);
 
-    auto resource_manager = resource::makeRelativeManager(base::string("resources"));
+    auto resource_manager = resource::makeRelativeManager(base::String("resources"));
     gpu::DeviceKind backend = gpu::DeviceKind::unknown;
     if (cmdline.hasSwitch("metal"_sv)) {
         backend = gpu::DeviceKind::metal;

@@ -431,7 +431,7 @@ namespace spargel::ui {
 
     constexpr float scale = 2;
 
-    LineLayout TextSystemAppKit::layoutLine(base::string_view str) {
+    LineLayout TextSystemAppKit::layoutLine(base::StringView str) {
         auto cfstr = CFStringCreateWithBytes(kCFAllocatorDefault, (u8 const*)str.data(),
                                              str.length(), kCFStringEncodingUTF8, false);
 
