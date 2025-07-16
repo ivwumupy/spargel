@@ -13,6 +13,8 @@ namespace spargel::math {
     inline float sqrt(float x) { return ::sqrtf(x); }
     inline double sqrt(double x) { return ::sqrt(x); }
 
+    inline float cos(float x) { return ::cosf(x); }
+    inline float sin(float x) { return ::sinf(x); }
     inline float tan(float x) { return ::tanf(x); }
 
 }  // namespace spargel::math

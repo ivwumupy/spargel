@@ -3,6 +3,9 @@
 #include <spargel/base/vector.h>
 #include <spargel/codec/model/gltf.h>
 #include <spargel/config.h>
+#include <spargel/math/function.h>
+#include <spargel/math/matrix.h>
+#include <spargel/math/vector.h>
 #include <spargel/resource/directory.h>
 #include <spargel/ui/platform.h>
 #include <spargel/ui/window.h>
@@ -32,6 +35,8 @@ namespace {
 
     struct Context {
         u32 program;
+        int mvpLocation;
+        int rLocation;
         base::vector<u32> buffers;
         base::vector<Instance> instances;
     };
@@ -40,11 +45,50 @@ namespace {
     public:
         void onRender() override {
             glClearColor(0.1f, 0.0f, 0.1f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            glUseProgram(program);
+            glUseProgram(context->program);
 
-            for (auto instance : instances) {
+            static float angle = 0.0f;
+            angle += 0.01f;
+            float angle2 = angle * 1.23f;
+            auto mRotation3 =
+                math::Matrix3x3f(
+                    math::cos(angle), -math::sin(angle), 0.0f,
+                    math::sin(angle), math::cos(angle), 0.0f,
+                    0.0f, 0.0f, 1.0f) *
+                math::Matrix3x3f(
+                    1.0f, 0.0f, 0.0f,
+                    0.0f, math::cos(angle2), -math::sin(angle2),
+                    0.0f, math::sin(angle2), math::cos(angle2));
+
+            auto mRotation = math::Matrix4x4f(
+                mRotation3(0, 0), mRotation3(1, 0), mRotation3(2, 0), 0.0f,
+                mRotation3(0, 1), mRotation3(1, 1), mRotation3(2, 1), 0.0f,
+                mRotation3(0, 2), mRotation3(1, 2), mRotation3(2, 2), 0.0f,
+                0.0f, 0.0f, 0.0f, 1.0f);
+
+            auto mModel = mRotation;
+
+            auto mView = math::Matrix4x4f(
+                1.0f, 0.0f, 0.0f, 0.0f,
+                0.0f, 1.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, 1.0f, 0.0f,
+                0.0f, 0.0f, -3.0f, 1.0f);
+
+            float near = 0.01f, far = 100.0f, tanFov = 1.0f, aspect = 800.0f / 600.0f;
+            auto mProjection = math::Matrix4x4f(
+                1.0f / (tanFov * aspect), 0.0f, 0.0f, 0.0f,
+                0.0f, 1.0f / tanFov, 0.0f, 0.0f,
+                0.0f, 0.0f, -(far + near) / (far - near), -1.0f,
+                0.0f, 0.0f, -2 * far * near / (far - near), 0.0f);
+
+            auto mMVP = mProjection * mView * mModel;
+
+            glUniformMatrix3fv(context->rLocation, 1, GL_FALSE, mRotation3.entries);
+            glUniformMatrix4fv(context->mvpLocation, 1, GL_FALSE, mMVP.entries);
+
+            for (auto instance : context->instances) {
                 glBindVertexArray(instance.vao);
 
                 if (instance.indices) {
@@ -59,8 +103,7 @@ namespace {
 #endif
         }
 
-        u32 program;
-        base::vector<Instance> instances;
+        Context* context;
 
 #if SPARGEL_IS_LINUX
         Display* x_display;
@@ -122,6 +165,8 @@ void loadProgram(resource::ResourceManager* resource_manager, Context& ctx) {
     glDeleteShader(fragmentShader);
 
     ctx.program = program;
+    ctx.mvpLocation = glGetUniformLocation(program, "uMVP");
+    ctx.rLocation = glGetUniformLocation(program, "uR");
 }
 
 void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Context& ctx) {
@@ -362,16 +407,13 @@ int main() {
 
     gladLoaderLoadGL();
 
-    // load OpenGL-related objects
     Context ctx;
+    delegate.context = &ctx;
     loadProgram(resource_manager.get(), ctx);
-    delegate.program = ctx.program;
-
-    // load model from glTF
     loadModel(resource_manager.get(), gltf, ctx);
-    delegate.instances = ctx.instances;
 
-    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
 
     platform->startLoop();
 
