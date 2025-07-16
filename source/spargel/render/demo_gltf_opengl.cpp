@@ -36,10 +36,29 @@ namespace {
     struct Context {
         u32 program;
         int mvpLocation;
-        int rLocation;
         base::vector<u32> buffers;
         base::vector<Instance> instances;
     };
+
+    float camera_angle = 3.1415926 / 3;
+    auto mView =
+        math::Matrix4x4f(
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, -4.0f, 1.0f) *
+        math::Matrix4x4f(
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, math::cos(camera_angle), -math::sin(camera_angle), 0.0f,
+            0.0f, math::sin(camera_angle), math::cos(camera_angle), 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f);
+
+    float near = 0.01f, far = 100.0f, tanFov = 1.0f, aspect = 800.0f / 600.0f;
+    auto mProjection = math::Matrix4x4f(
+        1.0f / (tanFov * aspect), 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f / tanFov, 0.0f, 0.0f,
+        0.0f, 0.0f, -(far + near) / (far - near), -1.0f,
+        0.0f, 0.0f, -2 * far * near / (far - near), 0.0f);
 
     class Delegate final : public ui::WindowDelegate {
     public:
@@ -51,41 +70,15 @@ namespace {
 
             static float angle = 0.0f;
             angle += 0.01f;
-            float angle2 = angle * 1.23f;
-            auto mRotation3 =
-                math::Matrix3x3f(
-                    math::cos(angle), -math::sin(angle), 0.0f,
-                    math::sin(angle), math::cos(angle), 0.0f,
-                    0.0f, 0.0f, 1.0f) *
-                math::Matrix3x3f(
-                    1.0f, 0.0f, 0.0f,
-                    0.0f, math::cos(angle2), -math::sin(angle2),
-                    0.0f, math::sin(angle2), math::cos(angle2));
-
-            auto mRotation = math::Matrix4x4f(
-                mRotation3(0, 0), mRotation3(1, 0), mRotation3(2, 0), 0.0f,
-                mRotation3(0, 1), mRotation3(1, 1), mRotation3(2, 1), 0.0f,
-                mRotation3(0, 2), mRotation3(1, 2), mRotation3(2, 2), 0.0f,
-                0.0f, 0.0f, 0.0f, 1.0f);
-
-            auto mModel = mRotation;
-
-            auto mView = math::Matrix4x4f(
-                1.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, 1.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 1.0f, 0.0f,
-                0.0f, 0.0f, -3.0f, 1.0f);
-
-            float near = 0.01f, far = 100.0f, tanFov = 1.0f, aspect = 800.0f / 600.0f;
-            auto mProjection = math::Matrix4x4f(
-                1.0f / (tanFov * aspect), 0.0f, 0.0f, 0.0f,
-                0.0f, 1.0f / tanFov, 0.0f, 0.0f,
-                0.0f, 0.0f, -(far + near) / (far - near), -1.0f,
-                0.0f, 0.0f, -2 * far * near / (far - near), 0.0f);
+            auto mModel =
+                math::Matrix4x4f(
+                    math::cos(angle), -math::sin(angle), 0.0f, 0.0f,
+                    math::sin(angle), math::cos(angle), 0.0f, 0.0f,
+                    0.0f, 0.0f, 1.0f, 0.0f,
+                    0.0f, 0.0f, 0.0f, 1.0f);
 
             auto mMVP = mProjection * mView * mModel;
 
-            glUniformMatrix3fv(context->rLocation, 1, GL_FALSE, mRotation3.entries);
             glUniformMatrix4fv(context->mvpLocation, 1, GL_FALSE, mMVP.entries);
 
             for (auto instance : context->instances) {
@@ -166,7 +159,6 @@ void loadProgram(resource::ResourceManager* resource_manager, Context& ctx) {
 
     ctx.program = program;
     ctx.mvpLocation = glGetUniformLocation(program, "uMVP");
-    ctx.rLocation = glGetUniformLocation(program, "uR");
 }
 
 void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Context& ctx) {
@@ -283,6 +275,7 @@ void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Co
 
                     instance.indices_type = indices_accesor.componentType;
                     instance.indices = true;
+                    instance.count = indices_accesor.count;
                 }
 
                 primitive_instances.emplace(instance);
@@ -352,16 +345,21 @@ void cleanup(Context& ctx) {
     glDeleteProgram(ctx.program);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc < 3) {
+        spargel_log_fatal("Usage: %s <base> <path>", argv[0]);
+        return 1;
+    }
+
     auto resource_manager = resource::makeRelativeManager("resources"_sv);
+    auto gltf_resource_manager = resource::ResourceManagerDirectory(base::String(argv[1]).view());
 
     // load glTF
     GlTF gltf;
     {
-        auto filename = "scene.gltf"_sv;
-        auto optional = resource_manager->open(resource::ResourceId(filename));
+        auto optional = gltf_resource_manager.open(resource::ResourceId(base::String(argv[2])));
         if (!optional.hasValue()) {
-            spargel_log_fatal("Cannot open file \"%s\"\n", base::CString(filename).data());
+            spargel_log_fatal("Cannot open file \"%s : %s\"\n", argv[1], argv[2]);
             return 1;
         }
         auto& resource = optional.value();
@@ -410,7 +408,7 @@ int main() {
     Context ctx;
     delegate.context = &ctx;
     loadProgram(resource_manager.get(), ctx);
-    loadModel(resource_manager.get(), gltf, ctx);
+    loadModel(&gltf_resource_manager, gltf, ctx);
 
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
