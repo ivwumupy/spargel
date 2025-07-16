@@ -19,7 +19,7 @@ namespace spargel::ui {
     class TextSystemDummy final : public TextSystem {
     public:
         LineLayout layoutLine(base::StringView str) override;
-        RasterResult rasterizeGlyph(GlyphId id) override;
+        RasterResult rasterizeGlyph(GlyphId id, void*) override;
     };
 
     class PlatformDummy final : public Platform {

@@ -124,9 +124,9 @@ using namespace spargel;
     // _bridge->_setDrawableSize((float)newSize.width, (float)newSize.height);
 }
 - (void)keyDown:(NSEvent*)event {
+    [self interpretKeyEvents:@[ event ]];
     auto code = [event keyCode];
     _bridge->_bridge_key_down(code, event.type);
-    // [self interpretKeyEvents:@[ event ]];
 }
 - (BOOL)acceptsFirstResponder {
     return YES;
@@ -149,6 +149,7 @@ using namespace spargel;
 - (void)setMarkedText:(id)string
         selectedRange:(NSRange)selectedRange
      replacementRange:(NSRange)replacementRange {
+    NSLog(@"xxxxxxxxxxx");
     _bridge->getTextDelegate()->setMarkedText(string, selectedRange, replacementRange);
 }
 
@@ -331,11 +332,10 @@ namespace spargel::ui {
 
         _view = [[SpargelMetalView alloc] initWithSpargelUIWindow:this metalLayer:_layer];
 
-        // auto _text_cursor = [[NSTextInsertionIndicator alloc] initWithFrame:NSMakeRect(0, 0, 0,
-        // 0)];
-        // [_view addSubview:_text_cursor];
+        auto _text_cursor = [[NSTextInsertionIndicator alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
+        [_view addSubview:_text_cursor];
 
-        // _text_cursor.displayMode = NSTextInsertionIndicatorDisplayModeAutomatic;
+        _text_cursor.displayMode = NSTextInsertionIndicatorDisplayModeAutomatic;
 
         // strong reference
         _window.contentView = _view;
@@ -418,13 +418,13 @@ namespace spargel::ui {
 
     TextSystemAppKit::TextSystemAppKit() {
         // use system language
-        // _font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 14, NULL);
-        static constexpr char const* font_name = "Times New Roman";
+        _font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 50, NULL);
+        // static constexpr char const* font_name = "Times New Roman";
         // static constexpr char const* font_name = "Apple Color Emoji";
-        auto name =
-            CFStringCreateWithCString(kCFAllocatorDefault, font_name, kCFStringEncodingUTF8);
-        _font = CTFontCreateWithName(name, 20, NULL);
-        CFRelease(name);
+        // auto name =
+        //     CFStringCreateWithCString(kCFAllocatorDefault, font_name, kCFStringEncodingUTF8);
+        // _font = CTFontCreateWithName(name, 20, NULL);
+        // CFRelease(name);
     }
 
     TextSystemAppKit::~TextSystemAppKit() { CFRelease(_font); }
@@ -460,6 +460,12 @@ namespace spargel::ui {
             CTRunRef run = (CTRunRef)CFArrayGetValueAtIndex(glyph_runs, i);
             auto count = CTRunGetGlyphCount(run);
 
+            auto attr = CTRunGetAttributes(run);
+
+            auto font = (NSFont*)CFDictionaryGetValue(attr, kCTFontAttributeName);
+            [font retain];
+            r.font = font;
+
             glyphs.reserve(count);
             CTRunGetGlyphs(run, CFRangeMake(0, count), glyphs.data());
             glyphs.set_count(count);
@@ -494,10 +500,10 @@ namespace spargel::ui {
         return result;
     }
 
-    RasterResult TextSystemAppKit::rasterizeGlyph(GlyphId id) {
+    RasterResult TextSystemAppKit::rasterizeGlyph(GlyphId id, void* font) {
         CGGlyph glyphs[] = {(CGGlyph)id};
         CGRect rect;
-        CTFontGetBoundingRectsForGlyphs(_font, kCTFontOrientationDefault, glyphs, &rect, 1);
+        CTFontGetBoundingRectsForGlyphs((CTFontRef)font, kCTFontOrientationDefault, glyphs, &rect, 1);
 
         u32 width = (u32)ceil(rect.size.width);
         u32 height = (u32)ceil(rect.size.height);
@@ -533,7 +539,7 @@ namespace spargel::ui {
 
         // shift for anti-aliasing
         CGPoint point = CGPointMake(0, 0);
-        CTFontDrawGlyphs(_font, glyphs, &point, 1, ctx);
+        CTFontDrawGlyphs((CTFontRef)font, glyphs, &point, 1, ctx);
 
         CFRelease(color_space);
         CGContextRelease(ctx);

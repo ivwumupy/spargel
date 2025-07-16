@@ -10,7 +10,7 @@ namespace spargel::ui {
         return layout;
     }
 
-    RasterResult TextSystemDummy::rasterizeGlyph(GlyphId id) {
+    RasterResult TextSystemDummy::rasterizeGlyph(GlyphId id, void* font) {
         RasterResult result;
         result.bitmap.width = 10;
         result.bitmap.height = 10;

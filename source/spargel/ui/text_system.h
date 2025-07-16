@@ -22,6 +22,7 @@ namespace spargel::ui {
         base::vector<GlyphId> glyphs;
         base::vector<GlyphPosition> positions;
         float width;
+        void* font;
     };
 
     struct LineLayout {
@@ -41,7 +42,8 @@ namespace spargel::ui {
 
         virtual LineLayout layoutLine(base::StringView str) = 0;
         /// warning: alpha only
-        virtual RasterResult rasterizeGlyph(GlyphId id) = 0;
+        // HACK
+        virtual RasterResult rasterizeGlyph(GlyphId id, void* font) = 0;
     };
 
 }  // namespace spargel::ui

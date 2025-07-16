@@ -275,7 +275,7 @@ private:
             }
         }
         // not found
-        auto raster = _text_system->rasterizeGlyph(id);
+        auto raster = _text_system->rasterizeGlyph(id, nullptr);
         auto& bitmap = raster.bitmap;
         // try to insert
         if (_cur_col + bitmap.width >= 512) {

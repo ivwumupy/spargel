@@ -5,7 +5,10 @@ struct QuadData {
     float2 origin;
     float2 size;
     float2 cell_origin;
+    uchar4 color;
 };
+static_assert(sizeof(QuadData) == 32, "size does not match");
+static_assert(alignof(QuadData) == 8, "align does not match");
 
 struct VertexData {
     float2 position [[attribute(0)]];
@@ -14,6 +17,7 @@ struct VertexData {
 struct RasterData {
     float4 position [[position]];
     float2 texture_coord;
+    float4 color;
 };
 
 struct UniformData {
@@ -31,14 +35,15 @@ struct UniformData {
     out.position = float4(0.0, 0.0, 0.0, 1.0);
     out.position.xy = pixel_position / (uniform.viewport / 2.0);
     out.texture_coord = float2(in.position.x, 1.0 - in.position.y) * quads[instance_id].size + quads[instance_id].cell_origin;
-    out.texture_coord /= float2(512, 512);
+    out.texture_coord /= float2(2048, 2048);
+    out.color = float4(quads[instance_id].color) / 255.0;
     return out;
 }
 
 [[fragment]] float4 fragment_shader(RasterData in [[stage_in]],
                                     texture2d<float> color_texture [[texture(0)]]) {
     constexpr sampler texture_sampler(mag_filter::linear, min_filter::linear);
-    float4 color = float4(1.0, 0.0, 0.0, 1.0);
+    float4 color = float4(in.color);
     color.a *= color_texture.sample(texture_sampler, in.texture_coord).a;
     return color;
 }

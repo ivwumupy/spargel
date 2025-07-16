@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spargel/base/hash_map.h>
+#include <spargel/base/string.h>
 #include <spargel/base/unique_ptr.h>
 #include <spargel/ui/platform.h>
 #include <spargel/ui/text_system.h>
@@ -12,7 +14,7 @@
 @interface SpargelApplicationDelegate : NSObject <NSApplicationDelegate>
 @end
 
-@interface SpargelMetalView : NSView  //<NSTextInputClient>  // temp hack
+@interface SpargelMetalView : NSView <NSTextInputClient>  // temp hack
 @end
 
 @interface SpargelWindowDelegate : NSObject <NSWindowDelegate>
@@ -40,6 +42,8 @@ namespace spargel::ui {
 
     class TextInputDelegate {
     public:
+        virtual ~TextInputDelegate() = default;
+
         virtual bool hasMarkedText() { return false; }
         virtual void setMarkedText(id string, NSRange selected, NSRange replaced) {}
         virtual NSRange getMarkedRange() { return NSMakeRange(0, 0); }
@@ -90,6 +94,9 @@ namespace spargel::ui {
         void setTextDelegate(TextInputDelegate* delegate) { _text_delegate = delegate; }
         TextInputDelegate* getTextDelegate() { return _text_delegate; }
 
+        auto ns_view() { return _view; }
+        auto ns_window() { return _window; }
+
     private:
         NSWindow* _window;
         SpargelWindowDelegate* _bridge;
@@ -109,16 +116,26 @@ namespace spargel::ui {
         TextInputDelegate* _text_delegate = nullptr;
     };
 
+    struct CTFontRAII {
+        CTFontRef ref;
+        ~CTFontRAII() {
+            CFRelease(ref);
+        }
+    };
+
     class TextSystemAppKit final : public TextSystem {
     public:
         TextSystemAppKit();
         ~TextSystemAppKit();
 
         LineLayout layoutLine(base::StringView str) override;
-        RasterResult rasterizeGlyph(GlyphId id) override;
+        RasterResult rasterizeGlyph(GlyphId id, void* font) override;
 
     private:
+        CTFontRef lookupFont(base::String const& name);
+
         CTFontRef _font;
+        base::HashMap<base::String, CTFontRAII> fonts_;
     };
 
 }  // namespace spargel::ui
