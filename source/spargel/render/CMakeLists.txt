@@ -1,3 +1,14 @@
+spargel_add_library(
+    NAME render
+    PRIVATE
+        ui_renderer.cpp
+    PRIVATE_MACOS
+        ui_renderer_metal.mm
+    DEPS
+        base
+        gpu
+)
+
 if (SPARGEL_IS_MACOS)
     spargel_add_executable(
         NAME demo_metal

@@ -2,6 +2,10 @@ spargel_add_library(
     NAME gpu
     PRIVATE
         gpu.cpp
+        gpu_context.cpp
+    PRIVATE_MACOS
+        gpu_metal.mm
+        metal_context.mm
     DEPS
         base
         spargel_config
@@ -15,10 +19,11 @@ spargel_add_library(
 # endif()
 
 if(${SPARGEL_ENABLE_METAL})
-    target_sources(gpu
-        PRIVATE
-            gpu_metal.mm
-    )
+    #target_sources(gpu
+    #    PRIVATE
+    #        gpu_metal.mm
+    #        metal_context.mm
+    #)
     target_link_libraries(gpu PRIVATE ${FRAMEWORK_METAL})
 endif()
 

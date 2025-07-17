@@ -6,7 +6,7 @@ namespace spargel::input {
     enum class InputDeviceKind {
         Mouse,
         Keyboard,
-        GameController,
+        Controller,
         RacingWheel,
         Unknown,
     };
