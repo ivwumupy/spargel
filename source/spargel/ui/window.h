@@ -2,6 +2,10 @@
 
 #include <spargel/ui/event.h>
 
+namespace spargel::render {
+    class UIRenderer;
+}
+
 namespace spargel::ui {
 
     /// the native handle of a window
@@ -73,6 +77,8 @@ namespace spargel::ui {
 
         // todo: improve
         virtual WindowHandle getHandle() = 0;
+
+        virtual void bindRenderer(render::UIRenderer* renderer) = 0;
 
     private:
         WindowDelegate* _delegate = nullptr;

@@ -97,6 +97,8 @@ namespace spargel::ui {
         auto ns_view() { return _view; }
         auto ns_window() { return _window; }
 
+        void bindRenderer(render::UIRenderer* renderer) override;
+
     private:
         NSWindow* _window;
         SpargelWindowDelegate* _bridge;

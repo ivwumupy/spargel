@@ -14,6 +14,8 @@ namespace spargel::ui {
         void requestRedraw() override {}
 
         WindowHandle getHandle() override { return {}; }
+
+        void bindRenderer(render::UIRenderer*) override {}
     };
 
     class TextSystemDummy final : public TextSystem {

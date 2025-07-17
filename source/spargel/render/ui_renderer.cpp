@@ -4,12 +4,12 @@
 namespace spargel::render {
 
 #if SPARGEL_IS_MACOS
-    base::UniquePtr<UIRenderer> makeMetalContext(gpu::GPUContext* context);
+    base::UniquePtr<UIRenderer> makeMetalUIRenderer(gpu::GPUContext* context);
 #endif
 
     base::UniquePtr<UIRenderer> makeUIRenderer(gpu::GPUContext* context) {
 #if SPARGEL_IS_MACOS
-        return makeMetalContext(context);
+        return makeMetalUIRenderer(context);
 #endif
         return nullptr;
     }

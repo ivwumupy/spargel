@@ -12,12 +12,14 @@ namespace spargel::gpu {
         ~MetalContext() { cleanup(); }
 
         id<MTLDevice> device() { return device_; }
+        id<MTLCommandQueue> queue() { return queue_; }
 
     private:
         void init();
         void cleanup();
 
         id<MTLDevice> device_;
+        id<MTLCommandQueue> queue_;
     };
     base::UniquePtr<GPUContext> makeMetalContext();
 }  // namespace spargel::gpu

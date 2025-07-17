@@ -9,6 +9,15 @@ spargel_add_library(
         gpu
 )
 
+spargel_add_executable(
+    NAME demo_ui_renderer
+    PRIVATE
+        demo_ui_renderer.cpp
+    DEPS
+        ui
+        render
+)
+
 if (SPARGEL_IS_MACOS)
     spargel_add_executable(
         NAME demo_metal

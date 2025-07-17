@@ -10,6 +10,8 @@ namespace spargel::render {
 
         gpu::GPUContext* context() { return context_; }
 
+        virtual void render() = 0;
+
     private:
         gpu::GPUContext* context_;
     };

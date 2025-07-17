@@ -4,6 +4,7 @@
 #include <spargel/base/meta.h>
 #include <spargel/base/unique_ptr.h>
 #include <spargel/base/vector.h>
+#include <spargel/render/ui_renderer_metal.h>
 #include <spargel/ui/ui_mac.h>
 
 //
@@ -567,6 +568,11 @@ namespace spargel::ui {
         result.descent = rect.origin.y * scale;
 
         return result;
+    }
+
+    void WindowAppKit::bindRenderer(render::UIRenderer* renderer) {
+        auto metal_renderer = static_cast<render::UIRendererMetal*>(renderer);
+        metal_renderer->setLayer(_layer);
     }
 
 }  // namespace spargel::ui

@@ -6,8 +6,10 @@ namespace spargel::gpu {
     }
     void MetalContext::init() {
         device_ = MTLCreateSystemDefaultDevice();
+        queue_ = [device_ newCommandQueue];
     }
     void MetalContext::cleanup() {
+        [queue_ release];
         [device_ release];
     }
 }  // namespace spargel::gpu
