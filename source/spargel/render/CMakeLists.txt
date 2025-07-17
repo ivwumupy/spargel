@@ -2,6 +2,7 @@ spargel_add_library(
     NAME render
     PRIVATE
         ui_renderer.cpp
+        ui_scene.cpp
     PRIVATE_MACOS
         ui_renderer_metal.mm
     DEPS
@@ -16,6 +17,7 @@ spargel_add_executable(
     DEPS
         ui
         render
+        resource
 )
 
 if (SPARGEL_IS_MACOS)
@@ -71,6 +73,24 @@ if (SPARGEL_IS_MACOS)
             ${CMAKE_CURRENT_BINARY_DIR}/shader/metal_shader.generated.h
     )
     add_dependencies(demo_metal demo_render_metal_shaders)
+
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.ir
+        COMMAND
+            xcrun metal -frecord-sources -o ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.ir -c ${CMAKE_CURRENT_SOURCE_DIR}/ui_shaders.metal
+        DEPENDS ui_shaders.metal
+    )
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.metallib
+        COMMAND
+            xcrun metallib -o ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.metallib ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.ir
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.ir
+    )
+    add_custom_target(ui_renderer_metal_shaders
+        DEPENDS
+            ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.metallib
+    )
+    add_dependencies(render ui_renderer_metal_shaders)
 endif ()
 
 
