@@ -12,7 +12,7 @@ namespace std {
     template <>
     class coroutine_handle<void> {
     public:
-        static constexpr coroutine_handle from_address(void* addr) {
+        static constexpr coroutine_handle from_address(void* addr) noexcept {
             coroutine_handle h;
             h.handle_ = addr;
             return h;
@@ -22,7 +22,7 @@ namespace std {
 
         void operator()() const { __builtin_coro_resume(handle_); }
 
-        bool done() const {
+        bool done() const noexcept {
             return __builtin_coro_done(handle_);
         }
         void resume() const {
@@ -40,7 +40,7 @@ namespace std {
     template <typename P>
     class coroutine_handle {
     public:
-        static constexpr coroutine_handle from_address(void* addr) {
+        static constexpr coroutine_handle from_address(void* addr) noexcept {
             coroutine_handle h;
             h.handle_ = addr;
             return h;
@@ -54,7 +54,7 @@ namespace std {
         constexpr coroutine_handle() noexcept = default;
         constexpr coroutine_handle(nullptr_t) noexcept {}
 
-        constexpr operator coroutine_handle<>() { return coroutine_handle<void>::from_address(handle_); }
+        constexpr operator coroutine_handle<>() noexcept { return coroutine_handle<void>::from_address(handle_); }
 
         void operator()() const { resume(); }
 

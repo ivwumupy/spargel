@@ -882,11 +882,11 @@ namespace spargel::gpu {
         info.stage.pName = func.entry;
         info.stage.pSpecializationInfo = nullptr;
         info.layout = layout;
-        info.basePipelineHandle = nullptr;
+        info.basePipelineHandle = VK_NULL_HANDLE;
         info.basePipelineIndex = 0;
 
         VkPipeline pipeline;
-        CHECK_VK_RESULT(_procs.vkCreateComputePipelines(_device, /* cache = */ nullptr, 1, &info,
+        CHECK_VK_RESULT(_procs.vkCreateComputePipelines(_device, /* cache = */ VK_NULL_HANDLE, 1, &info,
                                                         nullptr, &pipeline));
         return make_object<ComputePipelineVulkan>(pipeline, layout);
     }
@@ -1140,11 +1140,11 @@ namespace spargel::gpu {
         info.stage.pName = compute.entry;
         info.stage.pSpecializationInfo = nullptr;
         info.layout = _layout;
-        info.basePipelineHandle = nullptr;
+        info.basePipelineHandle = VK_NULL_HANDLE;
         info.basePipelineIndex = 0;
 
         CHECK_VK_RESULT(_procs->vkCreateComputePipelines(
-            _device->device(), /* pipelineCache = */ nullptr,
+            _device->device(), /* pipelineCache = */ VK_NULL_HANDLE,
             /* createInfoCount = */ 1, &info, nullptr, &_pipeline));
     }
 
@@ -1249,7 +1249,7 @@ namespace spargel::gpu {
 
     VkDescriptorSet DescriptorAllocator::allocate(DescriptorSetShape const& shape) {
         [[maybe_unused]] auto& suballoc = _suballocs.getOrConstruct(shape, _device, shape);
-        return nullptr;
+        return VK_NULL_HANDLE;
     }
 
     ShapedDescriptorAllocator::ShapedDescriptorAllocator(DeviceVulkan* device,
