@@ -37,10 +37,10 @@ if (SPARGEL_IS_LINUX)
 endif ()
 
 if (APPLE)
-  find_library(FRAMEWORK_APP_KIT AppKit)
-  find_library(FRAMEWORK_METAL Metal)
-  find_library(FRAMEWORK_QUARTZ_CORE QuartzCore)
-  target_link_libraries(ui PRIVATE ${FRAMEWORK_APP_KIT} ${FRAMEWORK_METAL} ${FRAMEWORK_QUARTZ_CORE})
+  #find_library(FRAMEWORK_APP_KIT AppKit)
+  #find_library(FRAMEWORK_METAL Metal)
+  #find_library(FRAMEWORK_QUARTZ_CORE QuartzCore)
+  target_link_libraries(ui PRIVATE ${FRAMEWORK_APP_KIT} ${FRAMEWORK_METAL} ${FRAMEWORK_QUARTZ_CORE} ${FRAMEWORK_GAME_CONTROLLER})
 
   # compiler metal shaders
   # super hacky

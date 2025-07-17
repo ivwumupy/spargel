@@ -29,6 +29,8 @@
 
 #include <stdio.h>
 
+#import <GameController/GameController.h>
+
 namespace spargel::gpu {
     namespace {
         using namespace base::literals;
@@ -97,13 +99,23 @@ namespace spargel::gpu {
                 _window->setDelegate(this);
                 _window->setTextDelegate(this);
 
+                // keyboard_ = [GCKeyboard coalescedKeyboard];
+                // spargel_check(keyboard_);
+                // keyboard_input_ = [keyboard_ keyboardInput];
+                // spargel_check(keyboard_input_);
+                // key_ = [keyboard_input_ buttonForKeyCode:GCKeyCodeKeyA];
+                // spargel_check(key_);
+                // key_.pressedChangedHandler = ^(GCControllerButtonInput*, float, bool pressed) {
+                //   printf("GC Callback Key A: %s\n", pressed ? "pressed" : "released");
+                // };
+
                 _device = makeDevice(DeviceKind::metal);
 
                 _surface = _device->createSurface(_window);
 
                 view_ = _window->ns_view();
                 input_context_ = view_.inputContext;
-                spargel_check(input_context_);
+                // spargel_check(input_context_);
 
 #if USE_METAL
                 auto blob = _manager->open(resource::ResourceId("shader.metallib"_sv));
@@ -271,7 +283,7 @@ namespace spargel::gpu {
                 _queue->destroyCommandBuffer(cmdbuf);
                 _device->destroyBuffer(_quads);
 
-                // spargel_log_info("glyph cache count: %lu", _glyph_cache.count());
+                spargel_log_info("glyph cache count: %lu", _glyph_cache.count());
                 // for (auto const& x : _glyph_cache) {
                 //     printf("%u ", x.id);
                 // }
@@ -280,6 +292,7 @@ namespace spargel::gpu {
 
                 printf("Selection (%s) ", base::CString{_str.begin(), _str.end()}.data());
                 selection_.dump();
+                // printf("GC Key A: %s\n", key_.isPressed ? "pressed" : "released");
             }
 
             void deleteChar() {
@@ -316,7 +329,7 @@ namespace spargel::gpu {
                     // _animating = !_animating;
                     // _window->setAnimating(_animating);
                 } else {
-                    // _str.emplace(e.toChar());
+                    printf("onKey: %c\n", e.toChar());
                     if (!_animating) {
                         _window->requestRedraw();
                     }
@@ -401,7 +414,7 @@ namespace spargel::gpu {
                 }
                 putchar('\n');
                 auto w = _window->ns_window();
-                auto b = NSMakeRect(500 - anchor_offset_ / 2, 500 - 0, text_width_ - anchor_offset_, 100);
+                auto b = NSMakeRect(500 - text_width_ / 2 + anchor_offset_, 500 - 0, text_width_ - anchor_offset_, 100);
                 auto wr = [w convertRectFromBacking:b];
                 return [w convertRectToScreen:wr];
             }
@@ -467,6 +480,7 @@ namespace spargel::gpu {
 
             // todo: optimize
             GlyphEntry& findOrInsert(ui::GlyphId id, void* font) {
+                printf("%p\n", font);
                 for (usize i = 0; i < _glyph_cache.count(); i++) {
                     if (_glyph_cache[i].id == id && _glyph_cache[i].font == font) {
                         return _glyph_cache[i];
@@ -490,7 +504,7 @@ namespace spargel::gpu {
                 }
                 u32 y = _cur_row;
                 _glyph_cache.emplace(id, x, y, bitmap.width, bitmap.height, raster.glyph_width,
-                                     raster.glyph_height, raster.descent);
+                                     raster.glyph_height, raster.descent, font);
                 _atlas->updateRegion(x, y, bitmap.width, bitmap.height, bitmap.width,
                                      bitmap.data.toSpan().asBytes());
 

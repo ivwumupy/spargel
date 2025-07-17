@@ -40,9 +40,11 @@ namespace spargel::ui {
         virtual void onRender() {}
 
         /// @brief the window is requested to close
+        // willClose
         virtual void onCloseRequested() {}
 
         /// @brief the window is closed
+        // didClose
         virtual void onClosed() {}
 
         /// @brief a keyboard event is received

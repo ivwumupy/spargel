@@ -14,7 +14,7 @@
 @interface SpargelApplicationDelegate : NSObject <NSApplicationDelegate>
 @end
 
-@interface SpargelMetalView : NSView <NSTextInputClient>  // temp hack
+@interface SpargelMetalView : NSView  // <NSTextInputClient>  // temp hack
 @end
 
 @interface SpargelWindowDelegate : NSObject <NSWindowDelegate>

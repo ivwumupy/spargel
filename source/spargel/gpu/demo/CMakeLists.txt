@@ -114,6 +114,7 @@ if (SPARGEL_IS_MACOS)
         PRIVATE demo_gpu_mac.mm
         DEPS gpu resource ui
     )
+    target_link_libraries(demo_gpu_mac PRIVATE ${FRAMEWORK_GAME_CONTROLLER})
 
     if (SPARGEL_ENABLE_METAL)
         add_custom_command(

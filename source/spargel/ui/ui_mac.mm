@@ -17,6 +17,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreText/CoreText.h>
+#import <GameController/GameController.h>
 #import <QuartzCore/QuartzCore.h>
 
 using namespace spargel;
@@ -40,7 +41,22 @@ using namespace spargel;
     _tracking = nil;
     self.layer = _layer;
     self.wantsLayer = YES;  // layer-hosting view
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWasConnected:) name:GCKeyboardDidConnectNotification object:nil];
+
     return self;
+}
+- (void)keyboardWasConnected:(NSNotification*)notification {
+    NSLog(@"%@", notification);
+    auto keyboard = (GCKeyboard*)notification.object;
+    spargel_check(keyboard);
+
+    auto keyboard_input = [keyboard keyboardInput];
+    spargel_check(keyboard_input);
+    auto key = [keyboard_input buttonForKeyCode:GCKeyCodeKeyA];
+    spargel_check(key);
+    key.pressedChangedHandler = ^(GCControllerButtonInput*, float, bool pressed) {
+      printf("GC Callback Key A: %s\n", pressed ? "pressed" : "released");
+    };
 }
 - (void)recreateTrackingArea {
     if (_tracking != nil) {
