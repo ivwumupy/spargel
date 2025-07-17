@@ -61,6 +61,7 @@ namespace spargel::render {
                 scene_.strokeLine(200, 100, 200, 200, 0xFF00FFFF);
                 scene_.strokeLine(200, 200, 100, 200, 0xFFFF00FF);
                 scene_.strokeLine(100, 200, 100, 100, 0xFFFFFF00);
+                scene_.strokeCircle(150, 150, 50, 0xFF0000FF);
             }
 
             base::UniquePtr<resource::ResourceManager> resource_manager_;

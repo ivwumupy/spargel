@@ -14,7 +14,7 @@
 @interface SpargelApplicationDelegate : NSObject <NSApplicationDelegate>
 @end
 
-@interface SpargelMetalView : NSView  // <NSTextInputClient>  // temp hack
+@interface SpargelMetalView : NSView <NSTextInputClient>  // temp hack
 @end
 
 @interface SpargelWindowDelegate : NSObject <NSWindowDelegate>
@@ -46,16 +46,16 @@ namespace spargel::ui {
 
         virtual bool hasMarkedText() { return false; }
         virtual void setMarkedText(id string, NSRange selected, NSRange replaced) {}
-        virtual NSRange getMarkedRange() { return NSMakeRange(0, 0); }
+        virtual NSRange getMarkedRange() { return NSMakeRange(NSNotFound, 0); }
         virtual void unmarkText() {}
         virtual NSArray<NSAttributedStringKey>* validAttributesForMarkedText() { return nil; }
-        virtual NSRange getSelectedRange() { return NSMakeRange(0, 0); }
+        virtual NSRange getSelectedRange() { return NSMakeRange(NSNotFound, 0); }
         virtual void insertText(id string, NSRange replaced) {}
         virtual NSAttributedString* attributedSubstringForProposedRange(NSRange range,
                                                                         NSRangePointer actual) {
             return nil;
         }
-        virtual NSUInteger characterIndexForPoint(NSPoint point) { return 0; }
+        virtual NSUInteger characterIndexForPoint(NSPoint point) { return NSNotFound; }
         virtual NSRect firstRectForCharacterRange(NSRange range, NSRangePointer actual) {
             return NSMakeRect(0, 0, 0, 0);
         }

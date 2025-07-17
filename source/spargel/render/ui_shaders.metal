@@ -20,8 +20,12 @@ float4 sdf_vert(uint vid [[vertex_id]]) {
     return VERTICES[vid];
 }
 
-float sdf_circle(float2 p, float r) {
+float sdf_circle_fill(float2 p, float r) {
     return length(p) - r;
+}
+
+float sdf_circle_stroke(float2 p, float r) {
+    return abs(length(p) - r);
 }
 
 float sdf_segment(float2 p, float2 a, float2 b) {
@@ -56,7 +60,7 @@ float4 sdf_frag(
             float2 center = float2(data[j], data[j+1]);
             float radius = data[j+2];
             c1 = float4(as_type<uchar4>(data[j+3])) / 255.0;
-            d = sdf_circle(p - center, radius);
+            d = sdf_circle_fill(p - center, radius);
             j += 4;
         } else if (cmd == CMD_STROKE_SEGMENT) {
             float2 start = float2(data[j], data[j+1]);
@@ -64,6 +68,12 @@ float4 sdf_frag(
             c1 = float4(as_type<uchar4>(data[j+4])) / 255.0;
             d = sdf_segment(p, start, end);
             j += 5;
+        } else if (cmd == CMD_STROKE_CIRCLE) {
+            float2 center = float2(data[j], data[j+1]);
+            float radius = data[j+2];
+            c1 = float4(as_type<uchar4>(data[j+3])) / 255.0;
+            d = sdf_circle_stroke(p - center, radius);
+            j += 4;
         } else {
             // do nothing
         }

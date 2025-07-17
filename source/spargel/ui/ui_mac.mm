@@ -140,6 +140,9 @@ using namespace spargel;
 
     // _bridge->_setDrawableSize((float)newSize.width, (float)newSize.height);
 }
+// Note: Please read Chromium's docs on integrating with Cocoa's input management system.
+// https://chromium.googlesource.com/chromium/src/+/main/docs/ui/input_event/index.md#MacViews
+// https://chromium.googlesource.com/chromium/src/+/main/components/remote_cocoa/app_shim/bridged_content_view.mm
 - (void)keyDown:(NSEvent*)event {
     [self interpretKeyEvents:@[ event ]];
     auto code = [event keyCode];
@@ -149,52 +152,86 @@ using namespace spargel;
     return YES;
 }
 
+// TODO: Return nil only if the views system doesn't have an input client.
+// Otherwise return [super inputContext];
+- (NSTextInputContext*)inputContext {
+    return nil;
+}
+
 // protocol NSTextInputClient
 
 - (BOOL)hasMarkedText {
-    return _bridge->getTextDelegate()->hasMarkedText();
+    auto delegate = _bridge->getTextDelegate();
+    if (!delegate) {
+        return false;
+    }
+    return delegate->hasMarkedText();
 }
-
 - (NSRange)markedRange {
-    return _bridge->getTextDelegate()->getMarkedRange();
+    auto delegate = _bridge->getTextDelegate();
+    if (!delegate) {
+        return NSMakeRange(NSNotFound, 0);
+    }
+    return delegate->getMarkedRange();
 }
-
 - (NSRange)selectedRange {
-    return _bridge->getTextDelegate()->getSelectedRange();
+    auto delegate = _bridge->getTextDelegate();
+    if (!delegate) {
+        return NSMakeRange(NSNotFound, 0);
+    }
+    return delegate->getSelectedRange();
 }
-
 - (void)setMarkedText:(id)string
         selectedRange:(NSRange)selectedRange
      replacementRange:(NSRange)replacementRange {
-    NSLog(@"xxxxxxxxxxx");
-    _bridge->getTextDelegate()->setMarkedText(string, selectedRange, replacementRange);
+    auto delegate = _bridge->getTextDelegate();
+    if (!delegate) {
+        return;
+    }
+    delegate->setMarkedText(string, selectedRange, replacementRange);
 }
-
 - (void)unmarkText {
-    _bridge->getTextDelegate()->unmarkText();
+    auto delegate = _bridge->getTextDelegate();
+    if (!delegate) {
+        return;
+    }
+    delegate->unmarkText();
 }
-
 - (NSArray<NSAttributedStringKey>*)validAttributesForMarkedText {
-    return _bridge->getTextDelegate()->validAttributesForMarkedText();
+    auto delegate = _bridge->getTextDelegate();
+    if (!delegate) {
+        return nil;
+    }
+    return delegate->validAttributesForMarkedText();
 }
-
-// - (NSAttributedString *) attributedString {}
-
 - (NSAttributedString*)attributedSubstringForProposedRange:(NSRange)range
                                                actualRange:(NSRangePointer)actualRange {
-    return _bridge->getTextDelegate()->attributedSubstringForProposedRange(range, actualRange);
+    auto delegate = _bridge->getTextDelegate();
+    if (!delegate) {
+        return nil;
+    }
+    return delegate->attributedSubstringForProposedRange(range, actualRange);
 }
-
 - (void)insertText:(id)string replacementRange:(NSRange)replacementRange {
-    _bridge->getTextDelegate()->insertText(string, replacementRange);
+    auto delegate = _bridge->getTextDelegate();
+    if (!delegate) {
+        return;
+    }
+    delegate->insertText(string, replacementRange);
 }
-
 - (NSUInteger)characterIndexForPoint:(NSPoint)point {
-    return _bridge->getTextDelegate()->characterIndexForPoint(point);
+    auto delegate = _bridge->getTextDelegate();
+    if (!delegate) {
+        return NSNotFound;
+    }
+    return delegate->characterIndexForPoint(point);
 }
-
 - (NSRect)firstRectForCharacterRange:(NSRange)range actualRange:(NSRangePointer)actualRange {
-    return _bridge->getTextDelegate()->firstRectForCharacterRange(range, actualRange);
+    auto delegate = _bridge->getTextDelegate();
+    if (!delegate) {
+        return NSMakeRect(0, 0, 0, 0);
+    }
+    return delegate->firstRectForCharacterRange(range, actualRange);
 }
 
 @end
