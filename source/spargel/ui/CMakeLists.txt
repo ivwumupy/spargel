@@ -23,9 +23,11 @@ endif ()
 if (SPARGEL_IS_LINUX)
     if (SPARGEL_LINUX_IS_DESKTOP)
 
-        target_sources(ui PRIVATE ui_xcb.cpp)
+        target_sources(ui PRIVATE ui_xcb.cpp xkb_util.cpp)
 
-        target_link_libraries(ui PRIVATE X11 xcb X11-xcb)
+        target_link_libraries(ui PRIVATE
+            X11 xcb X11-xcb
+            ${XKBCOMMON_LIBRARIES} ${XKBCOMMON_X11_LIBRARIES})
 
         if (SPARGEL_ENABLE_OPENGL)
             target_link_libraries(ui PRIVATE OpenGL::GLX)

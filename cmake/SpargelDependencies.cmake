@@ -37,9 +37,13 @@ if (SPARGEL_IS_ANDROID)
 endif ()
 
 if (SPARGEL_IS_LINUX)
+    find_package(PkgConfig REQUIRED)
+
     if (SPARGEL_LINUX_IS_DESKTOP)
 
         find_package(X11 REQUIRED)
+        pkg_check_modules(XKBCOMMON REQUIRED xkbcommon)
+        pkg_check_modules(XKBCOMMON_X11 REQUIRED xkbcommon-x11)
 
         if (SPARGEL_ENABLE_OPENGL)
             find_package(OpenGL REQUIRED GLX)

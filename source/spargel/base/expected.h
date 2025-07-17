@@ -1,6 +1,6 @@
 #pragma once
 
-#include "spargel/base/concept.h"
+#include <spargel/base/concept.h>
 
 namespace spargel::base {
     namespace _expected {

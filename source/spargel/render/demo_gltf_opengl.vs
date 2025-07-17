@@ -9,6 +9,6 @@ out vec3 color;
 
 void main()
 {
-    gl_Position = uMVP * vec4(aPosition * 2, 1.0);
+    gl_Position = uMVP * vec4(aPosition, 1.0);
     color = abs(aNormal);
 }

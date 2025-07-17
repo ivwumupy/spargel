@@ -1,6 +1,11 @@
 #include <spargel/base/logging.h>
 #include <spargel/ui/ui_xcb.h>
 
+// X11/XCB
+#include <xcb/xproto.h>
+#include <xkbcommon/xkbcommon-x11.h>
+#include <xkbcommon/xkbcommon.h>
+
 /* for clock_gettime */
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -21,52 +26,54 @@ namespace spargel::ui {
          * Open the connection to the X server.
          * Use the DISPLAY environment variable as the default display name.
          */
-        _display = XOpenDisplay(NULL);
+        display = XOpenDisplay(NULL);
         spargel_log_debug("X display opened");
 
-        _connection = XGetXCBConnection(_display);
+        connection = XGetXCBConnection(display);
         spargel_log_debug("XCB connection established");
 
         /* Get the first screen */
-        _screen = xcb_setup_roots_iterator(xcb_get_setup(_connection)).data;
+        screen = xcb_setup_roots_iterator(xcb_get_setup(connection)).data;
 
-        spargel_log_info("Information of XCB screen %d:", _screen->root);
-        spargel_log_info("  width:\t%d", _screen->width_in_pixels);
-        spargel_log_info("  height:\t%d", _screen->height_in_pixels);
-        spargel_log_info("  white pixel:\t%08x", _screen->white_pixel);
-        spargel_log_info("  black pixel:\t%08x", _screen->black_pixel);
+        spargel_log_info("Information of XCB screen %d:", screen->root);
+        spargel_log_info("  width: \t%d", screen->width_in_pixels);
+        spargel_log_info("  height:\t%d", screen->height_in_pixels);
+        spargel_log_info("  white pixel:\t%08x", screen->white_pixel);
+        spargel_log_info("  black pixel:\t%08x", screen->black_pixel);
 
 #if SPARGEL_ENABLE_OPENGL
-        _visual_info = nullptr;
+        visual_info = nullptr;
 
         int glx_major, glx_minor;
-        glXQueryVersion(_display, &glx_major, &glx_minor);
+        glXQueryVersion(display, &glx_major, &glx_minor);
         spargel_log_info("GLX version: %d.%d", glx_major, glx_minor);
 #endif
 
         xcb_intern_atom_cookie_t cookie;
         xcb_intern_atom_reply_t* reply;
 
-        cookie = _intern_atom_cookie(1, "WM_PROTOCOLS");
-        reply = _intern_atom_reply(cookie);
-        _atom_wm_protocols = reply->atom;
+        cookie = intern_atom_cookie(1, "WM_PROTOCOLS");
+        reply = intern_atom_reply(cookie);
+        atom_wm_protocols = reply->atom;
         free(reply);
 
-        cookie = _intern_atom_cookie(0, "WM_DELETE_WINDOW");
-        reply = _intern_atom_reply(cookie);
-        _atom_wm_delete_window = reply->atom;
+        cookie = intern_atom_cookie(0, "WM_DELETE_WINDOW");
+        reply = intern_atom_reply(cookie);
+        atom_wm_delete_window = reply->atom;
         free(reply);
+
+        initXKBContext();
     }
 
     PlatformXcb::~PlatformXcb() {
 #if SPARGEL_ENABLE_OPENGL
-        XFree(_visual_info);
+        XFree(visual_info);
 #endif
 
         // should not do this
-        // xcb_disconnect(_connection);
+        // xcb_disconnect(connection);
 
-        XCloseDisplay(_display);
+        XCloseDisplay(display);
     }
 
     const float FPS = 60;
@@ -88,20 +95,20 @@ namespace spargel::ui {
         struct timespec t1, t2, duration = {.tv_sec = 0, .tv_nsec = 0};
         while (true) {
             bool should_stop = true;
-            for (auto& window : _windows) {
-                if (!window->_closed) {
+            for (auto& window : windows) {
+                if (!window->closed) {
                     should_stop = false;
                     break;
                 }
             }
             if (should_stop) break;
 
-            event = xcb_poll_for_event(_connection);
+            event = xcb_poll_for_event(connection);
             if (!event) {
                 clock_gettime(CLOCK_MONOTONIC, &t1);
 
-                _run_render_callbacks();
-                xcb_flush(_connection);
+                run_render_callbacks();
+                xcb_flush(connection);
 
                 /*
                  * wait for the next frame
@@ -123,10 +130,10 @@ namespace spargel::ui {
             switch (event->response_type & 0x7f) {
             case XCB_CLIENT_MESSAGE: {
                 auto* client_message_event = (xcb_client_message_event_t*)event;
-                if (client_message_event->data.data32[0] == _atom_wm_delete_window) {
-                    for (auto& window : _windows) {
-                        if (window->_id == client_message_event->window) {
-                            window->_closed = true;
+                if (client_message_event->data.data32[0] == atom_wm_delete_window) {
+                    for (auto& window : windows) {
+                        if (window->id == client_message_event->window) {
+                            window->closed = true;
                             window->getDelegate()->onCloseRequested();
                             window->getDelegate()->onClosed();
                             break;
@@ -135,11 +142,28 @@ namespace spargel::ui {
                 }
             } break;
             case XCB_EXPOSE: {
-                _run_render_callbacks();
-                xcb_flush(_connection);
+                run_render_callbacks();
+                xcb_flush(connection);
             } break;
             case XCB_KEY_PRESS: {
-                // TODO
+                auto* key_press_event = (xcb_key_press_event_t*)event;
+                for (auto& window : windows) {
+                    if (window->id == key_press_event->event) {
+                        KeyboardEvent keyboard_event = {.action = KeyboardAction::press, .key = xkb.translatePhysicalKey(key_press_event->detail)};
+                        window->getDelegate()->onKeyboard(keyboard_event);
+                        break;
+                    }
+                }
+            } break;
+            case XCB_KEY_RELEASE: {
+                auto* key_release_event = (xcb_key_release_event_t*)event;
+                for (auto& window : windows) {
+                    if (window->id == key_release_event->event) {
+                        KeyboardEvent keyboard_event = {.action = KeyboardAction::release, .key = xkb.translatePhysicalKey(key_release_event->detail)};
+                        window->getDelegate()->onKeyboard(keyboard_event);
+                        break;
+                    }
+                }
             } break;
             default:
                 break;
@@ -149,30 +173,11 @@ namespace spargel::ui {
         }
     }
 
-    void PlatformXcb::_run_render_callbacks() {
-        for (auto& window : _windows) {
-            auto delegate = window->getDelegate();
-            if (!delegate) {
-                spargel_log_fatal("window delegate not set");
-                spargel_panic_here();
-            }
-            delegate->onRender();
-        }
-    }
-
-    xcb_intern_atom_cookie_t PlatformXcb::_intern_atom_cookie(u8 only_if_exists, const char* name) {
-        return xcb_intern_atom(_connection, only_if_exists, strlen(name), name);
-    }
-
-    xcb_intern_atom_reply_t* PlatformXcb::_intern_atom_reply(xcb_intern_atom_cookie_t cookie) {
-        return xcb_intern_atom_reply(_connection, cookie, nullptr);
-    }
-
     base::unique_ptr<Window> PlatformXcb::makeWindow(u32 width, u32 height) {
-        xcb_window_t id = xcb_generate_id(_connection);
+        xcb_window_t id = xcb_generate_id(connection);
 
 #if SPARGEL_ENABLE_OPENGL
-        if (!_visual_info) {
+        if (!visual_info) {
             static int attribs[] = {GLX_RENDER_TYPE,
                                     GLX_RGBA_BIT,
                                     GLX_RED_SIZE,
@@ -191,71 +196,119 @@ namespace spargel::ui {
                                     True,
                                     None};
 
-            _visual_info = glXChooseVisual(_display, 0, attribs);
-            if (_visual_info) {
-                spargel_log_info("selected visual 0x%lx for GLX", _visual_info->visualid);
+            visual_info = glXChooseVisual(display, 0, attribs);
+            if (visual_info) {
+                spargel_log_info("selected visual 0x%lx for GLX", visual_info->visualid);
             } else {
                 spargel_log_fatal("cannot find appropriate visual for GLX");
                 spargel_panic_here();
             }
         }
 
-        xcb_visualid_t visual_id = _visual_info->visualid;
-        uint8_t depth = _visual_info->depth;
+        xcb_visualid_t visualid = visual_info->visualid;
+        uint8_t depth = visual_info->depth;
 
 #else
-        xcb_visualid_t visual_id = _screen->root_visual;
+        xcb_visualid_t visualid = _screen->root_visual;
         uint8_t depth = XCB_COPY_FROM_PARENT;
 #endif
 
         u32 mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-        u32 values[2] = {_screen->black_pixel, XCB_EVENT_MASK_EXPOSURE};
+        u32 values[2] = {
+            screen->black_pixel,
+            XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE};
 
         spargel_log_debug("creating X window %d", id);
 
-        xcb_create_window(_connection, depth,            /* depth*/
-                          id, _screen->root,             /* parent window */
+        xcb_create_window(connection, depth,             /* depth*/
+                          id, screen->root,              /* parent window */
                           0, 0,                          /* x, y */
                           width, height,                 /* width, height */
                           0,                             /* border width */
                           XCB_WINDOW_CLASS_INPUT_OUTPUT, /* class */
-                          visual_id,                     /* visual */
+                          visualid,                      /* visual */
                           mask, values);
 
-        xcb_change_property(_connection, XCB_PROP_MODE_REPLACE, id, _atom_wm_protocols,
-                            XCB_ATOM_ATOM, XCB_ATOM_VISUALID, 1, &_atom_wm_delete_window);
+        xcb_change_property(connection, XCB_PROP_MODE_REPLACE, id, atom_wm_protocols,
+                            XCB_ATOM_ATOM, XCB_ATOM_VISUALID, 1, &atom_wm_delete_window);
 
-        xcb_map_window(_connection, id);
-        xcb_flush(_connection);
+        xcb_map_window(connection, id);
+        xcb_flush(connection);
 
         return base::make_unique<WindowXcb>(this, id);
     }
 
+    void PlatformXcb::run_render_callbacks() {
+        for (auto& window : windows) {
+            auto delegate = window->getDelegate();
+            if (!delegate) {
+                spargel_log_fatal("window delegate not set");
+                spargel_panic_here();
+            }
+            delegate->onRender();
+        }
+    }
+
+    xcb_intern_atom_cookie_t PlatformXcb::intern_atom_cookie(u8 only_if_exists, const char* name) {
+        return xcb_intern_atom(connection, only_if_exists, strlen(name), name);
+    }
+
+    xcb_intern_atom_reply_t* PlatformXcb::intern_atom_reply(xcb_intern_atom_cookie_t cookie) {
+        return xcb_intern_atom_reply(connection, cookie, nullptr);
+    }
+
+    void PlatformXcb::initXKBContext() {
+        xkb.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+        if (!xkb.context) {
+            spargel_log_fatal("XKB: failed to create context");
+            spargel_panic_here();
+        }
+
+        i32 device_id = xkb_x11_get_core_keyboard_device_id(connection);
+        if (device_id < 0) {
+            spargel_log_fatal("XKB: failed to get core keyboard device id");
+            spargel_panic_here();
+        }
+        spargel_log_info("XKB: core keyboard device id is %d", device_id);
+
+        xkb.keymap = xkb_x11_keymap_new_from_device(xkb.context, connection, device_id, XKB_KEYMAP_COMPILE_NO_FLAGS);
+        if (!xkb.keymap) {
+            spargel_log_fatal("XKB: failed to get keymap from device");
+            spargel_panic_here();
+        }
+
+        xkb.state = xkb_x11_state_new_from_device(xkb.keymap, connection, device_id);
+        if (!xkb.state) {
+            spargel_log_fatal("XKB: failed to create state from device");
+            spargel_panic_here();
+        }
+    }
+
     WindowXcb::WindowXcb(PlatformXcb* platform, xcb_window_t id)
-        : _platform(platform), _id(id), _closed(false) {
-        platform->_windows.emplace(this);
+        : platform(platform), id(id), closed(false) {
+        platform->windows.emplace(this);
     }
 
     WindowXcb::~WindowXcb() {
-        spargel_log_debug("X window %d is closing", _id);
-        xcb_destroy_window(_platform->_connection, _id);
+        spargel_log_debug("X window %d is closing", id);
+        xcb_destroy_window(platform->connection, id);
     }
 
     void WindowXcb::setTitle(char const* title) {
-        spargel_log_debug("setting the title of X window %d to \"%s\"", _id, title);
-        xcb_change_property(_platform->_connection, XCB_PROP_MODE_REPLACE, _id, XCB_ATOM_WM_NAME,
+        spargel_log_debug("setting the title of X window %d to \"%s\"", id, title);
+        xcb_change_property(platform->connection, XCB_PROP_MODE_REPLACE, id, XCB_ATOM_WM_NAME,
                             XCB_ATOM_STRING, 8, strlen(title), title);
     }
 
     WindowHandle WindowXcb::getHandle() {
         WindowHandle handle{};
 
-        handle.xcb.connection = _platform->_connection;
-        handle.xcb.window = _id;
+        handle.xcb.connection = platform->connection;
+        handle.xcb.window = id;
 
-        handle.xcb.display = _platform->_display;
+        handle.xcb.display = platform->display;
 #if SPARGEL_ENABLE_OPENGL
-        handle.xcb.visual_info = _platform->_visual_info;
+        handle.xcb.visual_info = platform->visual_info;
 #endif
 
         return handle;

@@ -1,8 +1,9 @@
 #pragma once
 
-#include <stdlib.h>
+#include <spargel/base/types.h>
 
-#include "spargel/base/types.h"
+// libc
+#include <stdlib.h>
 
 namespace spargel::base {
 
