@@ -13,16 +13,8 @@
 namespace spargel::render {
     class UIRendererMetal final : public UIRenderer {
     public:
-        UIRendererMetal(gpu::GPUContext* context, resource::ResourceManager* resource_manager)
-            : UIRenderer{context},
-              device_{metal_context()->device()},
-              queue_{metal_context()->queue()},
-              resource_manager_{resource_manager},
-              buffer_pool_{metal_context()} {
-            initPipeline();
-            scene_commands_buffer_.context = metal_context();
-            scene_data_buffer_.context = metal_context();
-        }
+        UIRendererMetal(gpu::GPUContext* context, resource::ResourceManager* resource_manager,
+                        text::TextShaper* text_shaper);
         ~UIRendererMetal();
 
         void setLayer(CAMetalLayer* layer) {
@@ -32,6 +24,7 @@ namespace spargel::render {
         }
 
         void render(UIScene const& scene) override;
+        void uploadBitmap(TextureHandle handle, text::Bitmap const& bitmap) override;
 
         gpu::MetalContext* metal_context() { return static_cast<gpu::MetalContext*>(context()); }
 
@@ -65,11 +58,8 @@ namespace spargel::render {
             id<MTLBuffer> object = nullptr;
         };
 
-        struct GlyphItem {
-            text::GlyphId id;
-        };
-
         void initPipeline();
+        void initTexture();
 
         id<MTLDevice> device_;
         id<MTLCommandQueue> queue_;
@@ -87,8 +77,11 @@ namespace spargel::render {
         GrowingBuffer scene_commands_buffer_;
         GrowingBuffer scene_data_buffer_;
 
+        id<MTLTexture> texture_;
+
         // base::HashMap<>;
     };
     base::UniquePtr<UIRenderer> makeMetalUIRenderer(gpu::GPUContext* context,
-                                                    resource::ResourceManager* resource_manager);
+                                                    resource::ResourceManager* resource_manager,
+                                                    text::TextShaper* shaper);
 }  // namespace spargel::render

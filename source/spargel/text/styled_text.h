@@ -12,7 +12,7 @@ namespace spargel::text {
         StyledText(base::StringView s, Font* font) : text_{s}, font_{font} {}
 
         base::StringView text() const { return text_; }
-        Font* font() { return font_; }
+        Font* font() const { return font_; }
 
         friend bool operator==(StyledText const& lhs, StyledText const& rhs) {
             return lhs.text_ == rhs.text_ && lhs.font_ == rhs.font_;

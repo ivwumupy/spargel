@@ -86,6 +86,8 @@ namespace spargel::ui {
         // TODO: Introduce TextInputClient.
         virtual void setTextFocus(bool focus) = 0;
 
+        virtual float scaleFactor() = 0;
+
     private:
         WindowDelegate* _delegate = nullptr;
     };

@@ -1,7 +1,7 @@
+#include <spargel/base/logging.h>
 #include <spargel/render/ui_renderer.h>
 #include <spargel/ui/view.h>
 #include <spargel/ui/view_host.h>
-#include <spargel/base/logging.h>
 
 namespace spargel::ui {
     ViewHost::ViewHost(Window* window, render::UIRenderer* renderer)
@@ -9,6 +9,8 @@ namespace spargel::ui {
         window_->setDelegate(this);
         window_->setAnimating(false);
         window_->bindRenderer(renderer_);
+        scene_.setScale(window_->scaleFactor());
+        scene_.setRenderer(renderer_);
     }
     void ViewHost::setRootView(View* view) {
         root_view_ = view;

@@ -1,9 +1,13 @@
 #include <spargel/base/unique_ptr.h>
+#include <spargel/base/string_view.h>
 #include <spargel/gpu/gpu_context.h>
 #include <spargel/render/ui_renderer.h>
 #include <spargel/render/ui_scene.h>
 #include <spargel/resource/directory.h>
 #include <spargel/resource/resource.h>
+#include <spargel/text/font.h>
+#include <spargel/text/styled_text.h>
+#include <spargel/text/text_shaper.h>
 #include <spargel/ui/platform.h>
 #include <spargel/ui/view_host.h>
 #include <spargel/ui/window.h>
@@ -13,6 +17,7 @@
 
 namespace spargel::render {
     namespace {
+        using namespace base::literals;
         gpu::GPUBackend inferBackend() {
 #if SPARGEL_IS_MACOS
             return gpu::GPUBackend::metal;
@@ -34,6 +39,7 @@ namespace spargel::render {
                 resource_manager_ = resource::makeRelativeManager("..");
                 initRenderer();
                 initWindow();
+                font_ = text::createDefaultFont();
                 prepareScene();
             }
             void start() { platform_->startLoop(); }
@@ -42,7 +48,9 @@ namespace spargel::render {
         private:
             void initRenderer() {
                 gpu_context_ = gpu::makeContext(inferBackend());
-                renderer_ = render::makeUIRenderer(gpu_context_.get(), resource_manager_.get());
+                shaper_ = text::TextShaper::create();
+                renderer_ = render::makeUIRenderer(gpu_context_.get(), resource_manager_.get(),
+                                                   shaper_.get());
             }
             void initWindow() {
                 platform_ = ui::makePlatform();
@@ -53,6 +61,8 @@ namespace spargel::render {
                 window_->bindRenderer(renderer_.get());
             }
             void prepareScene() {
+                scene_.setRenderer(renderer_.get());
+                scene_.setScale(window_->scaleFactor());
                 scene_.setClip(150, 150, 100, 100);
                 scene_.fillCircle(150, 150, 50 * 1.4143, 0xFFFF0000);
                 scene_.strokeLine(100, 100, 200, 100, 0xFFFFFFFF);
@@ -61,6 +71,10 @@ namespace spargel::render {
                 scene_.strokeLine(100, 200, 100, 100, 0xFFFFFF00);
                 scene_.clearClip();
                 scene_.strokeCircle(150, 150, 50, 0xFF0000FF);
+                scene_.fillText(text::StyledText{"hello, world"_sv, font_.get()}, 250, 250,
+                                0xFF0000FF);
+                scene_.strokeLine(0, 250, 500, 250, 0xFFFFFFFF);
+                // scene_.dump();
             }
 
             base::UniquePtr<resource::ResourceManager> resource_manager_;
@@ -68,6 +82,8 @@ namespace spargel::render {
             base::UniquePtr<ui::Window> window_;
             base::UniquePtr<gpu::GPUContext> gpu_context_;
             base::UniquePtr<render::UIRenderer> renderer_;
+            base::UniquePtr<text::TextShaper> shaper_;
+            base::UniquePtr<text::Font> font_;
             render::UIScene scene_;
         };
     }  // namespace

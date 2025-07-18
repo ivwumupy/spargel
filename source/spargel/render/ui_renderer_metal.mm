@@ -9,8 +9,23 @@
 
 namespace spargel::render {
     base::UniquePtr<UIRenderer> makeMetalUIRenderer(gpu::GPUContext* context,
-                                                    resource::ResourceManager* resource_manager) {
-        return base::makeUnique<UIRendererMetal>(context, resource_manager);
+                                                    resource::ResourceManager* resource_manager,
+                                                    text::TextShaper* shaper) {
+        return base::makeUnique<UIRendererMetal>(context, resource_manager, shaper);
+    }
+
+    UIRendererMetal::UIRendererMetal(gpu::GPUContext* context,
+                                     resource::ResourceManager* resource_manager,
+                                     text::TextShaper* text_shaper)
+        : UIRenderer{context, text_shaper},
+          device_{metal_context()->device()},
+          queue_{metal_context()->queue()},
+          resource_manager_{resource_manager},
+          buffer_pool_{metal_context()} {
+        initPipeline();
+        initTexture();
+        scene_commands_buffer_.context = metal_context();
+        scene_data_buffer_.context = metal_context();
     }
     void UIRendererMetal::initPipeline() {
         NSError* error = nullptr;
@@ -38,6 +53,14 @@ namespace spargel::render {
         // Create pipeline.
         auto ppl_desc = [[MTLRenderPipelineDescriptor alloc] init];
         ppl_desc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
+        ppl_desc.colorAttachments[0].blendingEnabled = true;
+        ppl_desc.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+        ppl_desc.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+        ppl_desc.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+        ppl_desc.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOne;
+        ppl_desc.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+        ppl_desc.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+
         ppl_desc.vertexFunction = sdf_vert_;
         ppl_desc.fragmentFunction = sdf_frag_;
         sdf_pipeline_ = [device_ newRenderPipelineStateWithDescriptor:ppl_desc error:&error];
@@ -49,6 +72,14 @@ namespace spargel::render {
         pass_desc_.colorAttachments[0].loadAction = MTLLoadActionClear;
         pass_desc_.colorAttachments[0].storeAction = MTLStoreActionStore;
         pass_desc_.colorAttachments[0].clearColor = MTLClearColorMake(0, 1, 1, 1);
+    }
+    void UIRendererMetal::initTexture() {
+        auto desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatA8Unorm
+                                                                       width:ATLAS_SIZE
+                                                                      height:ATLAS_SIZE
+                                                                   mipmapped:false];
+        desc.storageMode = MTLStorageModeShared;
+        texture_ = [device_ newTextureWithDescriptor:desc];
     }
     void UIRendererMetal::render(UIScene const& scene) {
         spargel_check(layer_);
@@ -80,10 +111,7 @@ namespace spargel::render {
         id<MTLBuffer> buffers[] = {scene_commands_buffer_.object, scene_data_buffer_.object};
         usize offsets[] = {0, 0};
         [encoder setFragmentBuffers:buffers offsets:offsets withRange:NSMakeRange(1, 2)];
-        // [encoder setFragmentBytes:commands_bytes.data()
-        //                    length:commands_bytes.count()
-        //                   atIndex:1];
-        // [encoder setFragmentBytes:data_bytes.data() length:data_bytes.count() atIndex:2];
+        [encoder setFragmentTexture:texture_ atIndex:0];
 
         // we use one triangle
         [encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
@@ -97,6 +125,7 @@ namespace spargel::render {
         [command_buffer waitUntilCompleted];
         // buffer_pool_.putBack(commands_buffer);
         // buffer_pool_.putBack(data_buffer);
+        // spargel_log_info("done");
     }
     UIRendererMetal::~UIRendererMetal() {
         [pass_desc_ release];
@@ -165,5 +194,11 @@ namespace spargel::render {
         }
         context->destroyBuffer(object);
         object = context->createBuffer(length);
+    }
+    void UIRendererMetal::uploadBitmap(TextureHandle handle, text::Bitmap const& bitmap) {
+        [texture_ replaceRegion:MTLRegionMake2D(handle.x, handle.y, handle.width, handle.height)
+                    mipmapLevel:0
+                      withBytes:bitmap.data.data()
+                    bytesPerRow:bitmap.width];
     }
 }  // namespace spargel::render

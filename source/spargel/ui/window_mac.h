@@ -80,6 +80,8 @@ namespace spargel::ui {
         void setTextFocus(bool focus) override { text_focus_ = focus; }
         bool text_focus() const { return text_focus_; }
 
+        float scaleFactor() override;
+
     private:
         NSWindow* _window;
         SpargelWindowDelegate* _bridge;

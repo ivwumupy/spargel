@@ -5,6 +5,7 @@
 #include <spargel/base/string_view.h>
 #include <spargel/base/types.h>
 #include <spargel/base/vector.h>
+#include <spargel/render/ui_renderer.h>
 #include <spargel/text/styled_text.h>
 
 namespace spargel::text {
@@ -12,11 +13,13 @@ namespace spargel::text {
 }
 
 namespace spargel::render {
-    class TextRenderer;
+    class UIRenderer;
 
     // Coordinates: The origin is at top-left.
     class UIScene {
     public:
+        void setRenderer(UIRenderer* renderer) { renderer_ = renderer; }
+
         void setClip(float x, float y, float w, float h) {
             pushCommand(DrawCommand::set_clip);
             pushData(x, y, w, h);
@@ -44,6 +47,8 @@ namespace spargel::render {
         // TODO: Support emojis.
         void fillText(text::StyledText text, float x, float y, u32 color);
 
+        void dump() { pushCommand(DrawCommand::dump); }
+
         base::Span<u8> commands() const { return commands_.toSpan(); }
         base::Span<u32> data() const { return data_.toSpan(); }
 
@@ -51,6 +56,8 @@ namespace spargel::render {
             commands_.clear();
             data_.clear();
         }
+
+        void setScale(float s) { scale_ = s; }
 
     private:
         enum class DrawCommand : u8 {
@@ -60,16 +67,23 @@ namespace spargel::render {
             stroke_circle,
             set_clip,
             clear_clip,
+            sample_texture,
+            dump,
         };
 
         void pushCommand(DrawCommand cmd) { commands_.push(base::toUnderlying(cmd)); }
         void pushDatum(u32 x) { data_.push(x); }
-        void pushDatum(float x) { data_.push(base::bitCast<float, u32>(x)); }
+        void pushDatum(float x) { data_.push(base::bitCast<float, u32>(x * scale_)); }
         template <typename... Ts>
         void pushData(Ts... ts) {
             (pushDatum(ts), ...);
         }
 
+        void sampleTexture(float x, float y, float width, float height,
+                           UIRenderer::TextureHandle handle, u32 color);
+
+        float scale_ = 1.0;
+        UIRenderer* renderer_ = nullptr;
         base::Vector<u8> commands_;
         base::Vector<u32> data_;
     };

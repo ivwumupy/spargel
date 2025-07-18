@@ -1,5 +1,13 @@
 #include <spargel/base/checked_convert.h>
+#include <spargel/base/logging.h>
+#include <spargel/base/string.h>
 #include <spargel/text/font_mac.h>
+
+//
+#include <math.h>
+
+//
+#import <CoreGraphics/CoreGraphics.h>
 
 namespace spargel::text {
     namespace {
@@ -17,7 +25,60 @@ namespace spargel::text {
         CFRelease(name);
     }
     FontMac::~FontMac() { CFRelease(object_); }
-    Bitmap FontMac::rasterGlyph(GlyphId id) { spargel_panic_here(); }
+    Bitmap FontMac::rasterGlyph(GlyphId id, float scale) {
+        auto glyph_info = glyphInfo(id);
+        auto rect = glyph_info.bounding_box;
+
+        u32 width = (u32)ceil(rect.size.width * scale);
+        u32 height = (u32)ceil(rect.size.height * scale);
+
+        if (width == 0 || height == 0) {
+            spargel_log_info("zero sized glyph!");
+            return {};
+        }
+
+        // for anti-aliasing
+        // width += 4;
+        // height += 4;
+
+        Bitmap bitmap;
+        bitmap.width = width;
+        bitmap.height = height;
+        bitmap.data.reserve(width *
+                            height);  // only alpha. 8 bits per channel and 1 bytes per pixel
+        bitmap.data.set_count(width * height);
+        // memset(bitmap.data.data(), 0x3f, width * height);
+        memset(bitmap.data.data(), 0x00, width * height);
+
+        auto color_space = CGColorSpaceCreateDeviceGray();
+        auto ctx = CGBitmapContextCreate(bitmap.data.data(), width, height,
+                                         8,      // bits per channel
+                                         width,  // bytes per row
+                                         color_space, kCGImageAlphaOnly);
+        CGContextTranslateCTM(ctx, -rect.origin.x * scale, -rect.origin.y * scale);
+        // scale does not change the translate part!!!
+        CGContextScaleCTM(ctx, scale, scale);
+
+        // CGContextSetShouldAntialias(ctx, true);
+
+        // shift for anti-aliasing
+        CGPoint point = CGPointMake(0, 0);
+        // CGPoint point = CGPointMake(1, 1);
+
+        CGGlyph glyph = base::checkedConvert<CGGlyph>(id.value);
+        CTFontDrawGlyphs(object_, &glyph, &point, 1, ctx);
+
+        CFRelease(color_space);
+        CGContextRelease(ctx);
+
+        // Bitmap result;
+        // result.bitmap = base::move(bitmap);
+        // result.glyph_width = rect.size.width * scale;
+        // result.glyph_height = rect.size.height * scale;
+        // result.descent = rect.origin.y * scale;
+
+        return bitmap;
+    }
     GlyphInfo FontMac::glyphInfo(GlyphId id) {
         CGGlyph glyph = toCGGlyph(id);
 
@@ -36,7 +97,8 @@ namespace spargel::text {
 
         return info;
     }
-    Font* createDefaultFont() {
-        return new FontMac(CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 12, nullptr));
+    base::UniquePtr<Font> createDefaultFont() {
+        return base::makeUnique<FontMac>(
+            CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 50, nullptr));
     }
 }  // namespace spargel::text

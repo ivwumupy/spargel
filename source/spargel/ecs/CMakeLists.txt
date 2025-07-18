@@ -6,8 +6,8 @@ spargel_add_library(
         base
 )
 
-spargel_add_executable(
-    NAME ecs_demo
-    PRIVATE ecs_demo.cpp
-    DEPS ecs
-)
+#spargel_add_executable(
+#    NAME ecs_demo
+#    PRIVATE ecs_demo.cpp
+#    DEPS ecs
+#)

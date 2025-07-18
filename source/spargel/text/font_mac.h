@@ -13,10 +13,12 @@ namespace spargel::text {
         ~FontMac();
 
         base::StringView name() override { return name_.view(); }
-        Bitmap rasterGlyph(GlyphId id) override;
+        Bitmap rasterGlyph(GlyphId id, float scale) override;
         GlyphInfo glyphInfo(GlyphId id) override;
 
     private:
+        friend class TextShaperMac;
+
         CTFontRef object_;
         base::String name_;
     };

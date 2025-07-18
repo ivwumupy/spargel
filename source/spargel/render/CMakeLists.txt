@@ -9,6 +9,7 @@ spargel_add_library(
     DEPS
         base
         gpu
+        text
 )
 
 spargel_add_executable(
@@ -41,7 +42,7 @@ if (SPARGEL_IS_MACOS)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.ir
         COMMAND
-            xcrun metal -frecord-sources -o ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.ir -c ${CMAKE_CURRENT_SOURCE_DIR}/shader/shader.metal
+            xcrun metal -std=metal3.2 -frecord-sources -o ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.ir -c ${CMAKE_CURRENT_SOURCE_DIR}/shader/shader.metal
         DEPENDS shader/shader.metal
     )
     add_custom_command(

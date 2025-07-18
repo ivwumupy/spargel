@@ -3,6 +3,7 @@
 #include <spargel/base/hash.h>
 #include <spargel/base/string_view.h>
 #include <spargel/base/types.h>
+#include <spargel/base/unique_ptr.h>
 #include <spargel/base/vector.h>
 #include <spargel/math/rectangle.h>
 #include <spargel/math/vector.h>
@@ -36,6 +37,8 @@ namespace spargel::text {
         float ascent() const { return bounding_box.origin.y; }
         // The (signed) distance to the bottom of the bounding box.
         float descent() const { return bounding_box.origin.y - bounding_box.size.height; }
+        float width() const { return bounding_box.size.width; }
+        float height() const { return bounding_box.size.height; }
     };
     class Font {
     public:
@@ -44,9 +47,9 @@ namespace spargel::text {
         virtual base::StringView name() = 0;
 
         // TODO
-        virtual Bitmap rasterGlyph(GlyphId id) = 0;
+        virtual Bitmap rasterGlyph(GlyphId id, float scale) = 0;
 
         virtual GlyphInfo glyphInfo(GlyphId id) = 0;
     };
-    Font* createDefaultFont();
+    base::UniquePtr<Font> createDefaultFont();
 }  // namespace spargel::text

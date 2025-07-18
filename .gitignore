@@ -8,6 +8,7 @@ tmp*
 .vs
 .vscode
 .cache
+.zed
 
 # Build
 /build*

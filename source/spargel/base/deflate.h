@@ -112,6 +112,6 @@ namespace spargel::base {
         static constexpr usize LITLEN_TABLE_SIZE = 2342;
 
         // Decode tables
-        u32 litlen_table_[LITLEN_TABLE_SIZE];
+        [[maybe_unused]] u32 litlen_table_[LITLEN_TABLE_SIZE];
     };
 }  // namespace spargel::base

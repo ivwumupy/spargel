@@ -423,7 +423,7 @@ namespace spargel::ui {
 
     TextSystemAppKit::TextSystemAppKit() {
         // use system language
-        _font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 50, NULL);
+        _font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 30, NULL);
         // static constexpr char const* font_name = "Times New Roman";
         // static constexpr char const* font_name = "Apple Color Emoji";
         // auto name =
@@ -471,6 +471,8 @@ namespace spargel::ui {
             [font retain];
             r.font = font;
 
+            NSLog(@"%@", font);
+
             glyphs.reserve(count);
             CTRunGetGlyphs(run, CFRangeMake(0, count), glyphs.data());
             glyphs.set_count(count);
@@ -510,6 +512,8 @@ namespace spargel::ui {
         CGRect rect;
         CTFontGetBoundingRectsForGlyphs((CTFontRef)font, kCTFontOrientationDefault, glyphs, &rect,
                                         1);
+
+        spargel_log_info("bbox %.3f %.3f", rect.size.width, rect.size.height);
 
         u32 width = (u32)ceil(rect.size.width * scale);
         u32 height = (u32)ceil(rect.size.height * scale);
@@ -571,5 +575,7 @@ namespace spargel::ui {
         auto metal_renderer = static_cast<render::UIRendererMetal*>(renderer);
         metal_renderer->setLayer(_layer);
     }
+
+    float WindowAppKit::scaleFactor() { return [_window backingScaleFactor]; }
 
 }  // namespace spargel::ui

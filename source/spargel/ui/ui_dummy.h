@@ -17,6 +17,7 @@ namespace spargel::ui {
 
         void bindRenderer(render::UIRenderer*) override {}
         void setTextFocus(bool focus) override {}
+        float scaleFactor() override { return 1.0; }
     };
 
     class TextSystemDummy final : public TextSystem {
