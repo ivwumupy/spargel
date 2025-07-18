@@ -20,5 +20,6 @@ namespace spargel::render {
     private:
         gpu::GPUContext* context_;
     };
-    base::UniquePtr<UIRenderer> makeUIRenderer(gpu::GPUContext* context, resource::ResourceManager* resource_manager);
+    base::UniquePtr<UIRenderer> makeUIRenderer(gpu::GPUContext* context,
+                                               resource::ResourceManager* resource_manager);
 }  // namespace spargel::render

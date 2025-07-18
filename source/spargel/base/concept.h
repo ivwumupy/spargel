@@ -11,7 +11,8 @@ namespace spargel::base {
     //   (via static_cast) to To.
     // - for one example of the difference, see [stackoverflow/62644070]
     template <typename From, typename To>
-    concept ConvertibleTo = base::is_convertible<From, To> && requires { static_cast<To>(declval<From>()); };
+    concept ConvertibleTo =
+        base::is_convertible<From, To> && requires { static_cast<To>(declval<From>()); };
 
     template <typename S, typename T>
     concept SameAs = base::IsSame<S, T>;

@@ -1,6 +1,7 @@
 spargel_add_library(
     NAME render
     PRIVATE
+        atlas_packer.cpp
         ui_renderer.cpp
         ui_scene.cpp
     PRIVATE_MACOS

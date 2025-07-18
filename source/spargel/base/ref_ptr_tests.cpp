@@ -6,9 +6,7 @@ namespace spargel::base {
     namespace {
         struct Foo : RefCount<Foo> {
             Foo() {}
-            ~Foo() {
-                spargel_log_debug("~Foo");
-            }
+            ~Foo() { spargel_log_debug("~Foo"); }
         };
         TEST(RefPtr_Basics) {
             auto f = makeRef<Foo>();

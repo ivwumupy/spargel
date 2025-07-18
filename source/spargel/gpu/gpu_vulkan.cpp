@@ -886,8 +886,8 @@ namespace spargel::gpu {
         info.basePipelineIndex = 0;
 
         VkPipeline pipeline;
-        CHECK_VK_RESULT(_procs.vkCreateComputePipelines(_device, /* cache = */ VK_NULL_HANDLE, 1, &info,
-                                                        nullptr, &pipeline));
+        CHECK_VK_RESULT(_procs.vkCreateComputePipelines(_device, /* cache = */ VK_NULL_HANDLE, 1,
+                                                        &info, nullptr, &pipeline));
         return make_object<ComputePipelineVulkan>(pipeline, layout);
     }
 

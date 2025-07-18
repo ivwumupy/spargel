@@ -106,12 +106,13 @@ namespace spargel::base {
         template <typename... Ts>
         using tuple = Tuple<Ts...>;
         template <usize I, typename T>
-        auto get(T&& t) -> decltype(auto) { return forward<T>(t).template get<I>(); }
+        auto get(T&& t) -> decltype(auto) {
+            return forward<T>(t).template get<I>();
+        }
         template <usize... Is>
         using index_sequence = _tuple::IntegerSequence<Is...>;
         template <usize N>
-        struct make_index_sequence : _tuple::MakeSequence<N>::Type {
-        };
+        struct make_index_sequence : _tuple::MakeSequence<N>::Type {};
         template <typename T, T... Is>
         using integer_sequence = _tuple::IntegerSequence2<T, Is...>;
         template <class... T>

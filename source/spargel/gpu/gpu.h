@@ -657,7 +657,9 @@ namespace spargel::gpu {
             _desc.fragment_shader.library = library;
             _desc.fragment_shader.entry = entry;
         }
-        void addVertexBuffer(usize stride) { _vertex_buffers.emplace(stride, VertexStepMode::vertex); }
+        void addVertexBuffer(usize stride) {
+            _vertex_buffers.emplace(stride, VertexStepMode::vertex);
+        }
         void addVertexBuffer(usize stride, VertexStepMode step_mode) {
             _vertex_buffers.emplace(stride, step_mode);
         }

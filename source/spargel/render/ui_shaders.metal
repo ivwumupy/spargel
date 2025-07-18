@@ -40,6 +40,8 @@ enum {
     CMD_FILL_CIRCLE,
     CMD_STROKE_SEGMENT,
     CMD_STROKE_CIRCLE,
+    CMD_SET_CLIP,
+    CMD_CLEAR_CLIP,
 };
 
 [[fragment]]
@@ -52,6 +54,8 @@ float4 sdf_frag(
     float2 p = in.position.xy;
     uint j = 0;
     float4 col = float4(0, 0, 0, 1);
+    bool has_clip = false;
+    float4 clip = float4(0, 0, 0, 0);
     for (uint i = 0; i < uniform.cmd_count; i++) {
         uint8_t cmd = cmds[i];
         float d = 1.0;
@@ -74,9 +78,17 @@ float4 sdf_frag(
             c1 = float4(as_type<uchar4>(data[j+3])) / 255.0;
             d = sdf_circle_stroke(p - center, radius);
             j += 4;
+        } else if (cmd == CMD_SET_CLIP) {
+            clip = float4(data[j], data[j+1], data[j+2], data[j+3]);
+            has_clip = true;
+            j += 4;
+        } else if (cmd == CMD_CLEAR_CLIP) {
+            has_clip = false;
         } else {
             // do nothing
         }
+        if (has_clip && p.x >= clip.x && p.y >= clip.y && p.x <= (clip.x + clip.z) && p.y <= (clip.y + clip.w))
+            continue;
         col = mix(col, c1, clamp(1.0 - d, 0.0, 1.0));
     }
     return col;

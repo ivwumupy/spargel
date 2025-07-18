@@ -19,12 +19,16 @@ namespace {
         static auto codec() {
             return makeRecordCodec<Student>(
                 base::Constructor<Student>{},
-                makeDefaultField<Student>("type"_sv, StringCodec{}, base::String("normal"), [](auto& o) { return o.type; }),
+                makeDefaultField<Student>("type"_sv, StringCodec{}, base::String("normal"),
+                                          [](auto& o) { return o.type; }),
                 makeNormalField<Student>("name"_sv, StringCodec{}, [](auto& o) { return o.name; }),
-                makeOptionalField<Student>("nickname"_sv, StringCodec{}, [](auto& o) { return o.nickname; }),
+                makeOptionalField<Student>("nickname"_sv, StringCodec{},
+                                           [](auto& o) { return o.nickname; }),
                 makeNormalField<Student>("age"_sv, U32Codec{}, [](auto& o) { return o.age; }),
-                makeNormalField<Student>("happy"_sv, BooleanCodec{}, [](auto& o) { return o.happy; }),
-                makeNormalField<Student>("scores"_sv, makeVectorCodec(F32Codec{}), [](auto& o) { return o.scores; }));
+                makeNormalField<Student>("happy"_sv, BooleanCodec{},
+                                         [](auto& o) { return o.happy; }),
+                makeNormalField<Student>("scores"_sv, makeVectorCodec(F32Codec{}),
+                                         [](auto& o) { return o.scores; }));
         }
     };
 
@@ -39,12 +43,14 @@ namespace {
 }  // namespace
 
 TEST(Json_Codec_Encode_Error) {
-    auto result = ErrorCodec<bool>("encode error"_sv, "decode_error"_sv).encode(encodeBackend, true);
+    auto result =
+        ErrorCodec<bool>("encode error"_sv, "decode_error"_sv).encode(encodeBackend, true);
     spargel_check(result.isRight());
 }
 
 TEST(Json_Codec_Decode_Error) {
-    auto result = ErrorCodec<bool>("encode error"_sv, "decode_error"_sv).decode(decodeBackend, JsonValue());
+    auto result =
+        ErrorCodec<bool>("encode error"_sv, "decode_error"_sv).decode(decodeBackend, JsonValue());
     spargel_check(result.isRight());
 }
 
@@ -136,7 +142,8 @@ TEST(Json_Codec_Encode_Array) {
         v2.emplace(-3);
         v2.emplace(-4);
         v.emplace(base::move(v2));
-        auto result = makeVectorCodec(makeVectorCodec(I32Codec{})).encode(encodeBackend, base::move(v));
+        auto result =
+            makeVectorCodec(makeVectorCodec(I32Codec{})).encode(encodeBackend, base::move(v));
         spargel_check(result.isLeft() && result.left().type == JsonValueType::array);
 
         auto& array = result.left().array.elements;
@@ -157,7 +164,8 @@ TEST(Json_Codec_Decode_Array) {
         auto result_json = parseJson("[123, 456, 789]");
         spargel_check(result_json.isLeft());
 
-        auto result = makeVectorCodec(U32Codec{}).decode(decodeBackend, base::move(result_json.left()));
+        auto result =
+            makeVectorCodec(U32Codec{}).decode(decodeBackend, base::move(result_json.left()));
         spargel_check(result.isLeft());
 
         auto& array = result.left();
@@ -170,7 +178,8 @@ TEST(Json_Codec_Decode_Array) {
         auto result_json = parseJson("[[\"ABC\", \"123\"], [\"XYZ\", \"789\"]]");
         spargel_check(result_json.isLeft());
 
-        auto result = makeVectorCodec(makeVectorCodec(StringCodec{})).decode(decodeBackend, base::move(result_json.left()));
+        auto result = makeVectorCodec(makeVectorCodec(StringCodec{}))
+                          .decode(decodeBackend, base::move(result_json.left()));
         spargel_check(result.isLeft());
 
         auto& array = result.left();
@@ -268,7 +277,8 @@ TEST(Json_Codec_Decode_Record) {
         auto result_json = parseJson(str);
         spargel_check(result_json.isLeft());
 
-        auto result = makeVectorCodec(studentCodec).decode(decodeBackend, base::move(result_json.left()));
+        auto result =
+            makeVectorCodec(studentCodec).decode(decodeBackend, base::move(result_json.left()));
         spargel_check(result.isLeft());
 
         auto& students = result.left();

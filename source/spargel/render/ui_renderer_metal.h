@@ -15,7 +15,8 @@ namespace spargel::render {
             : UIRenderer{context},
               device_{metal_context()->device()},
               queue_{metal_context()->queue()},
-              resource_manager_{resource_manager} {
+              resource_manager_{resource_manager},
+              buffer_pool_{metal_context()} {
             initPipeline();
         }
         ~UIRendererMetal();
@@ -31,6 +32,28 @@ namespace spargel::render {
         gpu::MetalContext* metal_context() { return static_cast<gpu::MetalContext*>(context()); }
 
     private:
+        struct BufferItem {
+            bool olderThan(base::Optional<BufferItem> const& other) const;
+
+            id<MTLBuffer> object = nullptr;
+            // Timestamp of the last use, in nanoseconds.
+            u64 last_used = 0;
+            bool in_use = false;
+        };
+        struct BufferPool {
+            BufferPool(gpu::MetalContext* ctx) : context{ctx} {}
+
+            id<MTLBuffer> request(usize length);
+            void purge(u64 now);
+            void putBack(id<MTLBuffer> buffer);
+
+            gpu::MetalContext* context;
+            // Free buffers.
+            base::Vector<BufferItem> buffers;
+            // Timestamp of the last purge, in nanoseconds.
+            u64 last_purged = 0;
+        };
+
         void initPipeline();
 
         id<MTLDevice> device_;
@@ -44,6 +67,9 @@ namespace spargel::render {
         id<MTLRenderPipelineState> sdf_pipeline_;
 
         MTLRenderPassDescriptor* pass_desc_;
+
+        BufferPool buffer_pool_;
     };
-    base::UniquePtr<UIRenderer> makeMetalUIRenderer(gpu::GPUContext* context, resource::ResourceManager* resource_manager);
+    base::UniquePtr<UIRenderer> makeMetalUIRenderer(gpu::GPUContext* context,
+                                                    resource::ResourceManager* resource_manager);
 }  // namespace spargel::render

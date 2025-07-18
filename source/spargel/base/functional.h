@@ -9,7 +9,9 @@ namespace spargel::base {
     template <typename T>
     struct Constructor {
         template <typename... Args>
-        T operator()(Args... args) const { return T(base::forward<Args>(args)...); }
+        T operator()(Args... args) const {
+            return T(base::forward<Args>(args)...);
+        }
     };
 
     // old design

@@ -82,7 +82,8 @@ int main(int argc, char* argv[]) {
         dumpValue(base::move(result.left()));
         putchar('\n');
     } else {
-        fprintf(stderr, "Failed to parse JSON: %s\n", base::CString(result.right().message()).data());
+        fprintf(stderr, "Failed to parse JSON: %s\n",
+                base::CString(result.right().message()).data());
     }
 
     return 0;

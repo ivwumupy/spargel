@@ -120,9 +120,7 @@ namespace spargel::ui {
 
     struct CTFontRAII {
         CTFontRef ref;
-        ~CTFontRAII() {
-            CFRelease(ref);
-        }
+        ~CTFontRAII() { CFRelease(ref); }
     };
 
     class TextSystemAppKit final : public TextSystem {

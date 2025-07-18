@@ -30,11 +30,7 @@
 namespace spargel::base {
 
     static char const* log_names[_LOG_COUNT] = {
-        "DEBUG",
-        "INFO",
-        "WARN",
-        "ERROR",
-        "FATAL",
+        "DEBUG", "INFO", "WARN", "ERROR", "FATAL",
     };
 
     struct log_timestamp {
@@ -107,6 +103,12 @@ namespace spargel::base {
         char const* name = log_names[level];
         struct log_timestamp time;
         log_get_time(&time);
+
+        // Old log format.
+        //
+        // fprintf(stderr, "[%02d%02d/%02d%02d%02d.%06d:%s:%s:%s:%u] ", time.mon, time.day,
+        // time.hour,
+        //         time.min, time.sec, time.usec, name, file, func, line);
 
         fprintf(stderr, "[%02d%02d/%02d%02d%02d.%06d:%s:%s:%s:%u] ", time.mon, time.day, time.hour,
                 time.min, time.sec, time.usec, name, file, func, line);

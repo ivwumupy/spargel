@@ -43,24 +43,17 @@ namespace {
     };
 
     float camera_angle = 3.1415926 / 3;
-    auto mView =
-        math::Matrix4x4f(
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, -4.0f, 1.0f) *
-        math::Matrix4x4f(
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, math::cos(camera_angle), -math::sin(camera_angle), 0.0f,
-            0.0f, math::sin(camera_angle), math::cos(camera_angle), 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f);
+    auto mView = math::Matrix4x4f(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+                                  0.0f, 0.0f, 0.0f, -4.0f, 1.0f) *
+                 math::Matrix4x4f(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, math::cos(camera_angle),
+                                  -math::sin(camera_angle), 0.0f, 0.0f, math::sin(camera_angle),
+                                  math::cos(camera_angle), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
     float z_near = 0.01f, z_far = 100.0f, tanFov = 1.0f, aspect = 800.0f / 600.0f;
-    auto mProjection = math::Matrix4x4f(
-        1.0f / (tanFov * aspect), 0.0f, 0.0f, 0.0f,
-        0.0f, 1.0f / tanFov, 0.0f, 0.0f,
-        0.0f, 0.0f, -(z_far + z_near) / (z_far - z_near), -1.0f,
-        0.0f, 0.0f, -2 * z_far * z_near / (z_far - z_near), 0.0f);
+    auto mProjection =
+        math::Matrix4x4f(1.0f / (tanFov * aspect), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f / tanFov, 0.0f,
+                         0.0f, 0.0f, 0.0f, -(z_far + z_near) / (z_far - z_near), -1.0f, 0.0f, 0.0f,
+                         -2 * z_far * z_near / (z_far - z_near), 0.0f);
 
     class Delegate final : public ui::WindowDelegate {
     public:
@@ -72,12 +65,9 @@ namespace {
 
             static float angle = 0.0f;
             angle += 0.01f;
-            auto mModel =
-                math::Matrix4x4f(
-                    math::cos(angle), -math::sin(angle), 0.0f, 0.0f,
-                    math::sin(angle), math::cos(angle), 0.0f, 0.0f,
-                    0.0f, 0.0f, 1.0f, 0.0f,
-                    0.0f, 0.0f, 0.0f, 1.0f);
+            auto mModel = math::Matrix4x4f(math::cos(angle), -math::sin(angle), 0.0f, 0.0f,
+                                           math::sin(angle), math::cos(angle), 0.0f, 0.0f, 0.0f,
+                                           0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
             auto mMVP = mProjection * mView * mModel;
 
@@ -134,7 +124,8 @@ void loadProgram(resource::ResourceManager* resource_manager, Context& ctx) {
     }
 
     u32 fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    auto fragmentShaderCode = resource_manager->open(resource::ResourceId("demo_gltf_opengl.fs"_sv));
+    auto fragmentShaderCode =
+        resource_manager->open(resource::ResourceId("demo_gltf_opengl.fs"_sv));
     if (!fragmentShaderCode.hasValue()) {
         spargel_log_fatal("cannot open fragment shader file");
         spargel_panic_here();
@@ -206,7 +197,8 @@ void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Co
             u32 vbo;
             glGenBuffers(1, &vbo);
             glBindBuffer(target, vbo);
-            glBufferData(target, bufferView.byteLength, raw_buffers[bufferView.buffer].data() + byteOffset, GL_STATIC_DRAW);
+            glBufferData(target, bufferView.byteLength,
+                         raw_buffers[bufferView.buffer].data() + byteOffset, GL_STATIC_DRAW);
 
             ctx.buffers.emplace(vbo);
         }
@@ -244,12 +236,10 @@ void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Co
                 spargel_check(position_accessor.type == base::String("VEC3"));
                 glBindBuffer(GL_ARRAY_BUFFER, ctx.buffers[position_accessor.bufferView.value()]);
                 glVertexAttribPointer(
-                    0,
-                    3,
-                    GL_FLOAT,
-                    GL_FALSE,
-                    3 * sizeof(float),
-                    reinterpret_cast<void*>(position_accessor.byteOffset.hasValue() ? position_accessor.byteOffset.value() : 0));
+                    0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+                    reinterpret_cast<void*>(position_accessor.byteOffset.hasValue()
+                                                ? position_accessor.byteOffset.value()
+                                                : 0));
                 glEnableVertexAttribArray(0);
 
                 spargel_check(attributes.normal.hasValue());
@@ -259,12 +249,10 @@ void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Co
                 spargel_check(normal_accessor.type == base::String("VEC3"));
                 glBindBuffer(GL_ARRAY_BUFFER, ctx.buffers[normal_accessor.bufferView.value()]);
                 glVertexAttribPointer(
-                    1,
-                    3,
-                    GL_FLOAT,
-                    GL_FALSE,
-                    3 * sizeof(float),
-                    reinterpret_cast<void*>(normal_accessor.byteOffset.hasValue() ? normal_accessor.byteOffset.value() : 0));
+                    1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+                    reinterpret_cast<void*>(normal_accessor.byteOffset.hasValue()
+                                                ? normal_accessor.byteOffset.value()
+                                                : 0));
                 glEnableVertexAttribArray(1);
 
                 Instance instance;
@@ -277,7 +265,8 @@ void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Co
                     auto& indices_accesor = accessors[primitive.indices.value()];
                     spargel_check(indices_accesor.bufferView.hasValue());
                     spargel_check(indices_accesor.type == base::String("SCALAR"));
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx.buffers[indices_accesor.bufferView.value()]);
+                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,
+                                 ctx.buffers[indices_accesor.bufferView.value()]);
 
                     instance.indices_type = indices_accesor.componentType;
                     instance.indices = true;
@@ -374,7 +363,8 @@ int main(int argc, char* argv[]) {
         if (result.isLeft()) {
             gltf = base::move(result.left());
         } else {
-            spargel_log_fatal("Failed to parse glTF: %s\n", base::CString(result.right().message()).data());
+            spargel_log_fatal("Failed to parse glTF: %s\n",
+                              base::CString(result.right().message()).data());
             return 1;
         }
     }
@@ -411,8 +401,8 @@ int main(int argc, char* argv[]) {
         sizeof(PIXELFORMATDESCRIPTOR),
         1,
         PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,  // Flags
-        PFD_TYPE_RGBA,                                               // The kind of framebuffer. RGBA or palette.
-        32,                                                          // Colordepth of the framebuffer.
+        PFD_TYPE_RGBA,  // The kind of framebuffer. RGBA or palette.
+        32,             // Colordepth of the framebuffer.
         0,
         0,
         0,

@@ -5,8 +5,7 @@
 namespace spargel::base {
     // this should be copyable
     // a shared_ptr to internal state
-    class Event {
-    };
+    class Event {};
     class EventAwaitable {};
     // Example:
     //   Task foo(Event e) {

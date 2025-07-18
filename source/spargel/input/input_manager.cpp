@@ -2,9 +2,7 @@
 #include <spargel/input/keyboard_device.h>
 
 namespace spargel::input {
-    InputManager::InputManager() {
-        devices_.push(new KeyboardDevice);
-    }
+    InputManager::InputManager() { devices_.push(new KeyboardDevice); }
     KeyboardDevice* InputManager::findKeyboard() {
         for (auto device : devices_) {
             if (device->kind() == InputDeviceKind::Keyboard) {

@@ -192,9 +192,9 @@ namespace spargel::codec::model {
      * Geometry to be rendered with the given material.
      */
     struct GlTFMeshPrimitive {
-        // A plain JSON object, where each key corresponds to a mesh attribute semantic and each value is the
-        // index of the accessor containing attribute's data.
-        // (HashMap<GlTFString, GlTFInteger> attributes;)
+        // A plain JSON object, where each key corresponds to a mesh attribute semantic and each
+        // value is the index of the accessor containing attribute's data. (HashMap<GlTFString,
+        // GlTFInteger> attributes;)
         GlTFMeshPrimitiveAttributes attributes;
 
         // The index of the accessor that contains the vertex indices. (>=0)
@@ -204,8 +204,8 @@ namespace spargel::codec::model {
         Optional<GlTFInteger> material;
 
         // The topology type of primitives to render.
-        // Allowed: 0=POINTS, 1=LINES, 2=LINE_LOOP, 3=LINE_STRIP, 4=TRIANGLES, 5=TRIANGLE_STRIP, 6=TRIANGLE_FAN.
-        // Default: 4.
+        // Allowed: 0=POINTS, 1=LINES, 2=LINE_LOOP, 3=LINE_STRIP, 4=TRIANGLES, 5=TRIANGLE_STRIP,
+        // 6=TRIANGLE_FAN. Default: 4.
         Optional<GlTFInteger> mode;
     };
 

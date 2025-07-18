@@ -5,10 +5,7 @@
 using spargel::base::Case;
 using spargel::base::TaggedUnion;
 
-enum class FooKind {
-    Bar,
-    Baz
-};
+enum class FooKind { Bar, Baz };
 
 struct C1 {};
 
@@ -20,10 +17,7 @@ struct Baz {
     C1 y;
 };
 
-using Foo =
-    spargel::base::TaggedUnion<
-        Case<FooKind::Bar, Bar>,
-        Case<FooKind::Baz, Baz>>;
+using Foo = spargel::base::TaggedUnion<Case<FooKind::Bar, Bar>, Case<FooKind::Baz, Baz>>;
 
 TEST(TaggedUnion_Basic) {
     Foo x = Foo::make<FooKind::Bar>(123);
@@ -34,9 +28,15 @@ TEST(TaggedUnion_Basic) {
 
     auto match = [](Foo& foo) {
         return foo.match(
-            [](Case<FooKind::Bar>, Bar& bar) { spargel_log_info("Bar: %d", bar.x); return true; },
+            [](Case<FooKind::Bar>, Bar& bar) {
+                spargel_log_info("Bar: %d", bar.x);
+                return true;
+            },
             // general case
-            [](auto, auto) { spargel_log_info("not a Bar"); return false; });
+            [](auto, auto) {
+                spargel_log_info("not a Bar");
+                return false;
+            });
     };
 
     spargel_check(match(x));

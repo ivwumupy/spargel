@@ -40,5 +40,13 @@ namespace spargel::base {
             Optional<Foo> g = f;
             Optional<Foo> h = move(f);
         }
+
+        TEST(Optional_Assignment) {
+            Optional<int> x = nullopt;
+            spargel_check(!x.hasValue());
+            x = 2;
+            spargel_check(x.hasValue());
+            spargel_check(x.value() == 2);
+        }
     }  // namespace
 }  // namespace spargel::base

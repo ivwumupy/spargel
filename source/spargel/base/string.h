@@ -220,9 +220,7 @@ namespace spargel::base {
                 return result;
             }
             // not efficient
-            friend String operator+(String const& s, char ch) {
-                return s + String(ch);
-            }
+            friend String operator+(String const& s, char ch) { return s + String(ch); }
             friend String operator+(String const& s, char const* s2) { return s + String(s2); }
 
             /// Get the `i`-th byte.

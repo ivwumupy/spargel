@@ -10,18 +10,11 @@ namespace spargel::base {
         template <typename T>
         inline constexpr bool IsArithmetic =
             // Integrals
-            IsSame<T, short> ||
-            IsSame<T, unsigned short> ||
-            IsSame<T, int> ||
-            IsSame<T, unsigned int> ||
-            IsSame<T, long> ||
-            IsSame<T, unsigned long> ||
-            IsSame<T, long long> ||
-            IsSame<T, unsigned long long> ||
+            IsSame<T, short> || IsSame<T, unsigned short> || IsSame<T, int> ||
+            IsSame<T, unsigned int> || IsSame<T, long> || IsSame<T, unsigned long> ||
+            IsSame<T, long long> || IsSame<T, unsigned long long> ||
             // Floating-points
-            IsSame<T, float> ||
-            IsSame<T, double> ||
-            IsSame<T, long double>;
+            IsSame<T, float> || IsSame<T, double> || IsSame<T, long double>;
 
 #if spargel_has_builtin(__is_signed)
         template <typename T>

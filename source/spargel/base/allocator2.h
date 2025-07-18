@@ -16,9 +16,7 @@ namespace spargel::base {
     // };
 
     struct DefaultAllocator {
-        auto alloc(usize size) -> void* {
-            return ::malloc(size);
-        }
+        auto alloc(usize size) -> void* { return ::malloc(size); }
     };
 
 }  // namespace spargel::base

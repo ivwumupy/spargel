@@ -59,6 +59,13 @@ namespace spargel::base {
                 }
             }
 
+            template <typename U>
+                requires(is_convertible<U, T>)
+            Optional& operator=(U const& u) {
+                *this = Optional(InPlaceTag{}, u);
+                return *this;
+            }
+
             bool hasValue() const { return _status == Status::value; }
 
             T& value() & {

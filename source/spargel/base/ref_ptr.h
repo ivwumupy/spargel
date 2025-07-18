@@ -11,9 +11,7 @@ namespace spargel::base {
         template <typename T>
         class RefCount {
         public:
-            ~RefCount() {
-                spargel_check(count_ == 0);
-            }
+            ~RefCount() { spargel_check(count_ == 0); }
 
             void retain() { count_++; }
             void release() {
@@ -49,9 +47,7 @@ namespace spargel::base {
                 reset(other.ptr_);
                 return *this;
             }
-            RefPtr(RefPtr&& other) : ptr_{other.ptr_} {
-                other.ptr_ = nullptr;
-            }
+            RefPtr(RefPtr&& other) : ptr_{other.ptr_} { other.ptr_ = nullptr; }
             RefPtr& operator=(RefPtr&& other) {
                 if (ptr_) {
                     ptr_->release();

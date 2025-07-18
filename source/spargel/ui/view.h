@@ -5,6 +5,10 @@
 #include <spargel/base/unique_ptr.h>
 #include <spargel/base/vector.h>
 
+namespace spargel::render {
+    class UIScene;
+}
+
 namespace spargel::ui {
 
     class View;
@@ -53,6 +57,8 @@ namespace spargel::ui {
 
         /// Get the preferred size of the view.
         void getPreferredSize();
+
+        virtual void paint(render::UIScene& scene) {}
 
     private:
         View* _parent = nullptr;

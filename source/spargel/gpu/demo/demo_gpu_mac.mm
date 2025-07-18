@@ -5,6 +5,7 @@
 #include <spargel/base/unique_ptr.h>
 #include <spargel/base/vector.h>
 #include <spargel/gpu/gpu.h>
+#include <spargel/render/atlas_packer.h>
 #include <spargel/resource/directory.h>
 #include <spargel/resource/resource.h>
 #include <spargel/ui/platform.h>
@@ -62,12 +63,7 @@ namespace spargel::gpu {
         };
 
         static constexpr VertexPosition positions[] = {
-            {0, 0},
-            {1, 0},
-            {1, 1},
-            {1, 1},
-            {0, 1},
-            {0, 0},
+            {0, 0}, {1, 0}, {1, 1}, {1, 1}, {0, 1}, {0, 0},
         };
 
         struct UniformData {
@@ -89,7 +85,7 @@ namespace spargel::gpu {
             u32 color;
         };
 
-        u32 max(u32 a, u32 b) { return a > b ? a : b; }
+        // u32 max(u32 a, u32 b) { return a > b ? a : b; }
 
         class Renderer final : public ui::WindowDelegate, public ui::TextInputDelegate {
         public:
@@ -134,17 +130,18 @@ namespace spargel::gpu {
                 builder.addColorAttachment(TextureFormat::bgra8_unorm, true);
                 _pipeline = builder.build(_device.get());
 
-                _positions = _device->createBuffer(BufferUsage::vertex,
-                                                   base::make_span<u8>(sizeof(positions), (u8*)positions));
+                _positions = _device->createBuffer(
+                    BufferUsage::vertex, base::make_span<u8>(sizeof(positions), (u8*)positions));
 
                 _uniform_data.viewport.width = _surface->width();
                 _uniform_data.viewport.height = _surface->height();
                 _uniforms = _device->createBuffer(
-                    BufferUsage::uniform, base::make_span(sizeof(_uniform_data), (u8*)&_uniform_data));
+                    BufferUsage::uniform,
+                    base::make_span(sizeof(_uniform_data), (u8*)&_uniform_data));
 
                 _queue = _device->createCommandQueue();
 
-                _atlas = _device->createTexture(2048, 2048);
+                _atlas = _device->createTexture(TEXTURE_SIZE, TEXTURE_SIZE);
 
                 // _str.push('t');
                 //
@@ -210,7 +207,8 @@ namespace spargel::gpu {
             }
 
             // Return: width of the text
-            float drawText(base::StringView s, u32 color, float offset, base::Vector<QuadData>& quads) {
+            float drawText(base::StringView s, u32 color, float offset,
+                           base::Vector<QuadData>& quads) {
                 auto layout_result = _text_system->layoutLine(s);
                 float width = 0;
                 for (usize r = 0; r < layout_result.runs.count(); r++) {
@@ -234,15 +232,19 @@ namespace spargel::gpu {
             }
 
             void onRender() override {
-                // spargel_log_info("rendering: %s", base::CString{_str.begin(), _str.end()}.data());
+                // spargel_log_info("rendering: %s", base::CString{_str.begin(),
+                // _str.end()}.data());
 
-                auto layout_result = _text_system->layoutLine(base::StringView(_str.begin(), _str.end()));
+                auto layout_result =
+                    _text_system->layoutLine(base::StringView(_str.begin(), _str.end()));
 
                 _vquads.clear();
                 text_width_ = 0;
-                text_width_ += drawText(base::StringView{_str.begin(), _str.end()}, 0xff0000ff, text_width_, _vquads);
+                text_width_ += drawText(base::StringView{_str.begin(), _str.end()}, 0xff0000ff,
+                                        text_width_, _vquads);
                 anchor_offset_ = text_width_;
-                text_width_ += drawText(base::StringView{marked_.begin(), marked_.end()}, 0xffff0000, text_width_, _vquads);
+                text_width_ += drawText(base::StringView{marked_.begin(), marked_.end()},
+                                        0xffff0000, text_width_, _vquads);
                 // todo: use uniform
                 float half_width = text_width_ / 2;
                 for (usize i = 0; i < _vquads.count(); i++) {
@@ -324,7 +326,8 @@ namespace spargel::gpu {
                     if (!_animating) {
                         _window->requestRedraw();
                     }
-                } else if (e.key == ui::PhysicalKey::space && e.action == ui::KeyboardAction::press) {
+                } else if (e.key == ui::PhysicalKey::space &&
+                           e.action == ui::KeyboardAction::press) {
                     // spargel_log_info("space pressed");
                     // _animating = !_animating;
                     // _window->setAnimating(_animating);
@@ -347,9 +350,10 @@ namespace spargel::gpu {
             void setMarkedText(id string, NSRange selected, NSRange replaced) override {
                 auto s = (NSAttributedString*)string;
                 printf("setMarkedText \"%s\" selected=(%lu,%lu) replaced=(%lu,%lu)\n",
-                       [[s string] UTF8String],
-                       static_cast<unsigned long>(selected.location), static_cast<unsigned long>(selected.length),
-                       static_cast<unsigned long>(replaced.location), static_cast<unsigned long>(replaced.length));
+                       [[s string] UTF8String], static_cast<unsigned long>(selected.location),
+                       static_cast<unsigned long>(selected.length),
+                       static_cast<unsigned long>(replaced.location),
+                       static_cast<unsigned long>(replaced.length));
                 auto replace_range = selection_.replacement(replaced);
                 auto length = [s length];
                 if (length == 0) {
@@ -357,7 +361,8 @@ namespace spargel::gpu {
                     // todo: delete
                     unmarkText();
                 } else {
-                    selection_.marked_range = base::makeOptional<NSRange>(NSMakeRange(replace_range.location, length));
+                    selection_.marked_range =
+                        base::makeOptional<NSRange>(NSMakeRange(replace_range.location, length));
                     // todo: replace
                     auto len = [[s string] lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
                     auto data = [[s string] UTF8String];
@@ -382,9 +387,7 @@ namespace spargel::gpu {
                 marked_.clear();
             }
             // TODO
-            NSArray<NSAttributedStringKey>* validAttributesForMarkedText() override {
-                return @[];
-            }
+            NSArray<NSAttributedStringKey>* validAttributesForMarkedText() override { return @[]; }
             NSRange getSelectedRange() override {
                 printf("getSelectedRange\n");
                 return selection_.range();
@@ -393,7 +396,8 @@ namespace spargel::gpu {
                 auto s = (NSString*)string;
                 auto data = [s UTF8String];
                 printf("insertText: \"%s\" (%lu,%lu)\n", data,
-                       static_cast<unsigned long>(replaced.location), static_cast<unsigned long>(replaced.length));
+                       static_cast<unsigned long>(replaced.location),
+                       static_cast<unsigned long>(replaced.length));
                 auto len = [s lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
                 for (usize i = 0; i < len; i++) {
                     _str.push(data[i]);
@@ -406,7 +410,8 @@ namespace spargel::gpu {
             }
             // TODO
             NSRect firstRectForCharacterRange(NSRange range, NSRangePointer actual) override {
-                printf("firstRectForCharacterRange: range = (%lu, %lu)", static_cast<unsigned long>(range.location),
+                printf("firstRectForCharacterRange: range = (%lu, %lu)",
+                       static_cast<unsigned long>(range.location),
                        static_cast<unsigned long>(range.length));
                 if (actual != nullptr) {
                     printf(" actual = (%lu, %lu)", (unsigned long)(actual->location),
@@ -414,13 +419,14 @@ namespace spargel::gpu {
                 }
                 putchar('\n');
                 auto w = _window->ns_window();
-                auto b = NSMakeRect(500 - text_width_ / 2 + anchor_offset_, 500 - 0, text_width_ - anchor_offset_, 100);
+                auto b = NSMakeRect(500 - text_width_ / 2 + anchor_offset_, 500 - 0,
+                                    text_width_ - anchor_offset_, 100);
                 auto wr = [w convertRectFromBacking:b];
                 return [w convertRectToScreen:wr];
             }
             // TODO
-            NSAttributedString* attributedSubstringForProposedRange(NSRange range,
-                                                                    NSRangePointer actual) override {
+            NSAttributedString* attributedSubstringForProposedRange(
+                NSRange range, NSRangePointer actual) override {
                 printf("attributedSubstringForProposedRange\n");
                 return nil;
             }
@@ -478,6 +484,8 @@ namespace spargel::gpu {
                 }
             };
 
+            static constexpr usize TEXTURE_SIZE = 2048;
+
             // todo: optimize
             GlyphEntry& findOrInsert(ui::GlyphId id, void* font) {
                 printf("%p\n", font);
@@ -489,35 +497,45 @@ namespace spargel::gpu {
                 // not found
                 auto raster = _text_system->rasterizeGlyph(id, font);
                 auto& bitmap = raster.bitmap;
-                // try to insert
-                if (_cur_col + bitmap.width >= 2048) {
-                    // next row
-                    _cur_row = _nxt_row;
-                    _cur_col = 0;
-                }
-                u32 x = _cur_col;
-                _cur_col += bitmap.width;
-                _nxt_row = max(_nxt_row, _cur_row + bitmap.height);
-                if (_nxt_row >= 2048) {
+
+                // printf("bitmap %zu,%zu\n", bitmap.width, bitmap.height);
+
+                auto pack_result = packer_.pack(bitmap.width, bitmap.height);
+                if (!pack_result.hasValue()) {
                     spargel_log_fatal("glyph atlas out of space!");
                     spargel_panic_here();
                 }
-                u32 y = _cur_row;
+                // // try to insert
+                // if (_cur_col + bitmap.width >= TEXTURE_SIZE) {
+                //     // next row
+                //     _cur_row = _nxt_row;
+                //     _cur_col = 0;
+                // }
+                // u32 x = _cur_col;
+                // _cur_col += bitmap.width;
+                // _nxt_row = max(_nxt_row, _cur_row + bitmap.height);
+                // if (_nxt_row >= TEXTURE_SIZE) {
+                //     spargel_log_fatal("glyph atlas out of space!");
+                //     spargel_panic_here();
+                // }
+                // u32 y = _cur_row;
+                u32 x = pack_result.value().x;
+                u32 y = pack_result.value().y;
                 _glyph_cache.emplace(id, x, y, bitmap.width, bitmap.height, raster.glyph_width,
                                      raster.glyph_height, raster.descent, font);
                 _atlas->updateRegion(x, y, bitmap.width, bitmap.height, bitmap.width,
                                      bitmap.data.toSpan().asBytes());
 
-                // for (usize i = 0; i < bitmap.height; i++) {
-                //     for (usize j = 0; j < bitmap.width; j++) {
-                //         if (bitmap.data[i * bitmap.width + j] != 0x3f) {
-                //             putchar('X');
-                //         } else {
-                //             putchar('.');
-                //         }
-                //     }
-                //     putchar('\n');
-                // }
+                for (usize i = 0; i < bitmap.height; i++) {
+                    for (usize j = 0; j < bitmap.width; j++) {
+                        if (bitmap.data[i * bitmap.width + j] != 0x3f) {
+                            putchar('X');
+                        } else {
+                            putchar('.');
+                        }
+                    }
+                    putchar('\n');
+                }
 
                 return _glyph_cache[_glyph_cache.count() - 1];
             }
@@ -539,19 +557,21 @@ namespace spargel::gpu {
             base::vector<char> _str;
             base::vector<QuadData> _vquads;
             base::vector<GlyphEntry> _glyph_cache;
-            u32 _cur_row = 0;
-            u32 _cur_col = 0;
-            u32 _nxt_row = 0;
+            // u32 _cur_row = 0;
+            // u32 _cur_col = 0;
+            // u32 _nxt_row = 0;
             bool _animating = false;
             Selection selection_{0};
             NSTextInputContext* input_context_;
             float text_width_ = 0;
             float anchor_offset_ = 0;
             base::vector<char> marked_;
+            render::AtlasPacker packer_{TEXTURE_SIZE, TEXTURE_SIZE};
         };
         void demoMain() {
             auto platform = ui::makePlatform();
-            auto resource_manager = resource::makeRelativeManager("../source/spargel/gpu/demo/resources");
+            auto resource_manager =
+                resource::makeRelativeManager("../source/spargel/gpu/demo/resources");
             auto text_system = platform->createTextSystem();
 
             auto window = platform->makeWindow(500, 500);

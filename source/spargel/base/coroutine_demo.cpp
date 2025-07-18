@@ -34,9 +34,7 @@ namespace spargel::base {
                 // schedule the (suspended) coroutine to some executor to execute later
                 *handle = h;
             }
-            void await_resume() {
-                printf("resume\n");
-            }
+            void await_resume() { printf("resume\n"); }
         };
         return_object counter(CoroutineHandle<>* handle) {
             awaitable a{handle};
@@ -61,9 +59,7 @@ namespace spargel::base {
             using Handle = CoroutineHandle<promise_type>;
             struct promise_type {
                 T value;
-                Generator<T> get_return_object() {
-                    return {Handle::from_promise(*this)};
-                }
+                Generator<T> get_return_object() { return {Handle::from_promise(*this)}; }
                 AlwaysSuspend initial_suspend() { return {}; }
                 AlwaysSuspend final_suspend() noexcept { return {}; }
                 void return_void() {}
@@ -75,9 +71,7 @@ namespace spargel::base {
                 void unhandled_exception() {}
             };
 
-            ~Generator() {
-                handle.destroy();
-            }
+            ~Generator() { handle.destroy(); }
 
             bool done() const { return handle.done(); }
 

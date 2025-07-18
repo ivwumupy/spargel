@@ -6,6 +6,7 @@ add_subdirectory(gpu)
 add_subdirectory(input)
 add_subdirectory(render)
 add_subdirectory(resource)
+add_subdirectory(text)
 add_subdirectory(ui)
 add_subdirectory(util)
 

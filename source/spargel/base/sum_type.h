@@ -114,9 +114,13 @@ namespace spargel::base {
             }
 
             template <usize i, typename T = Get<Types, i>>
-            T& getValue() { return *getPtr<T>(); }
+            T& getValue() {
+                return *getPtr<T>();
+            }
             template <usize i, typename T = Get<Types, i>>
-            T const& getValue() const { return *getPtr<T>(); }
+            T const& getValue() const {
+                return *getPtr<T>();
+            }
 
             friend void tag_invoke(tag<swap>, SumType& lhs, SumType& rhs) {
                 if (lhs._index == rhs._index) {
@@ -126,13 +130,14 @@ namespace spargel::base {
                 } else {
                     alignas(Alignment<Ts...>) Byte tmp[StorageSize<Ts...>];
                     visitByIndex<TypeCount>(lhs._index, [&]<usize i>(IndexWrapper<i>) {
-                        visitByIndex<SumType::TypeCount /*MSVC wants this*/>(rhs._index, [&]<usize j>(IndexWrapper<j>) {
-                            using T1 = Get<Types, i>;
-                            using T2 = Get<Types, j>;
-                            new (reinterpret_cast<T1*>(tmp)) T1(base::move(lhs.getValue<i>()));
-                            new (lhs.getPtr<T2>()) T2(base::move(rhs.getValue<j>()));
-                            new (rhs.getPtr<T1>()) T1(base::move(*reinterpret_cast<T1*>(tmp)));
-                        });
+                        visitByIndex<SumType::TypeCount /*MSVC wants this*/>(
+                            rhs._index, [&]<usize j>(IndexWrapper<j>) {
+                                using T1 = Get<Types, i>;
+                                using T2 = Get<Types, j>;
+                                new (reinterpret_cast<T1*>(tmp)) T1(base::move(lhs.getValue<i>()));
+                                new (lhs.getPtr<T2>()) T2(base::move(rhs.getValue<j>()));
+                                new (rhs.getPtr<T1>()) T1(base::move(*reinterpret_cast<T1*>(tmp)));
+                            });
                     });
                     swap(lhs._index, rhs._index);
                 }
@@ -145,9 +150,13 @@ namespace spargel::base {
             }
 
             template <typename T>
-            T* getPtr() { return reinterpret_cast<T*>(_bytes); }
+            T* getPtr() {
+                return reinterpret_cast<T*>(_bytes);
+            }
             template <typename T>
-            T const* getPtr() const { return reinterpret_cast<T const*>(_bytes); }
+            T const* getPtr() const {
+                return reinterpret_cast<T const*>(_bytes);
+            }
 
             alignas(Alignment<Ts...>) Byte _bytes[StorageSize<Ts...>];
 

@@ -44,9 +44,7 @@ namespace spargel::base {
 
             // FIXME:
             // ArrayStorage does not hava a default constructor
-            HashMap(HashMap&& other) {
-                swap(*this, other);
-            }
+            HashMap(HashMap&& other) { swap(*this, other); }
             HashMap& operator=(HashMap&& other) {
                 HashMap tmp(base::move(other));
                 swap(*this, tmp);

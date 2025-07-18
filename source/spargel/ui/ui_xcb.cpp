@@ -149,7 +149,9 @@ namespace spargel::ui {
                 auto* key_press_event = (xcb_key_press_event_t*)event;
                 for (auto& window : windows) {
                     if (window->id == key_press_event->event) {
-                        KeyboardEvent keyboard_event = {.action = KeyboardAction::press, .key = xkb.translatePhysicalKey(key_press_event->detail)};
+                        KeyboardEvent keyboard_event = {
+                            .action = KeyboardAction::press,
+                            .key = xkb.translatePhysicalKey(key_press_event->detail)};
                         window->getDelegate()->onKeyboard(keyboard_event);
                         break;
                     }
@@ -159,7 +161,9 @@ namespace spargel::ui {
                 auto* key_release_event = (xcb_key_release_event_t*)event;
                 for (auto& window : windows) {
                     if (window->id == key_release_event->event) {
-                        KeyboardEvent keyboard_event = {.action = KeyboardAction::release, .key = xkb.translatePhysicalKey(key_release_event->detail)};
+                        KeyboardEvent keyboard_event = {
+                            .action = KeyboardAction::release,
+                            .key = xkb.translatePhysicalKey(key_release_event->detail)};
                         window->getDelegate()->onKeyboard(keyboard_event);
                         break;
                     }
@@ -214,9 +218,8 @@ namespace spargel::ui {
 #endif
 
         u32 mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-        u32 values[2] = {
-            screen->black_pixel,
-            XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE};
+        u32 values[2] = {screen->black_pixel, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS |
+                                                  XCB_EVENT_MASK_KEY_RELEASE};
 
         spargel_log_debug("creating X window %d", id);
 
@@ -229,8 +232,8 @@ namespace spargel::ui {
                           visualid,                      /* visual */
                           mask, values);
 
-        xcb_change_property(connection, XCB_PROP_MODE_REPLACE, id, atom_wm_protocols,
-                            XCB_ATOM_ATOM, XCB_ATOM_VISUALID, 1, &atom_wm_delete_window);
+        xcb_change_property(connection, XCB_PROP_MODE_REPLACE, id, atom_wm_protocols, XCB_ATOM_ATOM,
+                            XCB_ATOM_VISUALID, 1, &atom_wm_delete_window);
 
         xcb_map_window(connection, id);
         xcb_flush(connection);
@@ -271,7 +274,8 @@ namespace spargel::ui {
         }
         spargel_log_info("XKB: core keyboard device id is %d", device_id);
 
-        xkb.keymap = xkb_x11_keymap_new_from_device(xkb.context, connection, device_id, XKB_KEYMAP_COMPILE_NO_FLAGS);
+        xkb.keymap = xkb_x11_keymap_new_from_device(xkb.context, connection, device_id,
+                                                    XKB_KEYMAP_COMPILE_NO_FLAGS);
         if (!xkb.keymap) {
             spargel_log_fatal("XKB: failed to get keymap from device");
             spargel_panic_here();

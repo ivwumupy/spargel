@@ -85,6 +85,5 @@ namespace spargel::gpu2 {
     };
 
     // Parameters for creating a render pipeline.
-    struct RenderPipelineDescriptor {
-    };
+    struct RenderPipelineDescriptor {};
 }  // namespace spargel::gpu2

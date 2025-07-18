@@ -35,12 +35,8 @@ namespace spargel::render {
                 initWindow();
                 prepareScene();
             }
-            void start() {
-                platform_->startLoop();
-            }
-            void onRender() override {
-                renderer_->render(scene_);
-            }
+            void start() { platform_->startLoop(); }
+            void onRender() override { renderer_->render(scene_); }
 
         private:
             void initRenderer() {
@@ -56,11 +52,13 @@ namespace spargel::render {
                 window_->bindRenderer(renderer_.get());
             }
             void prepareScene() {
+                scene_.setClip(150, 150, 100, 100);
                 scene_.fillCircle(150, 150, 50 * 1.4143, 0xFFFF0000);
                 scene_.strokeLine(100, 100, 200, 100, 0xFFFFFFFF);
                 scene_.strokeLine(200, 100, 200, 200, 0xFF00FFFF);
                 scene_.strokeLine(200, 200, 100, 200, 0xFFFF00FF);
                 scene_.strokeLine(100, 200, 100, 100, 0xFFFFFF00);
+                scene_.clearClip();
                 scene_.strokeCircle(150, 150, 50, 0xFF0000FF);
             }
 

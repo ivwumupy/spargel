@@ -69,13 +69,9 @@ namespace spargel::base {
                 _end++;
             }
 
-            void push(T const& t) {
-                emplace(t);
-            }
+            void push(T const& t) { emplace(t); }
 
-            void push(T&& t) {
-                emplace(move(t));
-            }
+            void push(T&& t) { emplace(move(t)); }
 
             void pop() {
                 spargel_check(_begin < _end);
@@ -117,6 +113,43 @@ namespace spargel::base {
                     while (this->count() > count) {
                         pop();
                     }
+                }
+            }
+
+            // Erase the `i`-th object by swapping it to the end.
+            // This guarantees no rellocation.
+            void eraseFast(usize i) {
+                spargel_check(i < count());
+                auto p = _end - 1;
+                swap(_begin[i], *p);
+                destruct_at(p);
+                _end--;
+            }
+
+            template <typename F>
+            void eraseIfFast(F&& f) {
+                auto i = 0;
+                while (i < count()) {
+                    if (!f(_begin[i])) {
+                        i++;
+                        continue;
+                    }
+                    eraseFast(i);
+                }
+            }
+
+            template <typename F, typename D>
+            void eraseIfFastWithDeleter(F&& f, D&& d) {
+                auto i = 0;
+                while (i < count()) {
+                    if (!f(_begin[i])) {
+                        i++;
+                        continue;
+                    }
+                    auto p = _end - 1;
+                    swap(_begin[i], *p);
+                    d(*p);
+                    _end--;
                 }
             }
 
@@ -176,15 +209,18 @@ namespace spargel::base {
 #if spargel_has_builtin(__is_trivially_copyable)
                 if constexpr (__is_trivially_copyable(T)) {
                     if (_begin == nullptr) {
-                        new_begin = static_cast<T*>(default_allocator()->allocate(sizeof(T) * new_capacity));
+                        new_begin = static_cast<T*>(
+                            default_allocator()->allocate(sizeof(T) * new_capacity));
                     } else {
-                        new_begin = static_cast<T*>(default_allocator()->resize(_begin, capacity() * sizeof(T), sizeof(T) * new_capacity));
+                        new_begin = static_cast<T*>(default_allocator()->resize(
+                            _begin, capacity() * sizeof(T), sizeof(T) * new_capacity));
                     }
                 } else
 #endif
                 {
 
-                    new_begin = static_cast<T*>(default_allocator()->allocate(sizeof(T) * new_capacity));
+                    new_begin =
+                        static_cast<T*>(default_allocator()->allocate(sizeof(T) * new_capacity));
                     if (_begin != nullptr) [[likely]] {
 #if spargel_has_builtin(__is_trivially_relocatable)
                         if constexpr (__is_trivially_relocatable(T)) {

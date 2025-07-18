@@ -4,7 +4,14 @@
 #include <spargel/base/source_location.h>
 #include <spargel/base/types.h>
 
-#define LOG_IMPL(level, ...) ::spargel::base::log(level, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#if SPARGEL_IS_CLANG || SPARGEL_IS_GCC
+#define FILE_NAME_ __FILE_NAME__
+#else
+#define FILE_NAME_ __FILE__
+#endif
+
+#define LOG_IMPL(level, ...) \
+    ::spargel::base::log(level, FILE_NAME_, __func__, __LINE__, __VA_ARGS__)
 #define spargel_log_debug(...) LOG_IMPL(::spargel::base::LOG_DEBUG, __VA_ARGS__)
 #define spargel_log_info(...) LOG_IMPL(::spargel::base::LOG_INFO, __VA_ARGS__)
 #define spargel_log_warn(...) LOG_IMPL(::spargel::base::LOG_WARN, __VA_ARGS__)

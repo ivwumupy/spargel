@@ -30,11 +30,18 @@ namespace {
         base::Either<TestData, CodecError> makeF32(f32 v) { return base::Left(TestData{}); }
         base::Either<TestData, CodecError> makeF64(f64 v) { return base::Left(TestData{}); }
 
-        base::Either<TestData, CodecError> makeString(const base::String& s) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeString(const base::String& s) {
+            return base::Left(TestData{});
+        }
 
-        base::Either<TestData, CodecError> makeArray(const base::vector<TestData>& array) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeArray(const base::vector<TestData>& array) {
+            return base::Left(TestData{});
+        }
 
-        base::Either<TestData, CodecError> makeMap(const base::HashMap<base::String, TestData>& map) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeMap(
+            const base::HashMap<base::String, TestData>& map) {
+            return base::Left(TestData{});
+        }
     };
 
     static_assert(EncodeBackend<TestEncodeBackend>);
@@ -59,13 +66,16 @@ namespace {
         base::Either<f32, CodecError> getF32(const TestData& data) { return base::Left((f32)0); }
         base::Either<f64, CodecError> getF64(const TestData& data) { return base::Left((f64)0); }
 
-        base::Either<base::String, CodecError> getString(const TestData& data) { return base::Left(base::String("")); }
+        base::Either<base::String, CodecError> getString(const TestData& data) {
+            return base::Left(base::String(""));
+        }
 
         base::Either<base::vector<TestData>, CodecError> getArray(const TestData& data) {
             return base::Left(base::vector<TestData>{});
         }
 
-        base::Either<base::Optional<TestData>, CodecError> getMember(const TestData& data, base::StringView key) {
+        base::Either<base::Optional<TestData>, CodecError> getMember(const TestData& data,
+                                                                     base::StringView key) {
             return base::Left(base::makeOptional<TestData>());
         }
     };
@@ -89,12 +99,17 @@ namespace {
 
         static auto encoder() {
             return makeRecordEncoder<Student>(
-                makeNormalEncodeField<Student>("type"_sv, StringCodec{}, [](auto& o) { return o.type; }),
-                makeNormalEncodeField<Student>("name"_sv, StringCodec{}, [](auto& o) { return o.name; }),
-                makeOptionalEncodeField<Student>("nickname"_sv, StringCodec{}, [](auto& o) { return o.nickname; }),
+                makeNormalEncodeField<Student>("type"_sv, StringCodec{},
+                                               [](auto& o) { return o.type; }),
+                makeNormalEncodeField<Student>("name"_sv, StringCodec{},
+                                               [](auto& o) { return o.name; }),
+                makeOptionalEncodeField<Student>("nickname"_sv, StringCodec{},
+                                                 [](auto& o) { return o.nickname; }),
                 makeNormalEncodeField<Student>("age"_sv, U32Codec{}, [](auto& o) { return o.age; }),
-                makeNormalEncodeField<Student>("happy"_sv, BooleanCodec{}, [](auto& o) { return o.happy; }),
-                makeNormalEncodeField<Student>("scores"_sv, makeVectorEncoder(F32Codec{}), [](auto& o) { return o.scores; }));
+                makeNormalEncodeField<Student>("happy"_sv, BooleanCodec{},
+                                               [](auto& o) { return o.happy; }),
+                makeNormalEncodeField<Student>("scores"_sv, makeVectorEncoder(F32Codec{}),
+                                               [](auto& o) { return o.scores; }));
         }
 
         static auto decoder() {
@@ -111,12 +126,16 @@ namespace {
         static auto codec() {
             return makeRecordCodec<Student>(
                 base::Constructor<Student>{},
-                makeDefaultField<Student>("type"_sv, StringCodec{}, base::String("normal"), [](auto& o) { return o.type; }),
+                makeDefaultField<Student>("type"_sv, StringCodec{}, base::String("normal"),
+                                          [](auto& o) { return o.type; }),
                 makeNormalField<Student>("name"_sv, StringCodec{}, [](auto& o) { return o.name; }),
-                makeOptionalField<Student>("nickname"_sv, StringCodec{}, [](auto& o) { return o.nickname; }),
+                makeOptionalField<Student>("nickname"_sv, StringCodec{},
+                                           [](auto& o) { return o.nickname; }),
                 makeNormalField<Student>("age"_sv, U32Codec{}, [](auto& o) { return o.age; }),
-                makeNormalField<Student>("happy"_sv, BooleanCodec{}, [](auto& o) { return o.happy; }),
-                makeNormalField<Student>("scores"_sv, makeVectorCodec(F32Codec{}), [](auto& o) { return o.scores; }));
+                makeNormalField<Student>("happy"_sv, BooleanCodec{},
+                                         [](auto& o) { return o.happy; }),
+                makeNormalField<Student>("scores"_sv, makeVectorCodec(F32Codec{}),
+                                         [](auto& o) { return o.scores; }));
         }
     };
 
@@ -256,7 +275,8 @@ TEST(Codec_Encode_Array) {
         v2.emplace(3);
         v2.emplace(-4);
         v.emplace(base::move(v2));
-        auto result = makeVectorEncoder(makeVectorEncoder(I32Codec{})).encode(encodeBackend, base::move(v));
+        auto result =
+            makeVectorEncoder(makeVectorEncoder(I32Codec{})).encode(encodeBackend, base::move(v));
         spargel_check(result.isLeft());
     }
 
@@ -276,7 +296,8 @@ TEST(Codec_Decode_Array) {
         spargel_check(result.isLeft());
     }
     {
-        auto result = makeVectorDecoder(makeVectorDecoder(I32Codec{})).decode(decodeBackend, TestData{});
+        auto result =
+            makeVectorDecoder(makeVectorDecoder(I32Codec{})).decode(decodeBackend, TestData{});
         spargel_check(result.isLeft());
     }
 
@@ -321,10 +342,21 @@ TEST(Codec_Decode_Record) {
 TEST(Codec_Encode_Record_FailFast) {
     {
         int counter = 0;
-        auto result = makeRecordEncoder<int>(
-                          makeNormalEncodeField<int>("boo"_sv, BooleanCodec{}, [&](int n) {counter++; return true; }),
-                          makeNormalEncodeField<int>("i32"_sv, I32Codec{}, [&](int n) {counter++; return 0; }),
-                          makeNormalEncodeField<int>("string"_sv, StringCodec{}, [&](int n) {counter++; return "string"_sv; }))
+        auto result = makeRecordEncoder<int>(makeNormalEncodeField<int>("boo"_sv, BooleanCodec{},
+                                                                        [&](int n) {
+                                                                            counter++;
+                                                                            return true;
+                                                                        }),
+                                             makeNormalEncodeField<int>("i32"_sv, I32Codec{},
+                                                                        [&](int n) {
+                                                                            counter++;
+                                                                            return 0;
+                                                                        }),
+                                             makeNormalEncodeField<int>("string"_sv, StringCodec{},
+                                                                        [&](int n) {
+                                                                            counter++;
+                                                                            return "string"_sv;
+                                                                        }))
                           .encode(encodeBackend, 0);
         spargel_check(result.isLeft());
         spargel_check(counter == 3);
@@ -332,9 +364,21 @@ TEST(Codec_Encode_Record_FailFast) {
     {
         int counter = 0;
         auto result = makeRecordEncoder<int>(
-                          makeNormalEncodeField<int>("boo"_sv, BooleanCodec{}, [&](int n) {counter++; return true; }),
-                          makeNormalEncodeField<int>("i32"_sv, ErrorEncoder<i32>("error"_sv), [&](int n) {counter++; return 0; }),
-                          makeNormalEncodeField<int>("string"_sv, StringCodec{}, [&](int n) {counter++; return "string"_sv; }))
+                          makeNormalEncodeField<int>("boo"_sv, BooleanCodec{},
+                                                     [&](int n) {
+                                                         counter++;
+                                                         return true;
+                                                     }),
+                          makeNormalEncodeField<int>("i32"_sv, ErrorEncoder<i32>("error"_sv),
+                                                     [&](int n) {
+                                                         counter++;
+                                                         return 0;
+                                                     }),
+                          makeNormalEncodeField<int>("string"_sv, StringCodec{},
+                                                     [&](int n) {
+                                                         counter++;
+                                                         return "string"_sv;
+                                                     }))
                           .encode(encodeBackend, 0);
         spargel_check(result.isRight());
         spargel_check(counter == 2);

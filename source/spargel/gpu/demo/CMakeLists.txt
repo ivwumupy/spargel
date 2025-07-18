@@ -112,7 +112,7 @@ if (SPARGEL_IS_MACOS)
     spargel_add_executable(
         NAME demo_gpu_mac
         PRIVATE demo_gpu_mac.mm
-        DEPS gpu resource ui
+        DEPS gpu resource ui render
     )
     target_link_libraries(demo_gpu_mac PRIVATE ${FRAMEWORK_GAME_CONTROLLER})
 

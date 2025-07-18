@@ -87,7 +87,8 @@ namespace spargel::base {
         public:
             template <auto t, typename... Args>
             static TaggedUnion make(Args&&... args) {
-                return TaggedUnion(Index<GetIndex<0, t, Cases...>::value>{}, base::forward<Args>(args)...);
+                return TaggedUnion(Index<GetIndex<0, t, Cases...>::value>{},
+                                   base::forward<Args>(args)...);
             }
 
             auto tag() {
@@ -100,13 +101,15 @@ namespace spargel::base {
             decltype(auto) match(F&&... f) {
                 auto helper = MatchHelper{f...};
                 return visitByIndex<Count>(_storage.getIndex(), [&helper, this]<usize i>(Index<i>) {
-                    return helper(Case<IndexToTag<i, Cases...>::value>{}, _storage.template getValue<i>());
+                    return helper(Case<IndexToTag<i, Cases...>::value>{},
+                                  _storage.template getValue<i>());
                 });
             }
 
         private:
             template <usize i, typename... Args>
-            TaggedUnion(Index<i>, Args&&... args) : _storage(Storage::template make<i>(base::forward<Args>(args)...)) {}
+            TaggedUnion(Index<i>, Args&&... args)
+                : _storage(Storage::template make<i>(base::forward<Args>(args)...)) {}
 
             Storage _storage;
         };

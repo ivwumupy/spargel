@@ -42,7 +42,10 @@ using namespace spargel;
     _tracking = nil;
     self.layer = _layer;
     self.wantsLayer = YES;  // layer-hosting view
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWasConnected:) name:GCKeyboardDidConnectNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(keyboardWasConnected:)
+                                                 name:GCKeyboardDidConnectNotification
+                                               object:nil];
 
     return self;
 }
@@ -154,9 +157,9 @@ using namespace spargel;
 
 // TODO: Return nil only if the views system doesn't have an input client.
 // Otherwise return [super inputContext];
-- (NSTextInputContext*)inputContext {
-    return nil;
-}
+// - (NSTextInputContext*)inputContext {
+//     return nil;
+// }
 
 // protocol NSTextInputClient
 
@@ -557,18 +560,24 @@ namespace spargel::ui {
     RasterResult TextSystemAppKit::rasterizeGlyph(GlyphId id, void* font) {
         CGGlyph glyphs[] = {(CGGlyph)id};
         CGRect rect;
-        CTFontGetBoundingRectsForGlyphs((CTFontRef)font, kCTFontOrientationDefault, glyphs, &rect, 1);
+        CTFontGetBoundingRectsForGlyphs((CTFontRef)font, kCTFontOrientationDefault, glyphs, &rect,
+                                        1);
 
-        u32 width = (u32)ceil(rect.size.width);
-        u32 height = (u32)ceil(rect.size.height);
+        u32 width = (u32)ceil(rect.size.width * scale);
+        u32 height = (u32)ceil(rect.size.height * scale);
+
+        if (width == 0 || height == 0) {
+            spargel_log_info("zero sized glyph!");
+            return {{0, 0, {}}, 0, 0, 0};
+        }
 
         // scaling
-        width *= scale;
-        height *= scale;
+        // width *= scale;
+        // height *= scale;
 
         // for anti-aliasing
-        width += 2;
-        height += 2;
+        // width += 4;
+        // height += 4;
 
         Bitmap bitmap;
         bitmap.width = width;
@@ -584,8 +593,10 @@ namespace spargel::ui {
                                          width,  // bytes per row
                                          color_space, kCGImageAlphaOnly);
         // for scale = 5, shift = 2
-        static constexpr float shift = 1.0;
-        CGContextTranslateCTM(ctx, -rect.origin.x * scale + shift, -rect.origin.y * scale + shift);
+        static constexpr float shift = 2.0;
+        // CGContextTranslateCTM(ctx, -rect.origin.x * scale + shift, -rect.origin.y * scale +
+        // shift);
+        CGContextTranslateCTM(ctx, -rect.origin.x * scale, -rect.origin.y * scale);
         // scale does not change the translate part!!!
         CGContextScaleCTM(ctx, scale, scale);
 
@@ -593,6 +604,7 @@ namespace spargel::ui {
 
         // shift for anti-aliasing
         CGPoint point = CGPointMake(0, 0);
+        // CGPoint point = CGPointMake(1, 1);
         CTFontDrawGlyphs((CTFontRef)font, glyphs, &point, 1, ctx);
 
         CFRelease(color_space);

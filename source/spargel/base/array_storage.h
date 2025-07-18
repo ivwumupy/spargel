@@ -33,7 +33,8 @@ namespace spargel::base {
             //     - `count` is the required capacity
             //
             ArrayStorage(usize count) : _count{count} {
-                if (count > 0) _data = static_cast<Byte*>(default_allocator()->allocate(count * sizeof(T)));
+                if (count > 0)
+                    _data = static_cast<Byte*>(default_allocator()->allocate(count * sizeof(T)));
             }
 
             // Copy constructor is removed.
@@ -41,9 +42,7 @@ namespace spargel::base {
             ArrayStorage& operator=(ArrayStorage const&) = delete;
 
             // Move is cheap.
-            ArrayStorage(ArrayStorage&& other)
-                : _count{other._count},
-                  _data{other._data} {
+            ArrayStorage(ArrayStorage&& other) : _count{other._count}, _data{other._data} {
                 other._count = 0;
                 other._data = nullptr;
             }

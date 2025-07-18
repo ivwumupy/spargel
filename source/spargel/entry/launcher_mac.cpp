@@ -39,6 +39,4 @@ namespace spargel::entry {
     }  // namespace
 }  // namespace spargel::entry
 
-int main(int argc, char* argv[]) {
-    return spargel::entry::launcher_main(argc, argv);
-}
+int main(int argc, char* argv[]) { return spargel::entry::launcher_main(argc, argv); }

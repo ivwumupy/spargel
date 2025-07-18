@@ -90,8 +90,8 @@ int main() {
         sizeof(PIXELFORMATDESCRIPTOR),
         1,
         PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,  // Flags
-        PFD_TYPE_RGBA,                                               // The kind of framebuffer. RGBA or palette.
-        32,                                                          // Colordepth of the framebuffer.
+        PFD_TYPE_RGBA,  // The kind of framebuffer. RGBA or palette.
+        32,             // Colordepth of the framebuffer.
         0,
         0,
         0,
@@ -184,9 +184,9 @@ int main() {
 
     float vertices[] = {
         // positions         // colors
-        0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,   // bottom right
+        0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,  // bottom right
         -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,  // bottom left
-        0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f     // top
+        0.0f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f   // top
     };
 
     u32 vao, vbo;

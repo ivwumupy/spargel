@@ -96,7 +96,8 @@ namespace spargel::codec {
         }
     }
 
-    base::Either<base::String, JsonDecodeError> JsonDecodeBackend::getString(const JsonValue& data) {
+    base::Either<base::String, JsonDecodeError> JsonDecodeBackend::getString(
+        const JsonValue& data) {
         if (data.type == JsonValueType::string) {
             return base::Left(data.string);
         } else {
@@ -104,7 +105,8 @@ namespace spargel::codec {
         }
     }
 
-    base::Either<base::vector<JsonValue>, JsonDecodeError> JsonDecodeBackend::getArray(const JsonValue& data) {
+    base::Either<base::vector<JsonValue>, JsonDecodeError> JsonDecodeBackend::getArray(
+        const JsonValue& data) {
         if (data.type == JsonValueType::array) {
             return base::Left(data.array.elements);
         } else {
@@ -112,7 +114,8 @@ namespace spargel::codec {
         }
     }
 
-    base::Either<base::Optional<JsonValue>, JsonDecodeError> JsonDecodeBackend::getMember(const JsonValue& data, base::StringView key) {
+    base::Either<base::Optional<JsonValue>, JsonDecodeError> JsonDecodeBackend::getMember(
+        const JsonValue& data, base::StringView key) {
         if (data.type == JsonValueType::object) {
             auto* ptr = data.object.members.get(key);
             return base::Left(ptr != nullptr ? base::makeOptional<JsonValue>(*ptr) : base::nullopt);

@@ -6,10 +6,22 @@
 #include <spargel/base/types.h>
 #include <spargel/base/vector.h>
 
+namespace spargel::text {
+    class Font;
+}
+
 namespace spargel::render {
+    class TextRenderer;
+
     // Coordinates: The origin is at top-left.
     class UIScene {
     public:
+        void setClip(float x, float y, float w, float h) {
+            pushCommand(DrawCommand::set_clip);
+            pushData(x, y, w, h);
+        }
+        void clearClip() { pushCommand(DrawCommand::clear_clip); }
+
         void fillRect(float x, float y, float w, float h, u32 color) {
             pushCommand(DrawCommand::fill_rect);
             pushData(x, y, w, h, color);
@@ -26,10 +38,10 @@ namespace spargel::render {
             pushCommand(DrawCommand::stroke_circle);
             pushData(x, y, r, color);
         }
-        // This does not support emojis.
+        // Render a line of text with the given font and color.
         //
-        // TODO: Fonts.
-        void fillText(base::StringView s, float x, float y, u32 color);
+        // TODO: Support emojis.
+        void fillText(base::StringView s, float x, float y, text::Font* font, u32 color);
 
         base::Span<u8> commands() const { return commands_.toSpan(); }
         base::Span<u32> data() const { return data_.toSpan(); }
@@ -40,13 +52,17 @@ namespace spargel::render {
             fill_circle,
             stroke_line,
             stroke_circle,
+            set_clip,
+            clear_clip,
         };
 
         void pushCommand(DrawCommand cmd) { commands_.push(base::toUnderlying(cmd)); }
         void pushDatum(u32 x) { data_.push(x); }
         void pushDatum(float x) { data_.push(base::bitCast<float, u32>(x)); }
         template <typename... Ts>
-        void pushData(Ts... ts) { (pushDatum(ts), ...); }
+        void pushData(Ts... ts) {
+            (pushDatum(ts), ...);
+        }
 
         base::Vector<u8> commands_;
         base::Vector<u32> data_;
