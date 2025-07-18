@@ -80,6 +80,8 @@ namespace spargel::ui {
         WindowHandle getHandle() override;
 
         void bindRenderer(render::UIRenderer* renderer) override {}
+        void setTextFocus(bool focus) override {}
+        float scaleFactor() override { return 1.0; }
 
     private:
         PlatformXcb* platform;

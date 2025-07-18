@@ -5,4 +5,4 @@ namespace spargel::text {
         static FontManager inst;
         return inst;
     }
-}
+}  // namespace spargel::text

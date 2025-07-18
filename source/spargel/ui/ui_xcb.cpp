@@ -306,13 +306,14 @@ namespace spargel::ui {
 
     WindowHandle WindowXcb::getHandle() {
         WindowHandle handle{};
+        auto& xcb_handle = handle.value.xcb;
 
-        handle.xcb.connection = platform->connection;
-        handle.xcb.window = id;
+        xcb_handle.connection = platform->connection;
+        xcb_handle.window = id;
 
-        handle.xcb.display = platform->display;
+        xcb_handle.display = platform->display;
 #if SPARGEL_ENABLE_OPENGL
-        handle.xcb.visual_info = platform->visual_info;
+        xcb_handle.visual_info = platform->visual_info;
 #endif
 
         return handle;

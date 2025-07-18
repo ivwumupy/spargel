@@ -49,7 +49,8 @@ if (SPARGEL_IS_LINUX)
             find_package(OpenGL REQUIRED GLX)
         endif ()
 
-        # TODO: find_package(Freetype REQUIRED)
+        find_package(harfbuzz REQUIRED)
+        find_package(Freetype REQUIRED)
 
     endif ()
 endif ()

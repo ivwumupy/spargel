@@ -128,7 +128,7 @@ namespace spargel::base {
 
             template <typename F>
             void eraseIfFast(F&& f) {
-                auto i = 0;
+                usize i = 0;
                 while (i < count()) {
                     if (!f(_begin[i])) {
                         i++;

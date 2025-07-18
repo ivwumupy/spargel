@@ -64,12 +64,12 @@ int main() {
     window->setDelegate(&delegate);
     window->setTitle("Spargel Demo - OpenGL");
 
-    auto handle = window->getHandle();
+    auto handle = window->getHandle().value.xcb;
 
 #if SPARGEL_IS_LINUX
-    auto x_window = handle.xcb.window;
-    auto x_display = (Display*)handle.xcb.display;
-    auto x_visual_info = (XVisualInfo*)handle.xcb.visual_info;
+    auto x_window = handle.window;
+    auto x_display = (Display*)handle.display;
+    auto x_visual_info = (XVisualInfo*)handle.visual_info;
 
     delegate.x_display = x_display;
     delegate.x_window = x_window;
