@@ -1,11 +1,18 @@
 #pragma once
 
 namespace spargel::base {
+
     // The underlying type of an enum.
     //
     // TODO: Check that T is an enum.
+
     template <typename T>
-    using UnderlyingType = __underlying_type(T);
+    struct __underlying_type_impl {
+        using type = __underlying_type(T);
+    };
+
+    template <typename T>
+    using UnderlyingType = __underlying_type_impl<T>::type;
 
     template <typename T>
     [[nodiscard]] constexpr UnderlyingType<T> toUnderlying(T t) {

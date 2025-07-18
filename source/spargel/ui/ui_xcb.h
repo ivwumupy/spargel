@@ -79,6 +79,8 @@ namespace spargel::ui {
 
         WindowHandle getHandle() override;
 
+        void bindRenderer(render::UIRenderer* renderer) override {}
+
     private:
         PlatformXcb* platform;
         xcb_window_t id;

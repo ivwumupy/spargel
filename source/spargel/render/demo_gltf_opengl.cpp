@@ -65,7 +65,7 @@ namespace {
     class Delegate final : public ui::WindowDelegate {
     public:
         void onRender() override {
-            glClearColor(0.1f, 0.0f, 0.1f, 1.0f);
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glUseProgram(context->program);
@@ -380,7 +380,7 @@ int main(int argc, char* argv[]) {
     }
 
     auto platform = ui::makePlatform();
-    auto window = platform->makeWindow(800, 600);
+    auto window = platform->makeWindow(1200, 900);
     Delegate delegate;
     window->setDelegate(&delegate);
     window->setTitle("Spargel Demo - glTF Viewer (OpenGL)");
