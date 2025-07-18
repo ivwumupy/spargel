@@ -1,6 +1,7 @@
 add_subdirectory(base)
 add_subdirectory(codec)
 add_subdirectory(ecs)
+add_subdirectory(editor)
 add_subdirectory(entry)
 add_subdirectory(gpu)
 add_subdirectory(input)

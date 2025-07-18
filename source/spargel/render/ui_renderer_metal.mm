@@ -56,11 +56,15 @@ namespace spargel::render {
 
         auto commands_bytes = scene.commands().asBytes();
         auto data_bytes = scene.data().asBytes();
-        auto commands_buffer = buffer_pool_.request(commands_bytes.count());
-        auto data_buffer = buffer_pool_.request(data_bytes.count());
 
-        memcpy(commands_buffer.contents, commands_bytes.data(), commands_bytes.count());
-        memcpy(data_buffer.contents, data_bytes.data(), data_bytes.count());
+        scene_commands_buffer_.request(commands_bytes.count());
+        scene_data_buffer_.request(data_bytes.count());
+        // auto commands_buffer = buffer_pool_.request(commands_bytes.count());
+        // auto data_buffer = buffer_pool_.request(data_bytes.count());
+
+        memcpy(scene_commands_buffer_.object.contents, commands_bytes.data(),
+               commands_bytes.count());
+        memcpy(scene_data_buffer_.object.contents, data_bytes.data(), data_bytes.count());
 
         auto drawable = [layer_ nextDrawable];
         pass_desc_.colorAttachments[0].texture = drawable.texture;
@@ -73,7 +77,7 @@ namespace spargel::render {
         [encoder setRenderPipelineState:sdf_pipeline_];
         [encoder setFragmentBytes:&uniform_data length:sizeof(uniform_data) atIndex:0];
 
-        id<MTLBuffer> buffers[] = {commands_buffer, data_buffer};
+        id<MTLBuffer> buffers[] = {scene_commands_buffer_.object, scene_data_buffer_.object};
         usize offsets[] = {0, 0};
         [encoder setFragmentBuffers:buffers offsets:offsets withRange:NSMakeRange(1, 2)];
         // [encoder setFragmentBytes:commands_bytes.data()
@@ -91,8 +95,8 @@ namespace spargel::render {
         // TODO: Rewrite using completionHandler.
         // It seems that we need to add a mutex in BufferPool.
         [command_buffer waitUntilCompleted];
-        buffer_pool_.putBack(commands_buffer);
-        buffer_pool_.putBack(data_buffer);
+        // buffer_pool_.putBack(commands_buffer);
+        // buffer_pool_.putBack(data_buffer);
     }
     UIRendererMetal::~UIRendererMetal() {
         [pass_desc_ release];
@@ -147,5 +151,19 @@ namespace spargel::render {
             return true;
         }
         return last_used < other.value().last_used;
+    }
+    void UIRendererMetal::GrowingBuffer::request(usize length) {
+        if (length == 0) {
+            return;
+        }
+        if (!object) {
+            object = context->createBuffer(length);
+            return;
+        }
+        if (length <= object.length) {
+            return;
+        }
+        context->destroyBuffer(object);
+        object = context->createBuffer(length);
     }
 }  // namespace spargel::render

@@ -6,6 +6,12 @@
 namespace spargel::math {
 
     template <typename T>
+    struct Vector2 {
+        T x;
+        T y;
+    };
+
+    template <typename T>
     struct Vector3 {
         T x;
         T y;
@@ -82,6 +88,7 @@ namespace spargel::math {
         return Vector3<T>(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w);
     }
 
+    using Vector2f = Vector2<float>;
     using Vector3f = Vector3<float>;
     using Vector4f = Vector4<float>;
 

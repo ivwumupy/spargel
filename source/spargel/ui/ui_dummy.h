@@ -16,6 +16,7 @@ namespace spargel::ui {
         WindowHandle getHandle() override { return {}; }
 
         void bindRenderer(render::UIRenderer*) override {}
+        void setTextFocus(bool focus) override {}
     };
 
     class TextSystemDummy final : public TextSystem {

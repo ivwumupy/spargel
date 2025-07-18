@@ -1,7 +1,9 @@
 #pragma once
 
+#include <spargel/base/hash_map.h>
 #include <spargel/gpu/metal_context.h>
 #include <spargel/render/ui_renderer.h>
+#include <spargel/text/font.h>
 
 //
 #import <Metal/Metal.h>
@@ -18,6 +20,8 @@ namespace spargel::render {
               resource_manager_{resource_manager},
               buffer_pool_{metal_context()} {
             initPipeline();
+            scene_commands_buffer_.context = metal_context();
+            scene_data_buffer_.context = metal_context();
         }
         ~UIRendererMetal();
 
@@ -32,6 +36,7 @@ namespace spargel::render {
         gpu::MetalContext* metal_context() { return static_cast<gpu::MetalContext*>(context()); }
 
     private:
+        // TODO: We should not purge the buffers by delta-time.
         struct BufferItem {
             bool olderThan(base::Optional<BufferItem> const& other) const;
 
@@ -53,6 +58,16 @@ namespace spargel::render {
             // Timestamp of the last purge, in nanoseconds.
             u64 last_purged = 0;
         };
+        struct GrowingBuffer {
+            void request(usize length);
+
+            gpu::MetalContext* context = nullptr;
+            id<MTLBuffer> object = nullptr;
+        };
+
+        struct GlyphItem {
+            text::GlyphId id;
+        };
 
         void initPipeline();
 
@@ -69,6 +84,10 @@ namespace spargel::render {
         MTLRenderPassDescriptor* pass_desc_;
 
         BufferPool buffer_pool_;
+        GrowingBuffer scene_commands_buffer_;
+        GrowingBuffer scene_data_buffer_;
+
+        // base::HashMap<>;
     };
     base::UniquePtr<UIRenderer> makeMetalUIRenderer(gpu::GPUContext* context,
                                                     resource::ResourceManager* resource_manager);

@@ -9,7 +9,7 @@
 #include <spargel/math/vector.h>
 #include <spargel/resource/directory.h>
 #include <spargel/ui/platform.h>
-#include <spargel/ui/ui_mac.h>
+#include <spargel/ui/window_mac.h>
 #include <spargel/ui/window.h>
 
 //

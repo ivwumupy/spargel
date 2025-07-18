@@ -54,6 +54,8 @@ namespace spargel::ui {
         /// @brief a keyboard event is received
         virtual void onKeyboard(KeyboardEvent& e) {}
 
+        virtual void onKeyDown(PhysicalKey key) {}
+
         virtual void onMouseDown(float x, float y) {}
 
         /// User has moved the mouse with left button pressed.
@@ -79,6 +81,10 @@ namespace spargel::ui {
         virtual WindowHandle getHandle() = 0;
 
         virtual void bindRenderer(render::UIRenderer* renderer) = 0;
+
+        // HACK: Whether this window has focus on text input.
+        // TODO: Introduce TextInputClient.
+        virtual void setTextFocus(bool focus) = 0;
 
     private:
         WindowDelegate* _delegate = nullptr;

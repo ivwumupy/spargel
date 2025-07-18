@@ -1,16 +1,11 @@
 #include <spargel/base/allocator.h>
-#include <spargel/base/assert.h>
+#include <spargel/base/check.h>
 #include <spargel/base/logging.h>
 #include <spargel/base/meta.h>
 #include <spargel/base/unique_ptr.h>
 #include <spargel/base/vector.h>
 #include <spargel/render/ui_renderer_metal.h>
-#include <spargel/ui/ui_mac.h>
-
-//
-#include <math.h>
-#include <stddef.h>
-#include <string.h>
+#include <spargel/ui/window_mac.h>
 
 //
 #import <AppKit/AppKit.h>
@@ -21,21 +16,14 @@
 #import <GameController/GameController.h>
 #import <QuartzCore/QuartzCore.h>
 
-using namespace spargel;
-
-@implementation SpargelApplicationDelegate
-- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication*)sender {
-    return YES;
-}
-@end
-
 @implementation SpargelMetalView {
     CADisplayLink* _link;
     CAMetalLayer* _layer;
     NSTrackingArea* _tracking;
-    ui::WindowAppKit* _bridge;
+    spargel::ui::WindowAppKit* _bridge;
 }
-- (instancetype)initWithSpargelUIWindow:(ui::WindowAppKit*)w metalLayer:(CAMetalLayer*)layer {
+- (instancetype)initWithSpargelUIWindow:(spargel::ui::WindowAppKit*)w
+                             metalLayer:(CAMetalLayer*)layer {
     [super init];
     _bridge = w;
     _layer = layer;
@@ -46,11 +34,9 @@ using namespace spargel;
                                              selector:@selector(keyboardWasConnected:)
                                                  name:GCKeyboardDidConnectNotification
                                                object:nil];
-
     return self;
 }
 - (void)keyboardWasConnected:(NSNotification*)notification {
-    NSLog(@"%@", notification);
     auto keyboard = (GCKeyboard*)notification.object;
     spargel_check(keyboard);
 
@@ -59,7 +45,7 @@ using namespace spargel;
     auto key = [keyboard_input buttonForKeyCode:GCKeyCodeKeyA];
     spargel_check(key);
     key.pressedChangedHandler = ^(GCControllerButtonInput*, float, bool pressed) {
-      printf("GC Callback Key A: %s\n", pressed ? "pressed" : "released");
+      spargel_log_info("GC Callback Key A: %s", pressed ? "pressed" : "released");
     };
 }
 - (void)recreateTrackingArea {
@@ -157,9 +143,12 @@ using namespace spargel;
 
 // TODO: Return nil only if the views system doesn't have an input client.
 // Otherwise return [super inputContext];
-// - (NSTextInputContext*)inputContext {
-//     return nil;
-// }
+- (NSTextInputContext*)inputContext {
+    if (!_bridge->text_focus()) {
+        return nullptr;
+    }
+    return [super inputContext];
+}
 
 // protocol NSTextInputClient
 
@@ -240,125 +229,83 @@ using namespace spargel;
 @end
 
 @implementation SpargelWindowDelegate {
-    ui::WindowAppKit* _bridge;
+    spargel::ui::WindowAppKit* _bridge;
 }
-- (instancetype)initWithSpargelUIWindow:(ui::WindowAppKit*)w {
+- (instancetype)initWithSpargelUIWindow:(spargel::ui::WindowAppKit*)w {
     [super init];
     _bridge = w;
     return self;
 }
 @end
 
-namespace {
-    ui::PhysicalKey translatePhysicalKey(int code) {
-        using enum ui::PhysicalKey;
-        switch (code) {
-        case kVK_ANSI_A:
-            return key_a;
-        case kVK_ANSI_B:
-            return key_b;
-        case kVK_ANSI_C:
-            return key_c;
-        case kVK_ANSI_D:
-            return key_d;
-        case kVK_ANSI_E:
-            return key_e;
-        case kVK_ANSI_F:
-            return key_f;
-        case kVK_ANSI_G:
-            return key_g;
-        case kVK_ANSI_H:
-            return key_h;
-        case kVK_ANSI_I:
-            return key_i;
-        case kVK_ANSI_J:
-            return key_j;
-        case kVK_ANSI_K:
-            return key_k;
-        case kVK_ANSI_L:
-            return key_l;
-        case kVK_ANSI_M:
-            return key_m;
-        case kVK_ANSI_N:
-            return key_n;
-        case kVK_ANSI_O:
-            return key_o;
-        case kVK_ANSI_P:
-            return key_p;
-        case kVK_ANSI_Q:
-            return key_q;
-        case kVK_ANSI_R:
-            return key_r;
-        case kVK_ANSI_S:
-            return key_s;
-        case kVK_ANSI_T:
-            return key_t;
-        case kVK_ANSI_U:
-            return key_u;
-        case kVK_ANSI_V:
-            return key_v;
-        case kVK_ANSI_W:
-            return key_w;
-        case kVK_ANSI_X:
-            return key_x;
-        case kVK_ANSI_Y:
-            return key_y;
-        case kVK_ANSI_Z:
-            return key_z;
-        case kVK_Space:
-            return space;
-        case kVK_Escape:
-            return escape;
-        case kVK_Delete:
-            return key_delete;
-        default:
-            return unknown;
-        }
-    }
-}  // namespace
-
 namespace spargel::ui {
-
-    base::unique_ptr<Platform> makePlatformAppKit() { return base::make_unique<PlatformAppKit>(); }
-
-    PlatformAppKit::PlatformAppKit() : Platform(PlatformKind::appkit) {
-        _app = [NSApplication sharedApplication];
-        [_app setActivationPolicy:NSApplicationActivationPolicyRegular];
-
-        SpargelApplicationDelegate* delegate = [[SpargelApplicationDelegate alloc] init];
-        // NSApp.delegate is a weak reference
-        _app.delegate = delegate;
-
-        initGlobalMenu();
-    }
-
-    PlatformAppKit::~PlatformAppKit() {}
-
-    void PlatformAppKit::startLoop() { [_app run]; }
-
-    base::unique_ptr<Window> PlatformAppKit::makeWindow(u32 width, u32 height) {
-        spargel_assert(width > 0 && height > 0);
-        return base::make_unique<WindowAppKit>(width, height);
-    }
-    base::unique_ptr<TextSystem> PlatformAppKit::createTextSystem() {
-        return base::make_unique<TextSystemAppKit>();
-    }
-
-    void PlatformAppKit::initGlobalMenu() {
-        NSMenu* menu_bar = [[NSMenu alloc] init];
-
-        NSMenu* app_menu = [[NSMenu alloc] initWithTitle:@"Spargel"];
-        [app_menu addItemWithTitle:@"About Spargel" action:nil keyEquivalent:@""];
-        [app_menu addItemWithTitle:@"Check for Updates" action:nil keyEquivalent:@""];
-        [app_menu addItemWithTitle:@"Quit Spargel" action:@selector(terminate:) keyEquivalent:@"q"];
-
-        NSMenuItem* app_menu_item = [[NSMenuItem alloc] init];
-        [app_menu_item setSubmenu:app_menu];
-        [menu_bar addItem:app_menu_item];
-
-        // mainMenu is a strong reference
-        _app.mainMenu = menu_bar;
-    }
+    namespace {
+        PhysicalKey translatePhysicalKey(int code) {
+            using enum PhysicalKey;
+            switch (code) {
+            case kVK_ANSI_A:
+                return key_a;
+            case kVK_ANSI_B:
+                return key_b;
+            case kVK_ANSI_C:
+                return key_c;
+            case kVK_ANSI_D:
+                return key_d;
+            case kVK_ANSI_E:
+                return key_e;
+            case kVK_ANSI_F:
+                return key_f;
+            case kVK_ANSI_G:
+                return key_g;
+            case kVK_ANSI_H:
+                return key_h;
+            case kVK_ANSI_I:
+                return key_i;
+            case kVK_ANSI_J:
+                return key_j;
+            case kVK_ANSI_K:
+                return key_k;
+            case kVK_ANSI_L:
+                return key_l;
+            case kVK_ANSI_M:
+                return key_m;
+            case kVK_ANSI_N:
+                return key_n;
+            case kVK_ANSI_O:
+                return key_o;
+            case kVK_ANSI_P:
+                return key_p;
+            case kVK_ANSI_Q:
+                return key_q;
+            case kVK_ANSI_R:
+                return key_r;
+            case kVK_ANSI_S:
+                return key_s;
+            case kVK_ANSI_T:
+                return key_t;
+            case kVK_ANSI_U:
+                return key_u;
+            case kVK_ANSI_V:
+                return key_v;
+            case kVK_ANSI_W:
+                return key_w;
+            case kVK_ANSI_X:
+                return key_x;
+            case kVK_ANSI_Y:
+                return key_y;
+            case kVK_ANSI_Z:
+                return key_z;
+            case kVK_Space:
+                return space;
+            case kVK_Escape:
+                return escape;
+            case kVK_Delete:
+                return key_delete;
+            default:
+                return unknown;
+            }
+        }
+    }  // namespace
 
     WindowAppKit::WindowAppKit(int width, int height)
         : _width{static_cast<float>(width)}, _height{static_cast<float>(height)} {
@@ -451,6 +398,7 @@ namespace spargel::ui {
                 spargel_panic_here();
             }
             getDelegate()->onKeyboard(e);
+            getDelegate()->onKeyDown(e.key);
         }
     }
 
@@ -593,7 +541,7 @@ namespace spargel::ui {
                                          width,  // bytes per row
                                          color_space, kCGImageAlphaOnly);
         // for scale = 5, shift = 2
-        static constexpr float shift = 2.0;
+        // static constexpr float shift = 2.0;
         // CGContextTranslateCTM(ctx, -rect.origin.x * scale + shift, -rect.origin.y * scale +
         // shift);
         CGContextTranslateCTM(ctx, -rect.origin.x * scale, -rect.origin.y * scale);

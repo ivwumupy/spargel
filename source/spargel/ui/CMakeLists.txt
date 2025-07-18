@@ -4,14 +4,19 @@ spargel_add_library(
         event.cpp
         platform.cpp
         ui_dummy.cpp
+        view.cpp
+        view_host.cpp
     PRIVATE_ANDROID
         ui_android.cpp
     PRIVATE_LINUX
     PRIVATE_MACOS
-        ui_mac.mm
+        platform_mac.mm
+        window_mac.mm
     PRIVATE_WINDOWS
         ui_win32.cpp
-    DEPS base
+    DEPS
+        base
+        render
 )
 
 

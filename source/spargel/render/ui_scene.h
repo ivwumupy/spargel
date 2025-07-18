@@ -5,6 +5,7 @@
 #include <spargel/base/string_view.h>
 #include <spargel/base/types.h>
 #include <spargel/base/vector.h>
+#include <spargel/text/styled_text.h>
 
 namespace spargel::text {
     class Font;
@@ -41,10 +42,15 @@ namespace spargel::render {
         // Render a line of text with the given font and color.
         //
         // TODO: Support emojis.
-        void fillText(base::StringView s, float x, float y, text::Font* font, u32 color);
+        void fillText(text::StyledText text, float x, float y, u32 color);
 
         base::Span<u8> commands() const { return commands_.toSpan(); }
         base::Span<u32> data() const { return data_.toSpan(); }
+
+        void clear() {
+            commands_.clear();
+            data_.clear();
+        }
 
     private:
         enum class DrawCommand : u8 {

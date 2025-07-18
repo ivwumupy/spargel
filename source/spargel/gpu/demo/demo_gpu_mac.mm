@@ -9,8 +9,8 @@
 #include <spargel/resource/directory.h>
 #include <spargel/resource/resource.h>
 #include <spargel/ui/platform.h>
-#include <spargel/ui/ui_mac.h>
 #include <spargel/ui/window.h>
+#include <spargel/ui/window_mac.h>
 
 #define USE_VULKAN 1
 #if SPARGEL_IS_MACOS
@@ -94,6 +94,7 @@ namespace spargel::gpu {
                 : _window{window}, _manager{resource_manager}, _text_system{text_system} {
                 _window->setDelegate(this);
                 _window->setTextDelegate(this);
+                _window->setTextFocus(true);
 
                 // keyboard_ = [GCKeyboard coalescedKeyboard];
                 // spargel_check(keyboard_);

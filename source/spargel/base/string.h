@@ -228,6 +228,8 @@ namespace spargel::base {
 
             span<Byte> bytes() const { return _bytes.toSpan().asBytes(); }
 
+            void resize(usize n) { _bytes.resize(n); }
+
             usize getLength() const {
                 usize len = 0;
                 usize i = 0;

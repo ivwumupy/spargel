@@ -5,6 +5,7 @@
 #include <spargel/resource/directory.h>
 #include <spargel/resource/resource.h>
 #include <spargel/ui/platform.h>
+#include <spargel/ui/view_host.h>
 #include <spargel/ui/window.h>
 
 //

@@ -11,34 +11,12 @@
 #import <AppKit/AppKit.h>
 #import <QuartzCore/QuartzCore.h>
 
-@interface SpargelApplicationDelegate : NSObject <NSApplicationDelegate>
-@end
-
 @interface SpargelMetalView : NSView <NSTextInputClient>  // temp hack
 @end
 
 @interface SpargelWindowDelegate : NSObject <NSWindowDelegate>
 @end
-
 namespace spargel::ui {
-
-    class PlatformAppKit final : public Platform {
-    public:
-        PlatformAppKit();
-        ~PlatformAppKit() override;
-
-        void startLoop() override;
-
-        base::unique_ptr<Window> makeWindow(u32 width, u32 height) override;
-        base::unique_ptr<TextSystem> createTextSystem() override;
-
-    private:
-        void initGlobalMenu();
-
-        NSApplication* _app;
-    };
-
-    base::unique_ptr<Platform> makePlatformAppKit();
 
     class TextInputDelegate {
     public:
@@ -99,6 +77,9 @@ namespace spargel::ui {
 
         void bindRenderer(render::UIRenderer* renderer) override;
 
+        void setTextFocus(bool focus) override { text_focus_ = focus; }
+        bool text_focus() const { return text_focus_; }
+
     private:
         NSWindow* _window;
         SpargelWindowDelegate* _bridge;
@@ -116,11 +97,8 @@ namespace spargel::ui {
         [[maybe_unused]] NSTextInsertionIndicator* _text_cursor;
 
         TextInputDelegate* _text_delegate = nullptr;
-    };
 
-    struct CTFontRAII {
-        CTFontRef ref;
-        ~CTFontRAII() { CFRelease(ref); }
+        bool text_focus_ = false;
     };
 
     class TextSystemAppKit final : public TextSystem {
@@ -135,7 +113,6 @@ namespace spargel::ui {
         CTFontRef lookupFont(base::String const& name);
 
         CTFontRef _font;
-        base::HashMap<base::String, CTFontRAII> fonts_;
     };
 
 }  // namespace spargel::ui

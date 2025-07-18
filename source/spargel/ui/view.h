@@ -12,6 +12,7 @@ namespace spargel::render {
 namespace spargel::ui {
 
     class View;
+    class ViewHost;
 
     /// A LayoutManager is owned by a View. It manages how the View's children should be laid out
     /// within the View's content bounds.
@@ -36,21 +37,27 @@ namespace spargel::ui {
     ///
     class View {
     public:
-        View();
-        virtual ~View();
+        View() {}
+        virtual ~View() = default;
+
+        void setHost(ViewHost* host) { host_ = host; }
+
+        // View Hierarchy
+        // --------------
+        //
 
         base::Span<View*> children();
 
-        void addChild(View* v) {
-            _children.emplace(v);
-            v->setParent(this);
-        }
+        void addChild(View* v);
 
-        View* getParent() { return _parent; }
-        void setParent(View* v) { _parent = v; }
+        View* getParent() { return parent_; }
+        void setParent(View* v) { parent_ = v; }
+
+        // Layout
+        // ------
 
         void setLayoutManager(LayoutManager* manager);
-        LayoutManager& getLayoutManager() { return *_layout_manager.get(); }
+        LayoutManager& getLayoutManager() { return *layout_manager_.get(); }
 
         /// Layout all the children.
         void layout();
@@ -58,12 +65,23 @@ namespace spargel::ui {
         /// Get the preferred size of the view.
         void getPreferredSize();
 
+        // Paint
+        // -----
+
         virtual void paint(render::UIScene& scene) {}
 
+        void reportDirty();
+
+        // Event Handling
+        // --------------
+
+        virtual void onMouseDown(float x, float y) {}
+
     private:
-        View* _parent = nullptr;
-        base::vector<View*> _children;
-        base::unique_ptr<LayoutManager> _layout_manager;
+        ViewHost* host_;
+        View* parent_ = nullptr;
+        base::vector<View*> children_;
+        base::unique_ptr<LayoutManager> layout_manager_;
     };
 
     class ButtonView : public View {
