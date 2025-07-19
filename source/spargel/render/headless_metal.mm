@@ -31,7 +31,7 @@ struct RenderResult {
     uint8_t* data;
 };
 
-inline constexpr auto TEXT = "hello,world"_sv;
+inline constexpr auto TEXT = "hello,world测试日本語"_sv;
 
 void writeToFile(char const* filename, uint8_t const* data, size_t w, size_t h) {
     auto file = fopen(filename, "w");
@@ -168,10 +168,14 @@ int main() {
     writeToFile("truth.pgm", gt.data, gt.width, gt.height);
     writeToFile("render.pgm", res.data, gt.width, gt.height);
 
+    float s = 0.0f;
     for (size_t i = 0; i < gt.width * gt.height; i++) {
-        res.data[i] = (uint8_t)abs(res.data[i] - gt.data[i]);
+        auto d = (uint8_t)abs(res.data[i] - gt.data[i]);
+        res.data[i] = d;
+        s += (d / 255.0f) * (d / 255.0f);
     }
     writeToFile("diff.pgm", res.data, gt.width, gt.height);
+    printf("l2 distance: %.3f\n", sqrtf(s / ((float)gt.width * (float)gt.height)));
 
     free(gt.data);
     free(res.data);

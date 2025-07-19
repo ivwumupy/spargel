@@ -1,6 +1,7 @@
 #pragma once
 
 #include <spargel/gpu/gpu_context.h>
+#include <spargel/math/vector.h>
 #include <spargel/render/atlas_packer.h>
 #include <spargel/text/font.h>
 
@@ -31,6 +32,7 @@ namespace spargel::render {
         virtual void render(UIScene const& scene) = 0;
 
         TextureHandle prepareGlyph(text::GlyphId id, text::Font* font);
+        TextureHandle prepareGlyph(text::GlyphId id, text::Font* font, math::Vector2f subpixel_position);
 
         void setScaleFactor(float s) { scale_factor_ = s; }
         float scale_factor() const { return scale_factor_; }

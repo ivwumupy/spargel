@@ -25,7 +25,7 @@ namespace spargel::text {
         CFRelease(name);
     }
     FontMac::~FontMac() { CFRelease(object_); }
-    Bitmap FontMac::rasterGlyph(GlyphId id, float scale) {
+    Bitmap FontMac::rasterGlyph(GlyphId id, float scale, math::Vector2f subpixel_position) {
         auto glyph_info = glyphInfo(id);
         auto rect = glyph_info.bounding_box;
 
@@ -37,11 +37,11 @@ namespace spargel::text {
             return {};
         }
 
-        spargel_log_info("font raster scale: %.3f", scale);
+        // spargel_log_info("font raster scale: %.3f", scale);
 
-        // for anti-aliasing
-        // width += 1;
-        // height += 1;
+        // TODO: Check whether subpixel position is non-zero.
+        width += 1;
+        height += 1;
 
         Bitmap bitmap;
         bitmap.width = width;
@@ -59,16 +59,18 @@ namespace spargel::text {
         // NOTE: Scale does not change the translate part.
         //
         // TODO: Read the docs. Why we have to translate before scale?
-        CGContextTranslateCTM(ctx, -rect.origin.x * scale, -rect.origin.y * scale);
+        CGContextTranslateCTM(ctx,
+                (-rect.origin.x + subpixel_position.x) * scale,
+                (-rect.origin.y + subpixel_position.y) * scale);
         CGContextScaleCTM(ctx, scale, scale);
 
-        // CGContextSetShouldAntialias(ctx, true);
         CGContextSetAllowsFontSubpixelPositioning(ctx, true);
         CGContextSetAllowsFontSubpixelQuantization(ctx, true);
         CGContextSetShouldSubpixelPositionFonts(ctx, true);
         CGContextSetShouldSubpixelQuantizeFonts(ctx, true);
 
         // TODO: Shift for anti-aliasing.
+        // TODO: Subpixel shifting is done here or above.
         CGPoint point = CGPointMake(0, 0);
         // CGPoint point = CGPointMake(1, 1);
 
@@ -79,6 +81,9 @@ namespace spargel::text {
         CGContextRelease(ctx);
 
         return bitmap;
+    }
+    Bitmap FontMac::rasterGlyph(GlyphId id, float scale) {
+        return rasterGlyph(id, scale, math::Vector2f{0.0f, 0.0f});
     }
     GlyphInfo FontMac::glyphInfo(GlyphId id) {
         CGGlyph glyph = toCGGlyph(id);
