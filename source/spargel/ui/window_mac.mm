@@ -1,5 +1,6 @@
 #include <spargel/base/allocator.h>
 #include <spargel/base/check.h>
+#include <spargel/base/inline_array.h>
 #include <spargel/base/logging.h>
 #include <spargel/base/meta.h>
 #include <spargel/base/unique_ptr.h>
@@ -383,12 +384,45 @@ namespace spargel::ui {
         return handle;
     }
 
+    namespace {
+        struct FrameTimeReporter {
+            static constexpr usize N = 100;
+            base::InlineArray<u64, N> data;
+            usize index = 0;
+            u64 last_report = 0;
+            u64 start = 0;
+            u64 getTimestamp() {
+                return clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+            }
+            void beginFrame() {
+                start = getTimestamp();
+            }
+            void endFrame() {
+                auto now = getTimestamp();
+                data[index] = now - start;
+                index = (index + 1) % N;
+                // Report every one second.
+                if (now - last_report > 1'000'000'000) {
+                    report();
+                    last_report = now;
+                }
+            }
+            void report() {
+                u64 sum = 0;
+                for (auto d : data) {
+                    sum += d;
+                }
+                spargel_log_info("frame time: %.3fms", (double)sum / (1e6 * N));
+            }
+        };
+    }
+
     void WindowAppKit::_bridge_render() {
+        static FrameTimeReporter reporter;
         if (getDelegate() != nullptr) {
-            auto start = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+            reporter.beginFrame();
             getDelegate()->onRender();
-            auto end = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-            spargel_log_info("frame time: %.3fms", (double)(end - start) / 1e6);
+            reporter.endFrame();
         }
     }
 
@@ -426,157 +460,6 @@ namespace spargel::ui {
             getDelegate()->onMouseDragged(dx, dy);
         }
     }
-
-    // TextSystemAppKit::TextSystemAppKit() {
-    //     // use system language
-    //     _font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 30, NULL);
-    //     // static constexpr char const* font_name = "Times New Roman";
-    //     // static constexpr char const* font_name = "Apple Color Emoji";
-    //     // auto name =
-    //     //     CFStringCreateWithCString(kCFAllocatorDefault, font_name, kCFStringEncodingUTF8);
-    //     // _font = CTFontCreateWithName(name, 20, NULL);
-    //     // CFRelease(name);
-    // }
-
-    // TextSystemAppKit::~TextSystemAppKit() { CFRelease(_font); }
-
-    // constexpr float scale = 2;
-
-    // LineLayout TextSystemAppKit::layoutLine(base::StringView str) {
-    // auto cfstr = CFStringCreateWithBytes(kCFAllocatorDefault, (u8 const*)str.data(),
-    //                                      str.length(), kCFStringEncodingUTF8, false);
-
-    // void const* keys[] = {kCTFontAttributeName, kCTLigatureAttributeName};
-    // int val = 2;
-    // auto number = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &val);
-    // void const* values[] = {_font, number};
-
-    // auto dict = CFDictionaryCreate(kCFAllocatorDefault, keys, values, 1, NULL, NULL);
-    // CFRelease(number);
-
-    // auto attr_str = CFAttributedStringCreate(kCFAllocatorDefault, cfstr, dict);
-
-    // auto line = CTLineCreateWithAttributedString(attr_str);
-
-    // auto glyph_runs = CTLineGetGlyphRuns(line);
-    // auto run_count = CFArrayGetCount(glyph_runs);
-
-    // LineLayout result;
-    // LayoutRun r;
-
-    // base::vector<CGGlyph> glyphs;
-    // base::vector<CGPoint> points;
-
-    // for (CFIndex i = 0; i < run_count; i++) {
-    //     CTRunRef run = (CTRunRef)CFArrayGetValueAtIndex(glyph_runs, i);
-    //     auto count = CTRunGetGlyphCount(run);
-
-    //     auto attr = CTRunGetAttributes(run);
-
-    //     auto font = (NSFont*)CFDictionaryGetValue(attr, kCTFontAttributeName);
-    //     [font retain];
-    //     r.font = font;
-
-    //     NSLog(@"%@", font);
-
-    //     glyphs.reserve(count);
-    //     CTRunGetGlyphs(run, CFRangeMake(0, count), glyphs.data());
-    //     glyphs.set_count(count);
-
-    //         points.reserve(count);
-    //         CTRunGetPositions(run, CFRangeMake(0, count), points.data());
-    //         points.set_count(count);
-
-    //         r.glyphs.reserve(count);
-    //         r.glyphs.set_count(count);
-    //         for (usize j = 0; j < count; j++) {
-    //             r.glyphs[j] = glyphs[j];
-    //         }
-    //         r.positions.reserve(count);
-    //         r.positions.set_count(count);
-    //         for (usize j = 0; j < count; j++) {
-    //             r.positions[j].x = points[j].x * scale;
-    //             r.positions[j].y = points[j].y * scale;
-    //         }
-
-    //         r.width =
-    //             CTRunGetTypographicBounds(run, CFRangeMake(0, count), NULL, NULL, NULL) * scale;
-
-    //         result.runs.emplace(base::move(r));
-    //     }
-
-    //     CFRelease(line);
-    //     CFRelease(attr_str);
-    //     CFRelease(dict);
-    //     CFRelease(cfstr);
-
-    //     return result;
-    // }
-
-    // RasterResult TextSystemAppKit::rasterizeGlyph(GlyphId id, void* font) {
-    //     CGGlyph glyphs[] = {(CGGlyph)id};
-    //     CGRect rect;
-    //     CTFontGetBoundingRectsForGlyphs((CTFontRef)font, kCTFontOrientationDefault, glyphs,
-    //     &rect,
-    //                                     1);
-
-    //     spargel_log_info("bbox %.3f %.3f", rect.size.width, rect.size.height);
-
-    //     u32 width = (u32)ceil(rect.size.width * scale);
-    //     u32 height = (u32)ceil(rect.size.height * scale);
-
-    //     if (width == 0 || height == 0) {
-    //         spargel_log_info("zero sized glyph!");
-    //         return {{0, 0, {}}, 0, 0, 0};
-    //     }
-
-    //     // scaling
-    //     // width *= scale;
-    //     // height *= scale;
-
-    //     // for anti-aliasing
-    //     // width += 4;
-    //     // height += 4;
-
-    //     Bitmap bitmap;
-    //     bitmap.width = width;
-    //     bitmap.height = height;
-    //     bitmap.data.reserve(width *
-    //                         height);  // only alpha. 8 bits per channel and 1 bytes per pixel
-    //     bitmap.data.set_count(width * height);
-    //     memset(bitmap.data.data(), 0x3f, width * height);
-
-    //     auto color_space = CGColorSpaceCreateDeviceGray();
-    //     auto ctx = CGBitmapContextCreate(bitmap.data.data(), width, height,
-    //                                      8,      // bits per channel
-    //                                      width,  // bytes per row
-    //                                      color_space, kCGImageAlphaOnly);
-    //     // for scale = 5, shift = 2
-    //     // static constexpr float shift = 2.0;
-    //     // CGContextTranslateCTM(ctx, -rect.origin.x * scale + shift, -rect.origin.y * scale +
-    //     // shift);
-    //     CGContextTranslateCTM(ctx, -rect.origin.x * scale, -rect.origin.y * scale);
-    //     // scale does not change the translate part!!!
-    //     CGContextScaleCTM(ctx, scale, scale);
-
-    //     CGContextSetShouldAntialias(ctx, true);
-
-    //     // shift for anti-aliasing
-    //     CGPoint point = CGPointMake(0, 0);
-    //     // CGPoint point = CGPointMake(1, 1);
-    //     CTFontDrawGlyphs((CTFontRef)font, glyphs, &point, 1, ctx);
-
-    //     CFRelease(color_space);
-    //     CGContextRelease(ctx);
-
-    //     RasterResult result;
-    //     result.bitmap = base::move(bitmap);
-    //     result.glyph_width = rect.size.width * scale;
-    //     result.glyph_height = rect.size.height * scale;
-    //     result.descent = rect.origin.y * scale;
-
-    //     return result;
-    // }
 
     void WindowAppKit::bindRenderer(render::UIRenderer* renderer) {
         auto metal_renderer = static_cast<render::UIRendererMetal*>(renderer);

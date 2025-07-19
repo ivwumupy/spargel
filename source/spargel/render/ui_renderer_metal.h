@@ -13,6 +13,8 @@
 namespace spargel::render {
     class UIRendererMetal final : public UIRenderer {
     public:
+        static constexpr bool use_compute = true;
+
         UIRendererMetal(gpu::GPUContext* context, text::TextShaper* text_shaper);
         ~UIRendererMetal();
 
@@ -20,6 +22,9 @@ namespace spargel::render {
             layer_ = layer;
             layer_.device = device_;
             layer_.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
+            if (use_compute) {
+                layer_.framebufferOnly = false;
+            }
         }
 
         void render(UIScene const& scene) override;
@@ -29,6 +34,8 @@ namespace spargel::render {
 
         //
         id<MTLCommandBuffer> renderToTexture(UIScene const& scene, id<MTLTexture> texture);
+        id<MTLCommandBuffer> renderToTextureRender(UIScene const& scene, id<MTLTexture> texture);
+        id<MTLCommandBuffer> renderToTextureCompute(UIScene const& scene, id<MTLTexture> texture);
 
     private:
         // TODO: We should not purge the buffers by delta-time.
@@ -70,7 +77,9 @@ namespace spargel::render {
         id<MTLLibrary> library_;
         id<MTLFunction> sdf_vert_;
         id<MTLFunction> sdf_frag_;
+        id<MTLFunction> sdf_comp_;
         id<MTLRenderPipelineState> sdf_pipeline_;
+        id<MTLComputePipelineState> sdf_comp_pipeline_;
 
         MTLRenderPassDescriptor* pass_desc_;
 

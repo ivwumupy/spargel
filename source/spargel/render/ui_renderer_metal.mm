@@ -46,25 +46,32 @@ namespace spargel::render {
         // Create functions.
         sdf_vert_ = [library_ newFunctionWithName:@"sdf_vert"];
         sdf_frag_ = [library_ newFunctionWithName:@"sdf_frag"];
+        sdf_comp_ = [library_ newFunctionWithName:@"sdf_comp"];
         spargel_check(sdf_vert_);
         spargel_check(sdf_frag_);
+        spargel_check(sdf_comp_);
 
         // Create pipeline.
         auto ppl_desc = [[MTLRenderPipelineDescriptor alloc] init];
         ppl_desc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
-        ppl_desc.colorAttachments[0].blendingEnabled = true;
-        ppl_desc.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-        ppl_desc.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-        ppl_desc.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-        ppl_desc.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOne;
-        ppl_desc.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-        ppl_desc.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+        //ppl_desc.colorAttachments[0].blendingEnabled = true;
+        //ppl_desc.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+        //ppl_desc.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+        //ppl_desc.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+        //ppl_desc.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOne;
+        //ppl_desc.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+        //ppl_desc.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
 
         ppl_desc.vertexFunction = sdf_vert_;
         ppl_desc.fragmentFunction = sdf_frag_;
         sdf_pipeline_ = [device_ newRenderPipelineStateWithDescriptor:ppl_desc error:&error];
         spargel_check(!error);
         [ppl_desc release];
+
+        // Compute pipeline
+        sdf_comp_pipeline_ = [device_ newComputePipelineStateWithFunction:sdf_comp_
+                                                                    error:&error];
+        spargel_check(!error);
 
         // Prepare render pass descriptor.
         pass_desc_ = [[MTLRenderPassDescriptor alloc] init];
@@ -80,8 +87,8 @@ namespace spargel::render {
         desc.storageMode = MTLStorageModeShared;
         texture_ = [device_ newTextureWithDescriptor:desc];
     }
-    id<MTLCommandBuffer> UIRendererMetal::renderToTexture(UIScene const& scene,
-                                                          id<MTLTexture> texture) {
+    id<MTLCommandBuffer> UIRendererMetal::renderToTextureRender(UIScene const& scene,
+                                                                id<MTLTexture> texture) {
         auto commands_bytes = scene.commands().asBytes();
         auto data_bytes = scene.data().asBytes();
 
@@ -114,6 +121,48 @@ namespace spargel::render {
         [encoder endEncoding];
 
         return command_buffer;
+    }
+    id<MTLCommandBuffer> UIRendererMetal::renderToTextureCompute(UIScene const& scene,
+                                                                 id<MTLTexture> target) {
+        auto commands_bytes = scene.commands().asBytes();
+        auto data_bytes = scene.data().asBytes();
+
+        scene_commands_buffer_.request(commands_bytes.count());
+        scene_data_buffer_.request(data_bytes.count());
+
+        memcpy(scene_commands_buffer_.object.contents, commands_bytes.data(),
+               commands_bytes.count());
+        memcpy(scene_data_buffer_.object.contents, data_bytes.data(), data_bytes.count());
+
+        auto command_buffer = [queue_ commandBuffer];
+        auto encoder = [command_buffer computeCommandEncoder];
+
+        struct {
+            u32 cmd_count;
+        } uniform_data = {base::checkedConvert<u32>(scene.commands().count())};
+
+        [encoder setComputePipelineState:sdf_comp_pipeline_];
+        [encoder setBytes:&uniform_data length:sizeof(uniform_data) atIndex:0];
+
+        id<MTLBuffer> buffers[] = {scene_commands_buffer_.object, scene_data_buffer_.object};
+        usize offsets[] = {0, 0};
+        [encoder setBuffers:buffers offsets:offsets withRange:NSMakeRange(1, 2)];
+        [encoder setTexture:target atIndex:0];
+        [encoder setTexture:texture_ atIndex:1];
+
+        [encoder dispatchThreadgroups:MTLSizeMake(target.width / 8 + 1, target.height / 8 + 1, 1)
+                threadsPerThreadgroup:MTLSizeMake(8, 8, 1)];
+
+        [encoder endEncoding];
+
+        return command_buffer;
+    }
+    id<MTLCommandBuffer> UIRendererMetal::renderToTexture(UIScene const& scene,
+                                                          id<MTLTexture> texture) {
+        if (use_compute) {
+            return renderToTextureCompute(scene, texture);
+        }
+        return renderToTextureRender(scene, texture);
     }
     void UIRendererMetal::render(UIScene const& scene) {
         spargel_check(layer_);

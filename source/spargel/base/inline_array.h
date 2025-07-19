@@ -21,6 +21,11 @@ namespace spargel::base {
 
         usize count() const { return size; }
 
+        T* begin() { return _array; }
+        T const* begin() const { return _array; }
+        T* end() { return _array + size; }
+        T const* end() const { return _array + size; }
+
         Span<T> asSpan() const { return Span<T>{_array, _array + size}; }
 
         T _array[size];

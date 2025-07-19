@@ -115,11 +115,16 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
 
     auto device = context->device();
 
-    auto desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatA8Unorm
+    auto desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB
                                                                    width:truth.width
                                                                   height:truth.height
                                                                mipmapped:false];
     desc.storageMode = MTLStorageModeShared;
+    if (render::UIRendererMetal::use_compute) {
+        desc.usage = MTLTextureUsageShaderWrite;
+    } else {
+        desc.usage = MTLTextureUsageRenderTarget;
+    }
     auto texture = [device newTextureWithDescriptor:desc];
 
     scene.fillText(text::StyledText{TEXT, font.get()}, 0,
@@ -127,7 +132,7 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
 
     auto command_buffer = renderer->renderToTexture(scene, texture);
 
-    auto buffer = [device newBufferWithLength:truth.width * truth.height
+    auto buffer = [device newBufferWithLength:truth.width * truth.height * 4
                                       options:MTLResourceStorageModeShared];
     auto encoder = [command_buffer blitCommandEncoder];
     
@@ -138,8 +143,8 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
                    sourceSize:MTLSizeMake(truth.width, truth.height, 1)
                      toBuffer:buffer
             destinationOffset:0
-       destinationBytesPerRow:truth.width
-     destinationBytesPerImage:truth.width * truth.height];
+       destinationBytesPerRow:truth.width * 4
+     destinationBytesPerImage:truth.width * truth.height * 4];
 
     [encoder endEncoding];
 
@@ -147,7 +152,9 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
     [command_buffer waitUntilCompleted];
 
     result.data = (uint8_t*)malloc(truth.width * truth.height);
-    memcpy(result.data, buffer.contents, truth.width * truth.height);
+    for (usize i = 0; i < truth.width * truth.height; i++) {
+        result.data[i] = ((uint8_t*)buffer.contents)[i * 4];
+    }
 
     [texture release];
     [buffer release];
