@@ -23,7 +23,8 @@ RUN apt-get install -y \
 
 # dependencies
 RUN apt-get install -y \
-    libunwind-dev
+    libunwind-dev \
+    libharfbuzz-dev libfreetype-dev
 
 # source code
 COPY . .
