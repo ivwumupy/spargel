@@ -1,0 +1,11 @@
+source_set("util") {
+    sources = [
+        "path.cpp",
+    ]
+    public = [
+        "path.h",
+    ]
+    deps = [
+        "//source/spargel/base",
+    ]
+}

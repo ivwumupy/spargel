@@ -376,7 +376,7 @@ namespace spargel::ui {
 
     WindowHandle WindowAppKit::getHandle() {
         WindowHandle handle;
-        handle.apple.layer = _layer;
+        handle.value.apple.layer = _layer;
         return handle;
     }
 

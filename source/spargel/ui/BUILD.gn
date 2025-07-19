@@ -1,0 +1,32 @@
+source_set("ui") {
+    sources = [
+        "event.cpp",
+        "platform.cpp",
+        "view.cpp",
+        "view_host.cpp",
+    ]
+    public = [
+        "event.h",
+        "platform.h",
+        "view.h",
+        "view_host.h",
+        "window.h",
+    ]
+    deps = [
+        "//source/spargel/base",
+        "//source/spargel/render",
+    ]
+
+    if (is_macos) {
+        sources += [
+            "platform_mac.mm",
+            "window_mac.mm",
+        ]
+        frameworks = [
+            "AppKit.framework",
+            # TODO: Move.
+            "GameController.framework",
+            "QuartzCore.framework",
+        ]
+    }
+}

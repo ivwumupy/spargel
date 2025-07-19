@@ -1,0 +1,60 @@
+source_set("base") {
+    sources = [
+        "allocator.cpp",
+        "deflate.cpp",
+        "logging.cpp",
+        "panic.cpp",
+        "platform.cpp",
+        "string.cpp",
+        "task.cpp",
+        "trace.cpp",
+    ]
+    public = [
+        "algorithm.h",
+        "allocator.h",
+        "attribute.h",
+        "backtrace.h",
+        "bit_cast.h",
+        "check.h",
+        "checked_convert.h",
+        "command_line.h",
+        "compiler.h",
+        "concept.h",
+        "coroutine.h",
+        "deflate.h",
+        "either.h",
+        "enum.h",
+        "expected.h",
+        "functional.h",
+        "hash.h",
+        "hash_map.h",
+        "inline_array.h",
+        "intrinsic.h",
+        "limits.h",
+        "logging.h",
+        "meta.h",
+        "object.h",
+        "optional.h",
+        "panic.h",
+        "platform.h",
+        "ref_ptr.h",
+        "source_location.h",
+        "span.h",
+        "string.h",
+        "string_view.h",
+        "tagged_union.h",
+        "task.h",
+        "trace.h",
+        "tuple.h",
+        "type_list.h",
+        "types.h",
+        "unique_ptr.h",
+        "vector.h",
+    ]
+
+    if (is_macos) {
+        sources += [
+            "platform_mac.cpp",
+        ]
+    }
+}

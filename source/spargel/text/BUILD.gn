@@ -1,0 +1,26 @@
+source_set("text") {
+    sources = [
+        "font_manager.cpp",
+    ]
+    public = [
+        "font.h",
+        "font_manager.h",
+        "styled_text.h",
+        "text_shaper.h",
+    ]
+    deps = [
+        "//source/spargel/base",
+    ]
+
+    if (is_macos) {
+        sources += [
+            "font_mac.cpp",
+            "text_shaper_mac.cpp",
+        ]
+        frameworks = [
+            "CoreFoundation.framework",
+            "CoreGraphics.framework",
+            "CoreText.framework",
+        ]
+    }
+}

@@ -7,7 +7,7 @@
 #include <math.h>
 
 //
-#import <CoreGraphics/CoreGraphics.h>
+#include <CoreGraphics/CoreGraphics.h>
 
 namespace spargel::text {
     namespace {
@@ -38,8 +38,8 @@ namespace spargel::text {
         }
 
         // for anti-aliasing
-        // width += 4;
-        // height += 4;
+        // width += 1;
+        // height += 1;
 
         Bitmap bitmap;
         bitmap.width = width;
@@ -59,7 +59,7 @@ namespace spargel::text {
         // scale does not change the translate part!!!
         CGContextScaleCTM(ctx, scale, scale);
 
-        // CGContextSetShouldAntialias(ctx, true);
+        CGContextSetShouldAntialias(ctx, true);
 
         // shift for anti-aliasing
         CGPoint point = CGPointMake(0, 0);

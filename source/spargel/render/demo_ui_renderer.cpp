@@ -74,7 +74,7 @@ namespace spargel::render {
                 scene_.fillText(text::StyledText{"hello, world"_sv, font_.get()}, 250, 250,
                                 0xFF0000FF);
                 scene_.strokeLine(0, 250, 500, 250, 0xFFFFFFFF);
-                // scene_.dump();
+                scene_.dump();
             }
 
             base::UniquePtr<resource::ResourceManager> resource_manager_;

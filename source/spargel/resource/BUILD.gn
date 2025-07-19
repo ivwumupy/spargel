@@ -1,0 +1,16 @@
+source_set("resource") {
+    sources = [
+        "directory.cpp",
+        "overlay.cpp",
+        "resource.cpp",
+    ]
+    public = [
+        "directory.h",
+        "overlay.h",
+        "resource.h",
+    ]
+    deps = [
+        "//source/spargel/base",
+        "//source/spargel/util",
+    ]
+}

@@ -1,0 +1,22 @@
+source_set("render") {
+    sources = [
+        "atlas_packer.cpp",
+        "ui_renderer.cpp",
+        "ui_scene.cpp",
+    ]
+    public = [
+        "ui_renderer.h",
+        "ui_scene.h",
+    ]
+    deps = [
+        "//source/spargel/base",
+        "//source/spargel/gpu",
+        "//source/spargel/resource",
+        "//source/spargel/text",
+    ]
+    if (is_macos) {
+        sources += [
+            "ui_renderer_metal.mm",
+        ]
+    }
+}

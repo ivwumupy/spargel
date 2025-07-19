@@ -1,0 +1,47 @@
+if (target_os == "") {
+    target_os = host_os
+}
+if (target_cpu == "") {
+    target_cpu = host_cpu
+}
+if (current_os == "") {
+    current_os = target_os
+}
+if (current_cpu == "") {
+    current_cpu = target_cpu
+}
+
+is_linux = current_os == "linux"
+is_macos = current_os == "mac"
+is_windows = current_os == "win"
+
+declare_args() {
+    is_debug = true
+}
+
+_default_toolchain = ""
+if (target_os == "mac") {
+    assert(host_os == "mac")
+    _default_toolchain = "//gn/toolchain:macos_clang"
+} else {
+    assert(false)
+}
+set_default_toolchain(_default_toolchain)
+
+_default_compiler_configs = [
+    "//gn/config:basics",
+]
+
+set_defaults("static_library") {
+    configs = _default_compiler_configs
+}
+set_defaults("source_set") {
+    configs = _default_compiler_configs
+}
+
+_default_linker_configs = []
+_default_executable_configs = _default_compiler_configs + _default_linker_configs
+
+set_defaults("executable") {
+    configs = _default_executable_configs
+}

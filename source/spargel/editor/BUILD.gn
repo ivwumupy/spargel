@@ -1,0 +1,14 @@
+executable("editor") {
+    sources = [
+        "main.cpp",
+    ]
+    deps = [
+        "//source/spargel:config",
+        "//source/spargel/base",
+        "//source/spargel/gpu",
+        "//source/spargel/render",
+        "//source/spargel/resource",
+        "//source/spargel/text",
+        "//source/spargel/ui",
+    ]
+}

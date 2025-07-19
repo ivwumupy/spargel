@@ -1,0 +1,13 @@
+template("autoconfig") {
+    action(target_name) {
+        script = "//gn/script/write_autoconfig.py"
+        header_file = rebase_path(".", "//") + "/${invoker.header}"
+        outputs = [ "$root_gen_dir/$header_file" ]
+        response_file_contents = invoker.flags
+        args = [
+            "--output", header_file,
+            "--gen-dir", rebase_path(root_gen_dir, root_build_dir),
+            "--rsp", "{{response_file_name}}",
+        ]
+    }
+}

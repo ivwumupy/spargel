@@ -13,6 +13,7 @@ tmp*
 # Build
 /build*
 CMakeUserPresets.json
+/out*
 
 # Mac
 .DS_Store

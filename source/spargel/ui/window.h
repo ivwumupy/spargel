@@ -10,22 +10,22 @@ namespace spargel::ui {
 
     /// the native handle of a window
     struct WindowHandle {
-        union {
-            struct {
+        union HandleUnion {
+            struct AndroidHandle {
                 void* window;
             } android;
-            struct {
+            struct AppleHandle {
                 void* layer;
             } apple;
-            struct {
+            struct WaylandHandle {
                 void* display;
                 void* surface;
             } wayland;
-            struct {
+            struct Win32Handle {
                 void* hinstance;
                 void* hwnd;
             } win32;
-            struct {
+            struct XcbHandle {
                 void* connection;
                 int window;
 
@@ -33,7 +33,7 @@ namespace spargel::ui {
                 void* display;
                 void* visual_info;
             } xcb;
-        };
+        } value;
     };
 
     class WindowDelegate {
