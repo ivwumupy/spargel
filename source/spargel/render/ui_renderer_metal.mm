@@ -11,18 +11,15 @@
 
 namespace spargel::render {
     base::UniquePtr<UIRenderer> makeMetalUIRenderer(gpu::GPUContext* context,
-                                                    resource::ResourceManager* resource_manager,
                                                     text::TextShaper* shaper) {
-        return base::makeUnique<UIRendererMetal>(context, resource_manager, shaper);
+        return base::makeUnique<UIRendererMetal>(context, shaper);
     }
 
     UIRendererMetal::UIRendererMetal(gpu::GPUContext* context,
-                                     resource::ResourceManager* resource_manager,
                                      text::TextShaper* text_shaper)
         : UIRenderer{context, text_shaper},
           device_{metal_context()->device()},
           queue_{metal_context()->queue()},
-          resource_manager_{resource_manager},
           buffer_pool_{metal_context()} {
         initPipeline();
         initTexture();
@@ -146,7 +143,7 @@ namespace spargel::render {
     }  // namespace
     id<MTLBuffer> UIRendererMetal::BufferPool::request(usize length) {
         auto now = getTimestamp();
-        if (now - last_purged > 1e9) {
+        if (now - last_purged > 1'000'000'000) {
             purge(now);
         }
         base::Optional<BufferItem> candidate = base::nullopt;

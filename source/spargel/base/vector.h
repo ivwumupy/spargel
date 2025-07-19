@@ -140,7 +140,7 @@ namespace spargel::base {
 
             template <typename F, typename D>
             void eraseIfFastWithDeleter(F&& f, D&& d) {
-                auto i = 0;
+                usize i = 0;
                 while (i < count()) {
                     if (!f(_begin[i])) {
                         i++;
@@ -167,8 +167,14 @@ namespace spargel::base {
 
             T* data() { return _begin; }
             T const* data() const { return _begin; }
-            usize count() const { return _end - _begin; }
-            usize capacity() const { return _capacity - _begin; }
+            usize count() const {
+                spargel_check(_begin <= _end);
+                return static_cast<usize>(_end - _begin);
+            }
+            usize capacity() const {
+                spargel_check(_begin <= _capacity);
+                return static_cast<usize>(_capacity - _begin);
+            }
 
             T* begin() { return _begin; }
             T const* begin() const { return _begin; }

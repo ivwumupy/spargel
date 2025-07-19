@@ -8,8 +8,9 @@ namespace spargel::text {
         auto font = static_cast<FontMac*>(text.font());
 
         // Convert to CFString
-        auto cfstr = CFStringCreateWithBytes(kCFAllocatorDefault, (u8 const*)text.text().data(),
-                                             text.text().length(), kCFStringEncodingUTF8, false);
+        auto cfstr =
+            CFStringCreateWithBytes(kCFAllocatorDefault, (u8 const*)text.text().data(),
+                                    (CFIndex)text.text().length(), kCFStringEncodingUTF8, false);
 
         // Create CFAttributedString
         void const* keys[] = {kCTFontAttributeName, kCTLigatureAttributeName};
@@ -41,27 +42,28 @@ namespace spargel::text {
             CFRetain(font);
             segment.font = FontManager::instance().create<FontMac>(font);
 
-            glyphs.reserve(count);
+            glyphs.reserve((usize)count);
             CTRunGetGlyphs(run, CFRangeMake(0, count), glyphs.data());
-            glyphs.set_count(count);
+            glyphs.set_count((usize)count);
 
-            points.reserve(count);
+            points.reserve((usize)count);
             CTRunGetPositions(run, CFRangeMake(0, count), points.data());
-            points.set_count(count);
+            points.set_count((usize)count);
 
-            segment.glyphs.reserve(count);
-            segment.glyphs.set_count(count);
-            for (usize j = 0; j < count; j++) {
-                segment.glyphs[j] = {glyphs[j]};
+            segment.glyphs.reserve((usize)count);
+            segment.glyphs.set_count((usize)count);
+            for (CFIndex j = 0; j < count; j++) {
+                segment.glyphs[(usize)j] = {glyphs[(usize)j]};
             }
-            segment.positions.reserve(count);
-            segment.positions.set_count(count);
-            for (usize j = 0; j < count; j++) {
-                segment.positions[j].x = points[j].x;
-                segment.positions[j].y = points[j].y;
+            segment.positions.reserve((usize)count);
+            segment.positions.set_count((usize)count);
+            for (CFIndex j = 0; j < count; j++) {
+                segment.positions[(usize)j].x = (float)points[(usize)j].x;
+                segment.positions[(usize)j].y = (float)points[(usize)j].y;
             }
 
-            segment.width = CTRunGetTypographicBounds(run, CFRangeMake(0, count), NULL, NULL, NULL);
+            segment.width =
+                (float)CTRunGetTypographicBounds(run, CFRangeMake(0, count), NULL, NULL, NULL);
 
             result.segments.emplace(base::move(segment));
         }

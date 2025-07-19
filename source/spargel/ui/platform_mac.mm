@@ -27,7 +27,8 @@ namespace spargel::ui {
         return base::make_unique<WindowAppKit>(width, height);
     }
     base::unique_ptr<TextSystem> PlatformAppKit::createTextSystem() {
-        return base::make_unique<TextSystemAppKit>();
+        return nullptr;
+        // return base::make_unique<TextSystemAppKit>();
     }
     void PlatformAppKit::initGlobalMenu() {
         NSMenu* menu_bar = [[NSMenu alloc] init];

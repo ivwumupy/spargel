@@ -21,7 +21,7 @@ namespace spargel::text {
             CFStringGetBytes(name, range, kCFStringEncodingUTF8, 0, false, nullptr, 0, &len) > 0);
         name_.resize(base::checkedConvert<usize>(len));
         spargel_check(CFStringGetBytes(name, range, kCFStringEncodingUTF8, 0, false,
-                                       (u8*)name_.data(), name_.length(), &len) == len);
+                                       (u8*)name_.data(), (CFIndex)name_.length(), &len) == len);
         CFRelease(name);
     }
     FontMac::~FontMac() { CFRelease(object_); }
@@ -38,8 +38,8 @@ namespace spargel::text {
         }
 
         // for anti-aliasing
-        // width += 1;
-        // height += 1;
+        width += 1;
+        height += 1;
 
         Bitmap bitmap;
         bitmap.width = width;
@@ -58,10 +58,14 @@ namespace spargel::text {
         CGContextScaleCTM(ctx, scale, scale);
         CGContextTranslateCTM(ctx, -rect.origin.x * scale, -rect.origin.y * scale);
 
-        CGContextSetShouldAntialias(ctx, true);
+        // CGContextSetShouldAntialias(ctx, true);
+        CGContextSetAllowsFontSubpixelPositioning(ctx, true);
+        CGContextSetAllowsFontSubpixelQuantization(ctx, true);
+        CGContextSetShouldSubpixelPositionFonts(ctx, true);
+        CGContextSetShouldSubpixelQuantizeFonts(ctx, true);
 
         // TODO: Shift for anti-aliasing.
-        CGPoint point = CGPointMake(0, 0);
+        CGPoint point = CGPointMake(1, 1);
 
         CGGlyph glyph = base::checkedConvert<CGGlyph>(id.value);
         CTFontDrawGlyphs(object_, &glyph, &point, 1, ctx);
@@ -81,11 +85,11 @@ namespace spargel::text {
         CTFontGetAdvancesForGlyphs(object_, kCTFontOrientationHorizontal, &glyph, &advance, 1);
 
         GlyphInfo info;
-        info.bounding_box.origin.x = rect.origin.x;
-        info.bounding_box.origin.y = rect.origin.y;
-        info.bounding_box.size.width = rect.size.width;
-        info.bounding_box.size.height = rect.size.height;
-        info.horizontal_advance = advance.width;
+        info.bounding_box.origin.x = (float)rect.origin.x;
+        info.bounding_box.origin.y = (float)rect.origin.y;
+        info.bounding_box.size.width = (float)rect.size.width;
+        info.bounding_box.size.height = (float)rect.size.height;
+        info.horizontal_advance = (float)advance.width;
 
         return info;
     }

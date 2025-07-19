@@ -33,7 +33,7 @@ namespace spargel::base {
                 }
             }
 
-            Optional(const nullopt_t& other) {}
+            Optional(nullopt_t) {}
 
             Optional(Optional const& other) : _status{other._status} {
                 if (other.hasValue()) {

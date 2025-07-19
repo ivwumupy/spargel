@@ -23,25 +23,29 @@ namespace spargel::ui {
         virtual ~TextInputDelegate() = default;
 
         virtual bool hasMarkedText() { return false; }
-        virtual void setMarkedText(id string, NSRange selected, NSRange replaced) {}
+        virtual void setMarkedText([[maybe_unused]] id string, [[maybe_unused]] NSRange selected,
+                                   [[maybe_unused]] NSRange replaced) {}
         virtual NSRange getMarkedRange() { return NSMakeRange(NSNotFound, 0); }
         virtual void unmarkText() {}
         virtual NSArray<NSAttributedStringKey>* validAttributesForMarkedText() { return nil; }
         virtual NSRange getSelectedRange() { return NSMakeRange(NSNotFound, 0); }
-        virtual void insertText(id string, NSRange replaced) {}
-        virtual NSAttributedString* attributedSubstringForProposedRange(NSRange range,
-                                                                        NSRangePointer actual) {
+        virtual void insertText([[maybe_unused]] id string, [[maybe_unused]] NSRange replaced) {}
+        virtual NSAttributedString* attributedSubstringForProposedRange(
+            [[maybe_unused]] NSRange range, [[maybe_unused]] NSRangePointer actual) {
             return nil;
         }
-        virtual NSUInteger characterIndexForPoint(NSPoint point) { return NSNotFound; }
-        virtual NSRect firstRectForCharacterRange(NSRange range, NSRangePointer actual) {
+        virtual NSUInteger characterIndexForPoint([[maybe_unused]] NSPoint point) {
+            return NSNotFound;
+        }
+        virtual NSRect firstRectForCharacterRange([[maybe_unused]] NSRange range,
+                                                  [[maybe_unused]] NSRangePointer actual) {
             return NSMakeRect(0, 0, 0, 0);
         }
     };
 
     class WindowAppKit final : public Window {
     public:
-        WindowAppKit(int width, int height);
+        WindowAppKit(u32 width, u32 height);
         ~WindowAppKit() override;
 
         void setTitle(char const* title) override;
@@ -103,18 +107,18 @@ namespace spargel::ui {
         bool text_focus_ = false;
     };
 
-    class TextSystemAppKit final : public TextSystem {
-    public:
-        TextSystemAppKit();
-        ~TextSystemAppKit();
+    // class TextSystemAppKit final : public TextSystem {
+    // public:
+    //     TextSystemAppKit();
+    //     ~TextSystemAppKit();
 
-        LineLayout layoutLine(base::StringView str) override;
-        RasterResult rasterizeGlyph(GlyphId id, void* font) override;
+    //     LineLayout layoutLine(base::StringView str) override;
+    //     RasterResult rasterizeGlyph(GlyphId id, void* font) override;
 
-    private:
-        CTFontRef lookupFont(base::String const& name);
+    // private:
+    //     CTFontRef lookupFont(base::String const& name);
 
-        CTFontRef _font;
-    };
+    //     CTFontRef _font;
+    // };
 
 }  // namespace spargel::ui

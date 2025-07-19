@@ -119,7 +119,7 @@ namespace spargel::resource {
         }
 
         return base::makeOptional<base::unique_ptr<ResourceDirectory>>(
-            base::make_unique<ResourceDirectory>(sb.st_size, fd));
+            base::make_unique<ResourceDirectory>(static_cast<usize>(sb.st_size), fd));
     }
 
 #elif SPARGEL_IS_WINDOWS

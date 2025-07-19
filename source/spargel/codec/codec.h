@@ -162,7 +162,7 @@ namespace spargel::codec {
         {
             backend.getMember(data, key)
         } -> base::SameAs<
-              base::Either<base::Optional<typename DB::DataType>, typename DB::ErrorType>>;
+            base::Either<base::Optional<typename DB::DataType>, typename DB::ErrorType>>;
     };
 
     template <typename B /* codec backend type */>

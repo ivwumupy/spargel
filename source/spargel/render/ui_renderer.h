@@ -2,7 +2,6 @@
 
 #include <spargel/gpu/gpu_context.h>
 #include <spargel/render/atlas_packer.h>
-#include <spargel/resource/resource.h>
 #include <spargel/text/font.h>
 
 namespace spargel::text {
@@ -54,6 +53,5 @@ namespace spargel::render {
         float scale_factor_ = 1.0;
     };
     base::UniquePtr<UIRenderer> makeUIRenderer(gpu::GPUContext* context,
-                                               resource::ResourceManager* resource_manager,
                                                text::TextShaper* text_shaper);
 }  // namespace spargel::render

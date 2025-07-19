@@ -15,7 +15,10 @@ namespace spargel::base {
 
         constexpr T const& operator[](usize i) const { return _begin[i]; }
 
-        constexpr usize count() const { return _end - _begin; }
+        constexpr usize count() const {
+            spargel_check(_begin <= _end);
+            return static_cast<usize>(_end - _begin);
+        }
         constexpr T const* data() const { return _begin; }
 
         constexpr T const* begin() const { return _begin; }

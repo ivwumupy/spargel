@@ -1,5 +1,6 @@
 #pragma once
 
+#include <spargel/base/check.h>
 #include <spargel/base/hash.h>
 #include <spargel/base/types.h>
 
@@ -19,7 +20,10 @@ namespace spargel::base {
             // constexpr string_view(char const (&str)[N]) : string_view(str, str + N - 1) {}
 
             constexpr char operator[](usize i) const { return _begin[i]; }
-            constexpr usize length() const { return _end - _begin; }
+            constexpr usize length() const {
+                spargel_check(_begin <= _end);
+                return static_cast<usize>(_end - _begin);
+            }
             constexpr char const* begin() const { return _begin; }
             constexpr char const* end() const { return _end; }
             constexpr char const* data() const { return _begin; }

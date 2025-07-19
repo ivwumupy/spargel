@@ -8,15 +8,12 @@ namespace spargel::render {
 
 #if SPARGEL_IS_MACOS
     base::UniquePtr<UIRenderer> makeMetalUIRenderer(gpu::GPUContext* context,
-                                                    resource::ResourceManager* resource_manager,
                                                     text::TextShaper* shaper);
 #endif
 
-    base::UniquePtr<UIRenderer> makeUIRenderer(gpu::GPUContext* context,
-                                               resource::ResourceManager* resource_manager,
-                                               text::TextShaper* shaper) {
+    base::UniquePtr<UIRenderer> makeUIRenderer(gpu::GPUContext* context, text::TextShaper* shaper) {
 #if SPARGEL_IS_MACOS
-        return makeMetalUIRenderer(context, resource_manager, shaper);
+        return makeMetalUIRenderer(context, shaper);
 #endif
         return nullptr;
     }

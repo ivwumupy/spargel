@@ -68,7 +68,8 @@ namespace spargel::base {
             // TODO: Benchmark.
             u16 readU16() {
                 spargel_check(bits_left_ == 0);
-                return (static_cast<u16>(next_[1]) << 8) | static_cast<u16>(next_[0]);
+                return static_cast<u16>((static_cast<u16>(next_[1]) << 8) |
+                                        static_cast<u16>(next_[0]));
             }
             u16 consumeU16() {
                 u16 x = readU16();

@@ -52,14 +52,14 @@ namespace spargel::ui {
         virtual void onClosed() {}
 
         /// @brief a keyboard event is received
-        virtual void onKeyboard(KeyboardEvent& e) {}
+        virtual void onKeyboard([[maybe_unused]] KeyboardEvent& e) {}
 
-        virtual void onKeyDown(PhysicalKey key) {}
+        virtual void onKeyDown([[maybe_unused]] PhysicalKey key) {}
 
-        virtual void onMouseDown(float x, float y) {}
+        virtual void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) {}
 
         /// User has moved the mouse with left button pressed.
-        virtual void onMouseDragged(float dx, float dy) {}
+        virtual void onMouseDragged([[maybe_unused]] float dx, [[maybe_unused]] float dy) {}
     };
 
     // The coordinate system is TLO (top-left origin).

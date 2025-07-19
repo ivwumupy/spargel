@@ -10,7 +10,8 @@ namespace spargel::render {
         pushCommand(DrawCommand::sample_texture);
         u32 a = (u32)handle.x | (u32)((u32)handle.y << 16);
         u32 b = (u32)handle.width | (u32)((u32)handle.height << 16);
-        spargel_log_info("sample %u %u %u %u", handle.x, handle.y, handle.width, handle.height);
+        spargel_log_info("sample: x=%u y=%u w=%u h=%u", handle.x, handle.y, handle.width,
+                         handle.height);
         pushData(x, y, width, height, a, b, color);
     }
     void UIScene::fillText(text::StyledText text, float x, float y, u32 color) {
@@ -27,9 +28,11 @@ namespace spargel::render {
 
                 auto const& bbox = glyph_info.bounding_box;
 
-                spargel_log_info("glyph_info: %.3f %.3f", glyph_info.width(), glyph_info.height());
-                spargel_log_info("position: %.3f %.3f", position.x, position.y);
-                spargel_log_info("bbox: %.3f %.3f", bbox.origin.x, bbox.origin.y);
+                // Before scaled.
+                spargel_log_info("glyph_info: w=%.3f h=%.3f", glyph_info.width(),
+                                 glyph_info.height());
+                // spargel_log_info("position: %.3f %.3f", position.x, position.y);
+                // spargel_log_info("bbox: x=%.3f y=%.3f", bbox.origin.x, bbox.origin.y);
 
                 if (handle.width > 0 && handle.height > 0) {
                     sampleTexture(x + position.x + bbox.origin.x,

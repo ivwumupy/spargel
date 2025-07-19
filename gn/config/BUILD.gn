@@ -29,6 +29,7 @@ config("basics") {
         "-Wall",
         "-Wextra",
         "-Wconversion",
+        "-Werror",
     ]
 
   cflags_cc += [ "-fno-exceptions" ]

@@ -139,7 +139,8 @@ namespace spargel::base {
         class String {
         public:
             static String from_range(char const* begin, char const* end) {
-                usize len = end - begin;
+                spargel_check(begin <= end);
+                usize len = static_cast<usize>(end - begin);
                 String result;
                 result._bytes.reserve(len);
                 result._bytes.set_count(len);
@@ -234,7 +235,7 @@ namespace spargel::base {
                 usize len = 0;
                 usize i = 0;
                 while (i < length()) {
-                    Byte byte = _bytes[i];
+                    Byte byte = bitCast<char, Byte>(_bytes[i]);
                     if ((byte & 0b10000000) == 0) {
                         i += 1;
                     } else if ((byte & 0b11100000) == 0b11000000) {
@@ -275,7 +276,8 @@ namespace spargel::base {
         class CString {
         public:
             CString(char const* beg, char const* end) {
-                len_ = end - beg;
+                spargel_check(beg <= end);
+                len_ = static_cast<usize>(end - beg);
                 data_ = reinterpret_cast<char*>(default_allocator()->allocate(len_ + 1));
                 ::memcpy(data_, beg, len_);
                 data_[len_] = 0;

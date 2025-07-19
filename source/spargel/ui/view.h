@@ -68,14 +68,14 @@ namespace spargel::ui {
         // Paint
         // -----
 
-        virtual void paint(render::UIScene& scene) {}
+        virtual void paint([[maybe_unused]] render::UIScene& scene) {}
 
         void reportDirty();
 
         // Event Handling
         // --------------
 
-        virtual void onMouseDown(float x, float y) {}
+        virtual void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) {}
 
     private:
         ViewHost* host_;

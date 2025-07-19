@@ -13,8 +13,7 @@
 namespace spargel::render {
     class UIRendererMetal final : public UIRenderer {
     public:
-        UIRendererMetal(gpu::GPUContext* context, resource::ResourceManager* resource_manager,
-                        text::TextShaper* text_shaper);
+        UIRendererMetal(gpu::GPUContext* context, text::TextShaper* text_shaper);
         ~UIRendererMetal();
 
         void setLayer(CAMetalLayer* layer) {
@@ -64,7 +63,6 @@ namespace spargel::render {
         id<MTLDevice> device_;
         id<MTLCommandQueue> queue_;
         CAMetalLayer* layer_;
-        resource::ResourceManager* resource_manager_;
 
         id<MTLLibrary> library_;
         id<MTLFunction> sdf_vert_;
@@ -82,6 +80,5 @@ namespace spargel::render {
         // base::HashMap<>;
     };
     base::UniquePtr<UIRenderer> makeMetalUIRenderer(gpu::GPUContext* context,
-                                                    resource::ResourceManager* resource_manager,
                                                     text::TextShaper* shaper);
 }  // namespace spargel::render

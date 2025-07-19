@@ -71,7 +71,7 @@ namespace spargel::base {
         u64 getTimestamp() {
             struct timeval tv;
             gettimeofday(&tv, NULL);
-            return tv.tv_usec;
+            return static_cast<u64>(tv.tv_usec);
         }
 #else
         u64 getTimestamp() {
@@ -80,7 +80,7 @@ namespace spargel::base {
 #endif
 
         void flush() {
-            fwrite(_buffer, _cur - _buffer, 1, _file);
+            fwrite(_buffer, static_cast<usize>(_cur - _buffer), 1, _file);
             _cnt++;
             _cur = _buffer;
         }
