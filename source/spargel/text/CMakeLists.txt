@@ -22,8 +22,16 @@ if (SPARGEL_IS_LINUX)
     target_link_libraries(text
         PRIVATE
             harfbuzz
-            resource
             ${FREETYPE_LIBRARIES}
+    )
+
+    spargel_add_executable(
+        NAME demo_font_text
+        PRIVATE
+            demo_font_text.cpp
+        DEPS
+            base
+            text
     )
 
 endif ()

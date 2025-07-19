@@ -4,13 +4,14 @@
 
 // HarfBuzz-FreeType
 #include <harfbuzz/hb-ft.h>
+#include <harfbuzz/hb.h>
 
 namespace spargel::text {
 
     ShapedLine TextShaperHarfBuzz::shapeLine(const StyledText& text) {
         // FIXME
-        auto font = static_cast<FontFreeType*>(text.font());
-        hb_font_t* font_hb = hb_ft_font_create(font->face, nullptr);
+        auto font_ft = static_cast<FontFreeType*>(text.font());
+        hb_font_t* font = hb_ft_font_create(font_ft->face, nullptr);
 
         // TODO: text runs
         ShapedSegment segment;
@@ -22,10 +23,10 @@ namespace spargel::text {
         hb_buffer_add_utf8(buf, text_view.data(), text_view.length(), 0, text_view.length());
 
         hb_buffer_set_direction(buf, HB_DIRECTION_LTR);
-        hb_buffer_set_script(buf, HB_SCRIPT_LATIN);
-        hb_buffer_set_language(buf, hb_language_from_string("en", -1));
+        hb_buffer_set_script(buf, HB_SCRIPT_ETHIOPIC);
+        hb_buffer_set_language(buf, hb_language_from_string("am", -1));
 
-        hb_shape(font_hb, buf, nullptr, 0);
+        hb_shape(font, buf, nullptr, 0);
 
         unsigned int glyph_count;
         hb_glyph_info_t* glyph_info = hb_buffer_get_glyph_infos(buf, &glyph_count);
@@ -36,8 +37,8 @@ namespace spargel::text {
         segment.positions.reserve(glyph_count);
         segment.positions.set_count(glyph_count);
 
-        hb_position_t cursor_x = 0;
-        hb_position_t cursor_y = 0;
+        float cursor_x = 0;
+        float cursor_y = 0;
         for (unsigned int i = 0; i < glyph_count; i++) {
             hb_codepoint_t glyph_id = glyph_info[i].codepoint;
             hb_position_t x_offset = glyph_pos[i].x_offset;
@@ -45,13 +46,17 @@ namespace spargel::text {
             hb_position_t x_advance = glyph_pos[i].x_advance;
             hb_position_t y_advance = glyph_pos[i].y_advance;
 
-            segment.glyphs[i] = GlyphId{glyph_id};
-            segment.positions[i].x = cursor_x + x_offset;
-            segment.positions[i].y = cursor_y + y_offset;
+            spargel_log_debug("HB: id=%d, off=(%d, %d), adv=(%d, %d)", glyph_id, x_offset, y_offset,
+                              x_advance, y_advance);
 
-            cursor_x += x_advance;
-            cursor_y += y_advance;
+            segment.glyphs[i] = GlyphId{glyph_id};
+            segment.positions[i].x = cursor_x + x_offset / 64.0f;
+            segment.positions[i].y = cursor_y + y_offset / 64.0f;
+
+            cursor_x += x_advance / 64.0f;
+            cursor_y += y_advance / 64.0f;
         }
+        segment.width = cursor_x;
 
         ShapedLine result;
         result.segments.emplace(base::move(segment));
