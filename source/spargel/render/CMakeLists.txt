@@ -40,6 +40,24 @@ if (SPARGEL_IS_MACOS)
     # )
 
     add_custom_command(
+        OUTPUT
+            ${CMAKE_CURRENT_BINARY_DIR}/metal_shaders.h
+            ${CMAKE_CURRENT_BINARY_DIR}/metal_shaders.cpp
+        COMMAND
+            python3 ${PROJECT_SOURCE_DIR}/gn/script/compile_metal.py
+                --gen-dir ${CMAKE_BINARY_DIR}
+                --output-base source/spargel/render
+                --target-name metal_shaders
+                --namespace "spargel::render"
+                --var-name "METAL_SHADERS"
+                --compile
+                    ${CMAKE_CURRENT_SOURCE_DIR}/ui_shaders.metal
+                    ui_shaders.metal.ir
+        DEPENDS
+            ui_shaders.metal
+    )
+
+    add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.ir
         COMMAND
             xcrun metal -std=metal3.2 -frecord-sources -o ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.ir -c ${CMAKE_CURRENT_SOURCE_DIR}/shader/shader.metal
@@ -93,6 +111,11 @@ if (SPARGEL_IS_MACOS)
             ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.metallib
     )
     add_dependencies(render ui_renderer_metal_shaders)
+    target_sources(render
+        PRIVATE
+            ${CMAKE_CURRENT_BINARY_DIR}/metal_shaders.h
+            ${CMAKE_CURRENT_BINARY_DIR}/metal_shaders.cpp
+    )
 endif ()
 
 

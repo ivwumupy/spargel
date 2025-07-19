@@ -1,6 +1,7 @@
 #pragma once
 
 #include <spargel/base/check.h>
+#include <spargel/base/span.h>
 #include <spargel/base/types.h>
 
 namespace spargel::base {
@@ -19,6 +20,8 @@ namespace spargel::base {
         }
 
         usize count() const { return size; }
+
+        Span<T> asSpan() const { return Span<T>{_array, _array + size}; }
 
         T _array[size];
     };

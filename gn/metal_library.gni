@@ -1,0 +1,49 @@
+# Usage:
+#   metal_library("metal_shaders") {
+#       sources = [
+#           "sdf.metal",
+#       ]
+#       namespace = "spargel::ui"
+#       var_name = "METAL_SHADER"
+#   }
+template("metal_library") {
+    output_base = rebase_path(".", "//")
+    output_h = "$output_base/$target_name.h"
+    output_cpp = "$output_base/$target_name.cpp"
+
+    compile_action = "${target_name}_compile"
+    library_target = target_name
+
+    action(compile_action) {
+        script = "//gn/script/compile_metal.py"
+
+        forward_variables_from(invoker, [ "sources" ])
+
+        outputs = [
+            "$root_gen_dir/$output_h",
+            "$root_gen_dir/$output_cpp",
+        ]
+
+        args = [
+            "--gen-dir", rebase_path(root_gen_dir, root_build_dir),
+            "--output-base", output_base,
+            "--target-name", library_target,
+            "--namespace", invoker.namespace,
+            "--var-name", invoker.var_name,
+        ]
+
+        foreach(source, sources) {
+            args += [
+                "--compile",
+                rebase_path(source, root_build_dir),
+                rebase_path(source, ".") + ".ir",
+            ]
+        }
+
+    }
+    source_set(library_target) {
+        sources = [ "$root_gen_dir/$output_cpp" ]
+        public = [ "$root_gen_dir/$output_h" ]
+        deps = [ ":$compile_action" ]
+    }
+}

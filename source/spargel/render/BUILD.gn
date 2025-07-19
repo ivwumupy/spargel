@@ -1,3 +1,5 @@
+import("//gn/metal_library.gni")
+
 source_set("render") {
     sources = [
         "atlas_packer.cpp",
@@ -18,5 +20,33 @@ source_set("render") {
         sources += [
             "ui_renderer_metal.mm",
         ]
+        deps += [
+            ":metal_shaders",
+        ]
     }
+}
+
+if (is_macos) {
+    metal_library("metal_shaders") {
+        sources = [
+            "ui_shaders.metal",
+        ]
+        namespace = "spargel::render"
+        var_name = "METAL_SHADERS"
+    }
+}
+
+executable("demo_ui_renderer") {
+    sources = [
+        "demo_ui_renderer.cpp",
+    ]
+    deps = [
+        ":render",
+
+        "//source/spargel/base",
+        "//source/spargel/gpu",
+        "//source/spargel/resource",
+        "//source/spargel/text",
+        "//source/spargel/ui",
+    ]
 }

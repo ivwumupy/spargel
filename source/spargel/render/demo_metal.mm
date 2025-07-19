@@ -500,7 +500,7 @@ private:
         _queue = [_device newCommandQueue];
 
         {
-            _layer = (CAMetalLayer*)_window->getHandle().apple.layer;
+            _layer = (CAMetalLayer*)_window->getHandle().value.apple.layer;
             _layer.device = _device;
         }
 

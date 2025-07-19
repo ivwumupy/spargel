@@ -1,7 +1,6 @@
 import("//gn/autoconfig.gni")
 
 autoconfig("autoconfig_h") {
-    # header_dir = "//source/spargel"
     header = "autoconfig.h"
     flags = [
         "SPARGEL_IS_ANDROID=0",

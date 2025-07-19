@@ -4,6 +4,8 @@
 #include <spargel/render/ui_renderer_metal.h>
 #include <spargel/render/ui_scene.h>
 
+#include "spargel/render/metal_shaders.h"
+
 //
 #include <time.h>
 
@@ -31,10 +33,11 @@ namespace spargel::render {
         NSError* error = nullptr;
 
         // Load shaders.
-        auto shaders_resource = resource_manager_->open(
-            resource::ResourceId("source/spargel/render/ui_shaders.metallib"));
-        spargel_check(shaders_resource.hasValue());
-        auto shaders_data = shaders_resource.value()->getSpan();
+        // auto shaders_resource = resource_manager_->open(
+        //     resource::ResourceId("source/spargel/render/ui_shaders.metallib"));
+        // spargel_check(shaders_resource.hasValue());
+        // auto shaders_data = shaders_resource.value()->getSpan();
+        auto shaders_data = METAL_SHADERS.asSpan();
         auto shaders_dispatch_data =
             dispatch_data_create(shaders_data.data(), shaders_data.count(),
                                  dispatch_get_main_queue(), DISPATCH_DATA_DESTRUCTOR_DEFAULT);

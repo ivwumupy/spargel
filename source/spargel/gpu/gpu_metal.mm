@@ -216,7 +216,7 @@ namespace spargel::gpu {
     }
 
     ObjectPtr<Surface> DeviceMetal::createSurface(ui::Window* w) {
-        CAMetalLayer* l = (CAMetalLayer*)w->getHandle().apple.layer;
+        CAMetalLayer* l = (CAMetalLayer*)w->getHandle().value.apple.layer;
         l.device = _device;
         return make_object<SurfaceMetal>(l);
     }
