@@ -85,6 +85,10 @@ namespace spargel::text {
     Bitmap FontMac::rasterGlyph(GlyphId id, float scale) {
         return rasterGlyph(id, scale, math::Vector2f{0.0f, 0.0f});
     }
+    // CoreText Coodinate
+    // ------------------
+    // The origin is at bottom-left and the y-axis goes up.
+    //
     GlyphInfo FontMac::glyphInfo(GlyphId id) {
         CGGlyph glyph = toCGGlyph(id);
 

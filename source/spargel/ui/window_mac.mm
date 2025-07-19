@@ -8,6 +8,9 @@
 #include <spargel/ui/window_mac.h>
 
 //
+#include <time.h>
+
+//
 #import <AppKit/AppKit.h>
 #include <Carbon/Carbon.h>
 #include <CoreFoundation/CoreFoundation.h>
@@ -382,7 +385,10 @@ namespace spargel::ui {
 
     void WindowAppKit::_bridge_render() {
         if (getDelegate() != nullptr) {
+            auto start = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
             getDelegate()->onRender();
+            auto end = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+            spargel_log_info("frame time: %.3fms", (double)(end - start) / 1e6);
         }
     }
 

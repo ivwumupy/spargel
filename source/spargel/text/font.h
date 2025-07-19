@@ -16,25 +16,28 @@ namespace spargel::text {
             run.combine(self.value);
         }
     };
+    // 
     struct Bitmap {
         usize width;
         usize height;
         base::Vector<base::Byte> data;
     };
-    //  | bounding box
-    //  |  +--------+      - ascent
+    //  ^
+    //  |  bounding box
+    //  |  *--------+      - ascent
     //  |  |        |      |
     //  |  |        |      |
     // -*--+--------+--*---+--->
     //  |  |        |  +---+- horizontal advance
     //  |  +--------+      - descent
+    //  |  origin of bounding box
     struct GlyphInfo {
         // The bounding box of the glyph.
         math::Rectangle bounding_box;
         // The origin of the next glyph.
         float horizontal_advance;
         // The (signed) distance to the top of the bounding box.
-        float ascent() const { return bounding_box.size.height - bounding_box.origin.y; }
+        float ascent() const { return bounding_box.origin.y + bounding_box.size.height; }
         // The (signed) distance to the bottom of the bounding box.
         float descent() const { return bounding_box.origin.y; }
         float width() const { return bounding_box.size.width; }
