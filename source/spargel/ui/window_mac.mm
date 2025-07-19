@@ -418,11 +418,11 @@ namespace spargel::ui {
     }
 
     void WindowAppKit::_bridge_render() {
-        static FrameTimeReporter reporter;
+        // static FrameTimeReporter reporter;
         if (getDelegate() != nullptr) {
-            reporter.beginFrame();
+            // reporter.beginFrame();
             getDelegate()->onRender();
-            reporter.endFrame();
+            // reporter.endFrame();
         }
     }
 

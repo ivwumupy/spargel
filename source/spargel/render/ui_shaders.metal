@@ -120,7 +120,6 @@ float4 sdf_frag(
         // col = mix(col, c1, clamp(1.0 - d, 0.0, 1.0));
         col.xyz = mix(col.xyz, c1.xyz, clamp(1.0 - d, 0.0, 1.0) * c1.a);
     }
-    //return col;
     return float4(col.xyz, 1.0);
 }
 
@@ -139,7 +138,7 @@ void sdf_comp(
         return;
     }
 
-    float2 p = float2(tid);
+    float2 p = float2(tid) + 0.5;
     uint j = 0;
     float4 col = float4(0, 0, 0, 1);
     bool has_clip = false;

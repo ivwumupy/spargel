@@ -60,8 +60,10 @@ namespace spargel::text {
         //
         // TODO: Read the docs. Why we have to translate before scale?
         CGContextTranslateCTM(ctx,
-                (-rect.origin.x + subpixel_position.x) * scale,
-                (-rect.origin.y + subpixel_position.y) * scale);
+                //(-rect.origin.x + subpixel_position.x) * scale,
+                //(-rect.origin.y + subpixel_position.y) * scale);
+                -rect.origin.x * scale + subpixel_position.x,
+                -rect.origin.y * scale + subpixel_position.y);
         CGContextScaleCTM(ctx, scale, scale);
 
         CGContextSetAllowsFontSubpixelPositioning(ctx, true);
