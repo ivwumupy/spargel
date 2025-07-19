@@ -15,8 +15,7 @@ namespace spargel::render {
         return base::makeUnique<UIRendererMetal>(context, shaper);
     }
 
-    UIRendererMetal::UIRendererMetal(gpu::GPUContext* context,
-                                     text::TextShaper* text_shaper)
+    UIRendererMetal::UIRendererMetal(gpu::GPUContext* context, text::TextShaper* text_shaper)
         : UIRenderer{context, text_shaper},
           device_{metal_context()->device()},
           queue_{metal_context()->queue()},
@@ -81,24 +80,20 @@ namespace spargel::render {
         desc.storageMode = MTLStorageModeShared;
         texture_ = [device_ newTextureWithDescriptor:desc];
     }
-    void UIRendererMetal::render(UIScene const& scene) {
-        spargel_check(layer_);
-        auto command_buffer = [queue_ commandBuffer];
-
+    id<MTLCommandBuffer> UIRendererMetal::renderToTexture(UIScene const& scene,
+                                                          id<MTLTexture> texture) {
         auto commands_bytes = scene.commands().asBytes();
         auto data_bytes = scene.data().asBytes();
 
         scene_commands_buffer_.request(commands_bytes.count());
         scene_data_buffer_.request(data_bytes.count());
-        // auto commands_buffer = buffer_pool_.request(commands_bytes.count());
-        // auto data_buffer = buffer_pool_.request(data_bytes.count());
 
         memcpy(scene_commands_buffer_.object.contents, commands_bytes.data(),
                commands_bytes.count());
         memcpy(scene_data_buffer_.object.contents, data_bytes.data(), data_bytes.count());
+        pass_desc_.colorAttachments[0].texture = texture;
 
-        auto drawable = [layer_ nextDrawable];
-        pass_desc_.colorAttachments[0].texture = drawable.texture;
+        auto command_buffer = [queue_ commandBuffer];
         auto encoder = [command_buffer renderCommandEncoderWithDescriptor:pass_desc_];
 
         struct {
@@ -117,15 +112,19 @@ namespace spargel::render {
         [encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
 
         [encoder endEncoding];
+
+        return command_buffer;
+    }
+    void UIRendererMetal::render(UIScene const& scene) {
+        spargel_check(layer_);
+        auto drawable = [layer_ nextDrawable];
+
+        auto command_buffer = renderToTexture(scene, drawable.texture);
+
         [command_buffer presentDrawable:drawable];
         [command_buffer commit];
 
-        // TODO: Rewrite using completionHandler.
-        // It seems that we need to add a mutex in BufferPool.
         [command_buffer waitUntilCompleted];
-        // buffer_pool_.putBack(commands_buffer);
-        // buffer_pool_.putBack(data_buffer);
-        // spargel_log_info("done");
     }
     UIRendererMetal::~UIRendererMetal() {
         [pass_desc_ release];

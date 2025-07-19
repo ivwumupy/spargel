@@ -32,6 +32,13 @@ if (SPARGEL_IS_MACOS)
             resource
             ui
     )
+    spargel_add_executable(
+        NAME headless_metal
+        PRIVATE_MACOS
+            headless_metal.mm
+        DEPS
+            render
+    )
     # spargel_application_add_resources(
     #     TARGET demo_metal
     #     SRC ${CMAKE_CURRENT_SOURCE_DIR}/demo_assets

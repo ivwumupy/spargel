@@ -27,6 +27,9 @@ namespace spargel::render {
 
         gpu::MetalContext* metal_context() { return static_cast<gpu::MetalContext*>(context()); }
 
+        //
+        id<MTLCommandBuffer> renderToTexture(UIScene const& scene, id<MTLTexture> texture);
+
     private:
         // TODO: We should not purge the buffers by delta-time.
         struct BufferItem {

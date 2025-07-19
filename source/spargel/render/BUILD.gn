@@ -34,6 +34,14 @@ if (is_macos) {
         namespace = "spargel::render"
         var_name = "METAL_SHADERS"
     }
+    executable("headless_metal") {
+        sources = [
+            "headless_metal.mm",
+        ]
+        deps = [
+            ":render",
+        ]
+    }
 }
 
 executable("demo_ui_renderer") {
