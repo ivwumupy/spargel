@@ -38,6 +38,9 @@ namespace spargel::render {
                     sampleTexture(x + position.x + bbox.origin.x,
                                   y - position.y - bbox.origin.y - bbox.size.height,
                                   bbox.size.width, bbox.size.height, handle, color);
+                    // strokeRectangle(x + position.x + bbox.origin.x,
+                    //                 y - position.y - bbox.origin.y - bbox.size.height,
+                    //                 bbox.size.width, bbox.size.height, 0xFFFFFFFF);
                 }
             }
         }

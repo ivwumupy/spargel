@@ -575,6 +575,7 @@ namespace spargel::ui {
     void WindowAppKit::bindRenderer(render::UIRenderer* renderer) {
         auto metal_renderer = static_cast<render::UIRendererMetal*>(renderer);
         metal_renderer->setLayer(_layer);
+        renderer->setScaleFactor(scaleFactor());
     }
 
     float WindowAppKit::scaleFactor() { return static_cast<float>([_window backingScaleFactor]); }

@@ -37,9 +37,11 @@ namespace spargel::text {
             return {};
         }
 
+        spargel_log_info("font raster scale: %.3f", scale);
+
         // for anti-aliasing
-        width += 1;
-        height += 1;
+        // width += 1;
+        // height += 1;
 
         Bitmap bitmap;
         bitmap.width = width;
@@ -55,8 +57,10 @@ namespace spargel::text {
                                          width,  // bytes per row
                                          color_space, kCGImageAlphaOnly);
         // NOTE: Scale does not change the translate part.
-        CGContextScaleCTM(ctx, scale, scale);
+        //
+        // TODO: Read the docs. Why we have to translate before scale?
         CGContextTranslateCTM(ctx, -rect.origin.x * scale, -rect.origin.y * scale);
+        CGContextScaleCTM(ctx, scale, scale);
 
         // CGContextSetShouldAntialias(ctx, true);
         CGContextSetAllowsFontSubpixelPositioning(ctx, true);
@@ -65,7 +69,8 @@ namespace spargel::text {
         CGContextSetShouldSubpixelQuantizeFonts(ctx, true);
 
         // TODO: Shift for anti-aliasing.
-        CGPoint point = CGPointMake(1, 1);
+        CGPoint point = CGPointMake(0, 0);
+        // CGPoint point = CGPointMake(1, 1);
 
         CGGlyph glyph = base::checkedConvert<CGGlyph>(id.value);
         CTFontDrawGlyphs(object_, &glyph, &point, 1, ctx);

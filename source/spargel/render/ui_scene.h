@@ -47,6 +47,13 @@ namespace spargel::render {
         // TODO: Support emojis.
         void fillText(text::StyledText text, float x, float y, u32 color);
 
+        void strokeRectangle(float x, float y, float w, float h, u32 color) {
+            strokeLine(x, y, x + w, y, color);
+            strokeLine(x + w, y, x + w, y + h, color);
+            strokeLine(x + w, y + h, x, y + h, color);
+            strokeLine(x, y + h, x, y, color);
+        }
+
         void dump() { pushCommand(DrawCommand::dump); }
 
         base::Span<u8> commands() const { return commands_.toSpan(); }

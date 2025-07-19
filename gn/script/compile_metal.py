@@ -21,14 +21,12 @@ ir_files = []
 for compile_pair in args.compile:
     source, target = compile_pair
     target = args.gen_dir / args.output_base / target
-    print(f"COMPILE {source} --> {target}")
     subprocess.run([
         'xcrun', 'metal', '-o', target, '-c', source, '-std=metal3.2',
     ])
     ir_files.append(target)
 
 # Link.
-print(f"LINK {lib_file}")
 subprocess.run([
     'xcrun', 'metallib', '-o', lib_file
 ] + ir_files)
