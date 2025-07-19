@@ -47,7 +47,6 @@ namespace spargel::text {
         bitmap.data.reserve(width *
                             height);  // only alpha. 8 bits per channel and 1 bytes per pixel
         bitmap.data.set_count(width * height);
-        // memset(bitmap.data.data(), 0x3f, width * height);
         memset(bitmap.data.data(), 0x00, width * height);
 
         auto color_space = CGColorSpaceCreateDeviceGray();
@@ -55,27 +54,20 @@ namespace spargel::text {
                                          8,      // bits per channel
                                          width,  // bytes per row
                                          color_space, kCGImageAlphaOnly);
-        CGContextTranslateCTM(ctx, -rect.origin.x * scale, -rect.origin.y * scale);
-        // scale does not change the translate part!!!
+        // NOTE: Scale does not change the translate part.
         CGContextScaleCTM(ctx, scale, scale);
+        CGContextTranslateCTM(ctx, -rect.origin.x * scale, -rect.origin.y * scale);
 
         CGContextSetShouldAntialias(ctx, true);
 
-        // shift for anti-aliasing
+        // TODO: Shift for anti-aliasing.
         CGPoint point = CGPointMake(0, 0);
-        // CGPoint point = CGPointMake(1, 1);
 
         CGGlyph glyph = base::checkedConvert<CGGlyph>(id.value);
         CTFontDrawGlyphs(object_, &glyph, &point, 1, ctx);
 
         CFRelease(color_space);
         CGContextRelease(ctx);
-
-        // Bitmap result;
-        // result.bitmap = base::move(bitmap);
-        // result.glyph_width = rect.size.width * scale;
-        // result.glyph_height = rect.size.height * scale;
-        // result.descent = rect.origin.y * scale;
 
         return bitmap;
     }

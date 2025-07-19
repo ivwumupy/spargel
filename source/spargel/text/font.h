@@ -34,9 +34,9 @@ namespace spargel::text {
         // The origin of the next glyph.
         float horizontal_advance;
         // The (signed) distance to the top of the bounding box.
-        float ascent() const { return bounding_box.origin.y; }
+        float ascent() const { return bounding_box.size.height - bounding_box.origin.y; }
         // The (signed) distance to the bottom of the bounding box.
-        float descent() const { return bounding_box.origin.y - bounding_box.size.height; }
+        float descent() const { return bounding_box.origin.y; }
         float width() const { return bounding_box.size.width; }
         float height() const { return bounding_box.size.height; }
     };
