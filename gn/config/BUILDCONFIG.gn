@@ -30,9 +30,13 @@ set_default_toolchain(_default_toolchain)
 
 _default_compiler_configs = [
     "//gn/config:basics",
+    "//gn/config:warnings",
 ]
 
 set_defaults("static_library") {
+    configs = _default_compiler_configs
+}
+set_defaults("shared_library") {
     configs = _default_compiler_configs
 }
 set_defaults("source_set") {

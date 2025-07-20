@@ -56,6 +56,16 @@ toolchain("macos_clang") {
         command = "rm -f {{output}} && $ar -r -c -s -D {{arflags}} {{output}} @$rspfile"
         description = "AR {{output}}"
     }
+    tool("solink") {
+        outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+        rspfile = "$outfile.rsp"
+        rspfile_content = "{{inputs}} {{frameworks}} {{swiftmodules}} {{solibs}} {{libs}}"
+        default_output_dir = "{{root_out_dir}}"
+        default_output_extension = ".dylib"
+        outputs = [ outfile ]
+        command = "$ld -shared {{ldflags}} -o $outfile @$rspfile"
+        description = "SOLINK $outfile"
+    }
     tool("link") {
         outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
         rspfile = "$outfile.rsp"

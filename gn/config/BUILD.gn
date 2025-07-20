@@ -9,8 +9,8 @@ config("basics") {
 
     cflags += [ "-fcolor-diagnostics" ]
     #ldflags += [
-    #   "-fuse-ld=lld",
-    #   "-Wl,--color-diagnostics",
+    #    "-fuse-ld=lld",
+    #    "-Wl,--color-diagnostics",
     #]
 
     include_dirs = [
@@ -24,16 +24,8 @@ config("basics") {
     cflags_cc += [ "-std=c++20" ]
     cflags_objcc += [ "-std=c++20" ]
 
-    cflags += [
-        "-pedantic-errors",
-        "-Wall",
-        "-Wextra",
-        "-Wconversion",
-        "-Werror",
-    ]
-
-  cflags_cc += [ "-fno-exceptions" ]
-  cflags_cc += [ "-fno-rtti" ]
+    cflags_cc += [ "-fno-exceptions" ]
+    cflags_cc += [ "-fno-rtti" ]
 
     if (is_macos) {
         sysroot_flags = [
@@ -43,4 +35,14 @@ config("basics") {
         cflags += sysroot_flags
         ldflags += sysroot_flags
     }
+}
+
+config("warnings") {
+    cflags = [
+        "-pedantic-errors",
+        "-Wall",
+        "-Wextra",
+        "-Wconversion",
+        "-Werror",
+    ]
 }
