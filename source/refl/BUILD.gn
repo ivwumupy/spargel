@@ -1,6 +1,6 @@
 import("//gn/config/llvm.gni")
 
-shared_library("refl") {
+executable("refl") {
     sources = [
         "main.cpp",
     ]
