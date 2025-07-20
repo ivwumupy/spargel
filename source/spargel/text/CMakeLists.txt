@@ -12,6 +12,15 @@ spargel_add_library(
         base
 )
 
+spargel_add_executable(
+    NAME demo_font_text
+    PRIVATE
+        demo_font_text.cpp
+    DEPS
+        base
+        text
+)
+
 if (SPARGEL_IS_LINUX)
 
     target_include_directories(text
@@ -23,15 +32,6 @@ if (SPARGEL_IS_LINUX)
         PRIVATE
             harfbuzz
             ${FREETYPE_LIBRARIES}
-    )
-
-    spargel_add_executable(
-        NAME demo_font_text
-        PRIVATE
-            demo_font_text.cpp
-        DEPS
-            base
-            text
     )
 
 endif ()
