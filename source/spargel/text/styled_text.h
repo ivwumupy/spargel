@@ -7,6 +7,21 @@
 namespace spargel::text {
     class Font;
 
+    // StyledText is the input of the text rendering pipeline (and others as well).
+    // 
+    // The basic model is text with attributes, which is the same as CoreText and Pango (TODO: others).
+    // Every attached attribute has a start and end index (Unicode codepoints).
+    //
+    // Example (taken from Pango):
+    //
+    //   Blue text is cool.
+    //   ---------    ----
+    //   +    -------   +--> font: { style: italic }
+    //   +      +---> font: { size: 12pt }
+    //   +-> color: blue
+    //
+    // StyledText is platform independent.
+    //
     class StyledText {
     public:
         StyledText(base::StringView s, Font* font) : text_{s}, font_{font} {}
