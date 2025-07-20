@@ -1,8 +1,10 @@
-#include <spargel/ui/view.h>
-#include <spargel/ui/view_host.h>
+#include "spargel/base/check.h"
+#include "spargel/ui/view.h"
+#include "spargel/ui/view_host.h"
 
 namespace spargel::ui {
     void View::addChild(View* v) {
+        spargel_check(!v->parent());
         children_.emplace(v);
         v->setParent(this);
         v->setHost(host_);

@@ -23,6 +23,9 @@ namespace spargel::ui {
 
         void setDirty();
 
+        // Repaint the view tree.
+        void scheduleRepaint();
+
         //
         void onRender() override;
         void onMouseDown(float x, float y) override;
