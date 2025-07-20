@@ -13,5 +13,6 @@ namespace spargel::gpu {
     public:
         virtual ~GPUContext() = default;
     };
+    GPUBackend inferBackend();
     base::UniquePtr<GPUContext> makeContext(GPUBackend backend);
 }  // namespace spargel::gpu

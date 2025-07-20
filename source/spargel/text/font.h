@@ -16,7 +16,7 @@ namespace spargel::text {
             run.combine(self.value);
         }
     };
-    // 
+    //
     struct Bitmap {
         usize width;
         usize height;
@@ -51,7 +51,8 @@ namespace spargel::text {
 
         // TODO
         virtual Bitmap rasterGlyph(GlyphId id, float scale) = 0;
-        virtual Bitmap rasterGlyph(GlyphId id, float scale, [[maybe_unused]] math::Vector2f subpixel_position) {
+        virtual Bitmap rasterGlyph(GlyphId id, float scale,
+                                   [[maybe_unused]] math::Vector2f subpixel_position) {
             return rasterGlyph(id, scale);
         }
 

@@ -1,5 +1,7 @@
-#include <spargel/config.h>
-#include <spargel/gpu/gpu_context.h>
+#include "spargel/config.h"
+#include "spargel/base/panic.h"
+#include "spargel/base/unique_ptr.h"
+#include "spargel/gpu/gpu_context.h"
 
 namespace spargel::gpu {
 
@@ -17,4 +19,12 @@ namespace spargel::gpu {
             spargel_panic("backend not supported");
         }
     }
+
+    GPUBackend inferBackend() {
+#if SPARGEL_IS_MACOS
+        return GPUBackend::metal;
+#endif
+        spargel_panic("cannot determine backend");
+    }
+
 }  // namespace spargel::gpu

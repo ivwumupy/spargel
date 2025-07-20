@@ -1,15 +1,13 @@
-#include <spargel/base/string_view.h>
-#include <spargel/base/unique_ptr.h>
-#include <spargel/gpu/gpu_context.h>
-#include <spargel/render/ui_renderer.h>
-#include <spargel/render/ui_scene.h>
-#include <spargel/resource/directory.h>
-#include <spargel/text/font.h>
-#include <spargel/text/styled_text.h>
-#include <spargel/text/text_shaper.h>
-#include <spargel/ui/platform.h>
-#include <spargel/ui/view_host.h>
-#include <spargel/ui/window.h>
+#include "spargel/base/string_view.h"
+#include "spargel/base/unique_ptr.h"
+#include "spargel/gpu/gpu_context.h"
+#include "spargel/render/ui_renderer.h"
+#include "spargel/render/ui_scene.h"
+#include "spargel/text/font.h"
+#include "spargel/text/styled_text.h"
+#include "spargel/text/text_shaper.h"
+#include "spargel/ui/platform.h"
+#include "spargel/ui/window.h"
 
 //
 #include <stdio.h>
@@ -17,12 +15,7 @@
 namespace spargel::render {
     namespace {
         using namespace base::literals;
-        gpu::GPUBackend inferBackend() {
-#if SPARGEL_IS_MACOS
-            return gpu::GPUBackend::metal;
-#endif
-            spargel_panic("cannot determine backend");
-        }
+
         class Demo final : public ui::WindowDelegate {
         public:
             Demo() {
@@ -36,7 +29,7 @@ namespace spargel::render {
 
         private:
             void initRenderer() {
-                gpu_context_ = gpu::makeContext(inferBackend());
+                gpu_context_ = gpu::makeContext(gpu::inferBackend());
                 shaper_ = text::TextShaper::create();
                 renderer_ = render::makeUIRenderer(gpu_context_.get(), shaper_.get());
             }

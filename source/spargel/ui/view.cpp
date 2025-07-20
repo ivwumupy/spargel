@@ -7,5 +7,5 @@ namespace spargel::ui {
         v->setParent(this);
         v->setHost(host_);
     }
-    void View::reportDirty() { host_->setDirty(); }
+    void View::requestRepaint() { host_->setDirty(); }
 }  // namespace spargel::ui

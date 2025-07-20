@@ -30,3 +30,16 @@ source_set("ui") {
         ]
     }
 }
+
+executable("demo_ui") {
+    sources = [
+        "demo_ui.cpp",
+    ]
+    deps = [
+        ":ui",
+        "//source/spargel/base",
+        "//source/spargel/gpu",
+        "//source/spargel/render",
+        "//source/spargel/text",
+    ]
+}

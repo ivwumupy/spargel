@@ -14,27 +14,30 @@ namespace spargel::ui {
     class View;
     class ViewHost;
 
-    /// A LayoutManager is owned by a View. It manages how the View's children should be laid out
-    /// within the View's content bounds.
-    ///
+    struct ProposedSize {
+        // TODO: We need to represent: a finite value, or "infinity"
+        float width;
+        float height;
+    };
+
+    struct PreferredSize {
+    };
+
+    // A LayoutManager is owned by a View. It manages how the View's children should be laid out
+    // within the View's content bounds.
     class LayoutManager {
     public:
         virtual ~LayoutManager() = default;
 
-        /// Layout the children of |view|.
-        virtual void layout(View* view) = 0;
+        // TODO: What's the return type?
+        virtual void preferredSize(ProposedSize proposal) = 0;
+        virtual void placeChildren() = 0;
     };
 
-    /// A View corresponds to a complete functionality of the UI.
-    ///
-    /// The View class should be sub-classed to provide custom behaviour.
-    ///
-    ///----------------
-    /// The Layer Tree
-    ///
-    /// The `View` hierarchy is backed by a `Layer` tree. Some (but not all) views are layer owning.
-    /// Each `Layer` corresponds to a GPU texture.
-    ///
+    // A View corresponds to a complete functionality of the UI.
+    //
+    // The View class should be sub-classed to provide custom behaviour.
+    //
     class View {
     public:
         View() {}
@@ -44,9 +47,8 @@ namespace spargel::ui {
 
         // View Hierarchy
         // --------------
-        //
 
-        base::Span<View*> children();
+        base::Span<View*> children() { return children_.toSpan(); }
 
         void addChild(View* v);
 
@@ -70,7 +72,7 @@ namespace spargel::ui {
 
         virtual void paint([[maybe_unused]] render::UIScene& scene) {}
 
-        void reportDirty();
+        void requestRepaint();
 
         // Event Handling
         // --------------

@@ -33,7 +33,8 @@ namespace spargel::render {
         }
         return handle;
     }
-    UIRenderer::TextureHandle UIRenderer::prepareGlyph(text::GlyphId id, text::Font* font, math::Vector2f subpixel_position) {
+    UIRenderer::TextureHandle UIRenderer::prepareGlyph(text::GlyphId id, text::Font* font,
+                                                       math::Vector2f subpixel_position) {
         auto bitmap = font->rasterGlyph(id, scale_factor_, subpixel_position);
         auto width = base::checkedConvert<u16>(bitmap.width);
         auto height = base::checkedConvert<u16>(bitmap.height);

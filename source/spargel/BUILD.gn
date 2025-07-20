@@ -23,3 +23,15 @@ autoconfig("autoconfig_h") {
 source_set("config") {
     deps = [ ":autoconfig_h" ]
 }
+
+source_set("spargel") {
+    deps = [
+        "//source/spargel/base",
+        "//source/spargel/gpu",
+        "//source/spargel/render",
+        "//source/spargel/resource",
+        "//source/spargel/text",
+        "//source/spargel/ui",
+        "//source/spargel/util",
+    ]
+}
