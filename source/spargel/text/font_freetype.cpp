@@ -62,9 +62,8 @@ namespace spargel::text {
     base::UniquePtr<Font> createDefaultFont() {
         auto library = defaultFreeTypeLibrary.library;
         auto filename = "/usr/share/fonts/truetype/msttcorefonts/Times_New_Roman.ttf";
-        // auto filename = "/usr/share/fonts/truetype/msttcorefonts/Arial.ttf";
         // auto filename = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc";
-        // auto filename = "/usr/share/fonts/truetype/noto/NotoSansEthiopic-Regular.ttf";
+        // auto filename = "/usr/share/fonts/truetype/noto/NotoSansMongolian-Regular.ttf";
         // filename = "/home/jerry/Data/fonts/PerfectoCalligraphy.ttf";
 
         FT_Face face;

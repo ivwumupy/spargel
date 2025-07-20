@@ -8,9 +8,9 @@ namespace spargel::text {
     class Font;
 
     // StyledText is the input of the text rendering pipeline (and others as well).
-    // 
-    // The basic model is text with attributes, which is the same as CoreText, DirectWrite and Pango.
-    // Every attached attribute has a start and end index (Unicode codepoints).
+    //
+    // The basic model is text with attributes, which is the same as CoreText and Pango (TODO:
+    // others). Every attached attribute has a start and end index (Unicode codepoints).
     //
     // Example (taken from Pango):
     //

@@ -1,7 +1,8 @@
-#include "spargel/config.h"
+#include "spargel/gpu/gpu_context.h"
+
 #include "spargel/base/panic.h"
 #include "spargel/base/unique_ptr.h"
-#include "spargel/gpu/gpu_context.h"
+#include "spargel/config.h"
 
 namespace spargel::gpu {
 

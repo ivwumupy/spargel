@@ -20,8 +20,7 @@ namespace spargel::ui {
         float height;
     };
 
-    struct PreferredSize {
-    };
+    struct PreferredSize {};
 
     // A LayoutManager is owned by a View. It manages how the View's children should be laid out
     // within the View's content bounds.

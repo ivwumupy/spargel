@@ -23,8 +23,8 @@ namespace spargel::text {
         fangsong,
     };
 
-    // A font family list consists of a list of font families ordered by priority from the highest to the lowest.
-    // Font selection happens one character at a time. (TODO: what is a character)
+    // A font family list consists of a list of font families ordered by priority from the highest
+    // to the lowest. Font selection happens one character at a time. (TODO: what is a character)
     // The list includes a (predefined) generic font family at the end.
     struct FontFamilyList {
         // The first family has the highest priority.
@@ -36,8 +36,9 @@ namespace spargel::text {
     // Selecting a font with the specific style within a font family.
     //
     // NOTE:
-    // It seems that style is encoded as "Font Subfmaily" (also called "Style" in Apple's spec) in the `name` table of TrueType/OpenType fonts.
-    // However the subfamily is language-dependent text.
+    // It seems that style is encoded as "Font Subfmaily" (also called "Style" in Apple's spec) in
+    // the `name` table of TrueType/OpenType fonts. However the subfamily is language-dependent
+    // text.
     //
     // NOTE:
     // In the CSS model, oblique has an optional argument specifying the angle.
@@ -86,7 +87,8 @@ namespace spargel::text {
     //
     //   style: "normal" | "roman" | "oblique" | "italic"
     //
-    //   variants: "small-caps" | "all-small-caps" | "petite-caps" | "all-petite-caps" | "unicase" | "title-caps"
+    //   variants: "small-caps" | "all-small-caps" | "petite-caps" | "all-petite-caps" | "unicase" |
+    //   "title-caps"
     //
     //   weight: "thin" | ...
     //
@@ -126,4 +128,4 @@ namespace spargel::text {
         // TODO: Weight.
     };
 
-} // namespace spargel::text
+}  // namespace spargel::text

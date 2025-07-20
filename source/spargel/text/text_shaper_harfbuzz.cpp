@@ -23,8 +23,8 @@ namespace spargel::text {
         hb_buffer_add_utf8(buf, text_view.data(), text_view.length(), 0, text_view.length());
 
         hb_buffer_set_direction(buf, HB_DIRECTION_LTR);
-        hb_buffer_set_script(buf, HB_SCRIPT_ETHIOPIC);
-        hb_buffer_set_language(buf, hb_language_from_string("am", -1));
+        hb_buffer_set_script(buf, HB_SCRIPT_LATIN);
+        hb_buffer_set_language(buf, hb_language_from_string("en", -1));
 
         hb_shape(font, buf, nullptr, 0);
 

@@ -84,18 +84,12 @@ int main(int argc, char** argv) {
             max_ascent = max(max_ascent, glyph_info.ascent());
             max_descent = max(max_descent, -glyph_info.descent());
 
-            if (i == 0 && j == 0) {
-                // reserve enough space for the left of the first glyph
-                left_more = max(0.0f, -bb_origin.x);
-            }
-            if (i == shaping_result.segments.count() - 1 && j == segment.glyphs.count() - 1) {
-                // leave enough space for the right of the last glyph
-                right_more = max(0.0f, bb_origin.x + bb_size.width - glyph_info.horizontal_advance);
-            }
+            left_more = max(left_more, -(pos.x + bb_origin.x));
+            right_more = max(right_more, pos.x + bb_origin.x + bb_size.width - segment.width);
         }
         total_width += segment.width;
     }
-    total_width = total_width + left_more + right_more + 2;
+    total_width = total_width + left_more + right_more + 1;
     max_ascent += 1;
     max_descent += 1;
 
@@ -126,6 +120,9 @@ int main(int argc, char** argv) {
 
             u32 x0 = segment_cursor_x + x + (u32)bb_origin.x;
             u32 y0 = y + (u32)bb_origin.y;
+
+            spargel_check(x0 >= 0 && x0 + bitmap.width < width);
+            spargel_check(baseline + y0 >= 0 && baseline + y0 + bitmap.height < height);
 
             for (usize r = 0; r < bitmap.height; r++) {
                 for (usize c = 0; c < bitmap.width; c++) {
