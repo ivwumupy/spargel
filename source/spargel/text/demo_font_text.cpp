@@ -24,10 +24,14 @@ namespace {
         if (pitch > 0) {
             // stored from UP to BOTTOM
             for (usize r = 0; r < height; r++) {
+                int last_code = 0;
                 for (usize c = 0; c < width; c++) {
                     u8 data = pixels[r * pitch + c];
                     int code = data * (255 - 232) / 256 + 232;
-                    printf("\033[38;5;196;48;5;%dm", code);
+                    if (code != last_code) {
+                        printf("\033[38;5;196;48;5;%dm", code);
+                        last_code = code;
+                    }
 
                     if (foreground) {
                         putchar(foreground[r * pitch + c]);
@@ -89,7 +93,7 @@ int main(int argc, char** argv) {
         }
         total_width += segment.width;
     }
-    total_width = total_width + left_more + right_more + 1;
+    total_width = total_width + left_more + right_more + 2;
     max_ascent += 1;
     max_descent += 1;
 
