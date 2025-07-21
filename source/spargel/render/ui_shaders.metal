@@ -114,11 +114,11 @@ float4 sdf_frag(
         } else {
             // do nothing
         }
-        if (has_clip && p.x >= clip.x && p.y >= clip.y && p.x <= (clip.x + clip.z) && p.y <= (clip.y + clip.w))
-            continue;
-        // TODO: The mixing model is not good.
-        // col = mix(col, c1, clamp(1.0 - d, 0.0, 1.0));
-        col.xyz = mix(col.xyz, c1.xyz, clamp(1.0 - d, 0.0, 1.0) * c1.a);
+        if (has_clip && p.x >= clip.x && p.y >= clip.y && p.x <= (clip.x + clip.z) && p.y <= (clip.y + clip.w)) {
+            // TODO: The mixing model is not good.
+            // col = mix(col, c1, clamp(1.0 - d, 0.0, 1.0));
+            col.xyz = mix(col.xyz, c1.xyz, clamp(1.0 - d, 0.0, 1.0) * c1.a);
+        }
     }
     return float4(col.xyz, 1.0);
 }
@@ -409,3 +409,87 @@ void sdf_binning(
     slots[slot_id].next_slot = -1;
     slots[slot_id].command_index = -1;
 }
+
+[[fragment]]
+float4 sdf_frag2(
+    Sdf_VOut in [[stage_in]],
+    constant BinControl const& uniform [[buffer(0)]],
+    constant Command2 const* cmds [[buffer(1)]],
+    constant BinSlot* slots [[buffer(2)]],
+    texture2d<float> glyph_texture [[texture(0)]]
+) {
+    constexpr sampler texture_sampler(mag_filter::linear, min_filter::linear);
+
+    float2 p = in.position.xy;
+    float4 col = float4(0, 0, 0, 1);
+    float4 clip = float4(0, 0, 0, 0);
+
+    uint2 tile = uint2(p) / 8;
+    uint slot_id = tile.x * uniform.tile_count_y + tile.y;
+
+    //for (uint i = 0; i < uniform.cmd_count; i++) {
+    //    uint8_t cmd = cmds[i];
+    while (true) {
+        threadgroup_barrier(mem_flags::mem_none);
+        
+        ushort cmd_id = slots[slot_id].command_index;
+        ushort next_slot = slots[slot_id].next_slot;
+
+        if (cmd_id >= uniform.cmd_count || next_slot >= uniform.max_slot) {
+            break;
+        }
+
+        slot_id = next_slot;
+
+        // TODO: Put command in the threadgroup memory.
+        Command2 cmd = cmds[cmd_id];
+
+        float d = 1.0;
+        float4 c1 = float4(1, 0, 1, 1);
+        clip = cmd.clip;
+
+        if (cmd.cmd == CMD_FILL_CIRCLE) {
+            float2 center = float2(cmd.data[0], cmd.data[1]);
+            float radius = cmd.data[2];
+            c1 = float4(as_type<uchar4>(cmd.data[3])) / 255.0;
+            d = sdf_circle_fill(p - center, radius);
+        } else if (cmd.cmd == CMD_STROKE_SEGMENT) {
+            float2 start = float2(cmd.data[0], cmd.data[1]);
+            float2 end = float2(cmd.data[2], cmd.data[3]);
+            c1 = float4(as_type<uchar4>(cmd.data[4])) / 255.0;
+            d = sdf_segment(p, start, end);
+        } else if (cmd.cmd == CMD_STROKE_CIRCLE) {
+            float2 center = float2(cmd.data[0], cmd.data[1]);
+            float radius = cmd.data[2];
+            c1 = float4(as_type<uchar4>(cmd.data[3])) / 255.0;
+            d = sdf_circle_stroke(p - center, radius);
+        } else if (cmd.cmd == CMD_SAMPLE_TEXTURE) {
+            float2 origin = float2(cmd.data[0], cmd.data[1]);
+            float2 size = float2(cmd.data[2], cmd.data[3]);
+            float2 tex_uv0 = float2(as_type<ushort2>(cmd.data[4])) / ATLAS_SIZE;
+            float2 tex_uvs = float2(as_type<ushort2>(cmd.data[5])) / ATLAS_SIZE;
+            c1 = float4(as_type<uchar4>(cmd.data[6])) / 255.0;
+
+            if (p.x >= origin.x && p.y >= origin.y && p.x <= (origin.x + size.x) && p.y <= (origin.y + size.y)) {
+                float2 dp = p - origin;
+                float2 uv = (dp / size) * tex_uvs + tex_uv0;
+                c1.a *= glyph_texture.sample(texture_sampler, uv).a;
+                d = 0.0;
+            }
+        } else if (cmd.cmd == CMD_DUMP) {
+            // TODO:
+            float2 uv = p / 1000;
+            c1.a *= glyph_texture.sample(texture_sampler, uv).a;
+            d = 0.0;
+        } else {
+            // do nothing
+        }
+        if (p.x >= clip.x && p.y >= clip.y && p.x <= (clip.x + clip.z) && p.y <= (clip.y + clip.w)) {
+            // TODO: The mixing model is not good.
+            // col = mix(col, c1, clamp(1.0 - d, 0.0, 1.0));
+            col.xyz = mix(col.xyz, c1.xyz, clamp(1.0 - d, 0.0, 1.0) * c1.a);
+        }
+    }
+    return float4(col.xyz, 1.0);
+}
+

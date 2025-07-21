@@ -36,6 +36,7 @@ namespace spargel::ui {
             }
 
             void paint(render::UIScene& scene) override {
+                scene.setClip(0, 0, 500, 500);
                 scene.strokeCircle(250, 250, 100, state_ ? 0xFF00FF00 : 0xFFFF0000);
                 for (auto* child : children()) {
                     child->paint(scene);

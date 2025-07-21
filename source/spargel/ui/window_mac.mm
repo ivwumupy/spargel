@@ -386,7 +386,7 @@ namespace spargel::ui {
 
     namespace {
         struct FrameTimeReporter {
-            static constexpr usize N = 100;
+            static constexpr usize N = 1;
             base::InlineArray<u64, N> data;
             usize index = 0;
             u64 last_report = 0;
@@ -402,27 +402,27 @@ namespace spargel::ui {
                 data[index] = now - start;
                 index = (index + 1) % N;
                 // Report every one second.
-                if (now - last_report > 1'000'000'000) {
+                //if (now - last_report > 1'000'000'000) {
                     report();
                     last_report = now;
-                }
+                //}
             }
             void report() {
                 u64 sum = 0;
                 for (auto d : data) {
                     sum += d;
                 }
-                spargel_log_info("frame time: %.3fms", (double)sum / (1e6 * N));
+                spargel_log_info("wall frame time: %.3fms", (double)sum / (1e6 * N));
             }
         };
     }
 
     void WindowAppKit::_bridge_render() {
-        // static FrameTimeReporter reporter;
+        static FrameTimeReporter reporter;
         if (getDelegate() != nullptr) {
-            // reporter.beginFrame();
+            reporter.beginFrame();
             getDelegate()->onRender();
-            // reporter.endFrame();
+            reporter.endFrame();
         }
     }
 

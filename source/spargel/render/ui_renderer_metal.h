@@ -13,7 +13,7 @@
 namespace spargel::render {
     class UIRendererMetal final : public UIRenderer {
     public:
-        static constexpr bool use_compute = true;
+        static constexpr bool use_compute = false;
 
         UIRendererMetal(gpu::GPUContext* context, text::TextShaper* text_shaper);
         ~UIRendererMetal();
@@ -35,6 +35,7 @@ namespace spargel::render {
         //
         id<MTLCommandBuffer> renderToTexture(UIScene const& scene, id<MTLTexture> texture);
         id<MTLCommandBuffer> renderToTextureRender(UIScene const& scene, id<MTLTexture> texture);
+        id<MTLCommandBuffer> renderToTextureRender2(UIScene const& scene, id<MTLTexture> texture);
         id<MTLCommandBuffer> renderToTextureCompute(UIScene const& scene, id<MTLTexture> texture);
         id<MTLCommandBuffer> renderToTextureComputeV2(UIScene const& scene, id<MTLTexture> texture);
 
@@ -62,6 +63,7 @@ namespace spargel::render {
             u64 last_purged = 0;
         };
         struct GrowingBuffer {
+            ~GrowingBuffer();
             void request(usize length);
 
             gpu::MetalContext* context = nullptr;
@@ -78,10 +80,12 @@ namespace spargel::render {
         id<MTLLibrary> library_;
         id<MTLFunction> sdf_vert_;
         id<MTLFunction> sdf_frag_;
+        id<MTLFunction> sdf_frag2_;
         id<MTLFunction> sdf_comp_;
         id<MTLFunction> sdf_comp_v2_;
         id<MTLFunction> sdf_binning_;
         id<MTLRenderPipelineState> sdf_pipeline_;
+        id<MTLRenderPipelineState> sdf_pipeline2_;
         id<MTLComputePipelineState> sdf_comp_pipeline_;
         id<MTLComputePipelineState> sdf_comp_v2_pipeline_;
         id<MTLComputePipelineState> sdf_binning_pipeline_;

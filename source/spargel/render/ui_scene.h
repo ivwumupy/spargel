@@ -32,6 +32,7 @@ namespace spargel::render {
             pushData(x, y, w, h);
             clip_ = math::Rectangle{{x * scale_, y * scale_}, {w * scale_, h * scale_}};
         }
+        // Warning: The default clip is zero-sized. So nothing will be rendered.
         void clearClip() {
             pushCommand(DrawCommand::clear_clip);
             clip_ = math::Rectangle{};
@@ -80,6 +81,7 @@ namespace spargel::render {
         void clear() {
             commands_.clear();
             data_.clear();
+            commands2_.clear();
         }
 
         void setScale(float s) { scale_ = s; }

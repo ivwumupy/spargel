@@ -36,6 +36,7 @@ namespace spargel::render {
             void initWindow() {
                 platform_ = ui::makePlatform();
                 window_ = platform_->makeWindow(500, 500);
+                //window_ = platform_->makeWindow(1500, 1000);
                 window_->setTitle("Spargel Engine - Demo UIRenderer");
                 window_->setDelegate(this);
                 window_->setAnimating(true);
@@ -44,7 +45,7 @@ namespace spargel::render {
             void prepareScene() {
                 scene_.setRenderer(renderer_.get());
                 scene_.setScale(window_->scaleFactor());
-                scene_.setClip(0, 0, 500, 500);
+                scene_.setClip(0, 0, 1500, 1000);
                 scene_.fillCircle(150, 150, 50 * 1.4143f, 0xFFFF0000);
                 scene_.strokeLine(100, 100, 200, 100, 0xFFFFFFFF);
                 scene_.strokeLine(200, 100, 200, 200, 0xFF00FFFF);
@@ -54,6 +55,19 @@ namespace spargel::render {
                 scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_.get()}, 20, 250,
                                 0xFF0000FF);
                 scene_.strokeLine(0, 250, 500, 250, 0xFFFFFFFF);
+
+                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_.get()}, 520, 250,
+                                0xFF0000FF);
+
+                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_.get()}, 520, 750,
+                                0xFF0000FF);
+
+                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_.get()}, 320, 750,
+                                0xFF0000FF);
+
+                scene_.strokeLine(50 + 6, 50, 50, 50 + 6, 0xFFFFFFFF);
+                scene_.strokeLine(50, 50, 50 + 6, 50 + 6, 0xFFFFFFFF);
+
                 scene_.dump();
             }
 

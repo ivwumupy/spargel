@@ -31,6 +31,8 @@ namespace spargel::text {
     //  |  |        |  +---+- horizontal advance
     //  |  +--------+      - descent
     //  |  origin of bounding box
+    //
+    // Coordinate unit: point.
     struct GlyphInfo {
         // The bounding box of the glyph.
         math::Rectangle bounding_box;
