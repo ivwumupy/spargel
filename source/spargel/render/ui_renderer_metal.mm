@@ -24,6 +24,8 @@ namespace spargel::render {
         initTexture();
         scene_commands_buffer_.context = metal_context();
         scene_data_buffer_.context = metal_context();
+        bin_slots_buffer_.context = metal_context();
+        bin_alloc_buffer_.context = metal_context();
     }
     void UIRendererMetal::initPipeline() {
         NSError* error = nullptr;
@@ -48,10 +50,12 @@ namespace spargel::render {
         sdf_frag_ = [library_ newFunctionWithName:@"sdf_frag"];
         sdf_comp_ = [library_ newFunctionWithName:@"sdf_comp"];
         sdf_comp_v2_ = [library_ newFunctionWithName:@"sdf_comp_v2"];
+        sdf_binning_= [library_ newFunctionWithName:@"sdf_binning"];
         spargel_check(sdf_vert_);
         spargel_check(sdf_frag_);
         spargel_check(sdf_comp_);
         spargel_check(sdf_comp_v2_);
+        spargel_check(sdf_binning_);
 
         // Create pipeline.
         auto ppl_desc = [[MTLRenderPipelineDescriptor alloc] init];
@@ -76,6 +80,10 @@ namespace spargel::render {
         spargel_check(!error);
         sdf_comp_v2_pipeline_ = [device_ newComputePipelineStateWithFunction:sdf_comp_v2_
                                                                        error:&error];
+        spargel_check(!error);
+        sdf_binning_pipeline_ =
+            [device_ newComputePipelineStateWithFunction:sdf_binning_
+                                                   error:&error];
         spargel_check(!error);
 
         // Prepare render pass descriptor.
@@ -162,32 +170,88 @@ namespace spargel::render {
 
         return command_buffer;
     }
+    struct BinAlloc {
+        u32 offset;
+        bool out_of_space;
+    };
+    struct BinControl {
+        u32 tile_count_x;
+        u32 tile_count_y;
+        u32 cmd_count;
+        u32 max_slot;
+    };
     id<MTLCommandBuffer> UIRendererMetal::renderToTextureComputeV2(UIScene const& scene,
                                                                    id<MTLTexture> target) {
+        usize tile_count_x = target.width / 8 + 1;
+        usize tile_count_y = target.height / 8 + 1;
+        usize tile_count = tile_count_x * tile_count_y;
+        usize command_count = scene.commands2_count();
+
         auto commands_bytes = scene.commands2_bytes();
 
         scene_commands_buffer_.request(commands_bytes.count());
 
+        // How to estimate?
+        // sizeof(BinSlot) is 4.
+        // Let's say each commands intersects 200 tiles on average.
+        usize max_slot = command_count * 200 + tile_count;
+        bin_slots_buffer_.request(4 * max_slot);
+        bin_alloc_buffer_.request(8);
+        spargel_log_info("max_slot: %zu", max_slot);
+        spargel_log_info("tile_count: %zu", tile_count);
+
         memcpy(scene_commands_buffer_.object.contents, commands_bytes.data(),
                commands_bytes.count());
+
+        BinAlloc alloc_initial{base::checkedConvert<u32>(tile_count), 0};
+        memcpy(bin_alloc_buffer_.object.contents, &alloc_initial, sizeof(BinAlloc));
 
         auto command_buffer = [queue_ commandBuffer];
         auto encoder = [command_buffer computeCommandEncoder];
 
-        struct {
-            u32 cmd_count;
-        } uniform_data = {base::checkedConvert<u32>(scene.commands().count())};
+        // Binning!
+        BinControl bin_control{
+            base::checkedConvert<u32>(tile_count_x),
+            base::checkedConvert<u32>(tile_count_y),
+            base::checkedConvert<u32>(command_count),
+            base::checkedConvert<u32>(max_slot)};
+
+        [encoder setComputePipelineState:sdf_binning_pipeline_];
+        [encoder setBytes:&bin_control length:sizeof(BinControl) atIndex:0];
+        [encoder setBuffer:scene_commands_buffer_.object offset:0 atIndex:1];
+        [encoder setBuffer:bin_slots_buffer_.object offset:0 atIndex:2];
+        [encoder setBuffer:bin_alloc_buffer_.object offset:0 atIndex:3];
+        
+        [encoder dispatchThreadgroups:MTLSizeMake(tile_count_x / 8 + 1, tile_count_y / 8 + 1, 1)
+                threadsPerThreadgroup:MTLSizeMake(8, 8, 1)];
+        //[encoder dispatchThreadgroups:MTLSizeMake(1, 1, 1)
+        //        threadsPerThreadgroup:MTLSizeMake(tile_count_x, tile_count_y, 1)];
+
+        // Render!
+
+        id<MTLResource> resource = bin_slots_buffer_.object;
+        [encoder memoryBarrierWithResources:&resource
+                                      count:1];
+
+        // struct {
+        //     u32 cmd_count;
+        // } uniform_data = {base::checkedConvert<u32>(scene.commands().count())};
 
         [encoder setComputePipelineState:sdf_comp_v2_pipeline_];
-        [encoder setBytes:&uniform_data length:sizeof(uniform_data) atIndex:0];
-        [encoder setBuffer:scene_commands_buffer_.object offset:0 atIndex:1];
+        //[encoder setBytes:&uniform_data length:sizeof(uniform_data) atIndex:0];
+        //[encoder setBuffer:scene_commands_buffer_.object offset:0 atIndex:1];
         [encoder setTexture:target atIndex:0];
         [encoder setTexture:texture_ atIndex:1];
 
-        [encoder dispatchThreadgroups:MTLSizeMake(target.width / 8 + 1, target.height / 8 + 1, 1)
+        [encoder dispatchThreadgroups:MTLSizeMake(tile_count_x, tile_count_y, 1)
                 threadsPerThreadgroup:MTLSizeMake(8, 8, 1)];
 
         [encoder endEncoding];
+
+        [command_buffer addCompletedHandler:^(id<MTLCommandBuffer>) {
+                auto alloc = (BinAlloc*)bin_alloc_buffer_.object.contents;
+                spargel_log_info("offset: %u, overflow: %s", alloc->offset, alloc->out_of_space ? "true" : "false");
+            }];
 
         return command_buffer;
     }

@@ -80,9 +80,11 @@ namespace spargel::render {
         id<MTLFunction> sdf_frag_;
         id<MTLFunction> sdf_comp_;
         id<MTLFunction> sdf_comp_v2_;
+        id<MTLFunction> sdf_binning_;
         id<MTLRenderPipelineState> sdf_pipeline_;
         id<MTLComputePipelineState> sdf_comp_pipeline_;
         id<MTLComputePipelineState> sdf_comp_v2_pipeline_;
+        id<MTLComputePipelineState> sdf_binning_pipeline_;
 
         MTLRenderPassDescriptor* pass_desc_;
 
@@ -92,7 +94,8 @@ namespace spargel::render {
 
         id<MTLTexture> texture_;
 
-        // base::HashMap<>;
+        GrowingBuffer bin_slots_buffer_;
+        GrowingBuffer bin_alloc_buffer_;
     };
     base::UniquePtr<UIRenderer> makeMetalUIRenderer(gpu::GPUContext* context,
                                                     text::TextShaper* shaper);

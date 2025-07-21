@@ -75,6 +75,7 @@ namespace spargel::render {
         base::Span<u32> data() const { return data_.toSpan(); }
 
         base::Span<base::Byte> commands2_bytes() const { return commands2_.toSpan().asBytes(); }
+        usize commands2_count() const { return commands2_.count(); }
 
         void clear() {
             commands_.clear();

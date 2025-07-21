@@ -211,37 +211,39 @@ struct Command2 {
 };
 static_assert(sizeof(Command2) == 64, "size does not match");
 
-float readFloat(constant uint8_t const* buffer) {
-    uchar4 v;
-    for (int i = 0; i < 4; i++) {
-        v[i] = buffer[i];
-    }
-    return as_type<float>(v);
-}
+// One command for the tile.
+struct BinSlot {
+    // Index of the command in the command buffer.
+    ushort command_index;
+    // Index of the next slot.
+    ushort next_slot;
+};
 
-float4 readFloat4(constant uint8_t const* buffer) {
-    float4 result;
-    for (int i = 0; i < 4; i++) {
-        result[i] = readFloat(buffer + i * 4);
-    }
-    return result;
-}
+static_assert(sizeof(BinSlot) == 4, "size error");
 
-Command2 readCommand2(constant uint8_t const* buffer) {
-    Command2 result;
-    result.cmd = buffer[0];    
-    result.clip = readFloat4(buffer + 16);
-    for (int i = 0; i < 8; i++) {
-        result.data[i] = readFloat(buffer + 32 + i * 4);
-    }
-    return result;
-}
+struct BinControl {
+    uint tile_count_x;
+    uint tile_count_y;
+    uint cmd_count;
+    // The capacity of the BinSlot buffer.
+    uint max_slot;
+};
+
+struct BinAlloc {
+    // Set to zero externally.
+    // NOTE: Offset keeps increasing even if the buffer is out of space.
+    atomic_uint offset;
+    bool out_of_space;
+};
+
+static_assert(sizeof(BinAlloc) == 8, "size error");
 
 [[kernel]]
 void sdf_comp_v2(
     ushort2 tid [[thread_position_in_grid]],
-    constant UniformData const& uniform [[buffer(0)]],
+    constant BinControl const& uniform [[buffer(0)]],
     constant Command2 const* cmds [[buffer(1)]],
+    constant BinSlot const* slots [[buffer(2)]],
     texture2d<float, access::write> target [[texture(0)]],
     texture2d<float> glyph_texture [[texture(1)]]
 ) {
@@ -251,12 +253,29 @@ void sdf_comp_v2(
         return;
     }
 
+    uint2 tile = uint2(tid) / 8;
+    uint slot_id = tile.x * uniform.tile_count_y + tile.y;
+
     float2 p = float2(tid) + 0.5;
     float4 col = float4(0, 0, 0, 1);
     float4 clip = float4(0, 0, 0, 0);
 
-    for (uint i = 0; i < uniform.cmd_count; i++) {
-        Command2 cmd = cmds[i];
+    //for (uint i = 0; i < uniform.cmd_count; i++) {
+    while (true) {
+        threadgroup_barrier(mem_flags::mem_none);
+        
+        ushort cmd_id = slots[slot_id].command_index;
+        ushort next_slot = slots[slot_id].next_slot;
+
+        if (cmd_id >= uniform.cmd_count || next_slot >= uniform.max_slot) {
+            break;
+        }
+
+        slot_id = next_slot;
+
+        // TODO: Put command in the threadgroup memory.
+        Command2 cmd = cmds[cmd_id];
+
         float d = 1.0;
         float4 c1 = float4(1, 0, 1, 1);
         clip = cmd.clip;
@@ -305,4 +324,88 @@ void sdf_comp_v2(
     }
 
     target.write(float4(col.rgb, 1.0), tid);
+}
+
+bool bboxIntersect(float4 a, float4 b) {
+    return (abs((a.x + a.z / 2) - (b.x + b.z / 2)) * 2 < (a.z + b.z)) &&
+           (abs((a.y + a.w / 2) - (b.y + b.w / 2)) * 2 < (a.w + b.w));
+}
+
+// Each thread computes the commands of a 8x8 tile.
+//
+// The first slot is reserved.
+[[kernel]]
+void sdf_binning(
+    ushort2 tid [[thread_position_in_grid]],
+    // ushort2 grid_size [[threads_per_grid]],
+    constant BinControl const& uniform [[buffer(0)]],
+    constant Command2 const* cmds [[buffer(1)]],
+    device BinSlot* slots [[buffer(2)]],
+    device BinAlloc& alloc [[buffer(3)]]
+) {
+    if (tid.x >= uniform.tile_count_x || tid.y >= uniform.tile_count_y) {
+        return;
+    }
+
+    float4 tile;
+    tile.xy = float2(tid) * 8.0;
+    tile.zw = 8.0;
+
+    uint slot_id = tid.x * uniform.tile_count_y + tid.y;
+
+    for (uint i = 0; i < uniform.cmd_count; i++) {
+        threadgroup_barrier(mem_flags::mem_none);
+
+        Command2 cmd = cmds[i];
+
+        // Compute the bounding box of the command.
+
+        float4 bbox = 0;
+        if (cmd.cmd == CMD_FILL_CIRCLE) {
+            float2 center = float2(cmd.data[0], cmd.data[1]);
+            float radius = cmd.data[2];
+            radius += 0.5;
+            bbox.xy = center - radius;
+            bbox.zw = float2(radius) * 2;
+        } else if (cmd.cmd == CMD_STROKE_SEGMENT) {
+            float2 start = float2(cmd.data[0], cmd.data[1]);
+            float2 end = float2(cmd.data[2], cmd.data[3]);
+            bbox.xy = min(start, end) - 0.5;
+            bbox.zw = abs(end - start) + 1;
+        } else if (cmd.cmd == CMD_STROKE_CIRCLE) {
+            float2 center = float2(cmd.data[0], cmd.data[1]);
+            float radius = cmd.data[2];
+            radius += 0.5;
+            bbox.xy = center - radius;
+            bbox.zw = float2(radius) * 2;
+        } else if (cmd.cmd == CMD_SAMPLE_TEXTURE) {
+            float2 origin = float2(cmd.data[0], cmd.data[1]);
+            float2 size = float2(cmd.data[2], cmd.data[3]);
+            bbox.xy = origin - 0.5;
+            bbox.zw = size + 1;
+        } else if (cmd.cmd == CMD_DUMP) {
+        } else {
+            // do nothing
+        }
+
+        // Check intersection.
+        if (!bboxIntersect(tile, bbox)) {
+            continue;
+        }
+
+        // Allocate a new slot.
+
+        uint new_slot = atomic_fetch_add_explicit(&alloc.offset, 1, memory_order_relaxed);
+        
+        if (new_slot >= uniform.max_slot) {
+            alloc.out_of_space = true;
+            continue;
+        }
+
+        slots[slot_id].next_slot = new_slot;
+        slots[slot_id].command_index = i;
+        slot_id = new_slot;
+    }
+    slots[slot_id].next_slot = -1;
+    slots[slot_id].command_index = -1;
 }
