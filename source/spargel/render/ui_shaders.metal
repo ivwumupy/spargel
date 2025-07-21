@@ -194,11 +194,114 @@ void sdf_comp(
         } else {
             // do nothing
         }
-        if (has_clip && p.x >= clip.x && p.y >= clip.y && p.x <= (clip.x + clip.z) && p.y <= (clip.y + clip.w))
-            continue;
-        // TODO: The mixing model is not good.
-        // col = mix(col, c1, clamp(1.0 - d, 0.0, 1.0));
-        col.xyz = mix(col.xyz, c1.xyz, clamp(1.0 - d, 0.0, 1.0) * c1.a);
+        if (has_clip && p.x >= clip.x && p.y >= clip.y && p.x <= (clip.x + clip.z) && p.y <= (clip.y + clip.w)) {
+            // TODO: The mixing model is not good.
+            // col = mix(col, c1, clamp(1.0 - d, 0.0, 1.0));
+            col.xyz = mix(col.xyz, c1.xyz, clamp(1.0 - d, 0.0, 1.0) * c1.a);
+        }
+    }
+
+    target.write(float4(col.rgb, 1.0), tid);
+}
+
+struct Command2 {
+    uchar cmd;
+    float4 clip;
+    float data[8];
+};
+static_assert(sizeof(Command2) == 64, "size does not match");
+
+float readFloat(constant uint8_t const* buffer) {
+    uchar4 v;
+    for (int i = 0; i < 4; i++) {
+        v[i] = buffer[i];
+    }
+    return as_type<float>(v);
+}
+
+float4 readFloat4(constant uint8_t const* buffer) {
+    float4 result;
+    for (int i = 0; i < 4; i++) {
+        result[i] = readFloat(buffer + i * 4);
+    }
+    return result;
+}
+
+Command2 readCommand2(constant uint8_t const* buffer) {
+    Command2 result;
+    result.cmd = buffer[0];    
+    result.clip = readFloat4(buffer + 16);
+    for (int i = 0; i < 8; i++) {
+        result.data[i] = readFloat(buffer + 32 + i * 4);
+    }
+    return result;
+}
+
+[[kernel]]
+void sdf_comp_v2(
+    ushort2 tid [[thread_position_in_grid]],
+    constant UniformData const& uniform [[buffer(0)]],
+    constant Command2 const* cmds [[buffer(1)]],
+    texture2d<float, access::write> target [[texture(0)]],
+    texture2d<float> glyph_texture [[texture(1)]]
+) {
+    constexpr sampler texture_sampler(mag_filter::linear, min_filter::linear);
+
+    if (tid.x >= target.get_width() || tid.y >= target.get_height()) {
+        return;
+    }
+
+    float2 p = float2(tid) + 0.5;
+    float4 col = float4(0, 0, 0, 1);
+    float4 clip = float4(0, 0, 0, 0);
+
+    for (uint i = 0; i < uniform.cmd_count; i++) {
+        Command2 cmd = cmds[i];
+        float d = 1.0;
+        float4 c1 = float4(1, 0, 1, 1);
+        clip = cmd.clip;
+
+        if (cmd.cmd == CMD_FILL_CIRCLE) {
+            float2 center = float2(cmd.data[0], cmd.data[1]);
+            float radius = cmd.data[2];
+            c1 = float4(as_type<uchar4>(cmd.data[3])) / 255.0;
+            d = sdf_circle_fill(p - center, radius);
+        } else if (cmd.cmd == CMD_STROKE_SEGMENT) {
+            float2 start = float2(cmd.data[0], cmd.data[1]);
+            float2 end = float2(cmd.data[2], cmd.data[3]);
+            c1 = float4(as_type<uchar4>(cmd.data[4])) / 255.0;
+            d = sdf_segment(p, start, end);
+        } else if (cmd.cmd == CMD_STROKE_CIRCLE) {
+            float2 center = float2(cmd.data[0], cmd.data[1]);
+            float radius = cmd.data[2];
+            c1 = float4(as_type<uchar4>(cmd.data[3])) / 255.0;
+            d = sdf_circle_stroke(p - center, radius);
+        } else if (cmd.cmd == CMD_SAMPLE_TEXTURE) {
+            float2 origin = float2(cmd.data[0], cmd.data[1]);
+            float2 size = float2(cmd.data[2], cmd.data[3]);
+            float2 tex_uv0 = float2(as_type<ushort2>(cmd.data[4])) / ATLAS_SIZE;
+            float2 tex_uvs = float2(as_type<ushort2>(cmd.data[5])) / ATLAS_SIZE;
+            c1 = float4(as_type<uchar4>(cmd.data[6])) / 255.0;
+
+            if (p.x >= origin.x && p.y >= origin.y && p.x <= (origin.x + size.x) && p.y <= (origin.y + size.y)) {
+                float2 dp = p - origin;
+                float2 uv = (dp / size) * tex_uvs + tex_uv0;
+                c1.a *= glyph_texture.sample(texture_sampler, uv).a;
+                d = 0.0;
+            }
+        } else if (cmd.cmd == CMD_DUMP) {
+            // TODO:
+            float2 uv = p / 1000;
+            c1.a *= glyph_texture.sample(texture_sampler, uv).a;
+            d = 0.0;
+        } else {
+            // do nothing
+        }
+        if (p.x >= clip.x && p.y >= clip.y && p.x <= (clip.x + clip.z) && p.y <= (clip.y + clip.w)) {
+            // TODO: The mixing model is not good.
+            // col = mix(col, c1, clamp(1.0 - d, 0.0, 1.0));
+            col.xyz = mix(col.xyz, c1.xyz, clamp(1.0 - d, 0.0, 1.0) * c1.a);
+        }
     }
 
     target.write(float4(col.rgb, 1.0), tid);

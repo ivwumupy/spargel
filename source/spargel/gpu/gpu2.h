@@ -21,8 +21,8 @@ namespace spargel::gpu2 {
         virtual CommandQueue* createCommandQueue() = 0;
         // Allocate a command buffer.
         //
-        // Vulkan (and Metal 3) require that every command buffer can
-        // only be submitted to the queue it was created with.
+        // Vulkan (and Metal 3) requires that every command buffer can
+        // be submitted only to the queue it was created with.
         // This restrction is removed in Metal 4.
         //
         // The strategy here is to ask the user for the usage of the

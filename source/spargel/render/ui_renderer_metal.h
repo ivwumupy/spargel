@@ -36,6 +36,7 @@ namespace spargel::render {
         id<MTLCommandBuffer> renderToTexture(UIScene const& scene, id<MTLTexture> texture);
         id<MTLCommandBuffer> renderToTextureRender(UIScene const& scene, id<MTLTexture> texture);
         id<MTLCommandBuffer> renderToTextureCompute(UIScene const& scene, id<MTLTexture> texture);
+        id<MTLCommandBuffer> renderToTextureComputeV2(UIScene const& scene, id<MTLTexture> texture);
 
     private:
         // TODO: We should not purge the buffers by delta-time.
@@ -78,8 +79,10 @@ namespace spargel::render {
         id<MTLFunction> sdf_vert_;
         id<MTLFunction> sdf_frag_;
         id<MTLFunction> sdf_comp_;
+        id<MTLFunction> sdf_comp_v2_;
         id<MTLRenderPipelineState> sdf_pipeline_;
         id<MTLComputePipelineState> sdf_comp_pipeline_;
+        id<MTLComputePipelineState> sdf_comp_v2_pipeline_;
 
         MTLRenderPassDescriptor* pass_desc_;
 

@@ -127,6 +127,7 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
     }
     auto texture = [device newTextureWithDescriptor:desc];
 
+    scene.setClip(0, 0, (float)truth.width, (float)truth.height);
     scene.fillText(text::StyledText{TEXT, font.get()}, 0,
         (float)truth.height - (float)truth.descent, 0xFFFFFFFF);
 

@@ -47,9 +47,11 @@ namespace spargel::render {
         sdf_vert_ = [library_ newFunctionWithName:@"sdf_vert"];
         sdf_frag_ = [library_ newFunctionWithName:@"sdf_frag"];
         sdf_comp_ = [library_ newFunctionWithName:@"sdf_comp"];
+        sdf_comp_v2_ = [library_ newFunctionWithName:@"sdf_comp_v2"];
         spargel_check(sdf_vert_);
         spargel_check(sdf_frag_);
         spargel_check(sdf_comp_);
+        spargel_check(sdf_comp_v2_);
 
         // Create pipeline.
         auto ppl_desc = [[MTLRenderPipelineDescriptor alloc] init];
@@ -71,6 +73,9 @@ namespace spargel::render {
         // Compute pipeline
         sdf_comp_pipeline_ = [device_ newComputePipelineStateWithFunction:sdf_comp_
                                                                     error:&error];
+        spargel_check(!error);
+        sdf_comp_v2_pipeline_ = [device_ newComputePipelineStateWithFunction:sdf_comp_v2_
+                                                                       error:&error];
         spargel_check(!error);
 
         // Prepare render pass descriptor.
@@ -157,10 +162,39 @@ namespace spargel::render {
 
         return command_buffer;
     }
+    id<MTLCommandBuffer> UIRendererMetal::renderToTextureComputeV2(UIScene const& scene,
+                                                                   id<MTLTexture> target) {
+        auto commands_bytes = scene.commands2_bytes();
+
+        scene_commands_buffer_.request(commands_bytes.count());
+
+        memcpy(scene_commands_buffer_.object.contents, commands_bytes.data(),
+               commands_bytes.count());
+
+        auto command_buffer = [queue_ commandBuffer];
+        auto encoder = [command_buffer computeCommandEncoder];
+
+        struct {
+            u32 cmd_count;
+        } uniform_data = {base::checkedConvert<u32>(scene.commands().count())};
+
+        [encoder setComputePipelineState:sdf_comp_v2_pipeline_];
+        [encoder setBytes:&uniform_data length:sizeof(uniform_data) atIndex:0];
+        [encoder setBuffer:scene_commands_buffer_.object offset:0 atIndex:1];
+        [encoder setTexture:target atIndex:0];
+        [encoder setTexture:texture_ atIndex:1];
+
+        [encoder dispatchThreadgroups:MTLSizeMake(target.width / 8 + 1, target.height / 8 + 1, 1)
+                threadsPerThreadgroup:MTLSizeMake(8, 8, 1)];
+
+        [encoder endEncoding];
+
+        return command_buffer;
+    }
     id<MTLCommandBuffer> UIRendererMetal::renderToTexture(UIScene const& scene,
                                                           id<MTLTexture> texture) {
         if (use_compute) {
-            return renderToTextureCompute(scene, texture);
+            return renderToTextureComputeV2(scene, texture);
         }
         return renderToTextureRender(scene, texture);
     }
@@ -174,6 +208,9 @@ namespace spargel::render {
         [command_buffer commit];
 
         [command_buffer waitUntilCompleted];
+
+        auto dt = command_buffer.GPUEndTime - command_buffer.GPUStartTime;
+        spargel_log_info("frame time: %.3fms", dt * 1000);
     }
     UIRendererMetal::~UIRendererMetal() {
         [pass_desc_ release];

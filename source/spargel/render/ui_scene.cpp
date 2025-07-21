@@ -14,6 +14,7 @@ namespace spargel::render {
         u32 a = (u32)handle.x | (u32)((u32)handle.y << 16);
         u32 b = (u32)handle.width | (u32)((u32)handle.height << 16);
         pushData(x, y, width, height, a, b, color);
+        pushCommand2(DrawCommand::sample_texture, x * scale_, y * scale_, width * scale_, height * scale_, a, b, color);
     }
     void UIScene::fillText(text::StyledText text, float x, float y, u32 color) {
         spargel_check(renderer_);
