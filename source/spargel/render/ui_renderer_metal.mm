@@ -179,12 +179,19 @@ namespace spargel::render {
         u32 offset;
         bool out_of_space;
     };
+    static_assert(sizeof(BinAlloc) == 8);
     struct BinControl {
         u32 tile_count_x;
         u32 tile_count_y;
         u32 cmd_count;
         u32 max_slot;
     };
+    static_assert(sizeof(BinControl) == 16);
+    struct BinSlot {
+        u32 next_slot;
+        u32 command_index;
+    };
+    static_assert(sizeof(BinSlot) == 8);
     id<MTLCommandBuffer> UIRendererMetal::renderToTextureComputeV2(UIScene const& scene,
                                                                    id<MTLTexture> target) {
         usize tile_count_x = target.width / 8 + 1;
@@ -197,7 +204,7 @@ namespace spargel::render {
         scene_commands_buffer_.request(commands_bytes.count());
 
         // How to estimate?
-        // sizeof(BinSlot) is 4.
+        // sizeof(BinSlot) is 8.
         // Let's say each commands intersects 200 tiles on average.
         //
         // Screen size: (say) 4000x2000 px
@@ -208,8 +215,8 @@ namespace spargel::render {
         //   command_count = 7 (demo_ui)
         //   tile_count = 79211 = 379 * 209
         usize max_slot = command_count * 500 + tile_count;
-        bin_slots_buffer_.request(4 * max_slot);
-        bin_alloc_buffer_.request(8);
+        bin_slots_buffer_.request(sizeof(BinSlot) * max_slot);
+        bin_alloc_buffer_.request(sizeof(BinAlloc));
         spargel_log_info("max_slot: %zu", max_slot);
         //spargel_log_info("tile_count: %zu", tile_count);
 
@@ -291,9 +298,9 @@ namespace spargel::render {
         //   command_count = 7 (demo_ui)
         //   tile_count = 79211 = 379 * 209
         usize max_slot = command_count * 500 + tile_count;
-        bin_slots_buffer_.request(4 * max_slot);
-        bin_alloc_buffer_.request(8);
-        spargel_log_info("max_slot: %zu", max_slot);
+        bin_slots_buffer_.request(sizeof(BinSlot) * max_slot);
+        bin_alloc_buffer_.request(sizeof(BinAlloc));
+        //spargel_log_info("max_slot: %zu", max_slot);
         //spargel_log_info("tile_count: %zu", tile_count);
 
         memcpy(scene_commands_buffer_.object.contents, commands_bytes.data(),
@@ -330,7 +337,7 @@ namespace spargel::render {
         pass_desc_.colorAttachments[0].texture = target;
         auto encoder2 = [command_buffer renderCommandEncoderWithDescriptor:pass_desc_];
 
-        [encoder2 setRenderPipelineState:sdf_pipeline_];
+        [encoder2 setRenderPipelineState:sdf_pipeline2_];
         [encoder2 setFragmentBytes:&bin_control length:sizeof(BinControl) atIndex:0];
         [encoder2 setFragmentBuffer:scene_commands_buffer_.object offset:0 atIndex:1];
         [encoder2 setFragmentBuffer:bin_slots_buffer_.object offset:0 atIndex:2];
@@ -339,25 +346,6 @@ namespace spargel::render {
         // we use one triangle
         [encoder2 drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
         [encoder2 endEncoding];
-
-        //id<MTLResource> resource = bin_slots_buffer_.object;
-        //[encoder memoryBarrierWithResources:&resource
-        //                              count:1];
-
-        // struct {
-        //     u32 cmd_count;
-        // } uniform_data = {base::checkedConvert<u32>(scene.commands().count())};
-
-        //[encoder setComputePipelineState:sdf_comp_v2_pipeline_];
-        //[encoder setBytes:&uniform_data length:sizeof(uniform_data) atIndex:0];
-        //[encoder setBuffer:scene_commands_buffer_.object offset:0 atIndex:1];
-        //[encoder setTexture:target atIndex:0];
-        //[encoder setTexture:texture_ atIndex:1];
-
-        //[encoder dispatchThreadgroups:MTLSizeMake(tile_count_x, tile_count_y, 1)
-        //        threadsPerThreadgroup:MTLSizeMake(8, 8, 1)];
-
-        //[encoder endEncoding];
 
         [command_buffer addCompletedHandler:^(id<MTLCommandBuffer>) {
                 auto alloc = (BinAlloc*)bin_alloc_buffer_.object.contents;
@@ -369,11 +357,11 @@ namespace spargel::render {
     id<MTLCommandBuffer> UIRendererMetal::renderToTexture(UIScene const& scene,
                                                           id<MTLTexture> texture) {
         if (use_compute) {
-            //return renderToTextureComputeV2(scene, texture);
-            return renderToTextureCompute(scene, texture);
+            return renderToTextureComputeV2(scene, texture);
+            //return renderToTextureCompute(scene, texture);
         }
-        return renderToTextureRender(scene, texture);
-        //return renderToTextureRender2(scene, texture);
+        //return renderToTextureRender(scene, texture);
+        return renderToTextureRender2(scene, texture);
     }
     void UIRendererMetal::render(UIScene const& scene) {
         spargel_check(layer_);

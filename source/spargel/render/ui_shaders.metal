@@ -214,12 +214,12 @@ static_assert(sizeof(Command2) == 64, "size does not match");
 // One command for the tile.
 struct BinSlot {
     // Index of the command in the command buffer.
-    ushort command_index;
+    uint command_index;
     // Index of the next slot.
-    ushort next_slot;
+    uint next_slot;
 };
 
-static_assert(sizeof(BinSlot) == 4, "size error");
+static_assert(sizeof(BinSlot) == 8, "size error");
 
 struct BinControl {
     uint tile_count_x;
@@ -264,8 +264,8 @@ void sdf_comp_v2(
     while (true) {
         threadgroup_barrier(mem_flags::mem_none);
         
-        ushort cmd_id = slots[slot_id].command_index;
-        ushort next_slot = slots[slot_id].next_slot;
+        uint cmd_id = slots[slot_id].command_index;
+        uint next_slot = slots[slot_id].next_slot;
 
         if (cmd_id >= uniform.cmd_count || next_slot >= uniform.max_slot) {
             break;
@@ -432,8 +432,8 @@ float4 sdf_frag2(
     while (true) {
         threadgroup_barrier(mem_flags::mem_none);
         
-        ushort cmd_id = slots[slot_id].command_index;
-        ushort next_slot = slots[slot_id].next_slot;
+        uint cmd_id = slots[slot_id].command_index;
+        uint next_slot = slots[slot_id].next_slot;
 
         if (cmd_id >= uniform.cmd_count || next_slot >= uniform.max_slot) {
             break;

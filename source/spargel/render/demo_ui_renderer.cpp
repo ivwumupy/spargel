@@ -35,8 +35,7 @@ namespace spargel::render {
             }
             void initWindow() {
                 platform_ = ui::makePlatform();
-                window_ = platform_->makeWindow(500, 500);
-                //window_ = platform_->makeWindow(1500, 1000);
+                window_ = platform_->makeWindow(1500, 1000);
                 window_->setTitle("Spargel Engine - Demo UIRenderer");
                 window_->setDelegate(this);
                 window_->setAnimating(true);
