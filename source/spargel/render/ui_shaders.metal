@@ -35,9 +35,16 @@ float sdf_segment(float2 p, float2 a, float2 b) {
     return length(ap - ab * t);
 }
 
+// centered at origin, s is the size.
+float sdf_rrect(float2 p, float2 s, float r) {
+    float2 q = abs(p) - (s / 2.0 - r);
+    return min(max(q.x, q.y), 0.0f) + length(max(q, 0.0f)) - r;
+}
+
 enum {
     CMD_FILL_RECT = 0,
     CMD_FILL_CIRCLE,
+    CMD_FILL_ROUNDED_RECT,
     CMD_STROKE_SEGMENT,
     CMD_STROKE_CIRCLE,
     CMD_SET_CLIP,
@@ -367,6 +374,11 @@ void sdf_binning(
             radius += 0.5;
             bbox.xy = center - radius;
             bbox.zw = float2(radius) * 2;
+        } else if (cmd.cmd == CMD_FILL_ROUNDED_RECT) {
+            float2 origin = float2(cmd.data[0], cmd.data[1]);
+            float2 size = float2(cmd.data[2], cmd.data[3]);
+            bbox.xy = origin - 0.5;
+            bbox.zw = size + 1;
         } else if (cmd.cmd == CMD_STROKE_SEGMENT) {
             float2 start = float2(cmd.data[0], cmd.data[1]);
             float2 end = float2(cmd.data[2], cmd.data[3]);
@@ -453,6 +465,12 @@ float4 sdf_frag2(
             float radius = cmd.data[2];
             c1 = float4(as_type<uchar4>(cmd.data[3])) / 255.0;
             d = sdf_circle_fill(p - center, radius);
+        } else if (cmd.cmd == CMD_FILL_ROUNDED_RECT) {
+            float2 origin = float2(cmd.data[0], cmd.data[1]);
+            float2 size = float2(cmd.data[2], cmd.data[3]);
+            float radius = cmd.data[4];
+            c1 = float4(as_type<uchar4>(cmd.data[5])) / 255.0;
+            d = sdf_rrect(p - origin - size / 2.0, size, radius);
         } else if (cmd.cmd == CMD_STROKE_SEGMENT) {
             float2 start = float2(cmd.data[0], cmd.data[1]);
             float2 end = float2(cmd.data[2], cmd.data[3]);

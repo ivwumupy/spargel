@@ -3,6 +3,7 @@
 #include "spargel/render/ui_renderer_metal.h"
 #include "spargel/render/ui_scene.h"
 #include "spargel/text/text_shaper_mac.h"
+#include "spargel/text/font_manager_mac.h"
 
 //
 #include <math.h>
@@ -107,7 +108,8 @@ void buildGroundTruth(GroundTruth& output) {
 
 void buildSpargel(GroundTruth const& truth, RenderResult& result) {
     auto context = new gpu::MetalContext;
-    auto shaper = new text::TextShaperMac;
+    auto manager = new text::FontManagerMac;
+    auto shaper = new text::TextShaperMac(manager);
     auto renderer = new render::UIRendererMetal(context, shaper);
     auto font = text::createDefaultFont();
     render::UIScene scene;

@@ -15,6 +15,7 @@ source_set("text") {
     if (is_macos) {
         sources += [
             "font_mac.cpp",
+            "font_manager_mac.cpp",
             "text_shaper_mac.cpp",
         ]
         frameworks = [

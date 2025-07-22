@@ -1,13 +1,15 @@
 #pragma once
 
-#include <spargel/base/unique_ptr.h>
-#include <spargel/base/vector.h>
-#include <spargel/text/font.h>
+#include "spargel/base/unique_ptr.h"
+#include "spargel/base/vector.h"
+#include "spargel/text/font.h"
 
 namespace spargel::text {
     class FontManager {
     public:
-        static FontManager& instance();
+        static base::UniquePtr<FontManager> create();
+
+        virtual ~FontManager() = default;
 
         template <typename T, typename... Args>
         Font* create(Args&&... args) {

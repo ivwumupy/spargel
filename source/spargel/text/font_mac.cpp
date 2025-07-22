@@ -14,6 +14,8 @@ namespace spargel::text {
         CGGlyph toCGGlyph(GlyphId id) { return base::checkedConvert<CGGlyph>(id.value); }
     }  // namespace
     FontMac::FontMac(CTFontRef object) : object_{object} {
+        CFRetain(object_);
+
         auto name = CTFontCopyFullName(object_);
         auto range = CFRangeMake(0, CFStringGetLength(name));
         CFIndex len;

@@ -1,9 +1,12 @@
 #pragma once
 
-#include <spargel/gpu/gpu_context.h>
-#include <spargel/math/vector.h>
-#include <spargel/render/atlas_packer.h>
-#include <spargel/text/font.h>
+#include "spargel/base/bit_cast.h"
+#include "spargel/base/hash.h"
+#include "spargel/base/hash_map.h"
+#include "spargel/gpu/gpu_context.h"
+#include "spargel/math/vector.h"
+#include "spargel/render/atlas_packer.h"
+#include "spargel/text/font.h"
 
 namespace spargel::text {
     class TextShaper;
@@ -11,6 +14,19 @@ namespace spargel::text {
 
 namespace spargel::render {
     class UIScene;
+
+    struct SubpixelVariant {
+        u8 x;
+        u8 y;
+
+        friend bool operator==(SubpixelVariant const& lhs, SubpixelVariant const& rhs) {
+            return lhs.x == rhs.x && lhs.y == rhs.y;
+        }
+        friend void tag_invoke(base::tag<base::hash>, base::HashRun& run, SubpixelVariant const& self) {
+            run.combine(self.x);
+            run.combine(self.y);
+        }
+    };
 
     class UIRenderer {
     public:
@@ -32,6 +48,7 @@ namespace spargel::render {
         virtual void render(UIScene const& scene) = 0;
 
         TextureHandle prepareGlyph(text::GlyphId id, text::Font* font);
+        TextureHandle prepareGlyph(text::GlyphId id, text::Font* font, SubpixelVariant subpixel);
         TextureHandle prepareGlyph(text::GlyphId id, text::Font* font,
                                    math::Vector2f subpixel_position);
 
@@ -45,15 +62,27 @@ namespace spargel::render {
         virtual void uploadBitmap(TextureHandle handle, text::Bitmap const& bitmap) = 0;
 
     private:
-        struct GlyphItem {
+        struct GlyphCacheKey {
             text::GlyphId id;
             text::Font* font;
+            SubpixelVariant subpixel;
+
+            friend bool operator==(GlyphCacheKey const& lhs, GlyphCacheKey const& rhs) {
+                return lhs.id == rhs.id && lhs.font == rhs.font && lhs.subpixel == rhs.subpixel;
+            }
+            friend void tag_invoke(base::tag<base::hash>, base::HashRun& run, GlyphCacheKey const& self) {
+                run.combine(self.id);
+                run.combine(base::bitCast<text::Font const*, u64>(self.font));
+                run.combine(self.subpixel);
+            }
         };
 
         gpu::GPUContext* context_;
         text::TextShaper* text_shaper_;
         AtlasPacker packer_;
         float scale_factor_ = 1.0;
+
+        base::HashMap<GlyphCacheKey, TextureHandle> glyph_cache_;
     };
     base::UniquePtr<UIRenderer> makeUIRenderer(gpu::GPUContext* context,
                                                text::TextShaper* text_shaper);

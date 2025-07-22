@@ -2,6 +2,7 @@
 #include "spargel/gpu/gpu_context.h"
 #include "spargel/render/ui_renderer.h"
 #include "spargel/render/ui_scene.h"
+#include "spargel/text/font_manager.h"
 #include "spargel/text/text_shaper.h"
 #include "spargel/ui/platform.h"
 #include "spargel/ui/view.h"
@@ -60,7 +61,8 @@ namespace spargel::ui {
                 window_ = platform_->makeWindow(500, 500);
                 window_->setTitle("Spargel Engine - UI Demo");
                 gpu_context_ = gpu::makeContext(gpu::inferBackend());
-                shaper_ = text::TextShaper::create();
+                font_manager_ = text::FontManager::create();
+                shaper_ = text::TextShaper::create(font_manager_.get());
                 renderer_ = render::makeUIRenderer(gpu_context_.get(), shaper_.get());
                 view_host_ = base::makeUnique<ui::ViewHost>(window_.get(), renderer_.get());
                 root_view_ = base::makeUnique<DemoView>();
@@ -73,6 +75,7 @@ namespace spargel::ui {
             base::UniquePtr<ui::Platform> platform_;
             base::UniquePtr<ui::Window> window_;
             base::UniquePtr<gpu::GPUContext> gpu_context_;
+            base::UniquePtr<text::FontManager> font_manager_;
             base::UniquePtr<text::TextShaper> shaper_;
             base::UniquePtr<render::UIRenderer> renderer_;
             base::UniquePtr<ui::ViewHost> view_host_;

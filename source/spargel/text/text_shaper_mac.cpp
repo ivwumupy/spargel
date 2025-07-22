@@ -2,6 +2,7 @@
 #include <spargel/text/font_manager.h>
 #include <spargel/text/styled_text.h>
 #include <spargel/text/text_shaper_mac.h>
+#include "spargel/text/font_manager_mac.h"
 
 namespace spargel::text {
     ShapedLine TextShaperMac::shapeLine(StyledText const& text) {
@@ -39,8 +40,7 @@ namespace spargel::text {
             auto attr = CTRunGetAttributes(run);
 
             auto font = (CTFontRef)CFDictionaryGetValue(attr, kCTFontAttributeName);
-            CFRetain(font);
-            segment.font = FontManager::instance().create<FontMac>(font);
+            segment.font = font_manager_->translateFont(font);
 
             glyphs.reserve((usize)count);
             CTRunGetGlyphs(run, CFRangeMake(0, count), glyphs.data());
@@ -75,5 +75,5 @@ namespace spargel::text {
 
         return result;
     }
-    base::UniquePtr<TextShaper> TextShaper::create() { return base::makeUnique<TextShaperMac>(); }
+    base::UniquePtr<TextShaper> TextShaper::create(FontManager* font_manager) { return base::makeUnique<TextShaperMac>(static_cast<FontManagerMac*>(font_manager)); }
 }  // namespace spargel::text

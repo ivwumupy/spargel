@@ -6,6 +6,7 @@
 #include <spargel/text/font.h>
 
 namespace spargel::text {
+    class FontManager;
     class StyledText;
 
     struct ShapedSegment {
@@ -20,7 +21,7 @@ namespace spargel::text {
 
     class TextShaper {
     public:
-        static base::UniquePtr<TextShaper> create();
+        static base::UniquePtr<TextShaper> create(FontManager* font_manager);
 
         virtual ~TextShaper() = default;
 

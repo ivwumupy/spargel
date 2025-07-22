@@ -48,6 +48,10 @@ namespace spargel::render {
             pushData(x, y, r, color);
             pushCommand2(DrawCommand::fill_circle, x * scale_, y * scale_, r * scale_, color);
         }
+        // v2 only
+        void fillRoundedRect(float x, float y, float w, float h, float r, u32 color) {
+            pushCommand2(DrawCommand::fill_rounded_rect, x * scale_, y * scale_, w * scale_, h * scale_, r * scale_, color);
+        }
         void strokeLine(float x0, float y0, float x1, float y1, u32 color) {
             pushCommand(DrawCommand::stroke_line);
             pushData(x0, y0, x1, y1, color);
@@ -90,11 +94,15 @@ namespace spargel::render {
         enum class DrawCommand : u8 {
             fill_rect = 0,
             fill_circle,
+            fill_rounded_rect,
             stroke_line,
             stroke_circle,
+            // not used currently
             set_clip,
             clear_clip,
+            // for glyphs
             sample_texture,
+            //
             dump,
         };
 

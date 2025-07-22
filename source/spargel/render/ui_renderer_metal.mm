@@ -217,7 +217,7 @@ namespace spargel::render {
         usize max_slot = command_count * 500 + tile_count;
         bin_slots_buffer_.request(sizeof(BinSlot) * max_slot);
         bin_alloc_buffer_.request(sizeof(BinAlloc));
-        spargel_log_info("max_slot: %zu", max_slot);
+        //spargel_log_info("max_slot: %zu", max_slot);
         //spargel_log_info("tile_count: %zu", tile_count);
 
         memcpy(scene_commands_buffer_.object.contents, commands_bytes.data(),
@@ -270,7 +270,9 @@ namespace spargel::render {
 
         [command_buffer addCompletedHandler:^(id<MTLCommandBuffer>) {
                 auto alloc = (BinAlloc*)bin_alloc_buffer_.object.contents;
-                spargel_log_info("offset: %u, overflow: %s", alloc->offset, alloc->out_of_space ? "true" : "false");
+                if (alloc->out_of_space) {
+                    spargel_log_warn("bin slots overflow (offset: %u)", alloc->offset);
+                }
             }];
 
         return command_buffer;
@@ -349,7 +351,9 @@ namespace spargel::render {
 
         [command_buffer addCompletedHandler:^(id<MTLCommandBuffer>) {
                 auto alloc = (BinAlloc*)bin_alloc_buffer_.object.contents;
-                spargel_log_info("offset: %u, overflow: %s", alloc->offset, alloc->out_of_space ? "true" : "false");
+                if (alloc->out_of_space) {
+                    spargel_log_warn("bin slots overflow (offset: %u)", alloc->offset);
+                }
             }];
 
         return command_buffer;
@@ -374,8 +378,8 @@ namespace spargel::render {
 
         [command_buffer waitUntilCompleted];
 
-        auto dt = command_buffer.GPUEndTime - command_buffer.GPUStartTime;
-        spargel_log_info("GPU time: %.3fms", dt * 1000);
+        //auto dt = command_buffer.GPUEndTime - command_buffer.GPUStartTime;
+        //spargel_log_info("GPU time: %.3fms", dt * 1000);
     }
     UIRendererMetal::~UIRendererMetal() {
         [pass_desc_ release];
@@ -432,7 +436,7 @@ namespace spargel::render {
         return last_used < other.value().last_used;
     }
     UIRendererMetal::GrowingBuffer::~GrowingBuffer() {
-        spargel_log_info("buffer destructor");
+        //spargel_log_info("buffer destructor");
     }
     void UIRendererMetal::GrowingBuffer::request(usize length) {
         if (length == 0) {

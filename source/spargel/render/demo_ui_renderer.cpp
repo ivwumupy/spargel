@@ -4,6 +4,7 @@
 #include "spargel/render/ui_renderer.h"
 #include "spargel/render/ui_scene.h"
 #include "spargel/text/font.h"
+#include "spargel/text/font_manager.h"
 #include "spargel/text/styled_text.h"
 #include "spargel/text/text_shaper.h"
 #include "spargel/ui/platform.h"
@@ -25,12 +26,17 @@ namespace spargel::render {
                 prepareScene();
             }
             void start() { platform_->startLoop(); }
-            void onRender() override { renderer_->render(scene_); }
+            void onRender() override {
+                scene_.clear();
+                prepareScene();
+                renderer_->render(scene_);
+            }
 
         private:
             void initRenderer() {
                 gpu_context_ = gpu::makeContext(gpu::inferBackend());
-                shaper_ = text::TextShaper::create();
+                font_manager_ = text::FontManager::create();
+                shaper_ = text::TextShaper::create(font_manager_.get());
                 renderer_ = render::makeUIRenderer(gpu_context_.get(), shaper_.get());
             }
             void initWindow() {
@@ -58,11 +64,20 @@ namespace spargel::render {
                 scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_.get()}, 520, 250,
                                 0xFF0000FF);
 
-                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_.get()}, 520, 750,
+                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_.get()}, 720, 750,
                                 0xFF0000FF);
 
-                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_.get()}, 320, 750,
+                scene_.fillText(text::StyledText{"hello,worldकैसे हैं आप测试日本語"_sv, font_.get()}, 20, 750,
                                 0xFF0000FF);
+
+                scene_.fillRoundedRect(200 - 5, 400, 100 + 10, 50, 5, 0xFFFFFFFF);
+                scene_.fillText(text::StyledText{"click"_sv, font_.get()}, 202, 442, 0xFF000000);
+
+                scene_.fillRoundedRect(400,       425, 100, 10, 5, 0xFFFF0000);
+                scene_.fillRoundedRect(400 + 100, 425, 20, 10, 5, 0xFFCCCCCC);
+                scene_.fillCircle(400 + 100, 425 + 5, 8, 0xFF0055FF);
+
+                scene_.fillText(text::StyledText{"slide"_sv, font_.get()}, 410, 410, 0xFF777777);
 
                 scene_.strokeLine(50 + 6, 50, 50, 50 + 6, 0xFFFFFFFF);
                 scene_.strokeLine(50, 50, 50 + 6, 50 + 6, 0xFFFFFFFF);
@@ -74,6 +89,7 @@ namespace spargel::render {
             base::UniquePtr<ui::Window> window_;
             base::UniquePtr<gpu::GPUContext> gpu_context_;
             base::UniquePtr<render::UIRenderer> renderer_;
+            base::UniquePtr<text::FontManager> font_manager_;
             base::UniquePtr<text::TextShaper> shaper_;
             base::UniquePtr<text::Font> font_;
             render::UIScene scene_;
