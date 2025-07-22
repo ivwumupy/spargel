@@ -70,6 +70,7 @@ namespace spargel::text {
 
         CFRelease(line);
         CFRelease(attr_str);
+        CFRelease(dict);
         CFRelease(number);
         CFRelease(cfstr);
 
