@@ -1,3 +1,4 @@
+#include <spargel/config.h>
 #include <spargel/text/font_freetype.h>
 #include <spargel/text/styled_text.h>
 #include <spargel/text/text_shaper_harfbuzz.h>
@@ -9,9 +10,12 @@
 namespace spargel::text {
 
     ShapedLine TextShaperHarfBuzz::shapeLine(const StyledText& text) {
-        // FIXME
+#if SPARGEL_ENABLE_FREETYPE
         auto font_ft = static_cast<FontFreeType*>(text.font());
         hb_font_t* font = hb_ft_font_create(font_ft->face, nullptr);
+#else
+#error "unimplemented"
+#endif
 
         // TODO: text runs
         ShapedSegment segment;
@@ -28,7 +32,7 @@ namespace spargel::text {
 
         hb_shape(font, buf, nullptr, 0);
 
-        unsigned int glyph_count;
+        u32 glyph_count;
         hb_glyph_info_t* glyph_info = hb_buffer_get_glyph_infos(buf, &glyph_count);
         hb_glyph_position_t* glyph_pos = hb_buffer_get_glyph_positions(buf, &glyph_count);
 
@@ -39,22 +43,15 @@ namespace spargel::text {
 
         float cursor_x = 0;
         float cursor_y = 0;
-        for (unsigned int i = 0; i < glyph_count; i++) {
+        for (u32 i = 0; i < glyph_count; i++) {
             hb_codepoint_t glyph_id = glyph_info[i].codepoint;
-            hb_position_t x_offset = glyph_pos[i].x_offset;
-            hb_position_t y_offset = glyph_pos[i].y_offset;
-            hb_position_t x_advance = glyph_pos[i].x_advance;
-            hb_position_t y_advance = glyph_pos[i].y_advance;
-
-            spargel_log_debug("HB: id=%d, off=(%d, %d), adv=(%d, %d)", glyph_id, x_offset, y_offset,
-                              x_advance, y_advance);
 
             segment.glyphs[i] = GlyphId{glyph_id};
-            segment.positions[i].x = cursor_x + x_offset / 64.0f;
-            segment.positions[i].y = cursor_y + y_offset / 64.0f;
+            segment.positions[i].x = cursor_x + glyph_pos[i].x_offset / 64.0f;
+            segment.positions[i].y = cursor_y + glyph_pos[i].y_offset / 64.0f;
 
-            cursor_x += x_advance / 64.0f;
-            cursor_y += y_advance / 64.0f;
+            cursor_x += glyph_pos[i].x_advance / 64.0f;
+            cursor_y += glyph_pos[i].y_advance / 64.0f;
         }
         segment.width = cursor_x;
 
@@ -64,10 +61,6 @@ namespace spargel::text {
         hb_buffer_destroy(buf);
 
         return result;
-    }
-
-    base::UniquePtr<TextShaper> TextShaper::create() {
-        return base::makeUnique<TextShaperHarfBuzz>();
     }
 
 }  // namespace spargel::text

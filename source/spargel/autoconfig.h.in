@@ -31,15 +31,12 @@
  */
 
 #cmakedefine01 SPARGEL_ENABLE_ASSERT
-
+#cmakedefine01 SPARGEL_ENABLE_FREETYPE
+#cmakedefine01 SPARGEL_ENABLE_HARFBUZZ
 #cmakedefine01 SPARGEL_ENABLE_LOG_ANSI_COLOR
-
 #cmakedefine01 SPARGEL_ENABLE_OPENGL
-
 #cmakedefine01 SPARGEL_GPU_ENABLE_VULKAN
-
 #cmakedefine01 SPARGEL_USE_FILE_MMAP
-
 #cmakedefine01 SPARGEL_ENABLE_TRACING
 
 // Trace every allocation.

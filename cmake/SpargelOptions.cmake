@@ -32,11 +32,18 @@ endif ()
 
 #### Default Values for Options ####
 
-# File Memory Mapping (mmap)
-if (SPARGEL_IS_EMSCRIPTEN)
-    set(SPARGEL_USE_FILE_MMAP_DEFAULT OFF)
+# FreeType
+if (SPARGEL_IS_LINUX)
+    set(SPARGEL_ENABLE_FREETYPE_DEFAULT ON)
 else ()
-    set(SPARGEL_USE_FILE_MMAP_DEFAULT ON)
+    set(SPARGEL_ENABLE_FREETYPE_DEFAULT OFF)
+endif ()
+
+# HarfBuzz
+if (SPARGEL_IS_LINUX)
+    set(SPARGEL_ENABLE_HARFBUZZ_DEFAULT ON)
+else ()
+    set(SPARGEL_ENABLE_HARFBUZZ_DEFAULT OFF)
 endif ()
 
 # OpenGL
@@ -55,12 +62,20 @@ else ()
     set(SPARGEL_GPU_ENABLE_VULKAN_DEFAULT ON)
 endif ()
 
+# File Memory Mapping (mmap)
+if (SPARGEL_IS_EMSCRIPTEN)
+    set(SPARGEL_USE_FILE_MMAP_DEFAULT OFF)
+else ()
+    set(SPARGEL_USE_FILE_MMAP_DEFAULT ON)
+endif ()
 
 #### General Options ####
 
 spargel_add_option(SPARGEL_ENABLE_ADDRESS_SANITIZER "enable address sanitizer" OFF)
 spargel_add_option(SPARGEL_ENABLE_ASSERT "enable assert()" ON)
 spargel_add_option(SPARGEL_ENABLE_CLANG_TIDY "enable clang-tidy" OFF)
+spargel_add_option(SPARGEL_ENABLE_FREETYPE "enable FreeType font rendering" ${SPARGEL_ENABLE_FREETYPE_DEFAULT})
+spargel_add_option(SPARGEL_ENABLE_HARFBUZZ "enable HarfBuzz text shaping" ${SPARGEL_ENABLE_HARFBUZZ_DEFAULT})
 spargel_add_option(SPARGEL_ENABLE_LOG_ANSI_COLOR "enable ANSI color for logging" OFF)
 spargel_add_option(SPARGEL_ENABLE_OPENGL "enable OpenGL backend" ${SPARGEL_ENABLE_OPENGL_DEFAULT})
 spargel_add_option(SPARGEL_GPU_ENABLE_VULKAN "enable vulkan backend" ${SPARGEL_GPU_ENABLE_VULKAN_DEFAULT})
