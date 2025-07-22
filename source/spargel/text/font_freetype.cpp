@@ -63,14 +63,14 @@ namespace spargel::text {
 
     GlyphInfo FontFreeType::glyphInfo(GlyphId id) {
         // reset to default
-        /*if (FT_Set_Char_Size(face, (u32)math::round(size * 64), (u32)math::round(size * 64),  //
+        if (FT_Set_Char_Size(face, (u32)math::round(size * 64), (u32)math::round(size * 64),  //
                              points_per_inch, points_per_inch) != 0) {
             spargel_log_fatal("rasterGlyphXY: unable to set size for font \"%s\".",
                               base::CString(getName(face)).data());
             spargel_panic_here();
-        }*/
+        }
 
-        loadGlyph(id.value);
+        loadGlyph(id.value, FT_LOAD_NO_SCALE);
         auto& metrics = face->glyph->metrics;
         spargel_log_debug("x=%ld, y=%ld, w=%ld, h=%ld, a=%ld", metrics.horiBearingX,
                           metrics.horiBearingY, metrics.width, metrics.height, metrics.horiAdvance);
@@ -84,8 +84,8 @@ namespace spargel::text {
         return info;
     }
 
-    void FontFreeType::loadGlyph(u32 id) {
-        if (FT_Load_Glyph(face, id, FT_LOAD_DEFAULT) != 0) {
+    void FontFreeType::loadGlyph(u32 id, u32 load_flags) {
+        if (FT_Load_Glyph(face, id, load_flags) != 0) {
             spargel_log_fatal("Unable to load glyph %d from font %s.", id,
                               base::CString(name_).data());
             spargel_panic_here();

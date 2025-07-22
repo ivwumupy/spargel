@@ -39,7 +39,7 @@ namespace spargel::text {
         float size;
         base::String name_;
 
-        void loadGlyph(u32 id);
+        void loadGlyph(u32 id, u32 load_flags = FT_LOAD_DEFAULT);
     };
 
 }  // namespace spargel::text

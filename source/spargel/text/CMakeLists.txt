@@ -9,25 +9,6 @@ spargel_add_library(
         base
 )
 
-if (SPARGEL_ENABLE_FREETYPE)
-    target_sources(text 
-        PRIVATE font_freetype.cpp)
-    target_include_directories(text
-        PRIVATE ${FREETYPE_INCLUDE_DIRS}
-    )
-    target_link_libraries(text
-        PRIVATE ${FREETYPE_LIBRARIES}
-    )
-endif ()
-
-if (SPARGEL_ENABLE_HARFBUZZ)
-    target_sources(text
-        PRIVATE text_shaper_harfbuzz.cpp)
-    target_link_libraries(text
-        PRIVATE harfbuzz
-    )
-endif ()
-
 if (SPARGEL_IS_MACOS)
     target_link_libraries(text
         PRIVATE
@@ -48,14 +29,18 @@ spargel_add_executable(
 
 if (SPARGEL_ENABLE_FREETYPE AND SPARGEL_ENABLE_HARFBUZZ)
     spargel_add_executable(
-        NAME demo_font_console
+        NAME demo_ft_hb_console
         PRIVATE
-            demo_font_console.cpp
+            demo_ft_hb_console.cpp
         DEPS
             base
-            text
+            resource
+            harfbuzz
     )
-    target_include_directories(demo_font_console
+    target_include_directories(demo_ft_hb_console
         PRIVATE ${FREETYPE_INCLUDE_DIRS}
+    )
+    target_link_libraries(demo_ft_hb_console
+        PRIVATE ${FREETYPE_LIBRARIES}
     )
 endif ()
