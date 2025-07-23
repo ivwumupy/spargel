@@ -2,6 +2,7 @@
 #include <spargel/text/font_manager.h>
 #include <spargel/text/styled_text.h>
 #include <spargel/text/text_shaper_mac.h>
+
 #include "spargel/text/font_manager_mac.h"
 
 namespace spargel::text {
@@ -88,5 +89,7 @@ namespace spargel::text {
 
         return result;
     }
-    base::UniquePtr<TextShaper> TextShaper::create(FontManager* font_manager) { return base::makeUnique<TextShaperMac>(static_cast<FontManagerMac*>(font_manager)); }
+    base::UniquePtr<TextShaper> TextShaper::create(FontManager* font_manager) {
+        return base::makeUnique<TextShaperMac>(static_cast<FontManagerMac*>(font_manager));
+    }
 }  // namespace spargel::text

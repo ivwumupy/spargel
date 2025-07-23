@@ -44,7 +44,8 @@ namespace spargel::render {
         void fillRect(float x, float y, float w, float h, u32 color) {
             pushCommand(DrawCommand::fill_rect);
             pushData(x, y, w, h, color);
-            pushCommand2(DrawCommand::fill_rect, x * scale_, y * scale_, w * scale_, h * scale_, color);
+            pushCommand2(DrawCommand::fill_rect, x * scale_, y * scale_, w * scale_, h * scale_,
+                         color);
         }
         void fillCircle(float x, float y, float r, u32 color) {
             pushCommand(DrawCommand::fill_circle);
@@ -53,12 +54,14 @@ namespace spargel::render {
         }
         // v2 only
         void fillRoundedRect(float x, float y, float w, float h, float r, u32 color) {
-            pushCommand2(DrawCommand::fill_rounded_rect, x * scale_, y * scale_, w * scale_, h * scale_, r * scale_, color);
+            pushCommand2(DrawCommand::fill_rounded_rect, x * scale_, y * scale_, w * scale_,
+                         h * scale_, r * scale_, color);
         }
         void strokeLine(float x0, float y0, float x1, float y1, u32 color) {
             pushCommand(DrawCommand::stroke_line);
             pushData(x0, y0, x1, y1, color);
-            pushCommand2(DrawCommand::stroke_line, x0 * scale_, y0 * scale_, x1 * scale_, y1 * scale_, color);
+            pushCommand2(DrawCommand::stroke_line, x0 * scale_, y0 * scale_, x1 * scale_,
+                         y1 * scale_, color);
         }
         void strokeCircle(float x, float y, float r, u32 color) {
             pushCommand(DrawCommand::stroke_circle);
@@ -134,9 +137,7 @@ namespace spargel::render {
 
         template <typename... Ts>
         void pushCommand2(DrawCommand cmd, Ts... ts) {
-            commands2_.push(
-                Command2{cmd, clip_,
-                    {base::bitCast<Ts, u32>(ts)...}});
+            commands2_.push(Command2{cmd, clip_, {base::bitCast<Ts, u32>(ts)...}});
         }
 
         float scale_ = 1.0;

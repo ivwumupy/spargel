@@ -1,7 +1,8 @@
+#include "spargel/ui/view_host.h"
+
 #include "spargel/base/logging.h"
 #include "spargel/render/ui_renderer.h"
 #include "spargel/ui/view.h"
-#include "spargel/ui/view_host.h"
 
 namespace spargel::ui {
     ViewHost::ViewHost(Window* window, render::UIRenderer* renderer)

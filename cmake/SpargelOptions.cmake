@@ -14,6 +14,7 @@ endif ()
 
 if (SPARGEL_IS_LINUX)
     spargel_add_option(SPARGEL_LINUX_IS_DESKTOP "build for Linux desktop (X11/Wayland + OpenGL etc.)" ON)
+    spargel_add_option(SPARGEL_ENABLE_LIBUNWIND "enable libunwind" ON)
 endif ()
 
 if (SPARGEL_IS_MACOS)

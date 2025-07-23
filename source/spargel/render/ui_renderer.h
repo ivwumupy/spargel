@@ -22,7 +22,8 @@ namespace spargel::render {
         friend bool operator==(SubpixelVariant const& lhs, SubpixelVariant const& rhs) {
             return lhs.x == rhs.x && lhs.y == rhs.y;
         }
-        friend void tag_invoke(base::tag<base::hash>, base::HashRun& run, SubpixelVariant const& self) {
+        friend void tag_invoke(base::tag<base::hash>, base::HashRun& run,
+                               SubpixelVariant const& self) {
             run.combine(self.x);
             run.combine(self.y);
         }
@@ -71,7 +72,8 @@ namespace spargel::render {
             friend bool operator==(GlyphCacheKey const& lhs, GlyphCacheKey const& rhs) {
                 return lhs.id == rhs.id && lhs.font == rhs.font && lhs.subpixel == rhs.subpixel;
             }
-            friend void tag_invoke(base::tag<base::hash>, base::HashRun& run, GlyphCacheKey const& self) {
+            friend void tag_invoke(base::tag<base::hash>, base::HashRun& run,
+                                   GlyphCacheKey const& self) {
                 run.combine(self.id);
                 run.combine(base::bitCast<text::Font const*, u64>(self.font));
                 run.combine(self.subpixel);

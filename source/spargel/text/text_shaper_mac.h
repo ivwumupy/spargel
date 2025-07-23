@@ -9,6 +9,7 @@ namespace spargel::text {
     public:
         TextShaperMac(FontManagerMac* manager) : font_manager_{manager} {}
         ShapedLine shapeLine(StyledText const& text) override;
+
     private:
         FontManagerMac* font_manager_;
     };

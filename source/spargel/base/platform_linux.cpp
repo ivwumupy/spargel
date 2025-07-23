@@ -20,7 +20,7 @@ namespace spargel::base {
         return readlink("/proc/self/exe", buf, buf_size);
     }
 
-#if SPARGEL_IS_LINUX
+#if SPARGEL_ENABLE_LIBUNWIND
 
     void PrintBacktrace() {
         unw_cursor_t cursor;

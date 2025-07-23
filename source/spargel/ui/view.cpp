@@ -1,5 +1,6 @@
-#include "spargel/base/check.h"
 #include "spargel/ui/view.h"
+
+#include "spargel/base/check.h"
 #include "spargel/ui/view_host.h"
 
 namespace spargel::ui {

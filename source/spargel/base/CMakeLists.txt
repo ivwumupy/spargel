@@ -32,15 +32,16 @@ spargel_add_library(
     DEPS base
 )
 
-if (SPARGEL_IS_ANDROID)
+if (SPARGEL_IS_LINUX OR SPARGEL_IS_ANDROID)
     target_link_libraries(base PUBLIC m)
 endif ()
 
-if (SPARGEL_IS_LINUX)
-    target_link_libraries(base PUBLIC
-        m
-        unwind
-        unwind-${CMAKE_SYSTEM_PROCESSOR})
+if (SPARGEL_ENABLE_LIBUNWIND)
+    target_link_libraries(base
+        PUBLIC
+            unwind
+            unwind-${CMAKE_SYSTEM_PROCESSOR}
+    )
 endif ()
 
 # DEMO
