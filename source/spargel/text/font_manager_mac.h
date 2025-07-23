@@ -20,9 +20,10 @@ namespace spargel::text {
     class FontManagerMac final : public FontManager {
     public:
         FontMac* translateFont(CTFontRef font);
+        base::UniquePtr<Font> createDefaultFont() override;
 
     private:
         // Warp the handle.
         base::HashMap<CoreTextFont, FontMac*> fonts_;
     };
-}
+}  // namespace spargel::text

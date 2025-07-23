@@ -11,9 +11,6 @@
 #include "spargel/ui/platform.h"
 #include "spargel/ui/window.h"
 
-//
-#include <stdio.h>
-
 namespace spargel::render {
     namespace {
         using namespace base::literals;
@@ -23,7 +20,7 @@ namespace spargel::render {
             Demo() {
                 initRenderer();
                 initWindow();
-                font_ = text::createDefaultFont();
+                font_ = font_manager_->createDefaultFont();
                 prepareScene();
             }
             void start() { platform_->startLoop(); }
@@ -37,7 +34,6 @@ namespace spargel::render {
         private:
             void initRenderer() {
                 gpu_context_ = gpu::makeContext(gpu::inferBackend());
-                font_manager_ = text::FontManager::create();
                 shaper_ = text::TextShaper::create(font_manager_.get());
                 renderer_ = render::makeUIRenderer(gpu_context_.get(), shaper_.get());
             }
@@ -72,8 +68,8 @@ namespace spargel::render {
                 scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_.get()}, 720, 750,
                                 0xFF0000FF);
 
-                scene_.fillText(text::StyledText{"hello,worldकैसे हैं आप测试日本語"_sv, font_.get()}, 20, 750,
-                                0xFF0000FF);
+                scene_.fillText(text::StyledText{"hello,worldकैसे हैं आप测试日本語"_sv, font_.get()},
+                                20, 750, 0xFF0000FF);
 
                 scene_.fillRoundedRect(200 - 5, 400, 100 + 10, 50, 5, 0xFFFFFFFF);
                 scene_.fillText(text::StyledText{"click"_sv, font_.get()}, 202, 442, 0xFF000000);
@@ -81,8 +77,9 @@ namespace spargel::render {
                 // slide (width = 120)
                 float p = (frame_count_ % 1200) / 6.0f;
                 p = 100.0f - math::abs(100.0f - p);
-                scene_.fillRoundedRect(400,       425, 120.0f * p / 100.0f, 10, 5, 0xFFFF0000);
-                scene_.fillRoundedRect(400 + 120.0f * p / 100.0f, 425, 120.0f * (100.0f - p) / 100.0f, 10, 5, 0xFFCCCCCC);
+                scene_.fillRoundedRect(400, 425, 120.0f * p / 100.0f, 10, 5, 0xFFFF0000);
+                scene_.fillRoundedRect(400 + 120.0f * p / 100.0f, 425,
+                                       120.0f * (100.0f - p) / 100.0f, 10, 5, 0xFFCCCCCC);
                 scene_.fillCircle(400 + 120.0f * p / 100.0f, 425 + 5, 8, 0xFF0055FF);
 
                 scene_.fillText(text::StyledText{"slide"_sv, font_.get()}, 410, 410, 0xFF777777);

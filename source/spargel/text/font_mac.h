@@ -13,8 +13,8 @@ namespace spargel::text {
         ~FontMac();
 
         base::StringView name() override { return name_.view(); }
-        Bitmap rasterGlyph(GlyphId id, float scale) override;
-        Bitmap rasterGlyph(GlyphId id, float scale, math::Vector2f subpixel_position) override;
+        Bitmap rasterizeGlyph(GlyphId id, float scale) override;
+        Bitmap rasterizeGlyph(GlyphId id, float scale, math::Vector2f subpixel_position) override;
         GlyphInfo glyphInfo(GlyphId id) override;
 
     private:

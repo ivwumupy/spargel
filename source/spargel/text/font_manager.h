@@ -1,7 +1,6 @@
 #pragma once
 
 #include "spargel/base/unique_ptr.h"
-#include "spargel/base/vector.h"
 #include "spargel/text/font.h"
 
 namespace spargel::text {
@@ -11,15 +10,6 @@ namespace spargel::text {
 
         virtual ~FontManager() = default;
 
-        template <typename T, typename... Args>
-        Font* create(Args&&... args) {
-            auto u = base::makeUnique<T>(base::forward<Args>(args)...);
-            auto p = u.get();
-            fonts_.push(base::move(u));
-            return p;
-        }
-
-    private:
-        base::Vector<base::UniquePtr<Font>> fonts_;
+        virtual base::UniquePtr<Font> createDefaultFont() = 0;
     };
 }  // namespace spargel::text

@@ -52,13 +52,13 @@ namespace spargel::text {
         virtual base::StringView name() = 0;
 
         // TODO
-        virtual Bitmap rasterGlyph(GlyphId id, float scale) = 0;
-        virtual Bitmap rasterGlyph(GlyphId id, float scale,
-                                   [[maybe_unused]] math::Vector2f subpixel_position) {
-            return rasterGlyph(id, scale);
+        // unit of scale: pixel per point
+        virtual Bitmap rasterizeGlyph(GlyphId id, float scale) = 0;
+        virtual Bitmap rasterizeGlyph(GlyphId id, float scale,
+                                      [[maybe_unused]] math::Vector2f subpixel_position) {
+            return rasterizeGlyph(id, scale);
         }
 
         virtual GlyphInfo glyphInfo(GlyphId id) = 0;
     };
-    base::UniquePtr<Font> createDefaultFont();
 }  // namespace spargel::text

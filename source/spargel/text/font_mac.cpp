@@ -27,7 +27,7 @@ namespace spargel::text {
         CFRelease(name);
     }
     FontMac::~FontMac() { CFRelease(object_); }
-    Bitmap FontMac::rasterGlyph(GlyphId id, float scale, math::Vector2f subpixel_position) {
+    Bitmap FontMac::rasterizeGlyph(GlyphId id, float scale, math::Vector2f subpixel_position) {
         auto glyph_info = glyphInfo(id);
         auto rect = glyph_info.bounding_box;
 
@@ -86,8 +86,8 @@ namespace spargel::text {
 
         return bitmap;
     }
-    Bitmap FontMac::rasterGlyph(GlyphId id, float scale) {
-        return rasterGlyph(id, scale, math::Vector2f{0.0f, 0.0f});
+    Bitmap FontMac::rasterizeGlyph(GlyphId id, float scale) {
+        return rasterizeGlyph(id, scale, math::Vector2f{0.0f, 0.0f});
     }
     // CoreText Coodinate
     // ------------------
@@ -110,9 +110,5 @@ namespace spargel::text {
         info.horizontal_advance = (float)advance.width;
 
         return info;
-    }
-    base::UniquePtr<Font> createDefaultFont() {
-        return base::makeUnique<FontMac>(
-            CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 0, nullptr));
     }
 }  // namespace spargel::text

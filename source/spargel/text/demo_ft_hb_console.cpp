@@ -43,9 +43,9 @@ namespace {
 
     base::String getName(const FT_Face& face) {
         char *family_name = face->family_name, *style_name = face->style_name;
-        base::String name = base::String(family_name ? family_name : "<unknown>");
+        base::String name(family_name ? family_name : "<unknown>");
         if (style_name) {
-            name = name + " (" + base::String(style_name) + ')';
+            name = name + " (" + style_name + ')';
         }
         return name;
     }
@@ -109,10 +109,10 @@ int main(int argc, char** argv) {
         auto error = FT_New_Memory_Face(ft_library, reinterpret_cast<FT_Byte*>(font_file_data),
                                         font_file_length, 0, &ft_face);
         if (error == FT_Err_Unknown_File_Format) {
-            spargel_log_fatal("FT_New_Memory_Face: Unsupported font format.");
+            spargel_log_fatal("Error calling FT_New_Memory_Face: Unsupported file format.");
             spargel_panic_here();
         } else if (error) {
-            spargel_log_fatal("FT_New_Memory_Face: Unable to create font face from buffer.");
+            spargel_log_fatal("Error calling FT_New_Memory_Face.");
             spargel_panic_here();
         }
     }
@@ -134,7 +134,8 @@ int main(int argc, char** argv) {
     hb_blob_t* hb_blob = hb_blob_create(reinterpret_cast<char*>(font_file_data), font_file_length,
                                         HB_MEMORY_MODE_READONLY, nullptr, nullptr);
     if (!hb_blob) {
-        spargel_log_fatal("hb_blob_create: Unable to create blob.")
+        spargel_log_fatal("Error calling hb_blob_create.");
+        spargel_panic_here();
     }
 
     hb_face_t* hb_face = hb_face_create(hb_blob, 0);
@@ -194,7 +195,6 @@ int main(int argc, char** argv) {
                      pixel_height, pixel_baseline);
 
     u32 pixel_count = pixel_height * pixel_width;
-    ;
     u8* pixels = reinterpret_cast<u8*>(malloc(pixel_count));
     memset(pixels, 0, pixel_count);
     u8* foreground = reinterpret_cast<u8*>(malloc(pixel_count));
@@ -203,7 +203,7 @@ int main(int argc, char** argv) {
     if (FT_Set_Char_Size(ft_face, (u32)math::round(size * 64), (u32)math::round(size * 64),
                          (u32)math::round(XPPP * points_per_inch),
                          (u32)math::round(YPPP * points_per_inch)) != 0) {
-        spargel_log_fatal("FT_Set_Char_Size: Unable to set size.");
+        spargel_log_fatal("Error calling FT_Set_Char_Size.");
         spargel_panic_here();
     }
 

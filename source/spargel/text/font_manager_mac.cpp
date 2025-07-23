@@ -1,8 +1,7 @@
-#include "spargel/text/font_manager_mac.h"
 #include "spargel/base/logging.h"
 #include "spargel/base/unique_ptr.h"
 #include "spargel/text/font_mac.h"
-#include "spargel/text/font_manager.h"
+#include "spargel/text/font_manager_mac.h"
 
 //
 #include <CoreFoundation/CoreFoundation.h>
@@ -22,10 +21,12 @@ namespace spargel::text {
         fonts_.set(key, new_entry);
         return new_entry;
     }
-    bool operator==(CoreTextFont lhs, CoreTextFont rhs) {
-        return CFEqual(lhs.object, rhs.object);
+    base::UniquePtr<Font> FontManagerMac::createDefaultFont() {
+        return base::makeUnique<FontMac>(
+            CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 50, nullptr));
     }
+    bool operator==(CoreTextFont lhs, CoreTextFont rhs) { return CFEqual(lhs.object, rhs.object); }
     void tag_invoke(base::tag<base::hash>, base::HashRun& run, CoreTextFont font) {
         run.combine(base::bitCast<CFHashCode, u64>(CFHash(font.object)));
     }
-}
+}  // namespace spargel::text

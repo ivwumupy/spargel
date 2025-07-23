@@ -31,8 +31,8 @@ namespace spargel::ui {
 
         class DemoView : public ui::View {
         public:
-            DemoView() {
-                font_ = text::createDefaultFont();
+            DemoView(text::FontManager* font_manager) {
+                font_ = font_manager->createDefaultFont();
                 addChild(new TextView(font_.get()));
             }
 
@@ -62,7 +62,7 @@ namespace spargel::ui {
                 shaper_ = text::TextShaper::create(font_manager_.get());
                 renderer_ = render::makeUIRenderer(gpu_context_.get(), shaper_.get());
                 view_host_ = base::makeUnique<ui::ViewHost>(window_.get(), renderer_.get());
-                root_view_ = base::makeUnique<DemoView>();
+                root_view_ = base::makeUnique<DemoView>(font_manager_.get());
                 view_host_->setRootView(root_view_.get());
             }
 

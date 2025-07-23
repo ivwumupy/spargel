@@ -2,7 +2,6 @@
 #include <spargel/base/logging.h>
 #include <spargel/config.h>
 #include <spargel/render/ui_renderer.h>
-#include <stdio.h>
 
 namespace spargel::render {
 
@@ -19,7 +18,7 @@ namespace spargel::render {
     }
     // TODO: Cache.
     UIRenderer::TextureHandle UIRenderer::prepareGlyph(text::GlyphId id, text::Font* font) {
-        auto bitmap = font->rasterGlyph(id, scale_factor_);
+        auto bitmap = font->rasterizeGlyph(id, scale_factor_);
         auto width = base::checkedConvert<u16>(bitmap.width);
         auto height = base::checkedConvert<u16>(bitmap.height);
         auto pack_result = packer_.pack(width, height);
@@ -40,16 +39,18 @@ namespace spargel::render {
         if (result) {
             return *result;
         }
-        spargel_log_info("glyph cache miss: %u %p %d %d", id.value, (void*)font, subpixel.x, subpixel.y);
+        spargel_log_info("glyph cache miss: %u %p %d %d", id.value, (void*)font, subpixel.x,
+                         subpixel.y);
         // TODO: Do not hardcode 0.25.
-        auto handle = prepareGlyph(id, font, math::Vector2f{(float)subpixel.x * 0.25f, (float)subpixel.y * 0.25f});
+        auto handle = prepareGlyph(
+            id, font, math::Vector2f{(float)subpixel.x * 0.25f, (float)subpixel.y * 0.25f});
         glyph_cache_.set(key, handle);
         spargel_check(glyph_cache_.get(key));
         return handle;
     }
     UIRenderer::TextureHandle UIRenderer::prepareGlyph(text::GlyphId id, text::Font* font,
                                                        math::Vector2f subpixel_position) {
-        auto bitmap = font->rasterGlyph(id, scale_factor_, subpixel_position);
+        auto bitmap = font->rasterizeGlyph(id, scale_factor_, subpixel_position);
         auto width = base::checkedConvert<u16>(bitmap.width);
         auto height = base::checkedConvert<u16>(bitmap.height);
         auto pack_result = packer_.pack(width, height);

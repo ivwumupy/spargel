@@ -1,21 +1,14 @@
-#include <spargel/config.h>
-#include <spargel/text/font_freetype.h>
-#include <spargel/text/styled_text.h>
-#include <spargel/text/text_shaper_harfbuzz.h>
+#include "spargel/text/text_shaper_linux.h"
 
-// HarfBuzz-FreeType
-#include <harfbuzz/hb-ft.h>
-#include <harfbuzz/hb.h>
+#include "spargel/text/font_linux.h"
+#include "spargel/text/styled_text.h"
 
 namespace spargel::text {
 
-    ShapedLine TextShaperHarfBuzz::shapeLine(const StyledText& text) {
-#if SPARGEL_ENABLE_FREETYPE
-        auto font_ft = static_cast<FontFreeType*>(text.font());
-        hb_font_t* font = hb_ft_font_create(font_ft->face, nullptr);
-#else
-#error "unimplemented"
-#endif
+#if SPARGEL_ENABLE_HARFBUZZ
+    ShapedLine TextShaperLinux::shapeLine(const StyledText& text) {
+        auto font = static_cast<FontLinux*>(text.font());
+        if (!font->hb_font) font->initHarfBuzz();
 
         // TODO: text runs
         ShapedSegment segment;
@@ -30,7 +23,7 @@ namespace spargel::text {
         hb_buffer_set_script(buf, HB_SCRIPT_LATIN);
         hb_buffer_set_language(buf, hb_language_from_string("en", -1));
 
-        hb_shape(font, buf, nullptr, 0);
+        hb_shape(font->hb_font, buf, nullptr, 0);
 
         u32 glyph_count;
         hb_glyph_info_t* glyph_info = hb_buffer_get_glyph_infos(buf, &glyph_count);
@@ -61,6 +54,13 @@ namespace spargel::text {
         hb_buffer_destroy(buf);
 
         return result;
+    }
+#else
+#error "unimplemented"
+#endif
+
+    base::UniquePtr<TextShaper> TextShaper::create(FontManager* font_manager) {
+        return base::makeUnique<TextShaperLinux>();
     }
 
 }  // namespace spargel::text
