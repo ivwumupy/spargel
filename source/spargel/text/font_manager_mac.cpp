@@ -23,7 +23,7 @@ namespace spargel::text {
     }
     base::UniquePtr<Font> FontManagerMac::createDefaultFont() {
         return base::makeUnique<FontMac>(
-            CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 50, nullptr));
+            CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 0, nullptr));
     }
     bool operator==(CoreTextFont lhs, CoreTextFont rhs) { return CFEqual(lhs.object, rhs.object); }
     void tag_invoke(base::tag<base::hash>, base::HashRun& run, CoreTextFont font) {

@@ -29,6 +29,8 @@ namespace spargel::text {
         base::StringView text() const { return text_; }
         Font* font() const { return font_; }
 
+        void setText(base::StringView s) { text_ = s; }
+
         friend bool operator==(StyledText const& lhs, StyledText const& rhs) {
             return lhs.text_ == rhs.text_ && lhs.font_ == rhs.font_;
         }

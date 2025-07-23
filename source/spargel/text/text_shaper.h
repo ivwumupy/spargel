@@ -17,6 +17,10 @@ namespace spargel::text {
     };
     struct ShapedLine {
         base::Vector<ShapedSegment> segments;
+        float ascent;
+        float descent;
+        float width;
+        float leading;
     };
 
     class TextShaper {

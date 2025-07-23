@@ -18,9 +18,10 @@ namespace spargel::render {
         class Demo final : public ui::WindowDelegate {
         public:
             Demo() {
+                font_manager_ = text::FontManager::create();
+                font_ = font_manager_->createDefaultFont();
                 initRenderer();
                 initWindow();
-                font_ = font_manager_->createDefaultFont();
                 prepareScene();
             }
             void start() { platform_->startLoop(); }

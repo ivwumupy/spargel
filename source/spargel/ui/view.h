@@ -17,11 +17,44 @@ namespace spargel::render {
 
 namespace spargel::ui {
 
+    class View;
     class ViewHost;
 
     struct PaintContext {
         gpu::GPUContext* gpu_context;
         render::UIScene* scene;
+    };
+
+    class SubviewIterator {
+    public:
+        using ElementType = View*;
+
+        explicit SubviewIterator(base::UniquePtr<View>* ptr) : ptr_{ptr} {}
+
+        View* operator*() { return ptr_->get(); }
+
+        SubviewIterator& operator++() {
+            ptr_++;
+            return *this;
+        }
+
+        friend bool operator==(SubviewIterator lhs, SubviewIterator rhs) {
+            return lhs.ptr_ == rhs.ptr_;
+        }
+
+    private:
+        base::UniquePtr<View>* ptr_;
+    };
+
+    class SubviewRange {
+    public:
+        explicit SubviewRange(base::Vector<base::UniquePtr<View>>* subviews) : subviews_{subviews} {}
+
+        SubviewIterator begin() { return SubviewIterator{subviews_->begin()}; }
+        SubviewIterator end() { return SubviewIterator{subviews_->end()}; }
+
+    private:
+        base::Vector<base::UniquePtr<View>>* subviews_;
     };
 
     // A View corresponds to a complete functionality of the UI.
@@ -35,7 +68,7 @@ namespace spargel::ui {
 
         // Host is set for every view in the hierarchy.
         ViewHost* getHost() { return host_; }
-        void setHost(ViewHost* host) { host_ = host; }
+        void setHost(ViewHost* host);
 
         bool isRootView() const { return parent_ == nullptr; }
 
@@ -45,9 +78,17 @@ namespace spargel::ui {
         // Every view owns its children.
         //
 
-        base::Span<View*> getChildren() { return children_.toSpan(); }
+        SubviewRange getChildren() { return SubviewRange{&children_}; }
+
+        View* getChild(usize i) { return children_[i].get(); }
 
         void addChild(View* v);
+        template <typename T, typename... Args>
+        T* emplaceChild(Args&&... args) {
+            auto ptr = new T(base::forward<Args>(args)...);
+            addChild(ptr);
+            return ptr;
+        }
 
         View* getParent() { return parent_; }
         // This should only be called by the parent.
@@ -58,6 +99,8 @@ namespace spargel::ui {
 
         // The bounding box in parent's coordinate system.
         math::Rectangle getFrame() const { return frame_; }
+        void setFrame(math::Rectangle frame) { frame_ = frame; }
+        void setFrame(float x, float y, float w, float h) { setFrame(math::Rectangle{{x, y}, {w, h}}); }
 
         float getWidth() const;
         float getHeight() const;
@@ -104,7 +147,7 @@ namespace spargel::ui {
     private:
         ViewHost* host_;
         View* parent_ = nullptr;
-        base::vector<View*> children_;
+        base::vector<base::UniquePtr<View>> children_;
 
         math::Rectangle frame_;
         // Offset in parent's coordinate.

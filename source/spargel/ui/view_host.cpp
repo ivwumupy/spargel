@@ -38,5 +38,7 @@ namespace spargel::ui {
         }
         root_view_->onMouseDown(x, y);
     }
-
+    text::TextShaper* ViewHost::getTextShaper() {
+        return renderer_->getTextShaper();
+    }
 }  // namespace spargel::ui

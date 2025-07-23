@@ -32,6 +32,18 @@ namespace spargel::text {
 
         ShapedLine result;
         ShapedSegment segment;
+        
+        {
+            CGFloat ascent;
+            CGFloat descent;
+            CGFloat leading;
+            CGFloat width = CTLineGetTypographicBounds(line, &ascent, &descent, &leading);
+
+            result.ascent = static_cast<float>(ascent);
+            result.descent = -static_cast<float>(descent);
+            result.leading = static_cast<float>(leading);
+            result.width = static_cast<float>(width);
+        }
 
         for (CFIndex i = 0; i < run_count; i++) {
             CTRunRef run = (CTRunRef)CFArrayGetValueAtIndex(glyph_runs, i);

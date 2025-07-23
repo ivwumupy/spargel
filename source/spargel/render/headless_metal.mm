@@ -111,7 +111,7 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
     auto manager = new text::FontManagerMac;
     auto shaper = new text::TextShaperMac(manager);
     auto renderer = new render::UIRendererMetal(context, shaper);
-    auto font = text::createDefaultFont();
+    auto font = manager->createDefaultFont();
     render::UIScene scene;
     scene.setRenderer(renderer);
 

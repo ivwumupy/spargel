@@ -44,6 +44,7 @@ namespace spargel::render {
 
         gpu::GPUContext* context() { return context_; }
         text::TextShaper* text_shaper() { return text_shaper_; }
+        text::TextShaper* getTextShaper() { return text_shaper_; }
 
         virtual void render(UIScene const& scene) = 0;
 

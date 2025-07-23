@@ -15,14 +15,27 @@ namespace spargel::ui {
 
         class TextView : public ui::View {
         public:
-            TextView(text::Font* font) : text_{"<text>"_sv, font} {}
+            TextView(text::Font* font) : text_{""_sv, font} {}
 
-            void setText(text::StyledText text) {
-                text_ = text;
+            void setText(base::StringView s) {
+                text_.setText(s);
+                invalidateLayout();
                 requestRepaint();
             }
             void onPaint(render::UIScene& scene) override {
-                scene.fillText(text_, 100, 100, 0xFFFFFFFF);
+                // TODO: Move to layout.
+                auto shaper = getHost()->getTextShaper();
+                auto shape_result = shaper->shapeLine(text_);
+                spargel_log_info("shape done: width = %.3f", shape_result.width);
+
+                // TODO: Transform to window coordinate.
+                scene.strokeRectangle(getFrame(), 0xFFFF00FF);
+
+                auto frame = getFrame();
+
+                float x = frame.origin.x + frame.size.width / 2.0f - shape_result.width / 2.0f - shape_result.leading;
+                float y = frame.origin.y + frame.size.height / 2.0f + shape_result.ascent / 2.0f + shape_result.descent / 2.0f;
+                scene.fillText(text_, x, y, 0xFFFFFFFF);
             }
 
         private:
@@ -33,11 +46,14 @@ namespace spargel::ui {
         public:
             DemoView(text::FontManager* font_manager) {
                 font_ = font_manager->createDefaultFont();
-                addChild(new TextView(font_.get()));
+                text_ = emplaceChild<TextView>(font_.get());
+                text_->setText("<test>hello"_sv);
+                setFrame(0, 0, 200, 200);
+                text_->setFrame(50, 50, 100, 100);
             }
 
             void onPaint(render::UIScene& scene) override {
-                scene.setClip(0, 0, 500, 500);
+                scene.setClip(getFrame());
                 scene.strokeCircle(250, 250, 100, state_ ? 0xFF00FF00 : 0xFFFF0000);
             }
 
@@ -49,6 +65,7 @@ namespace spargel::ui {
         private:
             bool state_ = false;
             base::UniquePtr<text::Font> font_;
+            TextView* text_;
         };
 
         class DemoApp {

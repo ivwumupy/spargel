@@ -32,6 +32,9 @@ namespace spargel::render {
             pushData(x, y, w, h);
             clip_ = math::Rectangle{{x * scale_, y * scale_}, {w * scale_, h * scale_}};
         }
+        void setClip(math::Rectangle rect) {
+            setClip(rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
+        }
         // Warning: The default clip is zero-sized. So nothing will be rendered.
         void clearClip() {
             pushCommand(DrawCommand::clear_clip);
@@ -72,6 +75,9 @@ namespace spargel::render {
             strokeLine(x + w, y, x + w, y + h, color);
             strokeLine(x + w, y + h, x, y + h, color);
             strokeLine(x, y + h, x, y, color);
+        }
+        void strokeRectangle(math::Rectangle rect, u32 color) {
+            strokeRectangle(rect.origin.x, rect.origin.y, rect.size.width, rect.size.height, color);
         }
 
         void dump() { pushCommand(DrawCommand::dump); }

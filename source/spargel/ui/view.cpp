@@ -3,17 +3,27 @@
 #include "spargel/ui/view_host.h"
 
 namespace spargel::ui {
+    void View::setHost(ViewHost* host) {
+        host_ = host;
+        for (auto* child : getChildren()) {
+            child->setHost(host);
+        }
+    }
     void View::addChild(View* v) {
         spargel_check(!v->getParent());
         children_.emplace(v);
         v->setParent(this);
         v->setHost(host_);
     }
-    void View::requestRepaint() { host_->setDirty(); }
+    void View::requestRepaint() {
+        if (host_) {
+            host_->setDirty();
+        }
+    }
     void View::paint(PaintContext& context) {
         // TODO: Support alternative path.
         onPaint(*context.scene);
-        for (auto* child : children_) {
+        for (auto* child : getChildren()) {
             child->paint(context);
         }
     }
@@ -25,8 +35,10 @@ namespace spargel::ui {
         } else {
             // There is no parent.
             // In this case, notify the host.
-            spargel_check(host_ != nullptr);
-            host_->invalidateLayout();
+            // NOTE: It's possible that the view has not been attached to a host.
+            if (host_) {
+                host_->invalidateLayout();
+            }
         }
     }
 }  // namespace spargel::ui
