@@ -2,7 +2,6 @@
  * Android-target build also uses this file.
  */
 
-#include <libunwind-x86_64.h>
 #include <spargel/base/platform.h>
 
 /* libc */
@@ -10,9 +9,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#if SPARGEL_ENABLE_LIBUNWIND
 // libunwind
 #define UNW_LOCAL_ONLY
+#include <libunwind-x86_64.h>
 #include <libunwind.h>
+#endif
 
 namespace spargel::base {
 
