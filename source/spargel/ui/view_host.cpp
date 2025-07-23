@@ -26,6 +26,11 @@ namespace spargel::ui {
         if (!root_view_) {
             return;
         }
+
+        if (needs_layout_) {
+            computeLayout();
+        }
+
         scene_.clear();
         // TODO: GPUContext.
         PaintContext ctx{nullptr, &scene_};
@@ -39,7 +44,14 @@ namespace spargel::ui {
         }
         root_view_->onMouseDown(x, y);
     }
-    text::TextShaper* ViewHost::getTextShaper() {
-        return renderer_->getTextShaper();
+    void ViewHost::invalidateLayout() {
+        needs_layout_ = true;
+        window_->requestRedraw();
     }
+    void ViewHost::computeLayout() {
+        spargel_check(root_view_);
+        root_view_->setFrame(0, 0, window_->width(), window_->height());
+        root_view_->placeChildren();
+    }
+    text::TextShaper* ViewHost::getTextShaper() { return renderer_->getTextShaper(); }
 }  // namespace spargel::ui

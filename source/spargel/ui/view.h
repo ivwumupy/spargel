@@ -2,7 +2,6 @@
 
 #include "spargel/base/span.h"
 #include "spargel/base/string.h"
-#include "spargel/base/unique_ptr.h"
 #include "spargel/base/vector.h"
 #include "spargel/math/rectangle.h"
 #include "spargel/math/vector.h"
@@ -25,37 +24,38 @@ namespace spargel::ui {
         render::UIScene* scene;
     };
 
-    class SubviewIterator {
-    public:
-        using ElementType = View*;
+    // class SubviewIterator {
+    // public:
+    //     using ElementType = View*;
 
-        explicit SubviewIterator(base::UniquePtr<View>* ptr) : ptr_{ptr} {}
+    //    explicit SubviewIterator(base::UniquePtr<View>* ptr) : ptr_{ptr} {}
 
-        View* operator*() { return ptr_->get(); }
+    //    View* operator*() { return ptr_->get(); }
 
-        SubviewIterator& operator++() {
-            ptr_++;
-            return *this;
-        }
+    //    SubviewIterator& operator++() {
+    //        ptr_++;
+    //        return *this;
+    //    }
 
-        friend bool operator==(SubviewIterator lhs, SubviewIterator rhs) {
-            return lhs.ptr_ == rhs.ptr_;
-        }
+    //    friend bool operator==(SubviewIterator lhs, SubviewIterator rhs) {
+    //        return lhs.ptr_ == rhs.ptr_;
+    //    }
 
-    private:
-        base::UniquePtr<View>* ptr_;
-    };
+    // private:
+    //     base::UniquePtr<View>* ptr_;
+    // };
 
-    class SubviewRange {
-    public:
-        explicit SubviewRange(base::Vector<base::UniquePtr<View>>* subviews) : subviews_{subviews} {}
+    // class SubviewRange {
+    // public:
+    //     explicit SubviewRange(base::Vector<base::UniquePtr<View>>* subviews) :
+    //     subviews_{subviews} {}
 
-        SubviewIterator begin() { return SubviewIterator{subviews_->begin()}; }
-        SubviewIterator end() { return SubviewIterator{subviews_->end()}; }
+    //    SubviewIterator begin() { return SubviewIterator{subviews_->begin()}; }
+    //    SubviewIterator end() { return SubviewIterator{subviews_->end()}; }
 
-    private:
-        base::Vector<base::UniquePtr<View>>* subviews_;
-    };
+    // private:
+    //     base::Vector<base::UniquePtr<View>>* subviews_;
+    // };
 
     // A View corresponds to a complete functionality of the UI.
     //
@@ -64,7 +64,7 @@ namespace spargel::ui {
     class View {
     public:
         View() {}
-        virtual ~View() = default;
+        virtual ~View();
 
         // Host is set for every view in the hierarchy.
         ViewHost* getHost() { return host_; }
@@ -78,10 +78,11 @@ namespace spargel::ui {
         // Every view owns its children.
         //
 
-        SubviewRange getChildren() { return SubviewRange{&children_}; }
+        base::Span<View*> getChildren() { return children_.toSpan(); }
 
-        View* getChild(usize i) { return children_[i].get(); }
+        View* getChild(usize i) { return children_[i]; }
 
+        // The ownership is taken by the view.
         void addChild(View* v);
         template <typename T, typename... Args>
         T* emplaceChild(Args&&... args) {
@@ -89,6 +90,10 @@ namespace spargel::ui {
             addChild(ptr);
             return ptr;
         }
+
+        // The ownership of the removed child is handled over to the caller.
+        [[nodiscard]]
+        View* removeChild(usize i);
 
         View* getParent() { return parent_; }
         // This should only be called by the parent.
@@ -100,7 +105,9 @@ namespace spargel::ui {
         // The bounding box in parent's coordinate system.
         math::Rectangle getFrame() const { return frame_; }
         void setFrame(math::Rectangle frame) { frame_ = frame; }
-        void setFrame(float x, float y, float w, float h) { setFrame(math::Rectangle{{x, y}, {w, h}}); }
+        void setFrame(float x, float y, float w, float h) {
+            setFrame(math::Rectangle{{x, y}, {w, h}});
+        }
 
         float getWidth() const;
         float getHeight() const;
@@ -147,7 +154,7 @@ namespace spargel::ui {
     private:
         ViewHost* host_;
         View* parent_ = nullptr;
-        base::vector<base::UniquePtr<View>> children_;
+        base::vector<View*> children_;
 
         math::Rectangle frame_;
         // Offset in parent's coordinate.

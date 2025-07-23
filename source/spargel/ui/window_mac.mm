@@ -341,10 +341,10 @@ namespace spargel::ui {
         ns_window_delegate_ = [[SpargelWindowDelegate alloc] initWithBridge:this];
 
         ns_window_ = [[NSWindow alloc] initWithContentRect:rect
-                                              styleMask:style
-                                                backing:NSBackingStoreBuffered
-                                                  defer:NO
-                                                 screen:screen];
+                                                 styleMask:style
+                                                   backing:NSBackingStoreBuffered
+                                                     defer:NO
+                                                    screen:screen];
         // weak reference
         ns_window_.delegate = ns_window_delegate_;
         // The window is owned by the C++ side.
@@ -488,5 +488,8 @@ namespace spargel::ui {
     }
 
     float WindowAppKit::scaleFactor() { return static_cast<float>([ns_window_ backingScaleFactor]); }
+
+    float WindowAppKit::width() { return (float)ns_window_.contentView.frame.size.width; }
+    float WindowAppKit::height() { return (float)ns_window_.contentView.frame.size.height; }
 
 }  // namespace spargel::ui

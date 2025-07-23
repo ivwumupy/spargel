@@ -4,6 +4,11 @@
 #include "spargel/ui/view_host.h"
 
 namespace spargel::ui {
+    View::~View() {
+        for (auto* child : children_) {
+            delete child;
+        }
+    }
     void View::setHost(ViewHost* host) {
         host_ = host;
         for (auto* child : getChildren()) {
@@ -16,6 +21,12 @@ namespace spargel::ui {
         v->setParent(this);
         v->setHost(host_);
     }
+    View* View::removeChild(usize i) {
+        auto child = children_[i];
+        // TODO: Children order is not stable?
+        children_.eraseFast(i);
+        return child;
+    }
     void View::requestRepaint() {
         if (host_) {
             host_->setDirty();
@@ -24,7 +35,7 @@ namespace spargel::ui {
     void View::paint(PaintContext& context) {
         // TODO: Support alternative path.
         onPaint(*context.scene);
-        for (auto* child : getChildren()) {
+        for (auto* child : children_) {
             child->paint(context);
         }
     }

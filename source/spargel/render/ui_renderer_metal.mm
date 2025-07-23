@@ -299,7 +299,9 @@ namespace spargel::render {
         //   max_slot = 82711
         //   command_count = 7 (demo_ui)
         //   tile_count = 79211 = 379 * 209
-        usize max_slot = command_count * 500 + tile_count;
+        //usize max_slot = command_count * 500 + tile_count;
+        // TODO: Round before area.
+        usize max_slot = scene.estimated_slots() + tile_count;
         bin_slots_buffer_.request(sizeof(BinSlot) * max_slot);
         bin_alloc_buffer_.request(sizeof(BinAlloc));
         //spargel_log_info("max_slot: %zu", max_slot);
@@ -352,7 +354,7 @@ namespace spargel::render {
         [command_buffer addCompletedHandler:^(id<MTLCommandBuffer>) {
                 auto alloc = (BinAlloc*)bin_alloc_buffer_.object.contents;
                 if (alloc->out_of_space) {
-                    spargel_log_warn("bin slots overflow (offset: %u)", alloc->offset);
+                    spargel_log_warn("bin slots overflow (tiles: %zu, cmds: %zu, max: %zu, need: %u)", tile_count, command_count, max_slot, alloc->offset);
                 }
             }];
 

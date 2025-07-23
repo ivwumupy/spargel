@@ -16,6 +16,10 @@ namespace spargel::render {
         pushData(x, y, width, height, a, b, color);
         pushCommand2(DrawCommand::sample_texture, x * scale_, y * scale_, width * scale_,
                      height * scale_, a, b, color);
+
+        auto m = (math::ceil(width) + 1.0f) * scale_;
+        auto n = (math::ceil(height) + 1.0f) * scale_;
+        estimated_slots_ += (usize)((math::ceil(m / 8.0f) + 1.0f) * (math::ceil(n / 8.0f) + 1.0f));
     }
     namespace {
         inline constexpr bool ENABLE_SUBPIXEL_QUANTIZATION = true;

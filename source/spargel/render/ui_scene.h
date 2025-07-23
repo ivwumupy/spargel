@@ -5,6 +5,7 @@
 #include "spargel/base/string_view.h"
 #include "spargel/base/types.h"
 #include "spargel/base/vector.h"
+#include "spargel/math/function.h"
 #include "spargel/math/rectangle.h"
 #include "spargel/render/ui_renderer.h"
 #include "spargel/text/styled_text.h"
@@ -46,27 +47,50 @@ namespace spargel::render {
             pushData(x, y, w, h, color);
             pushCommand2(DrawCommand::fill_rect, x * scale_, y * scale_, w * scale_, h * scale_,
                          color);
+
+            auto m = (math::ceil(w) + 1.0f) * scale_;
+            auto n = (math::ceil(h) + 1.0f) * scale_;
+            estimated_slots_ +=
+                (usize)((math::ceil(m / 8.0f) + 1.0f) * (math::ceil(n / 8.0f) + 1.0f));
         }
         void fillCircle(float x, float y, float r, u32 color) {
             pushCommand(DrawCommand::fill_circle);
             pushData(x, y, r, color);
             pushCommand2(DrawCommand::fill_circle, x * scale_, y * scale_, r * scale_, color);
+
+            auto n = (math::ceil(2.0f * r) + 1.0f) * scale_;
+            estimated_slots_ +=
+                (usize)((math::ceil(n / 8.0f) + 1.0f) * (math::ceil(n / 8.0f) + 1.0f));
         }
         // v2 only
         void fillRoundedRect(float x, float y, float w, float h, float r, u32 color) {
             pushCommand2(DrawCommand::fill_rounded_rect, x * scale_, y * scale_, w * scale_,
                          h * scale_, r * scale_, color);
+
+            auto m = (math::ceil(w) + 1.0f) * scale_;
+            auto n = (math::ceil(h) + 1.0f) * scale_;
+            estimated_slots_ +=
+                (usize)((math::ceil(m / 8.0f) + 1.0f) * (math::ceil(n / 8.0f) + 1.0f));
         }
         void strokeLine(float x0, float y0, float x1, float y1, u32 color) {
             pushCommand(DrawCommand::stroke_line);
             pushData(x0, y0, x1, y1, color);
             pushCommand2(DrawCommand::stroke_line, x0 * scale_, y0 * scale_, x1 * scale_,
                          y1 * scale_, color);
+
+            auto m = (math::ceil(math::abs(x0 - x1)) + 2.0f) * scale_;
+            auto n = (math::ceil(math::abs(y0 - y1)) + 2.0f) * scale_;
+            estimated_slots_ +=
+                (usize)((math::ceil(m / 8.0f) + 1.0f) * (math::ceil(n / 8.0f) + 1.0f));
         }
         void strokeCircle(float x, float y, float r, u32 color) {
             pushCommand(DrawCommand::stroke_circle);
             pushData(x, y, r, color);
             pushCommand2(DrawCommand::stroke_circle, x * scale_, y * scale_, r * scale_, color);
+
+            auto n = (math::ceil(2.0f * r) + 1.0f) * scale_;
+            estimated_slots_ +=
+                (usize)((math::ceil(n / 8.0f) + 1.0f) * (math::ceil(n / 8.0f) + 1.0f));
         }
         // Render a line of text with the given font and color.
         //
@@ -95,9 +119,12 @@ namespace spargel::render {
             commands_.clear();
             data_.clear();
             commands2_.clear();
+            estimated_slots_ = 0;
         }
 
         void setScale(float s) { scale_ = s; }
+
+        usize estimated_slots() const { return estimated_slots_; }
 
     private:
         enum class DrawCommand : u8 {
@@ -147,5 +174,7 @@ namespace spargel::render {
 
         math::Rectangle clip_;
         base::Vector<Command2> commands2_;
+
+        usize estimated_slots_ = 0;
     };
 }  // namespace spargel::render

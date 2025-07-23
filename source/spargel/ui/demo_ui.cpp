@@ -16,39 +16,98 @@ namespace spargel::ui {
         class TextView : public ui::View {
         public:
             TextView(text::Font* font) : text_{""_sv, font} {}
+            ~TextView() { spargel_log_info("destructed"); }
 
             void setText(base::StringView s) {
                 text_.setText(s);
                 invalidateLayout();
                 requestRepaint();
             }
-            void onPaint(render::UIScene& scene) override {
+            math::RectangleSize getPreferredSize(
+                [[maybe_unused]] math::RectangleSize proposal) override {
                 // TODO: Move to layout.
                 auto shaper = getHost()->getTextShaper();
-                auto shape_result = shaper->shapeLine(text_);
-                spargel_log_info("shape done: width = %.3f", shape_result.width);
+                shape_result_ = shaper->shapeLine(text_);
+                spargel_log_info("shape done: width = %.3f", shape_result_.width);
 
+                return {shape_result_.width, shape_result_.ascent - shape_result_.descent};
+            }
+            void onPaint(render::UIScene& scene) override {
                 // TODO: Transform to window coordinate.
                 scene.strokeRectangle(getFrame(), 0xFFFF00FF);
 
                 auto frame = getFrame();
 
-                float x = frame.origin.x + frame.size.width / 2.0f - shape_result.width / 2.0f - shape_result.leading;
-                float y = frame.origin.y + frame.size.height / 2.0f + shape_result.ascent / 2.0f + shape_result.descent / 2.0f;
+                float x = frame.origin.x + frame.size.width / 2.0f - shape_result_.width / 2.0f -
+                          shape_result_.leading;
+                float y = frame.origin.y + frame.size.height / 2.0f + shape_result_.ascent / 2.0f +
+                          shape_result_.descent / 2.0f;
                 scene.fillText(text_, x, y, 0xFFFFFFFF);
             }
 
         private:
             text::StyledText text_;
+            text::ShapedLine shape_result_;
+        };
+
+        class BoxView : public ui::View {
+        public:
+            BoxView(u32 color) : color_{color} {}
+
+            void onPaint(render::UIScene& scene) override {
+                scene.setClip(0, 0, 500, 500);
+                scene.strokeCircle(250, 250, 100, color_);
+            }
+
+        private:
+            u32 color_;
+        };
+
+        class FillLayout : public ui::View {
+        public:
+            void setChild(ui::View* child) {
+                if (child_) {
+                    auto old = removeChild(0);
+                    delete old;
+                }
+                child_ = child;
+                addChild(child_);
+            }
+            // NOTE: This is the default implementation. So there is no need for this view.
+            math::RectangleSize getPreferredSize(math::RectangleSize proposal) override {
+                return proposal;
+            }
+            void placeChildren() override {
+                spargel_check(getChildren().count() == 1);
+                child_->setFrame(getFrame());
+            }
+
+        private:
+            ui::View* child_ = nullptr;
+        };
+
+        class HStackLayout : public ui::View {
+        public:
+            math::RectangleSize getPreferredSize(math::RectangleSize proposal) override {
+                return proposal;
+            }
+            void placeChildren() override {}
         };
 
         class DemoView : public ui::View {
         public:
             DemoView(text::FontManager* font_manager) {
                 font_ = font_manager->createDefaultFont();
-                text_ = emplaceChild<TextView>(font_.get());
+                // text_ = emplaceChild<TextView>(font_.get());
+                text_ = new TextView(font_.get());
                 text_->setText("<test>hello"_sv);
-                setFrame(0, 0, 200, 200);
+                auto fill = emplaceChild<FillLayout>();
+                fill->addChild(text_);
+            }
+            ~DemoView() { spargel_log_info("destructed"); }
+
+            void placeChildren() override {
+                spargel_log_info("%.3f %.3f", getFrame().size.width, getFrame().size.height);
                 text_->setFrame(50, 50, 100, 100);
             }
 
@@ -80,6 +139,7 @@ namespace spargel::ui {
                 renderer_ = render::makeUIRenderer(gpu_context_.get(), shaper_.get());
                 view_host_ = base::makeUnique<ui::ViewHost>(window_.get(), renderer_.get());
                 root_view_ = base::makeUnique<DemoView>(font_manager_.get());
+                // root_view_ = base::makeUnique<BoxView>(0xFF0000FF);
                 view_host_->setRootView(root_view_.get());
             }
 

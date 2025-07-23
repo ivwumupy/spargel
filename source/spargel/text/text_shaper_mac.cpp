@@ -33,7 +33,7 @@ namespace spargel::text {
 
         ShapedLine result;
         ShapedSegment segment;
-        
+
         {
             CGFloat ascent;
             CGFloat descent;

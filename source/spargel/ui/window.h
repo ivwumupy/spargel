@@ -88,6 +88,9 @@ namespace spargel::ui {
 
         virtual float scaleFactor() = 0;
 
+        virtual float width() = 0;
+        virtual float height() = 0;
+
     private:
         WindowDelegate* _delegate = nullptr;
     };

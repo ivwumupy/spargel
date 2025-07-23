@@ -27,7 +27,7 @@ namespace spargel::ui {
 
         void setDirty();
 
-        void invalidateLayout() {}
+        void invalidateLayout();
 
         // Repaint the view tree.
         void scheduleRepaint();
@@ -40,10 +40,13 @@ namespace spargel::ui {
         text::TextShaper* getTextShaper();
 
     private:
+        void computeLayout();
+
         Window* window_;
         View* root_view_ = nullptr;
         render::UIScene scene_;
         render::UIRenderer* renderer_;
-        bool dirty_;
+        bool dirty_ = true;
+        bool needs_layout_ = true;
     };
 }  // namespace spargel::ui
