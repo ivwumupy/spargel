@@ -39,8 +39,13 @@ endif ()
 if (SPARGEL_IS_LINUX)
     find_package(PkgConfig REQUIRED)
 
-    find_package(harfbuzz REQUIRED)
-    find_package(Freetype REQUIRED)
+    if (SPARGEL_ENABLE_FREETYPE)
+        find_package(Freetype REQUIRED)
+    endif ()
+
+    if (SPARGEL_ENABLE_HARFBUZZ)
+        find_package(harfbuzz REQUIRED)
+    endif ()
 
     if (SPARGEL_LINUX_IS_DESKTOP)
 
