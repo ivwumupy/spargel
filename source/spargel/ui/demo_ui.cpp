@@ -21,7 +21,7 @@ namespace spargel::ui {
                 text_ = text;
                 requestRepaint();
             }
-            void paint(render::UIScene& scene) override {
+            void onPaint(render::UIScene& scene) override {
                 scene.fillText(text_, 100, 100, 0xFFFFFFFF);
             }
 
@@ -36,12 +36,9 @@ namespace spargel::ui {
                 addChild(new TextView(font_.get()));
             }
 
-            void paint(render::UIScene& scene) override {
+            void onPaint(render::UIScene& scene) override {
                 scene.setClip(0, 0, 500, 500);
                 scene.strokeCircle(250, 250, 100, state_ ? 0xFF00FF00 : 0xFFFF0000);
-                for (auto* child : children()) {
-                    child->paint(scene);
-                }
             }
 
             void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) override {

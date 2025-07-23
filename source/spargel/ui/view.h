@@ -7,6 +7,10 @@
 #include "spargel/math/rectangle.h"
 #include "spargel/math/vector.h"
 
+namespace spargel::gpu {
+    class GPUContext;
+}
+
 namespace spargel::render {
     class UIScene;
 }
@@ -14,6 +18,11 @@ namespace spargel::render {
 namespace spargel::ui {
 
     class ViewHost;
+
+    struct PaintContext {
+        gpu::GPUContext* gpu_context;
+        render::UIScene* scene;
+    };
 
     // A View corresponds to a complete functionality of the UI.
     //
@@ -24,8 +33,11 @@ namespace spargel::ui {
         View() {}
         virtual ~View() = default;
 
-        ViewHost* host() { return host_; }
+        // Host is set for every view in the hierarchy.
+        ViewHost* getHost() { return host_; }
         void setHost(ViewHost* host) { host_ = host; }
+
+        bool isRootView() const { return parent_ == nullptr; }
 
         // View Hierarchy
         // --------------
@@ -33,11 +45,11 @@ namespace spargel::ui {
         // Every view owns its children.
         //
 
-        base::Span<View*> children() { return children_.toSpan(); }
+        base::Span<View*> getChildren() { return children_.toSpan(); }
 
         void addChild(View* v);
 
-        View* parent() { return parent_; }
+        View* getParent() { return parent_; }
         // This should only be called by the parent.
         void setParent(View* p) { parent_ = p; }
 
@@ -45,10 +57,10 @@ namespace spargel::ui {
         // -----------
 
         // The bounding box in parent's coordinate system.
-        math::Rectangle frame() const { return frame_; }
+        math::Rectangle getFrame() const { return frame_; }
 
-        // The bounding box in the view's coordinate system.
-        math::Rectangle bounds() const;
+        float getWidth() const;
+        float getHeight() const;
 
         // Layout
         // ------
@@ -57,25 +69,37 @@ namespace spargel::ui {
         // The layout of the children is determined via a negotiation process.
 
         // How much space this view needs given the proposal.
-        virtual math::RectangleSize preferredSize(math::RectangleSize proposal) {
+        virtual math::RectangleSize getPreferredSize(math::RectangleSize proposal) {
             return proposal;
         }
         // Put the children at correct places.
         virtual void placeChildren() {}
 
+        void invalidateLayout();
+
+        bool needsLayout() const { return needs_layout_; }
+
         // Paint
         // -----
 
-        // Record painting commands to the scene.
-        virtual void paint([[maybe_unused]] render::UIScene& scene) {}
+        // Paint the view.
+        // NOTE: This is called by the framework.
+        void paint(PaintContext& context);
 
         // Ask the ViewHost to schedule a repaint.
         void requestRepaint();
 
         // Event Handling
         // --------------
+        //
 
         virtual void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) {}
+
+        // Record painting commands to the scene.
+        virtual void onPaint([[maybe_unused]] render::UIScene& scene) {}
+
+        // Bypass UIRenderer.
+        // virtual void onPaint([[maybe_unused]] gpu::GPUContext& ctx) {}
 
     private:
         ViewHost* host_;
@@ -85,6 +109,8 @@ namespace spargel::ui {
         math::Rectangle frame_;
         // Offset in parent's coordinate.
         math::Vector2f offset_;
+
+        bool needs_layout_ = true;
     };
 
     class ButtonView : public View {

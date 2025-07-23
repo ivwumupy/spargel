@@ -11,11 +11,12 @@
 #import <AppKit/AppKit.h>
 #import <QuartzCore/QuartzCore.h>
 
-@interface SpargelMetalView : NSView <NSTextInputClient>  // temp hack
+@interface SpargelHostView : NSView <NSTextInputClient>
 @end
 
 @interface SpargelWindowDelegate : NSObject <NSWindowDelegate>
 @end
+
 namespace spargel::ui {
 
     class TextInputDelegate {
@@ -67,8 +68,8 @@ namespace spargel::ui {
         void _bridgeMouseDragged(float dx, float dy);
 
         void _updateSize(float width, float height) {
-            _width = width;
-            _height = height;
+            width_ = width;
+            height_ = height;
         }
 
         void _enable_text_cursor();
@@ -76,8 +77,8 @@ namespace spargel::ui {
         void setTextDelegate(TextInputDelegate* delegate) { _text_delegate = delegate; }
         TextInputDelegate* getTextDelegate() { return _text_delegate; }
 
-        auto ns_view() { return _view; }
-        auto ns_window() { return _window; }
+        auto ns_view() { return ns_view_; }
+        auto ns_window() { return ns_window_; }
 
         void bindRenderer(render::UIRenderer* renderer) override;
 
@@ -86,39 +87,28 @@ namespace spargel::ui {
 
         float scaleFactor() override;
 
+        NSWindow* getNSWindow() { return ns_window_; }
+
     private:
-        NSWindow* _window;
-        SpargelWindowDelegate* _bridge;
-        SpargelMetalView* _view;
-        CAMetalLayer* _layer;
+        NSWindow* ns_window_;
+        SpargelWindowDelegate* ns_window_delegate_;
+        SpargelHostView* ns_view_;
+        CAMetalLayer* metal_layer_;
 
-        float _width;
-        float _height;
+        float width_;
+        float height_;
 
-        float _drawable_width;
-        float _drawable_height;
+        float drawable_width_;
+        float drawable_height_;
 
-        bool _animating = true;
+        bool animating_ = true;
 
+        // TODO:
         [[maybe_unused]] NSTextInsertionIndicator* _text_cursor;
 
         TextInputDelegate* _text_delegate = nullptr;
 
         bool text_focus_ = false;
     };
-
-    // class TextSystemAppKit final : public TextSystem {
-    // public:
-    //     TextSystemAppKit();
-    //     ~TextSystemAppKit();
-
-    //     LineLayout layoutLine(base::StringView str) override;
-    //     RasterResult rasterizeGlyph(GlyphId id, void* font) override;
-
-    // private:
-    //     CTFontRef lookupFont(base::String const& name);
-
-    //     CTFontRef _font;
-    // };
 
 }  // namespace spargel::ui

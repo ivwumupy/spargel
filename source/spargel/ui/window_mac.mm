@@ -1,12 +1,12 @@
-#include <spargel/base/allocator.h>
-#include <spargel/base/check.h>
-#include <spargel/base/inline_array.h>
-#include <spargel/base/logging.h>
-#include <spargel/base/meta.h>
-#include <spargel/base/unique_ptr.h>
-#include <spargel/base/vector.h>
-#include <spargel/render/ui_renderer_metal.h>
-#include <spargel/ui/window_mac.h>
+#include "spargel/base/allocator.h"
+#include "spargel/base/check.h"
+#include "spargel/base/inline_array.h"
+#include "spargel/base/logging.h"
+#include "spargel/base/meta.h"
+#include "spargel/base/unique_ptr.h"
+#include "spargel/base/vector.h"
+#include "spargel/render/ui_renderer_metal.h"
+#include "spargel/ui/window_mac.h"
 
 //
 #include <time.h>
@@ -20,24 +20,26 @@
 #import <GameController/GameController.h>
 #import <QuartzCore/QuartzCore.h>
 
-@implementation SpargelMetalView {
+@implementation SpargelHostView {
     CADisplayLink* _link;
     CAMetalLayer* _layer;
     NSTrackingArea* _tracking;
     spargel::ui::WindowAppKit* _bridge;
 }
-- (instancetype)initWithSpargelUIWindow:(spargel::ui::WindowAppKit*)w
-                             metalLayer:(CAMetalLayer*)layer {
-    [super init];
-    _bridge = w;
-    _layer = layer;
-    _tracking = nil;
-    self.layer = _layer;
-    self.wantsLayer = YES;  // layer-hosting view
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(keyboardWasConnected:)
-                                                 name:GCKeyboardDidConnectNotification
-                                               object:nil];
+- (instancetype)initWithBridge:(spargel::ui::WindowAppKit*)bridge
+                    metalLayer:(CAMetalLayer*)layer {
+    self = [super init];
+    if (self) {
+        _bridge = bridge;
+        _layer = layer;
+        _tracking = nil;
+        self.layer = _layer;
+        self.wantsLayer = YES;  // layer-hosting view
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(keyboardWasConnected:)
+                                                     name:GCKeyboardDidConnectNotification
+                                                   object:nil];
+    }
     return self;
 }
 - (void)keyboardWasConnected:(NSNotification*)notification {
@@ -233,12 +235,25 @@
 @end
 
 @implementation SpargelWindowDelegate {
-    spargel::ui::WindowAppKit* _bridge;
+    spargel::ui::WindowAppKit* bridge_;
+    NSWindow* window_;
 }
-- (instancetype)initWithSpargelUIWindow:(spargel::ui::WindowAppKit*)w {
-    [super init];
-    _bridge = w;
+- (instancetype)initWithBridge:(spargel::ui::WindowAppKit*)bridge {
+    self = [super init];
+    if (self) {
+        spargel_check(bridge);
+        bridge_ = bridge;
+        window_ = bridge_->getNSWindow();
+    }
     return self;
+}
+- (void)windowDidChangeOcclusionState:(NSNotification*)notification{
+    auto state = [window_ occlusionState];
+    if (state & NSWindowOcclusionStateVisible) {
+        spargel_log_info("window becomes visible");
+    } else {
+        spargel_log_info("window becomes occluded");
+    }
 }
 @end
 
@@ -312,43 +327,44 @@ namespace spargel::ui {
     }  // namespace
 
     WindowAppKit::WindowAppKit(u32 width, u32 height)
-        : _width{static_cast<float>(width)}, _height{static_cast<float>(height)} {
-        NSScreen* screen = [NSScreen mainScreen];
+        : width_{static_cast<float>(width)}, height_{static_cast<float>(height)} {
+        auto screen = [NSScreen mainScreen];
 
         NSWindowStyleMask style = NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable |
                                   NSWindowStyleMaskResizable | NSWindowStyleMaskTitled;
 
-        NSRect rect = NSMakeRect(0, 0, width, height);
+        auto rect = NSMakeRect(0, 0, width, height);
         // center the window
-        rect.origin.x = (screen.frame.size.width - _width) / 2;
-        rect.origin.y = (screen.frame.size.height - _height) / 2;
+        rect.origin.x = (screen.frame.size.width - width_) / 2;
+        rect.origin.y = (screen.frame.size.height - height_) / 2;
 
-        _bridge = [[SpargelWindowDelegate alloc] initWithSpargelUIWindow:this];
+        ns_window_delegate_ = [[SpargelWindowDelegate alloc] initWithBridge:this];
 
-        _window = [[NSWindow alloc] initWithContentRect:rect
+        ns_window_ = [[NSWindow alloc] initWithContentRect:rect
                                               styleMask:style
                                                 backing:NSBackingStoreBuffered
                                                   defer:NO
                                                  screen:screen];
         // weak reference
-        _window.delegate = _bridge;
-        _window.releasedWhenClosed = NO;
+        ns_window_.delegate = ns_window_delegate_;
+        // The window is owned by the C++ side.
+        ns_window_.releasedWhenClosed = NO;
         // TODO: fix this
-        _window.minSize = NSMakeSize(200, 200);
+        ns_window_.minSize = NSMakeSize(200, 200);
 
-        _layer = [[CAMetalLayer alloc] init];
+        metal_layer_ = [[CAMetalLayer alloc] init];
 
-        _view = [[SpargelMetalView alloc] initWithSpargelUIWindow:this metalLayer:_layer];
+        ns_view_ = [[SpargelHostView alloc] initWithBridge:this metalLayer:metal_layer_];
 
         auto _text_cursor = [[NSTextInsertionIndicator alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
-        [_view addSubview:_text_cursor];
+        [ns_view_ addSubview:_text_cursor];
 
         _text_cursor.displayMode = NSTextInsertionIndicatorDisplayModeAutomatic;
 
         // strong reference
-        _window.contentView = _view;
+        ns_window_.contentView = ns_view_;
 
-        [_window makeKeyAndOrderFront:nil];
+        [ns_window_ makeKeyAndOrderFront:nil];
     }
 
     void WindowAppKit::_enable_text_cursor() {
@@ -356,31 +372,31 @@ namespace spargel::ui {
     }
 
     WindowAppKit::~WindowAppKit() {
-        [_window release];
-        [_bridge release];
+        [ns_window_ release];
+        [ns_window_delegate_ release];
     }
 
     void WindowAppKit::setTitle(char const* title) {
-        _window.title = [NSString stringWithUTF8String:title];
+        ns_window_.title = [NSString stringWithUTF8String:title];
     }
 
     void WindowAppKit::setAnimating(bool animating) {
-        if (_animating != animating) {
-            [_view setAnimating:animating];
+        if (animating_ != animating) {
+            [ns_view_ setAnimating:animating];
         }
-        _animating = animating;
+        animating_ = animating;
     }
 
     void WindowAppKit::requestRedraw() { _bridge_render(); }
 
     void WindowAppKit::_setDrawableSize(float width, float height) {
-        _drawable_width = width;
-        _drawable_height = height;
+        drawable_width_ = width;
+        drawable_height_ = height;
     }
 
     WindowHandle WindowAppKit::getHandle() {
         WindowHandle handle;
-        handle.value.apple.layer = _layer;
+        handle.value.apple.layer = metal_layer_;
         return handle;
     }
 
@@ -455,7 +471,7 @@ namespace spargel::ui {
     //
     void WindowAppKit::_bridgeMouseDown(float x, float y) {
         if (getDelegate() != nullptr) {
-            getDelegate()->onMouseDown(x, _height - y);
+            getDelegate()->onMouseDown(x, height_ - y);
         }
     }
 
@@ -467,10 +483,10 @@ namespace spargel::ui {
 
     void WindowAppKit::bindRenderer(render::UIRenderer* renderer) {
         auto metal_renderer = static_cast<render::UIRendererMetal*>(renderer);
-        metal_renderer->setLayer(_layer);
+        metal_renderer->setLayer(metal_layer_);
         renderer->setScaleFactor(scaleFactor());
     }
 
-    float WindowAppKit::scaleFactor() { return static_cast<float>([_window backingScaleFactor]); }
+    float WindowAppKit::scaleFactor() { return static_cast<float>([ns_window_ backingScaleFactor]); }
 
 }  // namespace spargel::ui

@@ -23,6 +23,8 @@ namespace spargel::ui {
 
         void setDirty();
 
+        void invalidateLayout() {}
+
         // Repaint the view tree.
         void scheduleRepaint();
 

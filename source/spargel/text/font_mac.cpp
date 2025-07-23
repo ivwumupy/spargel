@@ -113,6 +113,6 @@ namespace spargel::text {
     }
     base::UniquePtr<Font> createDefaultFont() {
         return base::makeUnique<FontMac>(
-            CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 50, nullptr));
+            CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 0, nullptr));
     }
 }  // namespace spargel::text
