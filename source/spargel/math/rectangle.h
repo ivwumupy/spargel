@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spargel/math/vector.h>
+#include "spargel/math/vector.h"
 
 namespace spargel::math {
     struct RectangleSize {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <spargel/base/panic.h>
-#include <spargel/config.h>
+#include "spargel/base/panic.h"
+#include "spargel/config.h"
 
 #define spargel_check(cond) ((cond) ? (void)(0) : spargel_panic("Check `" #cond "` failed."))
 

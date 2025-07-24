@@ -1,4 +1,4 @@
-#include <spargel/codec/cursor.h>
+#include "spargel/codec/cursor.h"
 
 /* libc */
 #include <string.h>

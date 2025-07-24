@@ -1,8 +1,9 @@
-#include <spargel/base/assert.h>
-#include <spargel/base/backtrace.h>
-#include <spargel/base/compiler.h>
-#include <spargel/base/logging.h>
-#include <spargel/base/panic.h>
+#include "spargel/base/panic.h"
+
+#include "spargel/base/assert.h"
+#include "spargel/base/backtrace.h"
+#include "spargel/base/compiler.h"
+#include "spargel/base/logging.h"
 
 /* libc */
 #include <stdio.h>

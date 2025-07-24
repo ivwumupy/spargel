@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spargel/ui/platform.h>
+#include "spargel/ui/platform.h"
 
 namespace spargel::entry {
 

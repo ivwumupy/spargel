@@ -1,7 +1,6 @@
 #pragma once
 
-#include <spargel/base/attribute.h>
-#include <spargel/math/function.h>
+#include "spargel/math/function.h"
 
 namespace spargel::math {
 

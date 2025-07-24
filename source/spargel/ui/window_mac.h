@@ -1,11 +1,11 @@
 #pragma once
 
-#include <spargel/base/hash_map.h>
-#include <spargel/base/string.h>
-#include <spargel/base/unique_ptr.h>
-#include <spargel/ui/platform.h>
-#include <spargel/ui/text_system.h>
-#include <spargel/ui/window.h>
+#include "spargel/base/hash_map.h"
+#include "spargel/base/string.h"
+#include "spargel/base/unique_ptr.h"
+#include "spargel/ui/platform.h"
+#include "spargel/ui/text_system.h"
+#include "spargel/ui/window.h"
 
 // platform
 #import <AppKit/AppKit.h>

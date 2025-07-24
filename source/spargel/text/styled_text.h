@@ -1,8 +1,8 @@
 #pragma once
 
-#include <spargel/base/bit_cast.h>
-#include <spargel/base/hash.h>
-#include <spargel/base/string_view.h>
+#include "spargel/base/bit_cast.h"
+#include "spargel/base/hash.h"
+#include "spargel/base/string_view.h"
 
 namespace spargel::text {
     class Font;

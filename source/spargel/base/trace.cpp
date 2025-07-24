@@ -1,4 +1,4 @@
-#include <spargel/base/trace.h>
+#include "spargel/base/trace.h"
 
 namespace spargel::base {
 

@@ -1,10 +1,10 @@
-#include <spargel/base/logging.h>
-#include <spargel/gpu/gpu.h>
-#include <spargel/resource/directory.h>
-#include <spargel/resource/resource.h>
-#include <spargel/ui/platform.h>
-#include <spargel/ui/text_system.h>
-#include <spargel/ui/window.h>
+#include "spargel/base/logging.h"
+#include "spargel/gpu/gpu.h"
+#include "spargel/resource/directory.h"
+#include "spargel/resource/resource.h"
+#include "spargel/ui/platform.h"
+#include "spargel/ui/text_system.h"
+#include "spargel/ui/window.h"
 
 using namespace spargel;
 using namespace spargel::gpu;

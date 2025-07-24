@@ -1,5 +1,6 @@
-#include <spargel/base/logging.h>
-#include <spargel/resource/resource.h>
+#include "spargel/resource/resource.h"
+
+#include "spargel/base/logging.h"
 
 namespace spargel::resource {
 

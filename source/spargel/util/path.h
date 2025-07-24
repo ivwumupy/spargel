@@ -1,7 +1,7 @@
 #pragma once
 
-#include <spargel/base/string.h>
-#include <spargel/base/vector.h>
+#include "spargel/base/string.h"
+#include "spargel/base/vector.h"
 
 namespace spargel::util {
 

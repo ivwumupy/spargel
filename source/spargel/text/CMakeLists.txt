@@ -8,6 +8,7 @@ spargel_add_library(
         text_shaper_linux.cpp
     PRIVATE_MACOS
         font_mac.cpp
+        font_manager_mac.cpp
         text_shaper_mac.cpp
     DEPS
         base

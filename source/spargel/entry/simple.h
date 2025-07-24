@@ -1,8 +1,8 @@
 #pragma once
 
-#include <spargel/resource/resource.h>
-#include <spargel/ui/platform.h>
-#include <spargel/ui/window.h>
+#include "spargel/resource/resource.h"
+#include "spargel/ui/platform.h"
+#include "spargel/ui/window.h"
 
 namespace spargel::entry {
 

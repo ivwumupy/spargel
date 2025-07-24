@@ -1,19 +1,19 @@
-#include <spargel/base/algorithm.h>
-#include <spargel/base/assert.h>
-#include <spargel/base/attribute.h>
-#include <spargel/base/logging.h>
-#include <spargel/base/optional.h>
-#include <spargel/base/tag_invoke.h>
-#include <spargel/math/matrix.h>
-#include <spargel/math/point.h>
-#include <spargel/math/vector.h>
-#include <spargel/resource/directory.h>
-#include <spargel/ui/platform.h>
-#include <spargel/ui/window_mac.h>
-#include <spargel/ui/window.h>
+#include "spargel/base/algorithm.h"
+#include "spargel/base/assert.h"
+#include "spargel/base/attribute.h"
+#include "spargel/base/logging.h"
+#include "spargel/base/optional.h"
+#include "spargel/base/tag_invoke.h"
+#include "spargel/math/matrix.h"
+#include "spargel/math/point.h"
+#include "spargel/math/vector.h"
+#include "spargel/resource/directory.h"
+#include "spargel/ui/platform.h"
+#include "spargel/ui/window_mac.h"
+#include "spargel/ui/window.h"
 
 //
-#include <spargel/render/shader/metal_shader.generated.h>
+#include "spargel/render/shader/metal_shader.generated.h"
 
 // libc
 #include <stdio.h>

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <spargel/base/optional.h>
-#include <spargel/base/types.h>
+#include "spargel/base/optional.h"
+#include "spargel/base/types.h"
 
 namespace spargel::render {
     struct PackResult {

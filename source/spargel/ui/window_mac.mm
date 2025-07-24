@@ -243,6 +243,7 @@
     if (self) {
         spargel_check(bridge);
         bridge_ = bridge;
+        // If we cache NSWindow in the constructor, then the delegate need to be created after the window.
         window_ = bridge_->getNSWindow();
     }
     return self;
@@ -338,14 +339,15 @@ namespace spargel::ui {
         rect.origin.x = (screen.frame.size.width - width_) / 2;
         rect.origin.y = (screen.frame.size.height - height_) / 2;
 
-        ns_window_delegate_ = [[SpargelWindowDelegate alloc] initWithBridge:this];
-
         ns_window_ = [[NSWindow alloc] initWithContentRect:rect
                                                  styleMask:style
                                                    backing:NSBackingStoreBuffered
                                                      defer:NO
                                                     screen:screen];
-        // weak reference
+
+        // Create the delegate after the window, as the delegate stores a pointer to the window.
+        ns_window_delegate_ = [[SpargelWindowDelegate alloc] initWithBridge:this];
+        // This is a weak reference.
         ns_window_.delegate = ns_window_delegate_;
         // The window is owned by the C++ side.
         ns_window_.releasedWhenClosed = NO;

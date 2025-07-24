@@ -1,8 +1,8 @@
 #pragma once
 
-#include <spargel/base/base.h>
-#include <spargel/base/logging.h>
-#include <spargel/ui/ui.h>
+#include "spargel/base/base.h"
+#include "spargel/base/logging.h"
+#include "spargel/ui/ui.h"
 
 // Android
 #include <game-activity/native_app_glue/android_native_app_glue.h>

@@ -1,7 +1,8 @@
-#include <spargel/base/logging.h>
-#include <spargel/base/panic.h>
-#include <spargel/ui/text_linux.h>
-#include <spargel/ui/window.h>
+#include "spargel/ui/text_linux.h"
+
+#include "spargel/base/logging.h"
+#include "spargel/base/panic.h"
+#include "spargel/ui/window.h"
 
 namespace spargel::ui {
 

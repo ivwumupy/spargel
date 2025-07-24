@@ -1,7 +1,9 @@
-#include <spargel/base/logging.h>
-#include <spargel/ui/xkb_util.h>
+#include "spargel/ui/xkb_util.h"
+
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <xkbcommon/xkbcommon.h>
+
+#include "spargel/base/logging.h"
 
 namespace spargel::ui::xkb {
 

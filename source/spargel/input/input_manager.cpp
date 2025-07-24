@@ -1,5 +1,6 @@
-#include <spargel/input/input_manager.h>
-#include <spargel/input/keyboard_device.h>
+#include "spargel/input/input_manager.h"
+
+#include "spargel/input/keyboard_device.h"
 
 namespace spargel::input {
     InputManager::InputManager() { devices_.push(new KeyboardDevice); }

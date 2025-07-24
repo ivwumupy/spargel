@@ -1,6 +1,6 @@
-#include <spargel/base/logging.h>
-#include <spargel/ui/platform.h>
-#include <spargel/ui/window.h>
+#include "spargel/base/logging.h"
+#include "spargel/ui/platform.h"
+#include "spargel/ui/window.h"
 
 using namespace spargel;
 

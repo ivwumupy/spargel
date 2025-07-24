@@ -1,5 +1,5 @@
-#include <spargel/base/logging.h>
-#include <spargel/resource/directory.h>
+#include "spargel/base/logging.h"
+#include "spargel/resource/directory.h"
 
 // libc
 #include <stdio.h>

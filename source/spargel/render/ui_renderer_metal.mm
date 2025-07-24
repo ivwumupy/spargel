@@ -1,10 +1,9 @@
-#include <spargel/base/check.h>
-#include <spargel/base/checked_convert.h>
-#include <spargel/base/types.h>
-#include <spargel/render/ui_renderer_metal.h>
-#include <spargel/render/ui_scene.h>
-
+#include "spargel/render/ui_renderer_metal.h"
+#include "spargel/base/check.h"
+#include "spargel/base/checked_convert.h"
+#include "spargel/base/types.h"
 #include "spargel/render/metal_shaders.h"
+#include "spargel/render/ui_scene.h"
 
 //
 #include <time.h>
@@ -51,7 +50,7 @@ namespace spargel::render {
         sdf_frag2_ = [library_ newFunctionWithName:@"sdf_frag2"];
         sdf_comp_ = [library_ newFunctionWithName:@"sdf_comp"];
         sdf_comp_v2_ = [library_ newFunctionWithName:@"sdf_comp_v2"];
-        sdf_binning_= [library_ newFunctionWithName:@"sdf_binning"];
+        sdf_binning_ = [library_ newFunctionWithName:@"sdf_binning"];
         spargel_check(sdf_vert_);
         spargel_check(sdf_frag_);
         spargel_check(sdf_comp_);
@@ -61,13 +60,14 @@ namespace spargel::render {
         // Create pipeline.
         auto ppl_desc = [[MTLRenderPipelineDescriptor alloc] init];
         ppl_desc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
-        //ppl_desc.colorAttachments[0].blendingEnabled = true;
-        //ppl_desc.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-        //ppl_desc.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-        //ppl_desc.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-        //ppl_desc.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOne;
-        //ppl_desc.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-        //ppl_desc.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+        // ppl_desc.colorAttachments[0].blendingEnabled = true;
+        // ppl_desc.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+        // ppl_desc.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+        // ppl_desc.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+        // ppl_desc.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOne;
+        // ppl_desc.colorAttachments[0].destinationRGBBlendFactor =
+        // MTLBlendFactorOneMinusSourceAlpha;
+        // ppl_desc.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
 
         ppl_desc.vertexFunction = sdf_vert_;
         ppl_desc.fragmentFunction = sdf_frag_;
@@ -80,15 +80,13 @@ namespace spargel::render {
         [ppl_desc release];
 
         // Compute pipeline
-        sdf_comp_pipeline_ = [device_ newComputePipelineStateWithFunction:sdf_comp_
-                                                                    error:&error];
+        sdf_comp_pipeline_ = [device_ newComputePipelineStateWithFunction:sdf_comp_ error:&error];
         spargel_check(!error);
         sdf_comp_v2_pipeline_ = [device_ newComputePipelineStateWithFunction:sdf_comp_v2_
                                                                        error:&error];
         spargel_check(!error);
-        sdf_binning_pipeline_ =
-            [device_ newComputePipelineStateWithFunction:sdf_binning_
-                                                   error:&error];
+        sdf_binning_pipeline_ = [device_ newComputePipelineStateWithFunction:sdf_binning_
+                                                                       error:&error];
         spargel_check(!error);
 
         // Prepare render pass descriptor.
@@ -217,8 +215,8 @@ namespace spargel::render {
         usize max_slot = command_count * 500 + tile_count;
         bin_slots_buffer_.request(sizeof(BinSlot) * max_slot);
         bin_alloc_buffer_.request(sizeof(BinAlloc));
-        //spargel_log_info("max_slot: %zu", max_slot);
-        //spargel_log_info("tile_count: %zu", tile_count);
+        // spargel_log_info("max_slot: %zu", max_slot);
+        // spargel_log_info("tile_count: %zu", tile_count);
 
         memcpy(scene_commands_buffer_.object.contents, commands_bytes.data(),
                commands_bytes.count());
@@ -231,17 +229,15 @@ namespace spargel::render {
 
         // Binning!
         BinControl bin_control{
-            base::checkedConvert<u32>(tile_count_x),
-            base::checkedConvert<u32>(tile_count_y),
-            base::checkedConvert<u32>(command_count),
-            base::checkedConvert<u32>(max_slot)};
+            base::checkedConvert<u32>(tile_count_x), base::checkedConvert<u32>(tile_count_y),
+            base::checkedConvert<u32>(command_count), base::checkedConvert<u32>(max_slot)};
 
         [encoder setComputePipelineState:sdf_binning_pipeline_];
         [encoder setBytes:&bin_control length:sizeof(BinControl) atIndex:0];
         [encoder setBuffer:scene_commands_buffer_.object offset:0 atIndex:1];
         [encoder setBuffer:bin_slots_buffer_.object offset:0 atIndex:2];
         [encoder setBuffer:bin_alloc_buffer_.object offset:0 atIndex:3];
-        
+
         [encoder dispatchThreadgroups:MTLSizeMake(tile_count_x / 8 + 1, tile_count_y / 8 + 1, 1)
                 threadsPerThreadgroup:MTLSizeMake(8, 8, 1)];
         //[encoder dispatchThreadgroups:MTLSizeMake(1, 1, 1)
@@ -250,8 +246,7 @@ namespace spargel::render {
         // Render!
 
         id<MTLResource> resource = bin_slots_buffer_.object;
-        [encoder memoryBarrierWithResources:&resource
-                                      count:1];
+        [encoder memoryBarrierWithResources:&resource count:1];
 
         // struct {
         //     u32 cmd_count;
@@ -269,11 +264,11 @@ namespace spargel::render {
         [encoder endEncoding];
 
         [command_buffer addCompletedHandler:^(id<MTLCommandBuffer>) {
-                auto alloc = (BinAlloc*)bin_alloc_buffer_.object.contents;
-                if (alloc->out_of_space) {
-                    spargel_log_warn("bin slots overflow (offset: %u)", alloc->offset);
-                }
-            }];
+          auto alloc = (BinAlloc*)bin_alloc_buffer_.object.contents;
+          if (alloc->out_of_space) {
+              spargel_log_warn("bin slots overflow (offset: %u)", alloc->offset);
+          }
+        }];
 
         return command_buffer;
     }
@@ -299,13 +294,13 @@ namespace spargel::render {
         //   max_slot = 82711
         //   command_count = 7 (demo_ui)
         //   tile_count = 79211 = 379 * 209
-        //usize max_slot = command_count * 500 + tile_count;
+        // usize max_slot = command_count * 500 + tile_count;
         // TODO: Round before area.
         usize max_slot = scene.estimated_slots() + tile_count;
         bin_slots_buffer_.request(sizeof(BinSlot) * max_slot);
         bin_alloc_buffer_.request(sizeof(BinAlloc));
-        //spargel_log_info("max_slot: %zu", max_slot);
-        //spargel_log_info("tile_count: %zu", tile_count);
+        // spargel_log_info("max_slot: %zu", max_slot);
+        // spargel_log_info("tile_count: %zu", tile_count);
 
         memcpy(scene_commands_buffer_.object.contents, commands_bytes.data(),
                commands_bytes.count());
@@ -318,17 +313,15 @@ namespace spargel::render {
 
         // Binning!
         BinControl bin_control{
-            base::checkedConvert<u32>(tile_count_x),
-            base::checkedConvert<u32>(tile_count_y),
-            base::checkedConvert<u32>(command_count),
-            base::checkedConvert<u32>(max_slot)};
+            base::checkedConvert<u32>(tile_count_x), base::checkedConvert<u32>(tile_count_y),
+            base::checkedConvert<u32>(command_count), base::checkedConvert<u32>(max_slot)};
 
         [encoder setComputePipelineState:sdf_binning_pipeline_];
         [encoder setBytes:&bin_control length:sizeof(BinControl) atIndex:0];
         [encoder setBuffer:scene_commands_buffer_.object offset:0 atIndex:1];
         [encoder setBuffer:bin_slots_buffer_.object offset:0 atIndex:2];
         [encoder setBuffer:bin_alloc_buffer_.object offset:0 atIndex:3];
-        
+
         [encoder dispatchThreadgroups:MTLSizeMake(tile_count_x / 8 + 1, tile_count_y / 8 + 1, 1)
                 threadsPerThreadgroup:MTLSizeMake(8, 8, 1)];
         //[encoder dispatchThreadgroups:MTLSizeMake(1, 1, 1)
@@ -352,11 +345,12 @@ namespace spargel::render {
         [encoder2 endEncoding];
 
         [command_buffer addCompletedHandler:^(id<MTLCommandBuffer>) {
-                auto alloc = (BinAlloc*)bin_alloc_buffer_.object.contents;
-                if (alloc->out_of_space) {
-                    spargel_log_warn("bin slots overflow (tiles: %zu, cmds: %zu, max: %zu, need: %u)", tile_count, command_count, max_slot, alloc->offset);
-                }
-            }];
+          auto alloc = (BinAlloc*)bin_alloc_buffer_.object.contents;
+          if (alloc->out_of_space) {
+              spargel_log_warn("bin slots overflow (tiles: %zu, cmds: %zu, max: %zu, need: %u)",
+                               tile_count, command_count, max_slot, alloc->offset);
+          }
+        }];
 
         return command_buffer;
     }
@@ -364,9 +358,9 @@ namespace spargel::render {
                                                           id<MTLTexture> texture) {
         if (use_compute) {
             return renderToTextureComputeV2(scene, texture);
-            //return renderToTextureCompute(scene, texture);
+            // return renderToTextureCompute(scene, texture);
         }
-        //return renderToTextureRender(scene, texture);
+        // return renderToTextureRender(scene, texture);
         return renderToTextureRender2(scene, texture);
     }
     void UIRendererMetal::render(UIScene const& scene) {
@@ -380,8 +374,8 @@ namespace spargel::render {
 
         [command_buffer waitUntilCompleted];
 
-        //auto dt = command_buffer.GPUEndTime - command_buffer.GPUStartTime;
-        //spargel_log_info("GPU time: %.3fms", dt * 1000);
+        // auto dt = command_buffer.GPUEndTime - command_buffer.GPUStartTime;
+        // spargel_log_info("GPU time: %.3fms", dt * 1000);
     }
     UIRendererMetal::~UIRendererMetal() {
         [pass_desc_ release];
@@ -438,7 +432,7 @@ namespace spargel::render {
         return last_used < other.value().last_used;
     }
     UIRendererMetal::GrowingBuffer::~GrowingBuffer() {
-        //spargel_log_info("buffer destructor");
+        // spargel_log_info("buffer destructor");
     }
     void UIRendererMetal::GrowingBuffer::request(usize length) {
         if (length == 0) {

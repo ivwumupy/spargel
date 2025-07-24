@@ -111,6 +111,8 @@ namespace spargel::ui {
 
         float getWidth() const;
         float getHeight() const;
+        float width() const { return frame_.size.width; }
+        float height() const { return frame_.size.height; }
 
         // Layout
         // ------

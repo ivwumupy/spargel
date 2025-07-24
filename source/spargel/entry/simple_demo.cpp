@@ -1,6 +1,6 @@
-#include <spargel/base/logging.h>
-#include <spargel/base/platform.h>
-#include <spargel/entry/simple.h>
+#include "spargel/base/logging.h"
+#include "spargel/base/platform.h"
+#include "spargel/entry/simple.h"
 
 namespace spargel::entry {
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <spargel/base/allocator.h>
-#include <spargel/base/types.h>
-#include <spargel/config.h>
+#include "spargel/base/allocator.h"
+#include "spargel/base/types.h"
+#include "spargel/config.h"
 
 //
 #include <stdio.h>

@@ -1,9 +1,9 @@
-#include <spargel/text/font_mac.h>
-#include <spargel/text/font_manager.h>
-#include <spargel/text/styled_text.h>
-#include <spargel/text/text_shaper_mac.h>
+#include "spargel/text/text_shaper_mac.h"
 
+#include "spargel/text/font_mac.h"
+#include "spargel/text/font_manager.h"
 #include "spargel/text/font_manager_mac.h"
+#include "spargel/text/styled_text.h"
 
 namespace spargel::text {
     ShapedLine TextShaperMac::shapeLine(StyledText const& text) {

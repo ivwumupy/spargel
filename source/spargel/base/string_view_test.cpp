@@ -1,6 +1,7 @@
-#include <spargel/base/check.h>
-#include <spargel/base/string_view.h>
-#include <spargel/base/test.h>
+#include "spargel/base/string_view.h"
+
+#include "spargel/base/check.h"
+#include "spargel/base/test.h"
 
 TEST(StringView_Literal) {
     using namespace spargel::base::literals;

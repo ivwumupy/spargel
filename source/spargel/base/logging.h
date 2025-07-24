@@ -1,8 +1,8 @@
 #pragma once
 
-#include <spargel/base/compiler.h>
-#include <spargel/base/source_location.h>
-#include <spargel/base/types.h>
+#include "spargel/base/compiler.h"
+#include "spargel/base/source_location.h"
+#include "spargel/base/types.h"
 
 #if SPARGEL_IS_CLANG || SPARGEL_IS_GCC
 #define FILE_NAME_ __FILE_NAME__

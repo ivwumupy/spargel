@@ -1,7 +1,7 @@
-#include <spargel/base/logging.h>
-#include <spargel/entry/component.h>
-#include <spargel/entry/launch_data.h>
-#include <spargel/ui/platform.h>
+#include "spargel/base/logging.h"
+#include "spargel/entry/component.h"
+#include "spargel/entry/launch_data.h"
+#include "spargel/ui/platform.h"
 
 // platform
 #include <dlfcn.h>

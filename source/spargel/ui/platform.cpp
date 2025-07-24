@@ -1,5 +1,6 @@
-#include <spargel/config.h>
-#include <spargel/ui/platform.h>
+#include "spargel/ui/platform.h"
+
+#include "spargel/config.h"
 
 namespace spargel::ui {
 

@@ -1,9 +1,10 @@
-#include <spargel/base/assert.h>
-#include <spargel/base/const.h>
-#include <spargel/base/logging.h>
-#include <spargel/base/platform.h>
-#include <spargel/resource/directory.h>
-#include <spargel/util/path.h>
+#include "spargel/resource/directory.h"
+
+#include "spargel/base/assert.h"
+#include "spargel/base/const.h"
+#include "spargel/base/logging.h"
+#include "spargel/base/platform.h"
+#include "spargel/util/path.h"
 
 #if SPARGEL_USE_FILE_MMAP
 

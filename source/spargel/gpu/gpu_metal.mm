@@ -1,6 +1,6 @@
-#include <spargel/base/unique_ptr.h>
-#include <spargel/gpu/gpu_metal.h>
-#include <spargel/ui/window.h>
+#include "spargel/base/unique_ptr.h"
+#include "spargel/gpu/gpu_metal.h"
+#include "spargel/ui/window.h"
 
 // metal
 #import <Metal/Metal.h>

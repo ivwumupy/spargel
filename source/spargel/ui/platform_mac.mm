@@ -1,6 +1,6 @@
-#include <spargel/base/check.h>
-#include <spargel/ui/platform_mac.h>
-#include <spargel/ui/window_mac.h>
+#include "spargel/base/check.h"
+#include "spargel/ui/platform_mac.h"
+#include "spargel/ui/window_mac.h"
 
 @implementation SpargelApplicationDelegate
 - (bool)applicationShouldTerminateAfterLastWindowClosed:(NSApplication*)sender {
@@ -25,10 +25,6 @@ namespace spargel::ui {
     base::unique_ptr<Window> PlatformAppKit::makeWindow(u32 width, u32 height) {
         spargel_check(width > 0 && height > 0);
         return base::make_unique<WindowAppKit>(width, height);
-    }
-    base::unique_ptr<TextSystem> PlatformAppKit::createTextSystem() {
-        return nullptr;
-        // return base::make_unique<TextSystemAppKit>();
     }
     void PlatformAppKit::initGlobalMenu() {
         NSMenu* menu_bar = [[NSMenu alloc] init];

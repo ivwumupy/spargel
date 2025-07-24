@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spargel/ui/text_system.h>
+#include "spargel/ui/text_system.h"
 
 // FreeType 2
 #include <ft2build.h>

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <spargel/base/meta.h>
-#include <spargel/base/panic.h>
-#include <spargel/base/sum_type.h>
-#include <spargel/base/type_list.h>
+#include "spargel/base/meta.h"
+#include "spargel/base/panic.h"
+#include "spargel/base/sum_type.h"
+#include "spargel/base/type_list.h"
 
 namespace spargel::base {
 

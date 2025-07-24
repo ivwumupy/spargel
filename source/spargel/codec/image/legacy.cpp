@@ -1,5 +1,5 @@
 
-#include <spargel/codec/image/legacy.h>
+#include "spargel/codec/image/legacy.h"
 
 void destroy_image(struct image image) {
     if (image.pixels) {

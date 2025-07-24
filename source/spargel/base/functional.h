@@ -1,8 +1,8 @@
 #pragma once
 
-#include <spargel/base/attribute.h>
-#include <spargel/base/meta.h>
-#include <spargel/base/types.h>
+#include "spargel/base/attribute.h"
+#include "spargel/base/meta.h"
+#include "spargel/base/types.h"
 
 namespace spargel::base {
 

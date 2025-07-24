@@ -1,14 +1,14 @@
 #pragma once
 
-#include <spargel/base/allocator.h>
-#include <spargel/base/intrinsic.h>
-#include <spargel/base/meta.h>
-#include <spargel/base/object.h>
-#include <spargel/base/span.h>
-#include <spargel/base/string_view.h>
-#include <spargel/base/types.h>
-#include <spargel/base/unique_ptr.h>
-#include <spargel/base/vector.h>
+#include "spargel/base/allocator.h"
+#include "spargel/base/intrinsic.h"
+#include "spargel/base/meta.h"
+#include "spargel/base/object.h"
+#include "spargel/base/span.h"
+#include "spargel/base/string_view.h"
+#include "spargel/base/types.h"
+#include "spargel/base/unique_ptr.h"
+#include "spargel/base/vector.h"
 
 namespace spargel::ui {
     class Window;

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <spargel/base/hash_map.h>
-#include <spargel/gpu/metal_context.h>
-#include <spargel/render/ui_renderer.h>
-#include <spargel/text/font.h>
+#include "spargel/base/hash_map.h"
+#include "spargel/gpu/metal_context.h"
+#include "spargel/render/ui_renderer.h"
+#include "spargel/text/font.h"
 
 //
 #import <Metal/Metal.h>

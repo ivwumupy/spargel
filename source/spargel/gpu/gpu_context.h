@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spargel/base/unique_ptr.h>
+#include "spargel/base/unique_ptr.h"
 
 namespace spargel::gpu {
     enum class GPUBackend {

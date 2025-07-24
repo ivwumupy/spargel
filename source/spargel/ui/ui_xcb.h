@@ -1,11 +1,11 @@
 #pragma once
 
-#include <spargel/base/vector.h>
-#include <spargel/config.h>
-#include <spargel/ui/platform.h>
-#include <spargel/ui/ui_dummy.h>
-#include <spargel/ui/window.h>
-#include <spargel/ui/xkb_util.h>
+#include "spargel/base/vector.h"
+#include "spargel/config.h"
+#include "spargel/ui/platform.h"
+#include "spargel/ui/ui_dummy.h"
+#include "spargel/ui/window.h"
+#include "spargel/ui/xkb_util.h"
 
 /* X11/XCB/XKB */
 #include <X11/Xlib-xcb.h>

@@ -1,7 +1,8 @@
-#include <spargel/base/check.h>
-#include <spargel/base/checked_convert.h>
-#include <spargel/base/deflate.h>
-#include <spargel/base/enum.h>
+#include "spargel/base/deflate.h"
+
+#include "spargel/base/check.h"
+#include "spargel/base/checked_convert.h"
+#include "spargel/base/enum.h"
 
 namespace spargel::base {
     namespace {

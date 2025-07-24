@@ -1,13 +1,13 @@
 #pragma once
 
-#include <spargel/base/optional.h>
-#include <spargel/base/span.h>
-#include <spargel/base/string.h>
-#include <spargel/base/string_view.h>
-#include <spargel/base/types.h>
-#include <spargel/base/unique_ptr.h>
-
 #include <cstddef>
+
+#include "spargel/base/optional.h"
+#include "spargel/base/span.h"
+#include "spargel/base/string.h"
+#include "spargel/base/string_view.h"
+#include "spargel/base/types.h"
+#include "spargel/base/unique_ptr.h"
 
 namespace spargel::resource {
 

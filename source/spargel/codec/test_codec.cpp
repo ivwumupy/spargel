@@ -1,6 +1,6 @@
-#include <spargel/base/check.h>
-#include <spargel/base/test.h>
-#include <spargel/codec/codec.h>
+#include "spargel/base/check.h"
+#include "spargel/base/test.h"
+#include "spargel/codec/codec.h"
 
 using namespace spargel;
 using namespace spargel::codec;

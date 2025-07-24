@@ -1,8 +1,9 @@
-#include <spargel/base/check.h>
-#include <spargel/base/logging.h>
-#include <spargel/render/ui_renderer.h>
-#include <spargel/render/ui_scene.h>
-#include <spargel/text/text_shaper.h>
+#include "spargel/render/ui_scene.h"
+
+#include "spargel/base/check.h"
+#include "spargel/base/logging.h"
+#include "spargel/render/ui_renderer.h"
+#include "spargel/text/text_shaper.h"
 
 //
 #include <math.h>
@@ -10,6 +11,10 @@
 namespace spargel::render {
     void UIScene::sampleTexture(float x, float y, float width, float height,
                                 UIRenderer::TextureHandle handle, u32 color) {
+        auto transform = currentTransform();
+        x += transform.x;
+        y += transform.y;
+
         pushCommand(DrawCommand::sample_texture);
         u32 a = (u32)handle.x | (u32)((u32)handle.y << 16);
         u32 b = (u32)handle.width | (u32)((u32)handle.height << 16);

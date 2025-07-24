@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spargel/gpu/gpu_context.h>
+#include "spargel/gpu/gpu_context.h"
 
 //
 #import <Metal/Metal.h>

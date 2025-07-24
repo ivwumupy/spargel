@@ -1,11 +1,11 @@
 #pragma once
 
-#include <spargel/base/hash_map.h>
-#include <spargel/base/platform.h>
-#include <spargel/base/unique_ptr.h>
-#include <spargel/base/vector.h>
-#include <spargel/config.h>
-#include <spargel/gpu/gpu.h>
+#include "spargel/base/hash_map.h"
+#include "spargel/base/platform.h"
+#include "spargel/base/unique_ptr.h"
+#include "spargel/base/vector.h"
+#include "spargel/config.h"
+#include "spargel/gpu/gpu.h"
 
 // vulkan
 
@@ -64,7 +64,7 @@ namespace spargel::gpu {
 #define VULKAN_GENERAL_PROC(name) VULKAN_PROC_DECL(name)
 #define VULKAN_INSTANCE_PROC(name) VULKAN_PROC_DECL(name)
 #define VULKAN_DEVICE_PROC(name) VULKAN_PROC_DECL(name)
-#include <spargel/gpu/vulkan_procs.inc>
+#include "spargel/gpu/vulkan_procs.inc"
 #undef VULKAN_DEVICE_PROC
 #undef VULKAN_INSTANCE_PROC
 #undef VULKAN_GENERAL_PROC

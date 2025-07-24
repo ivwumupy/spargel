@@ -1,8 +1,9 @@
-#include <spargel/base/algorithm.h>
-#include <spargel/base/check.h>
-#include <spargel/base/logging.h>
-#include <spargel/base/sum_type.h>
-#include <spargel/base/test.h>
+#include "spargel/base/sum_type.h"
+
+#include "spargel/base/algorithm.h"
+#include "spargel/base/check.h"
+#include "spargel/base/logging.h"
+#include "spargel/base/test.h"
 
 using namespace spargel::base;
 

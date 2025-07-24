@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spargel/ui/event.h>
+#include "spargel/ui/event.h"
 
 namespace spargel::render {
     class UIRenderer;

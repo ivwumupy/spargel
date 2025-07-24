@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spargel/config.h>
+#include "spargel/config.h"
 
 /*
  * These values are only hints.

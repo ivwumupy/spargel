@@ -1,7 +1,7 @@
 #pragma once
 
-#include <spargel/base/meta.h>
-#include <spargel/base/sum_type.h>
+#include "spargel/base/meta.h"
+#include "spargel/base/sum_type.h"
 
 namespace spargel::base {
 

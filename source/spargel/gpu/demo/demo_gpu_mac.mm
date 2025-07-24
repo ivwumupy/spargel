@@ -1,16 +1,16 @@
-#include <spargel/base/check.h>
-#include <spargel/base/logging.h>
-#include <spargel/base/optional.h>
-#include <spargel/base/string_view.h>
-#include <spargel/base/unique_ptr.h>
-#include <spargel/base/vector.h>
-#include <spargel/gpu/gpu.h>
-#include <spargel/render/atlas_packer.h>
-#include <spargel/resource/directory.h>
-#include <spargel/resource/resource.h>
-#include <spargel/ui/platform.h>
-#include <spargel/ui/window.h>
-#include <spargel/ui/window_mac.h>
+#include "spargel/base/check.h"
+#include "spargel/base/logging.h"
+#include "spargel/base/optional.h"
+#include "spargel/base/string_view.h"
+#include "spargel/base/unique_ptr.h"
+#include "spargel/base/vector.h"
+#include "spargel/gpu/gpu.h"
+#include "spargel/render/atlas_packer.h"
+#include "spargel/resource/directory.h"
+#include "spargel/resource/resource.h"
+#include "spargel/ui/platform.h"
+#include "spargel/ui/window.h"
+#include "spargel/ui/window_mac.h"
 
 #define USE_VULKAN 1
 #if SPARGEL_IS_MACOS
@@ -20,12 +20,12 @@
 #endif
 
 // #if USE_METAL
-// #include <spargel/gpu/demo/shader.metallib.inc>
+// #include "spargel/gpu/demo/shader.metallib.inc"
 // #endif
 
 // #if USE_VULKAN
-// #include <spargel/gpu/demo/fragment_shader.spirv.inc>
-// #include <spargel/gpu/demo/vertex_shader.spirv.inc>
+// #include "spargel/gpu/demo/fragment_shader.spirv.inc"
+// #include "spargel/gpu/demo/vertex_shader.spirv.inc"
 // #endif
 
 #include <stdio.h>
@@ -542,7 +542,7 @@ namespace spargel::gpu {
             }
 
             ui::WindowAppKit* _window;
-            SpargelMetalView* view_;
+            SpargelHostView* view_;
             resource::ResourceManager* _manager;
             ui::TextSystem* _text_system;
             base::unique_ptr<Device> _device;

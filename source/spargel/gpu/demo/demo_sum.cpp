@@ -1,6 +1,6 @@
-#include <spargel/base/command_line.h>
-#include <spargel/gpu/gpu.h>
-#include <spargel/resource/directory.h>
+#include "spargel/base/command_line.h"
+#include "spargel/gpu/gpu.h"
+#include "spargel/resource/directory.h"
 
 //
 #include <stdio.h>

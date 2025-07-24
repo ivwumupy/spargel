@@ -1,9 +1,9 @@
 #pragma once
 
-#include <spargel/base/span.h>
-#include <spargel/base/unique_ptr.h>
-#include <spargel/base/vector.h>
-#include <spargel/text/font.h>
+#include "spargel/base/span.h"
+#include "spargel/base/unique_ptr.h"
+#include "spargel/base/vector.h"
+#include "spargel/text/font.h"
 
 namespace spargel::text {
     class FontManager;

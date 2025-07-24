@@ -1,8 +1,8 @@
-#include <spargel/base/logging.h>
-#include <spargel/config.h>
-#include <spargel/resource/directory.h>
-#include <spargel/ui/platform.h>
-#include <spargel/ui/window.h>
+#include "spargel/base/logging.h"
+#include "spargel/config.h"
+#include "spargel/resource/directory.h"
+#include "spargel/ui/platform.h"
+#include "spargel/ui/window.h"
 
 using namespace spargel;
 using namespace spargel::base::literals;

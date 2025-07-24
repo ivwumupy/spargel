@@ -1,8 +1,7 @@
 #pragma once
 
-#include <spargel/ui/platform.h>
-#include <spargel/ui/text_system.h>
-#include <spargel/ui/window.h>
+#include "spargel/ui/platform.h"
+#include "spargel/ui/window.h"
 
 namespace spargel::ui {
 
@@ -18,12 +17,9 @@ namespace spargel::ui {
         void bindRenderer(render::UIRenderer*) override {}
         void setTextFocus(bool focus) override {}
         float scaleFactor() override { return 1.0; }
-    };
 
-    class TextSystemDummy final : public TextSystem {
-    public:
-        LineLayout layoutLine(base::StringView str) override;
-        RasterResult rasterizeGlyph(GlyphId id, void*) override;
+        float width() override { return 0.0f; }
+        float height() override { return 0.0f; }
     };
 
     class PlatformDummy final : public Platform {
@@ -34,9 +30,6 @@ namespace spargel::ui {
 
         base::unique_ptr<Window> makeWindow(u32 width, u32 height) override {
             return base::make_unique<WindowDummy>();
-        }
-        base::unique_ptr<TextSystem> createTextSystem() override {
-            return base::make_unique<TextSystemDummy>();
         }
     };
 

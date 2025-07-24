@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spargel/base/platform.h>
+#include "spargel/base/platform.h"
 
 // Emscripten
 #include <emscripten.h>

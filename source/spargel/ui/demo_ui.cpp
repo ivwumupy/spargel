@@ -1,3 +1,4 @@
+#include "spargel/base/optional.h"
 #include "spargel/base/unique_ptr.h"
 #include "spargel/gpu/gpu_context.h"
 #include "spargel/render/ui_renderer.h"
@@ -20,34 +21,39 @@ namespace spargel::ui {
 
             void setText(base::StringView s) {
                 text_.setText(s);
+                shape_result_ = base::nullopt;
                 invalidateLayout();
                 requestRepaint();
             }
             math::RectangleSize getPreferredSize(
                 [[maybe_unused]] math::RectangleSize proposal) override {
-                // TODO: Move to layout.
-                auto shaper = getHost()->getTextShaper();
-                shape_result_ = shaper->shapeLine(text_);
-                spargel_log_info("shape done: width = %.3f", shape_result_.width);
-
-                return {shape_result_.width, shape_result_.ascent - shape_result_.descent};
+                if (!shape_result_) {
+                    shape();
+                }
+                return {shape_result_->width, shape_result_->ascent - shape_result_->descent};
             }
             void onPaint(render::UIScene& scene) override {
-                // TODO: Transform to window coordinate.
-                scene.strokeRectangle(getFrame(), 0xFFFF00FF);
+                scene.strokeRectangle(0, 0, width(), height(), 0xFFFF00FF);
 
-                auto frame = getFrame();
+                if (!shape_result_) {
+                    shape();
+                }
 
-                float x = frame.origin.x + frame.size.width / 2.0f - shape_result_.width / 2.0f -
-                          shape_result_.leading;
-                float y = frame.origin.y + frame.size.height / 2.0f + shape_result_.ascent / 2.0f +
-                          shape_result_.descent / 2.0f;
+                float x = width() / 2.0f - shape_result_->width / 2.0f - shape_result_->leading;
+                float y =
+                    height() / 2.0f + shape_result_->ascent / 2.0f + shape_result_->descent / 2.0f;
                 scene.fillText(text_, x, y, 0xFFFFFFFF);
+            }
+
+            void shape() {
+                auto shaper = getHost()->getTextShaper();
+                shape_result_ = shaper->shapeLine(text_);
+                spargel_log_info("shape done: width = %.3f", shape_result_->width);
             }
 
         private:
             text::StyledText text_;
-            text::ShapedLine shape_result_;
+            base::Optional<text::ShapedLine> shape_result_;
         };
 
         class BoxView : public ui::View {

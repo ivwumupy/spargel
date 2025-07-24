@@ -1,7 +1,7 @@
 #pragma once
 
-#include <spargel/base/meta.h>
-#include <spargel/base/tag_invoke.h>
+#include "spargel/base/meta.h"
+#include "spargel/base/tag_invoke.h"
 
 namespace spargel::base {
 

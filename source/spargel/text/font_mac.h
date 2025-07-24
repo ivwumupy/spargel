@@ -1,7 +1,7 @@
 #pragma once
 
-#include <spargel/base/string.h>
-#include <spargel/text/font.h>
+#include "spargel/base/string.h"
+#include "spargel/text/font.h"
 
 //
 #include <CoreText/CoreText.h>

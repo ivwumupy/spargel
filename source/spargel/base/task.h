@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spargel/base/coroutine.h>
+#include "spargel/base/coroutine.h"
 
 namespace spargel::base {
     // this should be copyable

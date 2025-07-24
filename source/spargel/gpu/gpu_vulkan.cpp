@@ -1,12 +1,13 @@
-#include <spargel/base/assert.h>
-#include <spargel/base/logging.h>
-#include <spargel/base/object.h>
-#include <spargel/base/platform.h>
-#include <spargel/base/types.h>
-#include <spargel/base/vector.h>
-#include <spargel/config.h>
-#include <spargel/gpu/gpu_vulkan.h>
-#include <spargel/ui/window.h>
+#include "spargel/gpu/gpu_vulkan.h"
+
+#include "spargel/base/assert.h"
+#include "spargel/base/logging.h"
+#include "spargel/base/object.h"
+#include "spargel/base/platform.h"
+#include "spargel/base/types.h"
+#include "spargel/base/vector.h"
+#include "spargel/config.h"
+#include "spargel/ui/window.h"
 
 // libc
 #include <stdio.h>
@@ -112,21 +113,21 @@ namespace spargel::gpu {
             base::get_proc_address(library, "vkGetInstanceProcAddr"));
 #define VULKAN_GENERAL_PROC(name) \
     this->name = reinterpret_cast<PFN_##name>(this->vkGetInstanceProcAddr(nullptr, #name));
-#include <spargel/gpu/vulkan_procs.inc>
+#include "spargel/gpu/vulkan_procs.inc"
 #undef VULKAN_GENERAL_PROC
     }
 
     void VulkanProcTable::loadInstanceProcs(VkInstance instance) {
 #define VULKAN_INSTANCE_PROC(name) \
     this->name = reinterpret_cast<PFN_##name>(this->vkGetInstanceProcAddr(instance, #name));
-#include <spargel/gpu/vulkan_procs.inc>
+#include "spargel/gpu/vulkan_procs.inc"
 #undef VULKAN_INSTANCE_PROC
     }
 
     void VulkanProcTable::loadDeviceProcs(VkDevice device) {
 #define VULKAN_DEVICE_PROC(name) \
     this->name = reinterpret_cast<PFN_##name>(this->vkGetDeviceProcAddr(device, #name));
-#include <spargel/gpu/vulkan_procs.inc>
+#include "spargel/gpu/vulkan_procs.inc"
 #undef VULKAN_DEVICE_PROC
     }
 

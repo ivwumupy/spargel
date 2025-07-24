@@ -8,13 +8,13 @@
 
 #pragma once
 
-#include <spargel/base/hash_map.h>
-#include <spargel/base/optional.h>
-#include <spargel/base/string.h>
-#include <spargel/base/vector.h>
-#include <spargel/codec/codec.h>
-#include <spargel/math/matrix.h>
-#include <spargel/math/vector.h>
+#include "spargel/base/hash_map.h"
+#include "spargel/base/optional.h"
+#include "spargel/base/string.h"
+#include "spargel/base/vector.h"
+#include "spargel/codec/codec.h"
+#include "spargel/math/matrix.h"
+#include "spargel/math/vector.h"
 
 namespace spargel::codec::model {
 

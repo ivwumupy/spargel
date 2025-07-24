@@ -1,8 +1,8 @@
 #pragma once
 
-#include <spargel/base/assert.h>
-#include <spargel/base/compiler.h>
-#include <spargel/base/types.h>
+#include "spargel/base/assert.h"
+#include "spargel/base/compiler.h"
+#include "spargel/base/types.h"
 
 namespace spargel::base {
 

@@ -5,16 +5,16 @@
 
 #pragma once
 
-#include <spargel/base/attribute.h>
-#include <spargel/base/concept.h>
-#include <spargel/base/either.h>
-#include <spargel/base/functional.h>
-#include <spargel/base/hash_map.h>
-#include <spargel/base/meta.h>
-#include <spargel/base/optional.h>
-#include <spargel/base/string.h>
-#include <spargel/base/tuple.h>
-#include <spargel/base/vector.h>
+#include "spargel/base/attribute.h"
+#include "spargel/base/concept.h"
+#include "spargel/base/either.h"
+#include "spargel/base/functional.h"
+#include "spargel/base/hash_map.h"
+#include "spargel/base/meta.h"
+#include "spargel/base/optional.h"
+#include "spargel/base/string.h"
+#include "spargel/base/tuple.h"
+#include "spargel/base/vector.h"
 
 namespace spargel::codec {
 

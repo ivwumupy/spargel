@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spargel/base/compiler.h>
+#include "spargel/base/compiler.h"
 
 // "inline" seems to be needed
 

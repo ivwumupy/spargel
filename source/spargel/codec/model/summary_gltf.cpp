@@ -1,5 +1,5 @@
-#include <spargel/codec/model/gltf.h>
-#include <spargel/resource/directory.h>
+#include "spargel/codec/model/gltf.h"
+#include "spargel/resource/directory.h"
 
 /* libc */
 #include <stdio.h>

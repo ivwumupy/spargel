@@ -1,10 +1,10 @@
 #pragma once
 
-#include <spargel/base/hash_map.h>
-#include <spargel/base/optional.h>
-#include <spargel/base/string.h>
-#include <spargel/base/vector.h>
-#include <spargel/codec/codec.h>
+#include "spargel/base/hash_map.h"
+#include "spargel/base/optional.h"
+#include "spargel/base/string.h"
+#include "spargel/base/vector.h"
+#include "spargel/codec/codec.h"
 
 namespace spargel::codec {
 

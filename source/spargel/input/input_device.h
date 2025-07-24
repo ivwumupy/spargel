@@ -1,7 +1,5 @@
 #pragma once
 
-#include <spargel/base/string_view.h>
-
 namespace spargel::input {
     enum class InputDeviceKind {
         Mouse,

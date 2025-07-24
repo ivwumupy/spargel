@@ -1,8 +1,9 @@
-#include <spargel/base/string.h>
-#include <spargel/entry/simple.h>
-#include <spargel/resource/directory.h>
-#include <spargel/ui/platform.h>
-#include <spargel/ui/window.h>
+#include "spargel/entry/simple.h"
+
+#include "spargel/base/string.h"
+#include "spargel/resource/directory.h"
+#include "spargel/ui/platform.h"
+#include "spargel/ui/window.h"
 
 using namespace spargel;
 

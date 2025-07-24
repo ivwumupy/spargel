@@ -1,7 +1,5 @@
 #pragma once
 
-#include <spargel/base/attribute.h>
-
 namespace spargel::math {
 
     /// 4x4 matrix.

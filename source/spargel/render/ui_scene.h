@@ -25,10 +25,16 @@ namespace spargel::render {
     //
     class UIScene {
     public:
+        UIScene() { clear(); }
+
         void setRenderer(UIRenderer* renderer) { renderer_ = renderer; }
 
         // TODO: Clip stack.
         void setClip(float x, float y, float w, float h) {
+            auto transform = currentTransform();
+            x += transform.x;
+            y += transform.y;
+
             pushCommand(DrawCommand::set_clip);
             pushData(x, y, w, h);
             clip_ = math::Rectangle{{x * scale_, y * scale_}, {w * scale_, h * scale_}};
@@ -43,6 +49,10 @@ namespace spargel::render {
         }
 
         void fillRect(float x, float y, float w, float h, u32 color) {
+            auto transform = currentTransform();
+            x += transform.x;
+            y += transform.y;
+
             pushCommand(DrawCommand::fill_rect);
             pushData(x, y, w, h, color);
             pushCommand2(DrawCommand::fill_rect, x * scale_, y * scale_, w * scale_, h * scale_,
@@ -54,6 +64,10 @@ namespace spargel::render {
                 (usize)((math::ceil(m / 8.0f) + 1.0f) * (math::ceil(n / 8.0f) + 1.0f));
         }
         void fillCircle(float x, float y, float r, u32 color) {
+            auto transform = currentTransform();
+            x += transform.x;
+            y += transform.y;
+
             pushCommand(DrawCommand::fill_circle);
             pushData(x, y, r, color);
             pushCommand2(DrawCommand::fill_circle, x * scale_, y * scale_, r * scale_, color);
@@ -64,6 +78,10 @@ namespace spargel::render {
         }
         // v2 only
         void fillRoundedRect(float x, float y, float w, float h, float r, u32 color) {
+            auto transform = currentTransform();
+            x += transform.x;
+            y += transform.y;
+
             pushCommand2(DrawCommand::fill_rounded_rect, x * scale_, y * scale_, w * scale_,
                          h * scale_, r * scale_, color);
 
@@ -73,6 +91,12 @@ namespace spargel::render {
                 (usize)((math::ceil(m / 8.0f) + 1.0f) * (math::ceil(n / 8.0f) + 1.0f));
         }
         void strokeLine(float x0, float y0, float x1, float y1, u32 color) {
+            auto transform = currentTransform();
+            x0 += transform.x;
+            y0 += transform.y;
+            x1 += transform.x;
+            y1 += transform.y;
+
             pushCommand(DrawCommand::stroke_line);
             pushData(x0, y0, x1, y1, color);
             pushCommand2(DrawCommand::stroke_line, x0 * scale_, y0 * scale_, x1 * scale_,
@@ -84,6 +108,10 @@ namespace spargel::render {
                 (usize)((math::ceil(m / 8.0f) + 1.0f) * (math::ceil(n / 8.0f) + 1.0f));
         }
         void strokeCircle(float x, float y, float r, u32 color) {
+            auto transform = currentTransform();
+            x += transform.x;
+            y += transform.y;
+
             pushCommand(DrawCommand::stroke_circle);
             pushData(x, y, r, color);
             pushCommand2(DrawCommand::stroke_circle, x * scale_, y * scale_, r * scale_, color);
@@ -119,10 +147,19 @@ namespace spargel::render {
             commands_.clear();
             data_.clear();
             commands2_.clear();
+            transform_stack_.clear();
+            transform_stack_.emplace(0.0f, 0.0f);
             estimated_slots_ = 0;
         }
 
         void setScale(float s) { scale_ = s; }
+
+        void pushTransform(float dx, float dy) {
+            auto current = currentTransform();
+            transform_stack_.emplace(current.x + dx, current.y + dy);
+        }
+
+        void popTransform() { transform_stack_.pop(); }
 
         usize estimated_slots() const { return estimated_slots_; }
 
@@ -167,6 +204,10 @@ namespace spargel::render {
             commands2_.push(Command2{cmd, clip_, {base::bitCast<Ts, u32>(ts)...}});
         }
 
+        math::Vector2f currentTransform() const {
+            return transform_stack_[transform_stack_.count() - 1];
+        }
+
         float scale_ = 1.0;
         UIRenderer* renderer_ = nullptr;
         base::Vector<u8> commands_;
@@ -174,6 +215,8 @@ namespace spargel::render {
 
         math::Rectangle clip_;
         base::Vector<Command2> commands2_;
+
+        base::Vector<math::Vector2f> transform_stack_;
 
         usize estimated_slots_ = 0;
     };

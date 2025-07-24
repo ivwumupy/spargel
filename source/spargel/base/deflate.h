@@ -1,11 +1,11 @@
 #pragma once
 
-#include <spargel/base/check.h>
-#include <spargel/base/checked_convert.h>
-#include <spargel/base/span.h>
-#include <spargel/base/types.h>
-#include <spargel/base/unique_ptr.h>
-#include <spargel/base/vector.h>
+#include "spargel/base/check.h"
+#include "spargel/base/checked_convert.h"
+#include "spargel/base/span.h"
+#include "spargel/base/types.h"
+#include "spargel/base/unique_ptr.h"
+#include "spargel/base/vector.h"
 
 namespace spargel::base {
     class DeflateDecompressor {

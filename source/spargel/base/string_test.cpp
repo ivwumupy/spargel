@@ -1,6 +1,7 @@
-#include <spargel/base/check.h>
-#include <spargel/base/string.h>
-#include <spargel/base/test.h>
+#include "spargel/base/string.h"
+
+#include "spargel/base/check.h"
+#include "spargel/base/test.h"
 
 // libc
 #include <string.h>

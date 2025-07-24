@@ -1,7 +1,7 @@
 #pragma once
 
-#include <spargel/base/types.h>
-#include <spargel/resource/resource.h>
+#include "spargel/base/types.h"
+#include "spargel/resource/resource.h"
 
 // Android
 #include <android/asset_manager.h>

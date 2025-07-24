@@ -1,8 +1,8 @@
 #pragma once
 
-#include <spargel/base/unique_ptr.h>
-#include <spargel/base/vector.h>
-#include <spargel/resource/resource.h>
+#include "spargel/base/unique_ptr.h"
+#include "spargel/base/vector.h"
+#include "spargel/resource/resource.h"
 
 namespace spargel::resource {
 

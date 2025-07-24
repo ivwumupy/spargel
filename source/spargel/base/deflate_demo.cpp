@@ -1,8 +1,8 @@
-#include <spargel/base/deflate.h>
-#include <spargel/base/string.h>
-#include <spargel/base/string_view.h>
-#include <spargel/base/vector.h>
-#include <spargel/resource/directory.h>
+#include "spargel/base/deflate.h"
+#include "spargel/base/string.h"
+#include "spargel/base/string_view.h"
+#include "spargel/base/vector.h"
+#include "spargel/resource/directory.h"
 
 //
 #include <stdio.h>

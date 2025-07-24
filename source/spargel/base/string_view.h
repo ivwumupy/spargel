@@ -1,8 +1,8 @@
 #pragma once
 
-#include <spargel/base/check.h>
-#include <spargel/base/hash.h>
-#include <spargel/base/types.h>
+#include "spargel/base/check.h"
+#include "spargel/base/hash.h"
+#include "spargel/base/types.h"
 
 // libc
 #include <string.h>

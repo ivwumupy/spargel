@@ -1,6 +1,6 @@
-#include <spargel/base/string.h>
-#include <spargel/text/font.h>
-#include <spargel/text/font_manager.h>
+#include "spargel/base/string.h"
+#include "spargel/text/font.h"
+#include "spargel/text/font_manager.h"
 
 //
 #include <stdio.h>

@@ -1,4 +1,4 @@
-#include <spargel/base/platform_emscripten.h>
+#include "spargel/base/platform_emscripten.h"
 
 // libc
 #include <string.h>

@@ -1,6 +1,7 @@
-#include <spargel/base/assert.h>
-#include <spargel/base/logging.h>
-#include <spargel/config.h>
+#include "spargel/base/logging.h"
+
+#include "spargel/base/assert.h"
+#include "spargel/config.h"
 
 // libc
 #include <stdarg.h>
@@ -19,7 +20,7 @@
 #endif
 
 #if SPARGEL_IS_EMSCRIPTEN
-#include <spargel/base/platform_emscripten.h>
+#include "spargel/base/platform_emscripten.h"
 #endif
 
 #if SPARGEL_IS_WINDOWS

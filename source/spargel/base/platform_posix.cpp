@@ -1,4 +1,4 @@
-#include <spargel/base/platform.h>
+#include "spargel/base/platform.h"
 
 // POSIX
 #include <dlfcn.h>

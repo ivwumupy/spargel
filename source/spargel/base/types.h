@@ -1,7 +1,7 @@
 #pragma once
 
-#include <spargel/base/compiler.h>
-#include <spargel/config.h>
+#include "spargel/base/compiler.h"
+#include "spargel/config.h"
 
 // c std
 #include <stddef.h>

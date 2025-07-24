@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spargel/base/meta.h>
+#include "spargel/base/meta.h"
 
 namespace spargel::base {
 

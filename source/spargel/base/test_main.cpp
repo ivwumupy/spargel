@@ -1,4 +1,4 @@
-#include <spargel/base/test.h>
+#include "spargel/base/test.h"
 
 int main() {
     spargel::base::TestManager::getInstance()->runAll();

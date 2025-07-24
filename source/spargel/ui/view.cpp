@@ -34,10 +34,13 @@ namespace spargel::ui {
     }
     void View::paint(PaintContext& context) {
         // TODO: Support alternative path.
+        // TODO: Should we put the transform stack in the paint context.
+        context.scene->pushTransform(frame_.origin.x, frame_.origin.y);
         onPaint(*context.scene);
         for (auto* child : children_) {
             child->paint(context);
         }
+        context.scene->popTransform();
     }
     void View::invalidateLayout() {
         needs_layout_ = true;

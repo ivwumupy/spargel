@@ -1,7 +1,7 @@
 #pragma once
 
-#include <spargel/base/initializer_list.h>
-#include <spargel/base/types.h>
+#include "spargel/base/initializer_list.h"
+#include "spargel/base/types.h"
 
 namespace spargel::base {
 

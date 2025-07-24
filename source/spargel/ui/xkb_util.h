@@ -1,7 +1,7 @@
 #pragma once
 
-#include <spargel/base/types.h>
-#include <spargel/ui/event.h>
+#include "spargel/base/types.h"
+#include "spargel/ui/event.h"
 
 // XKB
 #include <xkbcommon/xkbcommon.h>

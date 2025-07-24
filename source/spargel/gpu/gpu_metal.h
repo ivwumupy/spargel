@@ -1,9 +1,9 @@
 #pragma once
 
-#include <spargel/base/assert.h>
-#include <spargel/base/unique_ptr.h>
-#include <spargel/base/vector.h>
-#include <spargel/gpu/gpu.h>
+#include "spargel/base/assert.h"
+#include "spargel/base/unique_ptr.h"
+#include "spargel/base/vector.h"
+#include "spargel/gpu/gpu.h"
 
 // metal
 #import <Metal/Metal.h>

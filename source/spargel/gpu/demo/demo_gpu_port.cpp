@@ -1,9 +1,9 @@
-#include <spargel/base/logging.h>
-#include <spargel/entry/simple.h>
-#include <spargel/gpu/gpu.h>
-#include <spargel/gpu/gpu_metal.h>
-#include <spargel/gpu/gpu_vulkan.h>
-#include <spargel/ui/ui.h>
+#include "spargel/base/logging.h"
+#include "spargel/entry/simple.h"
+#include "spargel/gpu/gpu.h"
+#include "spargel/gpu/gpu_metal.h"
+#include "spargel/gpu/gpu_vulkan.h"
+#include "spargel/ui/ui.h"
 
 /* libc */
 #include <math.h>

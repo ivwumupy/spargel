@@ -1,8 +1,9 @@
-#include <spargel/base/allocator.h>
-#include <spargel/base/object.h>
-#include <spargel/base/types.h>
-#include <spargel/base/vector.h>
-#include <spargel/ecs/ecs.h>
+#include "spargel/ecs/ecs.h"
+
+#include "spargel/base/allocator.h"
+#include "spargel/base/object.h"
+#include "spargel/base/types.h"
+#include "spargel/base/vector.h"
 
 /* libc */
 #include <stdlib.h>
