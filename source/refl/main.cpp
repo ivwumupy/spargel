@@ -1,5 +1,7 @@
 #include <clang/AST/ASTConsumer.h>
+#include <clang/AST/ASTContext.h>
 #include <clang/AST/DeclGroup.h>
+#include <clang/AST/RecursiveASTVisitor.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendAction.h>
 #include <clang/Tooling/CommonOptionsParser.h>
@@ -11,14 +13,28 @@
 namespace {
     llvm::cl::OptionCategory MyToolCategory("spargel-reflect options");
 
-    class PrintConsumer : public clang::ASTConsumer {
+    class PrintConsumer : public clang::ASTConsumer, public clang::RecursiveASTVisitor<PrintConsumer> {
     public:
-        PrintConsumer(clang::CompilerInstance& Instance) {}
+        PrintConsumer([[maybe_unused]] clang::CompilerInstance& Instance) {}
 
         bool HandleTopLevelDecl(clang::DeclGroupRef DG) override {
             for (auto const* D : DG) {
                 if (auto const* ND = dyn_cast<clang::NamedDecl>(D))
                     llvm::errs() << "top-level-decl: \"" << ND->getNameAsString() << "\"\n";
+            }
+            return true;
+        }
+
+        void HandleTranslationUnit(clang::ASTContext& ctx) override {
+            llvm::errs() << "processing translation unit" << "\n";
+            TraverseDecl(ctx.getTranslationUnitDecl());
+        }
+
+        bool VisitFunctionDecl(clang::FunctionDecl const* decl) {
+            llvm::errs() << "visiting function decl\n";
+            decl->dump();
+            for (auto* attr : decl->specific_attrs<clang::AnnotateAttr>()) {
+                llvm::errs() << attr->getSpelling() << "\n";
             }
             return true;
         }
