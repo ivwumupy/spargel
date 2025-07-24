@@ -54,7 +54,7 @@ namespace spargel::ui {
         /// @brief a keyboard event is received
         virtual void onKeyboard([[maybe_unused]] KeyboardEvent& e) {}
 
-        virtual void onKeyDown([[maybe_unused]] PhysicalKey key) {}
+        // virtual void onKeyDown([[maybe_unused]] PhysicalKey key) {}
 
         virtual void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) {}
 

@@ -1,5 +1,5 @@
-#include "spargel/base/unique_ptr.h"
 #include "spargel/gpu/gpu_metal.h"
+#include "spargel/base/unique_ptr.h"
 #include "spargel/ui/window.h"
 
 // metal
@@ -439,7 +439,8 @@ namespace spargel::gpu {
 
         [desc release];
 
-        return make_object<RenderPipeline2Metal>(vertex_function, frag_function, state, descriptor.groups);
+        return make_object<RenderPipeline2Metal>(vertex_function, frag_function, state,
+                                                 descriptor.groups);
     }
 
 }  // namespace spargel::gpu

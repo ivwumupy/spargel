@@ -45,13 +45,13 @@ namespace spargel::ui {
                 scene.fillText(text_, x, y, 0xFFFFFFFF);
             }
 
+        private:
             void shape() {
                 auto shaper = getHost()->getTextShaper();
                 shape_result_ = shaper->shapeLine(text_);
                 spargel_log_info("shape done: width = %.3f", shape_result_->width);
             }
 
-        private:
             text::StyledText text_;
             base::Optional<text::ShapedLine> shape_result_;
         };

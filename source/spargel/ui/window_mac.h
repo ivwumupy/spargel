@@ -92,6 +92,8 @@ namespace spargel::ui {
         float width() override;
         float height() override;
 
+        WindowDelegate* delegate() { return getDelegate(); }
+
     private:
         NSWindow* ns_window_;
         SpargelWindowDelegate* ns_window_delegate_;

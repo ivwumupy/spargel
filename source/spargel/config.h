@@ -4,6 +4,6 @@
  * Configurations can be tweaked in this file.
  */
 
-#include "spargel/autoconfig.h" // IWYU pragma: export
+#include "spargel/autoconfig.h"  // IWYU pragma: export
 
 #define SPARGEL_IS_POSIX SPARGEL_IS_ANDROID || SPARGEL_IS_LINUX || SPARGEL_IS_MACOS

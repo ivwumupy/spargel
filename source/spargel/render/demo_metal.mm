@@ -9,8 +9,8 @@
 #include "spargel/math/vector.h"
 #include "spargel/resource/directory.h"
 #include "spargel/ui/platform.h"
-#include "spargel/ui/window_mac.h"
 #include "spargel/ui/window.h"
+#include "spargel/ui/window_mac.h"
 
 //
 #include "spargel/render/shader/metal_shader.generated.h"
@@ -512,8 +512,10 @@ private:
             // }
             // auto blob_span = blob.value()->getSpan();
             auto library_data =
-                // dispatch_data_create(blob_span.data(), blob_span.count(), dispatch_get_main_queue(),
-                dispatch_data_create(spargel_render_metal_shader, sizeof(spargel_render_metal_shader), dispatch_get_main_queue(),
+                // dispatch_data_create(blob_span.data(), blob_span.count(),
+                // dispatch_get_main_queue(),
+                dispatch_data_create(spargel_render_metal_shader,
+                                     sizeof(spargel_render_metal_shader), dispatch_get_main_queue(),
                                      DISPATCH_DATA_DESTRUCTOR_DEFAULT);
 
             _library = [_device newLibraryWithData:library_data error:&error];

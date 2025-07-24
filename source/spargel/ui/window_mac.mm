@@ -1,3 +1,4 @@
+#include "spargel/ui/window_mac.h"
 #include "spargel/base/allocator.h"
 #include "spargel/base/check.h"
 #include "spargel/base/inline_array.h"
@@ -6,7 +7,6 @@
 #include "spargel/base/unique_ptr.h"
 #include "spargel/base/vector.h"
 #include "spargel/render/ui_renderer_metal.h"
-#include "spargel/ui/window_mac.h"
 
 //
 #include <time.h>
@@ -20,14 +20,22 @@
 #import <GameController/GameController.h>
 #import <QuartzCore/QuartzCore.h>
 
+// TODO:
+// - The NSWindow is owned by WindowAppKit.
+//   When the NSWindow is closed, WindowAppKit needs to release it.
+//   Thus WindowAppKit should have a closed state.
+//   In this case the window delegate should be notified and it should delete the WindowAppKit.
+// - Make WindowAppKit lightweight, i.e. implement main logic in objc.
+//   Reason: It's easier to deal with Cocoa objects in objc, for example calling super methods.
+//
+
 @implementation SpargelHostView {
     CADisplayLink* _link;
     CAMetalLayer* _layer;
     NSTrackingArea* _tracking;
     spargel::ui::WindowAppKit* _bridge;
 }
-- (instancetype)initWithBridge:(spargel::ui::WindowAppKit*)bridge
-                    metalLayer:(CAMetalLayer*)layer {
+- (instancetype)initWithBridge:(spargel::ui::WindowAppKit*)bridge metalLayer:(CAMetalLayer*)layer {
     self = [super init];
     if (self) {
         _bridge = bridge;
@@ -236,20 +244,21 @@
 
 @implementation SpargelWindowDelegate {
     spargel::ui::WindowAppKit* bridge_;
-    NSWindow* window_;
 }
 - (instancetype)initWithBridge:(spargel::ui::WindowAppKit*)bridge {
     self = [super init];
     if (self) {
         spargel_check(bridge);
         bridge_ = bridge;
-        // If we cache NSWindow in the constructor, then the delegate need to be created after the window.
-        window_ = bridge_->getNSWindow();
+        // If we cache NSWindow in the constructor, then the delegate need to be created after the
+        // window.
+        // window_ = bridge_->getNSWindow();
     }
     return self;
 }
-- (void)windowDidChangeOcclusionState:(NSNotification*)notification{
-    auto state = [window_ occlusionState];
+- (void)windowDidChangeOcclusionState:(NSNotification*)notification {
+    auto window = static_cast<NSWindow*>(notification.object);
+    auto state = [window occlusionState];
     if (state & NSWindowOcclusionStateVisible) {
         spargel_log_info("window becomes visible");
     } else {
@@ -261,68 +270,13 @@
 namespace spargel::ui {
     namespace {
         PhysicalKey translatePhysicalKey(int code) {
-            using enum PhysicalKey;
             switch (code) {
-            case kVK_ANSI_A:
-                return key_a;
-            case kVK_ANSI_B:
-                return key_b;
-            case kVK_ANSI_C:
-                return key_c;
-            case kVK_ANSI_D:
-                return key_d;
-            case kVK_ANSI_E:
-                return key_e;
-            case kVK_ANSI_F:
-                return key_f;
-            case kVK_ANSI_G:
-                return key_g;
-            case kVK_ANSI_H:
-                return key_h;
-            case kVK_ANSI_I:
-                return key_i;
-            case kVK_ANSI_J:
-                return key_j;
-            case kVK_ANSI_K:
-                return key_k;
-            case kVK_ANSI_L:
-                return key_l;
-            case kVK_ANSI_M:
-                return key_m;
-            case kVK_ANSI_N:
-                return key_n;
-            case kVK_ANSI_O:
-                return key_o;
-            case kVK_ANSI_P:
-                return key_p;
-            case kVK_ANSI_Q:
-                return key_q;
-            case kVK_ANSI_R:
-                return key_r;
-            case kVK_ANSI_S:
-                return key_s;
-            case kVK_ANSI_T:
-                return key_t;
-            case kVK_ANSI_U:
-                return key_u;
-            case kVK_ANSI_V:
-                return key_v;
-            case kVK_ANSI_W:
-                return key_w;
-            case kVK_ANSI_X:
-                return key_x;
-            case kVK_ANSI_Y:
-                return key_y;
-            case kVK_ANSI_Z:
-                return key_z;
-            case kVK_Space:
-                return space;
-            case kVK_Escape:
-                return escape;
-            case kVK_Delete:
-                return key_delete;
+#define PHYSICAL_KEY_MAP(mapped, original) \
+    case original:                         \
+        return PhysicalKey::mapped;
+#include "spargel/ui/physical_key_mapping_mac.inc"
             default:
-                return unknown;
+                return PhysicalKey::unknown;
             }
         }
     }  // namespace
@@ -349,6 +303,7 @@ namespace spargel::ui {
         ns_window_delegate_ = [[SpargelWindowDelegate alloc] initWithBridge:this];
         // This is a weak reference.
         ns_window_.delegate = ns_window_delegate_;
+
         // The window is owned by the C++ side.
         ns_window_.releasedWhenClosed = NO;
         // TODO: fix this
@@ -374,6 +329,7 @@ namespace spargel::ui {
     }
 
     WindowAppKit::~WindowAppKit() {
+        [ns_view_ release];
         [ns_window_ release];
         [ns_window_delegate_ release];
     }
@@ -409,12 +365,8 @@ namespace spargel::ui {
             usize index = 0;
             u64 last_report = 0;
             u64 start = 0;
-            u64 getTimestamp() {
-                return clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-            }
-            void beginFrame() {
-                start = getTimestamp();
-            }
+            u64 getTimestamp() { return clock_gettime_nsec_np(CLOCK_UPTIME_RAW); }
+            void beginFrame() { start = getTimestamp(); }
             void endFrame() {
                 auto now = getTimestamp();
                 data[index] = now - start;
@@ -433,7 +385,7 @@ namespace spargel::ui {
                 spargel_log_info("wall frame time: %.3fms", (double)sum / (1e6 * N));
             }
         };
-    }
+    }  // namespace
 
     namespace {
         inline constexpr bool REPORT_FRAME_TIME = false;
@@ -441,26 +393,29 @@ namespace spargel::ui {
 
     void WindowAppKit::_bridge_render() {
         static FrameTimeReporter reporter;
-        if (getDelegate() != nullptr) {
-            if constexpr (REPORT_FRAME_TIME) { reporter.beginFrame(); }
-            getDelegate()->onRender();
-            if constexpr (REPORT_FRAME_TIME) { reporter.endFrame(); }
+        if (auto d = delegate()) {
+            if constexpr (REPORT_FRAME_TIME) {
+                reporter.beginFrame();
+            }
+            d->onRender();
+            if constexpr (REPORT_FRAME_TIME) {
+                reporter.endFrame();
+            }
         }
     }
 
     void WindowAppKit::_bridge_key_down(int key, NSEventType type) {
-        if (getDelegate() != nullptr) {
-            KeyboardEvent e;
-            e.key = translatePhysicalKey(key);
-            if (type == NSEventTypeKeyDown) {
-                e.action = KeyboardAction::press;
-            } else if (type == NSEventTypeKeyUp) {
-                e.action = KeyboardAction::release;
-            } else {
-                spargel_panic_here();
-            }
-            getDelegate()->onKeyboard(e);
-            getDelegate()->onKeyDown(e.key);
+        KeyboardEvent e;
+        e.key = translatePhysicalKey(key);
+        if (type == NSEventTypeKeyDown) {
+            e.action = KeyboardAction::press;
+        } else if (type == NSEventTypeKeyUp) {
+            e.action = KeyboardAction::release;
+        } else {
+            spargel_panic_here();
+        }
+        if (auto d = delegate()) {
+            d->onKeyboard(e);
         }
     }
 
@@ -489,7 +444,9 @@ namespace spargel::ui {
         renderer->setScaleFactor(scaleFactor());
     }
 
-    float WindowAppKit::scaleFactor() { return static_cast<float>([ns_window_ backingScaleFactor]); }
+    float WindowAppKit::scaleFactor() {
+        return static_cast<float>([ns_window_ backingScaleFactor]);
+    }
 
     float WindowAppKit::width() { return (float)ns_window_.contentView.frame.size.width; }
     float WindowAppKit::height() { return (float)ns_window_.contentView.frame.size.height; }

@@ -1,5 +1,5 @@
-#include "spargel/base/check.h"
 #include "spargel/ui/platform_mac.h"
+#include "spargel/base/check.h"
 #include "spargel/ui/window_mac.h"
 
 @implementation SpargelApplicationDelegate

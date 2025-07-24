@@ -2,8 +2,8 @@
 #include "spargel/gpu/metal_context.h"
 #include "spargel/render/ui_renderer_metal.h"
 #include "spargel/render/ui_scene.h"
-#include "spargel/text/text_shaper_mac.h"
 #include "spargel/text/font_manager_mac.h"
+#include "spargel/text/text_shaper_mac.h"
 
 //
 #include <math.h>
@@ -117,10 +117,11 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
 
     auto device = context->device();
 
-    auto desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB
-                                                                   width:truth.width
-                                                                  height:truth.height
-                                                               mipmapped:false];
+    auto desc =
+        [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB
+                                                           width:truth.width
+                                                          height:truth.height
+                                                       mipmapped:false];
     desc.storageMode = MTLStorageModeShared;
     if (render::UIRendererMetal::use_compute) {
         desc.usage = MTLTextureUsageShaderWrite;
@@ -131,23 +132,23 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
 
     scene.setClip(0, 0, (float)truth.width, (float)truth.height);
     scene.fillText(text::StyledText{TEXT, font.get()}, 0,
-        (float)truth.height - (float)truth.descent, 0xFFFFFFFF);
+                   (float)truth.height - (float)truth.descent, 0xFFFFFFFF);
 
     auto command_buffer = renderer->renderToTexture(scene, texture);
 
     auto buffer = [device newBufferWithLength:truth.width * truth.height * 4
                                       options:MTLResourceStorageModeShared];
     auto encoder = [command_buffer blitCommandEncoder];
-    
-    [encoder  copyFromTexture:texture
-                  sourceSlice:0
-                  sourceLevel:0
-                 sourceOrigin:MTLOriginMake(0, 0, 0)
-                   sourceSize:MTLSizeMake(truth.width, truth.height, 1)
-                     toBuffer:buffer
-            destinationOffset:0
-       destinationBytesPerRow:truth.width * 4
-     destinationBytesPerImage:truth.width * truth.height * 4];
+
+    [encoder copyFromTexture:texture
+                     sourceSlice:0
+                     sourceLevel:0
+                    sourceOrigin:MTLOriginMake(0, 0, 0)
+                      sourceSize:MTLSizeMake(truth.width, truth.height, 1)
+                        toBuffer:buffer
+               destinationOffset:0
+          destinationBytesPerRow:truth.width * 4
+        destinationBytesPerImage:truth.width * truth.height * 4];
 
     [encoder endEncoding];
 
@@ -166,9 +167,7 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
     delete context;
 }
 
-int abs(int x) {
-    return x < 0 ? -x : x;
-}
+int abs(int x) { return x < 0 ? -x : x; }
 
 int main() {
     GroundTruth gt;

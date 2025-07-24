@@ -1,1 +1,1 @@
-find ./source/ -iname '*.h' -o -iname '*.cpp' | xargs clang-format -i
+find ./source/ -iname '*.h' -o -iname '*.cpp' -o -iname '*.mm' | xargs clang-format -i

@@ -145,6 +145,11 @@ namespace spargel::ui {
         // --------------
         //
 
+        void processMousePressed();
+        void processMouseReleased();
+        void processKeyPressed();
+        void processKeyReleased();
+
         virtual void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) {}
 
         // Record painting commands to the scene.
