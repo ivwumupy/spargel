@@ -19,6 +19,12 @@ for flag in defs:
     equals_index = flag.index('=')
     key = flag[:equals_index]
     value = flag[equals_index + 1:]
+
+    if value == 'true':
+        value = '1'
+    elif value == 'false':
+        value = '0'
+
     flags.append((key, str(value)))
 
 with open(output, "w") as output_file:

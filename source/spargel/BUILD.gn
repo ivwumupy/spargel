@@ -2,19 +2,22 @@ import("//gn/autoconfig.gni")
 
 autoconfig("autoconfig_h") {
     header = "autoconfig.h"
+
+    enable_metal = is_macos
+
     flags = [
         "SPARGEL_IS_ANDROID=0",
         "SPARGEL_IS_EMSCRIPTEN=0",
-        "SPARGEL_IS_LINUX=0",
-        "SPARGEL_IS_MACOS=1",
-        "SPARGEL_IS_WINDOWS=0",
+        "SPARGEL_IS_LINUX=$is_linux",
+        "SPARGEL_IS_MACOS=$is_macos",
+        "SPARGEL_IS_WINDOWS=$is_windows",
 
         "SPARGEL_ENABLE_ASSERT=1",
         "SPARGEL_ENABLE_LOG_ANSI_COLOR=1",
         "SPARGEL_USE_FILE_MMAP=1",
         "SPARGEL_ENABLE_TRACING=0",
 
-        "SPARGEL_ENABLE_METAL=1",
+        "SPARGEL_ENABLE_METAL=$enable_metal",
         "SPARGEL_ENABLE_OPENGL=0",
         "SPARGEL_GPU_ENABLE_VULKAN=0",
     ]
