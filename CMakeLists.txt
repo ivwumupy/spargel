@@ -81,5 +81,4 @@ endif ()
 ## Sources
 ##---------
 
-add_subdirectory(sample)
 add_subdirectory(source)
