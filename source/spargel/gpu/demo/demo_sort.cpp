@@ -1,4 +1,5 @@
 #include "spargel/base/command_line.h"
+#include "spargel/gpu/demo/metal_shaders.h"
 #include "spargel/gpu/gpu.h"
 #include "spargel/resource/directory.h"
 
@@ -26,7 +27,7 @@ int main(int argc, char* argv[]) {
     data.reserve(16);
     data.set_count(16);
     for (usize i = 0; i < 16; i++) {
-        data[i] = rand() % 20;
+        data[i] = (u32)(rand() % 20);
         printf("%u ", data[i]);
     }
     putchar('\n');
@@ -35,14 +36,15 @@ int main(int argc, char* argv[]) {
         device->createBuffer(gpu::BufferUsage::storage,
                              base::make_span<u8>(sizeof(u32) * data.count(), (u8*)data.data()));
 
-    base::Optional<base::unique_ptr<resource::Resource>> blob;
+    base::Span<base::Byte> shader_bytes;
 
     if (backend == gpu::DeviceKind::metal) {
-        blob = resource_manager->open(resource::ResourceId("shader.metallib"_sv));
+        shader_bytes = spargel::gpu::demo::METAL_SHADERS.asSpan();
     } else if (backend == gpu::DeviceKind::vulkan) {
-        blob = resource_manager->open(resource::ResourceId("demo_sort.spirv"_sv));
+        auto blob = resource_manager->open(resource::ResourceId("demo_sort.spirv"_sv));
+        shader_bytes = blob.value()->getSpan();
     }
-    auto library = device->createShaderLibrary(blob.value()->getSpan());
+    auto library = device->createShaderLibrary(shader_bytes);
 
     auto pipeline = device->createComputePipeline2({
         .compute =

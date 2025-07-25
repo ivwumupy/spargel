@@ -70,10 +70,10 @@ namespace spargel::gpu {
 
         auto layer() { return _layer; }
 
-        ObjectPtr<Texture> nextTexture() override {
+        Texture* nextTexture() override {
             _drawable = [_layer nextDrawable];
             base::construct_at(&_texture, _drawable.texture);
-            return ObjectPtr<Texture>(&_texture);
+            return &_texture;
         }
 
         auto drawable() { return _drawable; }
@@ -94,8 +94,8 @@ namespace spargel::gpu {
 
         id<MTLCommandQueue> commandQueue() { return _queue; }
 
-        ObjectPtr<CommandBuffer> createCommandBuffer() override;
-        void destroyCommandBuffer(ObjectPtr<CommandBuffer>) override;
+        CommandBuffer* createCommandBuffer() override;
+        void destroyCommandBuffer(CommandBuffer*) override;
 
     private:
         id<MTLCommandQueue> _queue;
@@ -108,14 +108,14 @@ namespace spargel::gpu {
 
         id<MTLCommandBuffer> commandBuffer() { return _cmdbuf; }
 
-        ObjectPtr<RenderPassEncoder> beginRenderPass(
+        RenderPassEncoder* beginRenderPass(
             RenderPassDescriptor const& descriptor) override;
-        void endRenderPass(ObjectPtr<RenderPassEncoder> encoder) override;
-        void present(ObjectPtr<Surface> surface) override;
+        void endRenderPass(RenderPassEncoder* encoder) override;
+        void present(Surface* surface) override;
         void submit() override;
 
-        ObjectPtr<ComputePassEncoder> beginComputePass() override;
-        void endComputePass(ObjectPtr<ComputePassEncoder> encoder) override;
+        ComputePassEncoder* beginComputePass() override;
+        void endComputePass(ComputePassEncoder* encoder) override;
         void wait() override { [_cmdbuf waitUntilCompleted]; }
 
     private:
@@ -129,14 +129,14 @@ namespace spargel::gpu {
 
         id<MTLRenderCommandEncoder> encoder() { return _encoder; }
 
-        void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
-        void setVertexBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override;
-        void setFragmentBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override {
-            [_encoder setFragmentBuffer:buffer.cast<BufferMetal>()->buffer()
+        void setRenderPipeline(RenderPipeline* pipeline) override;
+        void setVertexBuffer(Buffer* buffer, VertexBufferLocation const& loc) override;
+        void setFragmentBuffer(Buffer* buffer, VertexBufferLocation const& loc) override {
+            [_encoder setFragmentBuffer:static_cast<BufferMetal*>(buffer)->buffer()
                                  offset:0
                                 atIndex:(NSUInteger)loc.apple.buffer_index];
         }
-        void setTexture(ObjectPtr<Texture> texture) override;
+        void setTexture(Texture* texture) override;
         void setViewport(Viewport viewport) override;
         void draw(int vertex_start, int vertex_count) override;
         void draw(int vertex_start, int vertex_count, int instance_start,
@@ -169,14 +169,14 @@ namespace spargel::gpu {
         explicit ComputePassEncoderMetal(id<MTLComputeCommandEncoder> encoder)
             : _encoder{encoder} {}
 
-        void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) override {
-            [_encoder setComputePipelineState:pipeline.cast<ComputePipelineMetal>()->pipeline()];
+        void setComputePipeline(ComputePipeline* pipeline) override {
+            [_encoder setComputePipelineState:static_cast<ComputePipelineMetal*>(pipeline)->pipeline()];
         }
-        void setComputePipeline2(ObjectPtr<ComputePipeline2> pipeline) override;
+        void setComputePipeline2(ComputePipeline2* pipeline) override;
         // `index` is the index in the `PipelineProgram`.
-        void setBindGroup(u32 index, ObjectPtr<BindGroup> group) override;
-        void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override {
-            [_encoder setBuffer:buffer.cast<BufferMetal>()->buffer()
+        void setBindGroup(u32 index, BindGroup* group) override;
+        void setBuffer(Buffer* buffer, VertexBufferLocation const& loc) override {
+            [_encoder setBuffer:static_cast<BufferMetal*>(buffer)->buffer()
                          offset:0
                         atIndex:(NSUInteger)loc.apple.buffer_index];
         }
@@ -185,7 +185,7 @@ namespace spargel::gpu {
                      threadsPerThreadgroup:MTLSizeMake(group_size.x, group_size.y, group_size.z)];
         }
 
-        void useBuffer(ObjectPtr<Buffer> buffer, BufferAccess access) override;
+        void useBuffer(Buffer* buffer, BufferAccess access) override;
 
         auto encoder() const { return _encoder; }
 
@@ -321,8 +321,8 @@ namespace spargel::gpu {
             : _buffer{buffer}, _encoder{encoder}, _program{program} {}
 
         // `id` is the index of the buffer in this group.
-        void setBuffer(u32 id, ObjectPtr<Buffer> buffer) override {
-            [_encoder setBuffer:buffer.cast<BufferMetal>()->buffer() offset:0 atIndex:id];
+        void setBuffer(u32 id, Buffer* buffer) override {
+            [_encoder setBuffer:static_cast<BufferMetal*>(buffer)->buffer() offset:0 atIndex:id];
         }
 
         auto buffer() const { return _buffer; }
@@ -340,51 +340,51 @@ namespace spargel::gpu {
         DeviceMetal();
         ~DeviceMetal() override;
 
-        ObjectPtr<ShaderLibrary> createShaderLibrary(base::span<u8> bytes) override;
-        ObjectPtr<RenderPipeline> createRenderPipeline(
+        ShaderLibrary* createShaderLibrary(base::span<u8> bytes) override;
+        RenderPipeline* createRenderPipeline(
             RenderPipelineDescriptor const& descriptor) override;
-        ObjectPtr<Buffer> createBuffer(BufferUsage usage, base::span<u8> bytes) override;
-        ObjectPtr<Buffer> createBuffer(BufferUsage usage, u32 size) override;
-        ObjectPtr<Surface> createSurface(ui::Window* w) override;
+        Buffer* createBuffer(BufferUsage usage, base::span<u8> bytes) override;
+        Buffer* createBuffer(BufferUsage usage, u32 size) override;
+        Surface* createSurface(ui::Window* w) override;
 
-        ObjectPtr<Texture> createTexture(u32 width, u32 height) override;
-        void destroyTexture(ObjectPtr<Texture> texture) override;
+        Texture* createTexture(u32 width, u32 height) override;
+        void destroyTexture(Texture* texture) override;
 
-        void destroyShaderLibrary(ObjectPtr<ShaderLibrary> library) override;
-        void destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
-        void destroyBuffer(ObjectPtr<Buffer> b) override;
+        void destroyShaderLibrary(ShaderLibrary* library) override;
+        void destroyRenderPipeline(RenderPipeline* pipeline) override;
+        void destroyBuffer(Buffer* b) override;
 
-        ObjectPtr<CommandQueue> createCommandQueue() override;
-        void destroyCommandQueue(ObjectPtr<CommandQueue> q) override;
+        CommandQueue* createCommandQueue() override;
+        void destroyCommandQueue(CommandQueue* q) override;
 
-        ObjectPtr<ComputePipeline> createComputePipeline(
-            ShaderFunction f, [[maybe_unused]] base::span<ObjectPtr<BindGroupLayout>> layouts) override {
+        ComputePipeline* createComputePipeline(
+            ShaderFunction f, [[maybe_unused]] base::span<BindGroupLayout*> layouts) override {
             NSError* err;
-            auto func = [f.library.cast<ShaderLibraryMetal>()->library()
+            auto func = [static_cast<ShaderLibraryMetal*>(f.library)->library()
                 newFunctionWithName:[NSString stringWithUTF8String:f.entry]];
             spargel_assert(func != nullptr);
             return make_object<ComputePipelineMetal>(
                 func, [_device newComputePipelineStateWithFunction:func error:&err]);
         }
-        // ObjectPtr<ComputePipeline> createComputePipeline2(
-        //     ObjectPtr<ComputePipeline2> program) override {
+        // ComputePipeline* createComputePipeline2(
+        //     ComputePipeline2* program) override {
         //     NSError* err;
         //     auto func = program.cast<ComputePipeline2Metal>()->compute();
         //     return make_object<ComputePipelineMetal>(
         //         func, [_device newComputePipelineStateWithFunction:func error:&err]);
         // }
 
-        ObjectPtr<BindGroupLayout> createBindGroupLayout([[maybe_unused]] ShaderStage stage,
+        BindGroupLayout* createBindGroupLayout([[maybe_unused]] ShaderStage stage,
                                                          [[maybe_unused]] base::span<BindEntry> entries) override {
             return make_object<BindGroupLayoutMetal>();
         }
-        ObjectPtr<BindGroup> createBindGroup([[maybe_unused]] ObjectPtr<BindGroupLayout> layout) override {
+        BindGroup* createBindGroup([[maybe_unused]] BindGroupLayout* layout) override {
             return nullptr;
         }
 
-        ObjectPtr<ComputePipeline2> createComputePipeline2(
+        ComputePipeline2* createComputePipeline2(
             ComputePipeline2Descriptor const& desc) override {
-            auto lib = desc.compute.library.cast<ShaderLibraryMetal>();
+            auto lib = static_cast<ShaderLibraryMetal*>(desc.compute.library);
             auto func = [lib->library()
                 newFunctionWithName:[NSString stringWithUTF8String:desc.compute.entry]];
             spargel_assert(func != nullptr);
@@ -394,12 +394,12 @@ namespace spargel::gpu {
             return make_object<ComputePipeline2Metal>(func, pipeline, desc.groups);
         }
 
-        ObjectPtr<RenderPipeline2> createRenderPipeline2(
+        RenderPipeline2* createRenderPipeline2(
             RenderPipeline2Descriptor const& desc) override;
 
         // `id` is the index of the argument group in the program.
-        ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<ComputePipeline2> p, u32 id) override {
-            auto pipeline = p.cast<ComputePipeline2Metal>();
+        BindGroup* createBindGroup2(ComputePipeline2* p, u32 id) override {
+            auto pipeline = static_cast<ComputePipeline2Metal*>(p);
             auto func = pipeline->getFunction(id);
             auto encoder = [func newArgumentEncoderWithBufferIndex:pipeline->getBufferId(id)];
             spargel_assert(encoder != nullptr);
@@ -407,10 +407,10 @@ namespace spargel::gpu {
                                                options:MTLResourceStorageModeShared];
             spargel_assert(buffer != nullptr);
             [encoder setArgumentBuffer:buffer offset:0];
-            return make_object<BindGroupMetal>(buffer, encoder, pipeline.get());
+            return make_object<BindGroupMetal>(buffer, encoder, pipeline);
         }
 
-        ObjectPtr<BindGroup> createBindGroup2([[maybe_unused]] ObjectPtr<RenderPipeline2> p, [[maybe_unused]] u32 id) override {
+        BindGroup* createBindGroup2([[maybe_unused]] RenderPipeline2* p, [[maybe_unused]] u32 id) override {
             return nullptr;
         }
 

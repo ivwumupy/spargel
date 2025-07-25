@@ -120,7 +120,7 @@ namespace spargel::gpu {
 
     DeviceMetal::~DeviceMetal() { [_device release]; }
 
-    ObjectPtr<ShaderLibrary> DeviceMetal::createShaderLibrary(base::span<u8> bytes) {
+    ShaderLibrary* DeviceMetal::createShaderLibrary(base::span<u8> bytes) {
         // dispatch create a copy of the data
         //
         // notes:
@@ -138,11 +138,11 @@ namespace spargel::gpu {
         return make_object<ShaderLibraryMetal>(library_data, library);
     }
 
-    ObjectPtr<RenderPipeline> DeviceMetal::createRenderPipeline(
+    RenderPipeline* DeviceMetal::createRenderPipeline(
         RenderPipelineDescriptor const& descriptor) {
         auto desc = [[MTLRenderPipelineDescriptor alloc] init];
 
-        auto vertex_library = descriptor.vertex_shader.library.cast<ShaderLibraryMetal>();
+        auto vertex_library = static_cast<ShaderLibraryMetal*>(descriptor.vertex_shader.library);
         auto vertex_entry = descriptor.vertex_shader.entry;
 
         auto vertex_function = [vertex_library->library()
@@ -181,7 +181,7 @@ namespace spargel::gpu {
         desc.vertexDescriptor = vertex_descriptor;
         desc.inputPrimitiveTopology = translatePrimitiveType(descriptor.primitive);
 
-        auto frag_library = descriptor.fragment_shader.library.cast<ShaderLibraryMetal>();
+        auto frag_library = static_cast<ShaderLibraryMetal*>(descriptor.fragment_shader.library);
         auto frag_entry = descriptor.fragment_shader.entry;
 
         auto frag_function = [frag_library->library()
@@ -202,7 +202,7 @@ namespace spargel::gpu {
         return make_object<RenderPipelineMetal>(vertex_function, state);
     }
 
-    ObjectPtr<Buffer> DeviceMetal::createBuffer([[maybe_unused]] BufferUsage usage,
+    Buffer* DeviceMetal::createBuffer([[maybe_unused]] BufferUsage usage,
                                                 base::span<u8> bytes) {
         auto buf = [_device newBufferWithBytes:bytes.data()
                                         length:bytes.count()
@@ -210,41 +210,41 @@ namespace spargel::gpu {
         return make_object<BufferMetal>(buf);
     }
 
-    ObjectPtr<Buffer> DeviceMetal::createBuffer([[maybe_unused]] BufferUsage usage, u32 size) {
+    Buffer* DeviceMetal::createBuffer([[maybe_unused]] BufferUsage usage, u32 size) {
         auto buf = [_device newBufferWithLength:size options:MTLResourceStorageModeShared];
         return make_object<BufferMetal>(buf);
     }
 
-    ObjectPtr<Surface> DeviceMetal::createSurface(ui::Window* w) {
+    Surface* DeviceMetal::createSurface(ui::Window* w) {
         CAMetalLayer* l = (CAMetalLayer*)w->getHandle().value.apple.layer;
         l.device = _device;
         return make_object<SurfaceMetal>(l);
     }
 
-    void DeviceMetal::destroyShaderLibrary(ObjectPtr<ShaderLibrary> l) {
-        auto library = l.cast<ShaderLibraryMetal>();
+    void DeviceMetal::destroyShaderLibrary(ShaderLibrary* l) {
+        auto library = static_cast<ShaderLibraryMetal*>(l);
         destroy_object(library);
     }
 
-    void DeviceMetal::destroyRenderPipeline(ObjectPtr<RenderPipeline> p) {
-        auto pipeline = p.cast<RenderPipelineMetal>();
+    void DeviceMetal::destroyRenderPipeline(RenderPipeline* p) {
+        auto pipeline = static_cast<RenderPipelineMetal*>(p);
         destroy_object(pipeline);
     }
 
-    void DeviceMetal::destroyBuffer(ObjectPtr<Buffer> b) {
-        auto buf = b.cast<BufferMetal>();
+    void DeviceMetal::destroyBuffer(Buffer* b) {
+        auto buf = static_cast<BufferMetal*>(b);
         destroy_object(buf);
     }
 
-    ObjectPtr<CommandQueue> DeviceMetal::createCommandQueue() {
+    CommandQueue* DeviceMetal::createCommandQueue() {
         return make_object<CommandQueueMetal>([_device newCommandQueue]);
     }
 
-    void DeviceMetal::destroyCommandQueue(ObjectPtr<CommandQueue> q) {
-        destroy_object(q.cast<CommandQueueMetal>());
+    void DeviceMetal::destroyCommandQueue(CommandQueue* q) {
+        destroy_object(static_cast<CommandQueueMetal*>(q));
     }
 
-    ObjectPtr<Texture> DeviceMetal::createTexture(u32 width, u32 height) {
+    Texture* DeviceMetal::createTexture(u32 width, u32 height) {
         auto desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatA8Unorm
                                                                        width:width
                                                                       height:height
@@ -254,7 +254,7 @@ namespace spargel::gpu {
         return make_object<TextureMetal>(texture);
     }
 
-    void DeviceMetal::destroyTexture([[maybe_unused]] ObjectPtr<Texture> texture) {
+    void DeviceMetal::destroyTexture([[maybe_unused]] Texture* texture) {
         // todo
     }
 
@@ -279,20 +279,20 @@ namespace spargel::gpu {
 
     BufferMetal::~BufferMetal() { [_buffer release]; }
 
-    ObjectPtr<CommandBuffer> CommandQueueMetal::createCommandBuffer() {
+    CommandBuffer* CommandQueueMetal::createCommandBuffer() {
         return make_object<CommandBufferMetal>([_queue commandBuffer]);
     }
 
-    void CommandQueueMetal::destroyCommandBuffer(ObjectPtr<CommandBuffer> cmdbuf) {
-        destroy_object(cmdbuf.cast<CommandBufferMetal>());
+    void CommandQueueMetal::destroyCommandBuffer(CommandBuffer* cmdbuf) {
+        destroy_object(static_cast<CommandBufferMetal*>(cmdbuf));
     }
 
-    ObjectPtr<RenderPassEncoder> CommandBufferMetal::beginRenderPass(
+    RenderPassEncoder* CommandBufferMetal::beginRenderPass(
         RenderPassDescriptor const& descriptor) {
         auto desc = [MTLRenderPassDescriptor renderPassDescriptor];
         for (usize i = 0; i < descriptor.color_attachments.count(); i++) {
             desc.colorAttachments[i].texture =
-                descriptor.color_attachments[i].texture.cast<TextureMetal>()->texture();
+                static_cast<TextureMetal*>(descriptor.color_attachments[i].texture)->texture();
             desc.colorAttachments[i].loadAction =
                 translate_load_action(descriptor.color_attachments[i].load);
             desc.colorAttachments[i].storeAction =
@@ -304,40 +304,40 @@ namespace spargel::gpu {
             [_cmdbuf renderCommandEncoderWithDescriptor:desc]);
     }
 
-    void CommandBufferMetal::endRenderPass(ObjectPtr<RenderPassEncoder> e) {
-        auto encoder = e.cast<RenderPassEncoderMetal>();
+    void CommandBufferMetal::endRenderPass(RenderPassEncoder* e) {
+        auto encoder = static_cast<RenderPassEncoderMetal*>(e);
         [encoder->encoder() endEncoding];
         destroy_object(encoder);
     }
 
-    void CommandBufferMetal::present(ObjectPtr<Surface> s) {
-        [_cmdbuf presentDrawable:s.cast<SurfaceMetal>()->drawable()];
+    void CommandBufferMetal::present(Surface* s) {
+        [_cmdbuf presentDrawable:static_cast<SurfaceMetal*>(s)->drawable()];
     }
 
     void CommandBufferMetal::submit() { [_cmdbuf commit]; }
 
-    ObjectPtr<ComputePassEncoder> CommandBufferMetal::beginComputePass() {
+    ComputePassEncoder* CommandBufferMetal::beginComputePass() {
         return make_object<ComputePassEncoderMetal>([_cmdbuf computeCommandEncoder]);
     }
 
-    void CommandBufferMetal::endComputePass(ObjectPtr<ComputePassEncoder> e) {
-        auto encoder = e.cast<ComputePassEncoderMetal>();
+    void CommandBufferMetal::endComputePass(ComputePassEncoder* e) {
+        auto encoder = static_cast<ComputePassEncoderMetal*>(e);
         [encoder->encoder() endEncoding];
         destroy_object(encoder);
     }
 
-    void RenderPassEncoderMetal::setRenderPipeline(ObjectPtr<RenderPipeline> p) {
-        [_encoder setRenderPipelineState:p.cast<RenderPipelineMetal>()->pipeline()];
+    void RenderPassEncoderMetal::setRenderPipeline(RenderPipeline* p) {
+        [_encoder setRenderPipelineState:static_cast<RenderPipelineMetal*>(p)->pipeline()];
     }
-    void RenderPassEncoderMetal::setVertexBuffer(ObjectPtr<Buffer> b,
+    void RenderPassEncoderMetal::setVertexBuffer(Buffer* b,
                                                  VertexBufferLocation const& loc) {
-        [_encoder setVertexBuffer:b.cast<BufferMetal>()->buffer()
+        [_encoder setVertexBuffer:static_cast<BufferMetal*>(b)->buffer()
                            offset:0
                           atIndex:(NSUInteger)loc.apple.buffer_index];
     }
-    void RenderPassEncoderMetal::setTexture(ObjectPtr<Texture> texture) {
+    void RenderPassEncoderMetal::setTexture(Texture* texture) {
         // todo: index
-        [_encoder setFragmentTexture:texture.cast<TextureMetal>()->texture() atIndex:0];
+        [_encoder setFragmentTexture:static_cast<TextureMetal*>(texture)->texture() atIndex:0];
     }
     void RenderPassEncoderMetal::setViewport(Viewport v) {
         [_encoder setViewport:{v.x, v.y, v.width, v.height, v.z_near, v.z_far}];
@@ -364,25 +364,25 @@ namespace spargel::gpu {
                     bytesPerRow:bytes_per_row];
     }
 
-    void ComputePassEncoderMetal::setBindGroup(u32 index, ObjectPtr<BindGroup> g) {
-        auto group = g.cast<BindGroupMetal>();
+    void ComputePassEncoderMetal::setBindGroup(u32 index, BindGroup* g) {
+        auto group = static_cast<BindGroupMetal*>(g);
         [_encoder setBuffer:group->buffer() offset:0 atIndex:group->program()->getBufferId(index)];
     }
 
-    void ComputePassEncoderMetal::setComputePipeline2(ObjectPtr<ComputePipeline2> pipeline) {
-        [_encoder setComputePipelineState:pipeline.cast<ComputePipeline2Metal>()->pipeline()];
+    void ComputePassEncoderMetal::setComputePipeline2(ComputePipeline2* pipeline) {
+        [_encoder setComputePipelineState:static_cast<ComputePipeline2Metal*>(pipeline)->pipeline()];
     }
 
-    void ComputePassEncoderMetal::useBuffer(ObjectPtr<Buffer> buffer, BufferAccess access) {
-        [_encoder useResource:buffer.cast<BufferMetal>()->buffer()
+    void ComputePassEncoderMetal::useBuffer(Buffer* buffer, BufferAccess access) {
+        [_encoder useResource:static_cast<BufferMetal*>(buffer)->buffer()
                         usage:translateBufferAccess(access)];
     }
 
-    ObjectPtr<RenderPipeline2> DeviceMetal::createRenderPipeline2(
+    RenderPipeline2* DeviceMetal::createRenderPipeline2(
         RenderPipeline2Descriptor const& descriptor) {
         auto desc = [[MTLRenderPipelineDescriptor alloc] init];
 
-        auto vertex_library = descriptor.vertex_shader.library.cast<ShaderLibraryMetal>();
+        auto vertex_library = static_cast<ShaderLibraryMetal*>(descriptor.vertex_shader.library);
         auto vertex_entry = descriptor.vertex_shader.entry;
 
         auto vertex_function = [vertex_library->library()
@@ -421,7 +421,7 @@ namespace spargel::gpu {
         desc.vertexDescriptor = vertex_descriptor;
         desc.inputPrimitiveTopology = translatePrimitiveType(descriptor.primitive);
 
-        auto frag_library = descriptor.fragment_shader.library.cast<ShaderLibraryMetal>();
+        auto frag_library = static_cast<ShaderLibraryMetal*>(descriptor.fragment_shader.library);
         auto frag_entry = descriptor.fragment_shader.entry;
 
         auto frag_function = [frag_library->library()

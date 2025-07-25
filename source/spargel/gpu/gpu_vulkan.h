@@ -146,7 +146,7 @@ namespace spargel::gpu {
 
         auto surface() const { return _surface; }
 
-        ObjectPtr<Texture> nextTexture() override;
+        Texture* nextTexture() override;
 
         float width() override;
         float height() override;
@@ -163,8 +163,8 @@ namespace spargel::gpu {
 
         auto commandQueue() { return _queue; }
 
-        ObjectPtr<CommandBuffer> createCommandBuffer() override;
-        void destroyCommandBuffer(ObjectPtr<CommandBuffer>) override;
+        CommandBuffer* createCommandBuffer() override;
+        void destroyCommandBuffer(CommandBuffer*) override;
 
     private:
         void createCommandPool();
@@ -183,12 +183,12 @@ namespace spargel::gpu {
 
         auto commandBuffer() { return _cmdbuf; }
 
-        ObjectPtr<RenderPassEncoder> beginRenderPass(
+        RenderPassEncoder* beginRenderPass(
             RenderPassDescriptor const& descriptor) override;
-        void endRenderPass(ObjectPtr<RenderPassEncoder> encoder) override;
-        ObjectPtr<ComputePassEncoder> beginComputePass() override;
-        void endComputePass(ObjectPtr<ComputePassEncoder> encoder) override;
-        void present(ObjectPtr<Surface> surface) override;
+        void endRenderPass(RenderPassEncoder* encoder) override;
+        ComputePassEncoder* beginComputePass() override;
+        void endComputePass(ComputePassEncoder* encoder) override;
+        void present(Surface* surface) override;
         void submit() override;
         void wait() override;
 
@@ -208,11 +208,11 @@ namespace spargel::gpu {
     public:
         explicit RenderPassEncoderVulkan() {}
 
-        void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
-        void setVertexBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override;
-        void setFragmentBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override {
+        void setRenderPipeline(RenderPipeline* pipeline) override;
+        void setVertexBuffer(Buffer* buffer, VertexBufferLocation const& loc) override;
+        void setFragmentBuffer(Buffer* buffer, VertexBufferLocation const& loc) override {
         }
-        void setTexture(ObjectPtr<Texture> texture) override;
+        void setTexture(Texture* texture) override;
         void setViewport(Viewport viewport) override;
         void draw(int vertex_start, int vertex_count) override;
         void draw(int vertex_start, int vertex_count, int instance_start,
@@ -225,12 +225,12 @@ namespace spargel::gpu {
     public:
         ComputePassEncoderVulkan(DeviceVulkan* device, VkCommandBuffer cmdbuf);
 
-        void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) override;
-        void setComputePipeline2(ObjectPtr<ComputePipeline2> pipeline) override;
-        void setBindGroup(u32 index, ObjectPtr<BindGroup> group) override;
-        void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) override;
+        void setComputePipeline(ComputePipeline* pipeline) override;
+        void setComputePipeline2(ComputePipeline2* pipeline) override;
+        void setBindGroup(u32 index, BindGroup* group) override;
+        void setBuffer(Buffer* buffer, VertexBufferLocation const& loc) override;
         void dispatch(DispatchSize grid_size, DispatchSize group_size) override;
-        void useBuffer(ObjectPtr<Buffer> buffer, BufferAccess access) override {}
+        void useBuffer(Buffer* buffer, BufferAccess access) override {}
 
     private:
         // DeviceVulkan* _device;
@@ -255,7 +255,7 @@ namespace spargel::gpu {
         BindGroupVulkan(VkDescriptorSet set, DeviceVulkan* device, ComputePipeline2Vulkan* pipeline,
                         u32 id);
 
-        void setBuffer(u32 id, ObjectPtr<Buffer> buffer) override;
+        void setBuffer(u32 id, Buffer* buffer) override;
 
         auto getDescriptorSet() const { return _set; }
 
@@ -292,7 +292,7 @@ namespace spargel::gpu {
         auto layout() const { return _layout; }
         auto pipeline() const { return _pipeline; }
 
-        ObjectPtr<BindGroupVulkan> createBindGroup2(u32 id);
+        BindGroupVulkan* createBindGroup2(u32 id);
 
         u32 getSetId(u32 id) {
             for (usize i = 0; i < _groups.count(); i++) {
@@ -396,41 +396,41 @@ namespace spargel::gpu {
         ~DeviceVulkan() override;
 
         // Device
-        ObjectPtr<ShaderLibrary> createShaderLibrary(base::span<u8> bytes) override;
-        void destroyShaderLibrary(ObjectPtr<ShaderLibrary> library) override;
-        ObjectPtr<RenderPipeline> createRenderPipeline(
+        ShaderLibrary* createShaderLibrary(base::span<u8> bytes) override;
+        void destroyShaderLibrary(ShaderLibrary* library) override;
+        RenderPipeline* createRenderPipeline(
             RenderPipelineDescriptor const& descriptor) override;
-        void destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) override;
-        ObjectPtr<Buffer> createBuffer(BufferUsage usage, base::span<u8> bytes) override;
-        ObjectPtr<Buffer> createBuffer(BufferUsage usage, u32 size) override;
-        void destroyBuffer(ObjectPtr<Buffer> b) override;
-        ObjectPtr<Surface> createSurface(ui::Window* w) override;
-        ObjectPtr<Texture> createTexture(u32 width, u32 height) override;
-        void destroyTexture(ObjectPtr<Texture> texture) override;
-        ObjectPtr<CommandQueue> createCommandQueue() override;
-        void destroyCommandQueue(ObjectPtr<CommandQueue> q) override;
-        ObjectPtr<ComputePipeline> createComputePipeline(
-            ShaderFunction func, base::span<ObjectPtr<BindGroupLayout>> layouts) override;
+        void destroyRenderPipeline(RenderPipeline* pipeline) override;
+        Buffer* createBuffer(BufferUsage usage, base::span<u8> bytes) override;
+        Buffer* createBuffer(BufferUsage usage, u32 size) override;
+        void destroyBuffer(Buffer* b) override;
+        Surface* createSurface(ui::Window* w) override;
+        Texture* createTexture(u32 width, u32 height) override;
+        void destroyTexture(Texture* texture) override;
+        CommandQueue* createCommandQueue() override;
+        void destroyCommandQueue(CommandQueue* q) override;
+        ComputePipeline* createComputePipeline(
+            ShaderFunction func, base::span<BindGroupLayout*> layouts) override;
 
-        ObjectPtr<BindGroupLayout> createBindGroupLayout(ShaderStage stage,
+        BindGroupLayout* createBindGroupLayout(ShaderStage stage,
                                                          base::span<BindEntry> entries) override;
-        ObjectPtr<BindGroup> createBindGroup(ObjectPtr<BindGroupLayout> layout) override {
+        BindGroup* createBindGroup(BindGroupLayout* layout) override {
             return nullptr;
         }
 
-        ObjectPtr<ComputePipeline2> createComputePipeline2(
+        ComputePipeline2* createComputePipeline2(
             ComputePipeline2Descriptor const& desc) override {
             return make_object<ComputePipeline2Vulkan>(this, desc.compute, desc.groups);
         }
 
-        ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<ComputePipeline2> p, u32 id) override;
+        BindGroup* createBindGroup2(ComputePipeline2* p, u32 id) override;
 
-        ObjectPtr<RenderPipeline2> createRenderPipeline2(
+        RenderPipeline2* createRenderPipeline2(
             RenderPipeline2Descriptor const& desc) override {
             return nullptr;
         }
 
-        ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<RenderPipeline2> p, u32 id) override {
+        BindGroup* createBindGroup2(RenderPipeline2* p, u32 id) override {
             return nullptr;
         }
 

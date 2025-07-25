@@ -35,48 +35,14 @@ namespace spargel::gpu {
 
 namespace spargel::gpu {
 
-    // dummy wrapper for gpu objects
-    template <typename T>
-    class ObjectPtr {
-    public:
-        ObjectPtr() = default;
-        ObjectPtr(nullptr_t) {}
-
-        template <typename U>
-            requires(base::is_convertible<U*, T*>)
-        explicit ObjectPtr(U* ptr) : _ptr{ptr} {}
-
-        template <typename U>
-            requires(base::is_convertible<U*, T*>)
-        ObjectPtr(ObjectPtr<U> const ptr) : _ptr{ptr.get()} {}
-
-        T* operator->() { return _ptr; }
-        T const* operator->() const { return _ptr; }
-
-        T* get() const { return _ptr; }
-
-        template <typename U>
-        ObjectPtr<U> cast() {
-            return ObjectPtr<U>(static_cast<U*>(_ptr));
-        }
-        template <typename U>
-        ObjectPtr<U> const cast() const {
-            return ObjectPtr<U>(static_cast<U*>(_ptr));
-        }
-
-    private:
-        T* _ptr = nullptr;
-    };
-
     template <typename T, typename... Args>
-    ObjectPtr<T> make_object(Args&&... args) {
-        return ObjectPtr<T>(
-            base::default_allocator()->allocObject<T>(base::forward<Args>(args)...));
+    T* make_object(Args&&... args) {
+        return base::default_allocator()->allocObject<T>(base::forward<Args>(args)...);
     }
 
     template <typename T>
-    void destroy_object(ObjectPtr<T> ptr) {
-        base::default_allocator()->freeObject(ptr.get());
+    void destroy_object(T* ptr) {
+        base::default_allocator()->freeObject(ptr);
     }
 
     // Enums
@@ -312,7 +278,7 @@ namespace spargel::gpu {
     };
 
     struct ShaderFunction {
-        ObjectPtr<ShaderLibrary> library;
+        ShaderLibrary* library;
         char const* entry;
     };
 
@@ -377,7 +343,7 @@ namespace spargel::gpu {
     };
 
     struct ColorAttachmentBindDescriptor {
-        ObjectPtr<Texture> texture;
+        Texture* texture;
         LoadAction load = LoadAction::clear;
         StoreAction store = StoreAction::store;
         ClearColor clear_color;
@@ -489,7 +455,7 @@ namespace spargel::gpu {
     class BindGroup {
     public:
         virtual ~BindGroup() = default;
-        virtual void setBuffer(u32 id, ObjectPtr<Buffer> buffer) = 0;
+        virtual void setBuffer(u32 id, Buffer* buffer) = 0;
     };
 
     class BindGroupLayout {};
@@ -503,12 +469,12 @@ namespace spargel::gpu {
     class CommandBuffer {
     public:
         virtual ~CommandBuffer() = default;
-        virtual ObjectPtr<RenderPassEncoder> beginRenderPass(
+        virtual RenderPassEncoder* beginRenderPass(
             RenderPassDescriptor const& descriptor) = 0;
-        virtual void endRenderPass(ObjectPtr<RenderPassEncoder> encoder) = 0;
-        virtual ObjectPtr<ComputePassEncoder> beginComputePass() = 0;
-        virtual void endComputePass(ObjectPtr<ComputePassEncoder> encoder) = 0;
-        virtual void present(ObjectPtr<Surface> surface) = 0;
+        virtual void endRenderPass(RenderPassEncoder* encoder) = 0;
+        virtual ComputePassEncoder* beginComputePass() = 0;
+        virtual void endComputePass(ComputePassEncoder* encoder) = 0;
+        virtual void present(Surface* surface) = 0;
         virtual void submit() = 0;
         virtual void wait() = 0;
     };
@@ -516,22 +482,22 @@ namespace spargel::gpu {
     class CommandQueue {
     public:
         virtual ~CommandQueue() = default;
-        virtual ObjectPtr<CommandBuffer> createCommandBuffer() = 0;
-        virtual void destroyCommandBuffer(ObjectPtr<CommandBuffer>) = 0;
+        virtual CommandBuffer* createCommandBuffer() = 0;
+        virtual void destroyCommandBuffer(CommandBuffer*) = 0;
     };
 
     class ComputePassEncoder {
     public:
         virtual ~ComputePassEncoder() = default;
-        virtual void setComputePipeline(ObjectPtr<ComputePipeline> pipeline) = 0;
-        virtual void setComputePipeline2(ObjectPtr<ComputePipeline2> pipeline) = 0;
-        virtual void setBindGroup(u32 index, ObjectPtr<BindGroup> group) = 0;
-        virtual void setBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) = 0;
+        virtual void setComputePipeline(ComputePipeline* pipeline) = 0;
+        virtual void setComputePipeline2(ComputePipeline2* pipeline) = 0;
+        virtual void setBindGroup(u32 index, BindGroup* group) = 0;
+        virtual void setBuffer(Buffer* buffer, VertexBufferLocation const& loc) = 0;
         // grid_size is the number of thread groups of the grid
         // group_size is the number of threads of a thread group
         virtual void dispatch(DispatchSize grid_size, DispatchSize group_size) = 0;
 
-        virtual void useBuffer(ObjectPtr<Buffer> buffer, BufferAccess access) = 0;
+        virtual void useBuffer(Buffer* buffer, BufferAccess access) = 0;
     };
 
     class ComputePipeline {
@@ -545,45 +511,45 @@ namespace spargel::gpu {
 
         DeviceKind kind() const { return _kind; }
 
-        virtual ObjectPtr<ShaderLibrary> createShaderLibrary(base::span<u8> bytes) = 0;
-        virtual ObjectPtr<RenderPipeline> createRenderPipeline(
+        virtual ShaderLibrary* createShaderLibrary(base::span<u8> bytes) = 0;
+        virtual RenderPipeline* createRenderPipeline(
             RenderPipelineDescriptor const& descriptor) = 0;
-        virtual ObjectPtr<Surface> createSurface(ui::Window* w) = 0;
-        virtual void destroyShaderLibrary(ObjectPtr<ShaderLibrary> library) = 0;
-        virtual void destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) = 0;
+        virtual Surface* createSurface(ui::Window* w) = 0;
+        virtual void destroyShaderLibrary(ShaderLibrary* library) = 0;
+        virtual void destroyRenderPipeline(RenderPipeline* pipeline) = 0;
 
-        virtual ObjectPtr<Buffer> createBuffer(BufferUsage usage, base::span<u8> bytes) = 0;
-        virtual ObjectPtr<Buffer> createBuffer(BufferUsage usage, u32 size) = 0;
-        virtual void destroyBuffer(ObjectPtr<Buffer> buffer) = 0;
+        virtual Buffer* createBuffer(BufferUsage usage, base::span<u8> bytes) = 0;
+        virtual Buffer* createBuffer(BufferUsage usage, u32 size) = 0;
+        virtual void destroyBuffer(Buffer* buffer) = 0;
 
         // todo: format, 2d
-        virtual ObjectPtr<Texture> createTexture(u32 width, u32 height) = 0;
-        virtual void destroyTexture(ObjectPtr<Texture> texture) = 0;
+        virtual Texture* createTexture(u32 width, u32 height) = 0;
+        virtual void destroyTexture(Texture* texture) = 0;
 
-        virtual ObjectPtr<CommandQueue> createCommandQueue() = 0;
-        virtual void destroyCommandQueue(ObjectPtr<CommandQueue> queue) = 0;
+        virtual CommandQueue* createCommandQueue() = 0;
+        virtual void destroyCommandQueue(CommandQueue* queue) = 0;
 
-        virtual ObjectPtr<ComputePipeline> createComputePipeline(
-            ShaderFunction func, base::span<ObjectPtr<BindGroupLayout>> layouts) = 0;
-        // virtual ObjectPtr<ComputePipeline> createComputePipeline2(
-        //     ObjectPtr<ComputePipeline2> program) = 0;
+        virtual ComputePipeline* createComputePipeline(
+            ShaderFunction func, base::span<BindGroupLayout*> layouts) = 0;
+        // virtual ComputePipeline* createComputePipeline2(
+        //     ComputePipeline2* program) = 0;
 
         /// @brief create a bind group layout object
         /// @param stage the stage where the layout is used
         /// @param entries the entries of the layout
-        virtual ObjectPtr<BindGroupLayout> createBindGroupLayout(ShaderStage stage,
+        virtual BindGroupLayout* createBindGroupLayout(ShaderStage stage,
                                                                  base::span<BindEntry> entries) = 0;
 
-        virtual ObjectPtr<BindGroup> createBindGroup(ObjectPtr<BindGroupLayout> layout) = 0;
+        virtual BindGroup* createBindGroup(BindGroupLayout* layout) = 0;
 
-        virtual ObjectPtr<ComputePipeline2> createComputePipeline2(
+        virtual ComputePipeline2* createComputePipeline2(
             ComputePipeline2Descriptor const& desc) = 0;
-        virtual ObjectPtr<RenderPipeline2> createRenderPipeline2(
+        virtual RenderPipeline2* createRenderPipeline2(
             RenderPipeline2Descriptor const& desc) = 0;
         /// Create a bind group for the `id`-th argument group of the pipeline.
-        virtual ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<ComputePipeline2> pipeline,
+        virtual BindGroup* createBindGroup2(ComputePipeline2* pipeline,
                                                       u32 id) = 0;
-        virtual ObjectPtr<BindGroup> createBindGroup2(ObjectPtr<RenderPipeline2> pipeline,
+        virtual BindGroup* createBindGroup2(RenderPipeline2* pipeline,
                                                       u32 id) = 0;
 
     protected:
@@ -605,12 +571,12 @@ namespace spargel::gpu {
     class RenderPassEncoder {
     public:
         virtual ~RenderPassEncoder() = default;
-        virtual void setRenderPipeline(ObjectPtr<RenderPipeline> pipeline) = 0;
-        virtual void setVertexBuffer(ObjectPtr<Buffer> buffer, VertexBufferLocation const& loc) = 0;
-        virtual void setFragmentBuffer(ObjectPtr<Buffer> buffer,
+        virtual void setRenderPipeline(RenderPipeline* pipeline) = 0;
+        virtual void setVertexBuffer(Buffer* buffer, VertexBufferLocation const& loc) = 0;
+        virtual void setFragmentBuffer(Buffer* buffer,
                                        VertexBufferLocation const& loc) = 0;
 
-        virtual void setTexture(ObjectPtr<Texture> texture) = 0;
+        virtual void setTexture(Texture* texture) = 0;
         virtual void setViewport(Viewport viewport) = 0;
         virtual void draw(int vertex_start, int vertex_count) = 0;
         virtual void draw(int vertex_start, int vertex_count, int instance_start,
@@ -624,7 +590,7 @@ namespace spargel::gpu {
     class Surface {
     public:
         virtual ~Surface() = default;
-        virtual ObjectPtr<Texture> nextTexture() = 0;
+        virtual Texture* nextTexture() = 0;
         virtual float width() = 0;
         virtual float height() = 0;
     };
@@ -645,7 +611,7 @@ namespace spargel::gpu {
         void setStage(ShaderStage stage) { _stage = stage; }
         void addEntry(u32 binding, BindEntryKind kind) { _entries.emplace(binding, kind); }
 
-        ObjectPtr<BindGroupLayout> build(Device* _device) {
+        BindGroupLayout* build(Device* _device) {
             return _device->createBindGroupLayout(_stage, _entries.toSpan());
         }
 
@@ -657,11 +623,11 @@ namespace spargel::gpu {
     class RenderPipelineBuilder {
     public:
         void setPrimitive(PrimitiveKind primitive) { _desc.primitive = primitive; }
-        void setVertexShader(ObjectPtr<ShaderLibrary> library, char const* entry) {
+        void setVertexShader(ShaderLibrary* library, char const* entry) {
             _desc.vertex_shader.library = library;
             _desc.vertex_shader.entry = entry;
         }
-        void setFragmentShader(ObjectPtr<ShaderLibrary> library, char const* entry) {
+        void setFragmentShader(ShaderLibrary* library, char const* entry) {
             _desc.fragment_shader.library = library;
             _desc.fragment_shader.entry = entry;
         }
@@ -679,7 +645,7 @@ namespace spargel::gpu {
             _color_attachments.emplace(format, enable_blend);
         }
 
-        ObjectPtr<RenderPipeline> build(Device* device) {
+        RenderPipeline* build(Device* device) {
             _desc.vertex_buffers = _vertex_buffers.toSpan();
             _desc.vertex_attributes = _vertex_attributes.toSpan();
             _desc.color_attachments = _color_attachments.toSpan();

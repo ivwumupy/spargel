@@ -747,7 +747,7 @@ namespace spargel::gpu {
         //     Type 3: device local, host visible, host coherent, amd specific
     }
 
-    ObjectPtr<ShaderLibrary> DeviceVulkan::createShaderLibrary(base::span<u8> bytes) {
+    ShaderLibrary* DeviceVulkan::createShaderLibrary(base::span<u8> bytes) {
         VkShaderModuleCreateInfo info;
         info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         info.pNext = nullptr;
@@ -760,7 +760,7 @@ namespace spargel::gpu {
         return make_object<ShaderLibraryVulkan>(shader);
     }
 
-    ObjectPtr<RenderPipeline> DeviceVulkan::createRenderPipeline(
+    RenderPipeline* DeviceVulkan::createRenderPipeline(
         RenderPipelineDescriptor const& descriptor) {
         return nullptr;
     }
@@ -793,14 +793,14 @@ namespace spargel::gpu {
     // - A MemoryBlock is simply a VkDeviceMemory, i.e. an allocation. So we should have at most
     // 4096 blocks.
 
-    ObjectPtr<Buffer> DeviceVulkan::createBuffer(BufferUsage usage, base::span<u8> bytes) {
+    Buffer* DeviceVulkan::createBuffer(BufferUsage usage, base::span<u8> bytes) {
         auto b = createBuffer(usage, bytes.count());
         auto addr = b->mapAddr();
         memcpy(addr, bytes.data(), bytes.count());
         return b;
     }
 
-    ObjectPtr<Buffer> DeviceVulkan::createBuffer(BufferUsage usage, u32 size) {
+    Buffer* DeviceVulkan::createBuffer(BufferUsage usage, u32 size) {
         // Step 1. Create the buffer object.
 
         VkBufferCreateInfo buffer_info;
@@ -833,26 +833,26 @@ namespace spargel::gpu {
         return make_object<BufferVulkan>(this, buffer, offset, size);
     }
 
-    ObjectPtr<Surface> DeviceVulkan::createSurface(ui::Window* w) { return nullptr; }
+    Surface* DeviceVulkan::createSurface(ui::Window* w) { return nullptr; }
 
-    ObjectPtr<Texture> DeviceVulkan::createTexture(u32 width, u32 height) { return nullptr; }
+    Texture* DeviceVulkan::createTexture(u32 width, u32 height) { return nullptr; }
 
-    void DeviceVulkan::destroyTexture(ObjectPtr<Texture> texture) {}
+    void DeviceVulkan::destroyTexture(Texture* texture) {}
 
-    void DeviceVulkan::destroyShaderLibrary(ObjectPtr<ShaderLibrary> library) {}
+    void DeviceVulkan::destroyShaderLibrary(ShaderLibrary* library) {}
 
-    void DeviceVulkan::destroyRenderPipeline(ObjectPtr<RenderPipeline> pipeline) {}
+    void DeviceVulkan::destroyRenderPipeline(RenderPipeline* pipeline) {}
 
-    void DeviceVulkan::destroyBuffer(ObjectPtr<Buffer> b) {}
+    void DeviceVulkan::destroyBuffer(Buffer* b) {}
 
-    ObjectPtr<CommandQueue> DeviceVulkan::createCommandQueue() {
+    CommandQueue* DeviceVulkan::createCommandQueue() {
         return make_object<CommandQueueVulkan>(_queue, this);
     }
 
-    void DeviceVulkan::destroyCommandQueue(ObjectPtr<CommandQueue> q) {}
+    void DeviceVulkan::destroyCommandQueue(CommandQueue* q) {}
 
-    ObjectPtr<ComputePipeline> DeviceVulkan::createComputePipeline(
-        ShaderFunction func, base::span<ObjectPtr<BindGroupLayout>> layouts) {
+    ComputePipeline* DeviceVulkan::createComputePipeline(
+        ShaderFunction func, base::span<BindGroupLayout*> layouts) {
         base::vector<VkDescriptorSetLayout> set_layouts;
         set_layouts.reserve(layouts.count());
         set_layouts.set_count(layouts.count());
@@ -893,7 +893,7 @@ namespace spargel::gpu {
         return make_object<ComputePipelineVulkan>(pipeline, layout);
     }
 
-    ObjectPtr<BindGroupLayout> DeviceVulkan::createBindGroupLayout(ShaderStage stage,
+    BindGroupLayout* DeviceVulkan::createBindGroupLayout(ShaderStage stage,
                                                                    base::span<BindEntry> entries) {
         auto stage_flag = translateShaderStage(stage);
         base::vector<VkDescriptorSetLayoutBinding> bindings;
@@ -950,7 +950,7 @@ namespace spargel::gpu {
         createCommandPool();
     }
 
-    ObjectPtr<CommandBuffer> CommandQueueVulkan::createCommandBuffer() {
+    CommandBuffer* CommandQueueVulkan::createCommandBuffer() {
         VkCommandBufferAllocateInfo info;
         info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         info.pNext = nullptr;
@@ -963,7 +963,7 @@ namespace spargel::gpu {
         return make_object<CommandBufferVulkan>(_device, this, buffer);
     }
 
-    void CommandQueueVulkan::destroyCommandBuffer(ObjectPtr<CommandBuffer>) {}
+    void CommandQueueVulkan::destroyCommandBuffer(CommandBuffer*) {}
 
     void CommandQueueVulkan::createCommandPool() {
         VkCommandPoolCreateInfo info;
@@ -982,20 +982,20 @@ namespace spargel::gpu {
         beginCommandBuffer();
     }
 
-    ObjectPtr<RenderPassEncoder> CommandBufferVulkan::beginRenderPass(
+    RenderPassEncoder* CommandBufferVulkan::beginRenderPass(
         RenderPassDescriptor const& descriptor) {
         return nullptr;
     }
 
-    void CommandBufferVulkan::endRenderPass(ObjectPtr<RenderPassEncoder> encoder) {}
+    void CommandBufferVulkan::endRenderPass(RenderPassEncoder* encoder) {}
 
-    ObjectPtr<ComputePassEncoder> CommandBufferVulkan::beginComputePass() {
+    ComputePassEncoder* CommandBufferVulkan::beginComputePass() {
         return make_object<ComputePassEncoderVulkan>(_device, _cmdbuf);
     }
 
-    void CommandBufferVulkan::endComputePass(ObjectPtr<ComputePassEncoder> encoder) {}
+    void CommandBufferVulkan::endComputePass(ComputePassEncoder* encoder) {}
 
-    void CommandBufferVulkan::present(ObjectPtr<Surface> surface) {}
+    void CommandBufferVulkan::present(Surface* surface) {}
 
     void CommandBufferVulkan::submit() {
         endCommandBuffer();
@@ -1046,7 +1046,7 @@ namespace spargel::gpu {
           _procs{device->getProcTable()},
           _cmdbuf{cmdbuf} {}
 
-    void ComputePassEncoderVulkan::setComputePipeline(ObjectPtr<ComputePipeline> pipeline) {
+    void ComputePassEncoderVulkan::setComputePipeline(ComputePipeline* pipeline) {
         _procs->vkCmdBindPipeline(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE,
                                   pipeline.cast<ComputePipelineVulkan>()->pipeline());
     }
@@ -1150,11 +1150,11 @@ namespace spargel::gpu {
             /* createInfoCount = */ 1, &info, nullptr, &_pipeline));
     }
 
-    ObjectPtr<BindGroup> DeviceVulkan::createBindGroup2(ObjectPtr<ComputePipeline2> p, u32 id) {
+    BindGroup* DeviceVulkan::createBindGroup2(ComputePipeline2* p, u32 id) {
         return p.cast<ComputePipeline2Vulkan>()->createBindGroup2(id);
     }
 
-    ObjectPtr<BindGroupVulkan> ComputePipeline2Vulkan::createBindGroup2(u32 id) {
+    BindGroupVulkan* ComputePipeline2Vulkan::createBindGroup2(u32 id) {
         auto set_id = getSetId(id);
         auto set_layout = _dset_layouts[set_id];
 
@@ -1187,7 +1187,7 @@ namespace spargel::gpu {
     // used in subsequent bound pipeline commands with that pipeline type, as defined in the
     // Pipeline Layout Compatibility section.
     //
-    void ComputePassEncoderVulkan::setBindGroup(u32 index, ObjectPtr<BindGroup> g) {
+    void ComputePassEncoderVulkan::setBindGroup(u32 index, BindGroup* g) {
         auto group = g.cast<BindGroupVulkan>();
         VkDescriptorSet sets[1] = {group->getDescriptorSet()};
         // TODO: where to get pipeline layout
@@ -1195,10 +1195,10 @@ namespace spargel::gpu {
                                         group->pipeline()->layout(), index, 1, sets, 0, nullptr);
     }
 
-    void ComputePassEncoderVulkan::setBuffer(ObjectPtr<Buffer> buffer,
+    void ComputePassEncoderVulkan::setBuffer(Buffer* buffer,
                                              VertexBufferLocation const& loc) {}
 
-    void ComputePassEncoderVulkan::setComputePipeline2(ObjectPtr<ComputePipeline2> pipeline) {
+    void ComputePassEncoderVulkan::setComputePipeline2(ComputePipeline2* pipeline) {
         _procs->vkCmdBindPipeline(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE,
                                   pipeline.cast<ComputePipeline2Vulkan>()->pipeline());
     }
@@ -1226,7 +1226,7 @@ namespace spargel::gpu {
           _pipeline{pipeline},
           _id{id} {}
 
-    void BindGroupVulkan::setBuffer(u32 id, ObjectPtr<Buffer> buffer) {
+    void BindGroupVulkan::setBuffer(u32 id, Buffer* buffer) {
         VkDescriptorBufferInfo info;
         info.buffer = buffer.cast<BufferVulkan>()->buffer();
         info.offset = 0;
