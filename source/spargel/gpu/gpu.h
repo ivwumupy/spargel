@@ -241,19 +241,27 @@ namespace spargel::gpu {
     };
 
     struct ShaderStage {
-        struct ShaderStageImpl {
-            constexpr operator ShaderStage() const { return ShaderStage(value); }
-            u32 value;
-        };
-        static constexpr auto vertex = ShaderStageImpl(0b1);
-        static constexpr auto fragment = ShaderStageImpl(0b10);
-        static constexpr auto compute = ShaderStageImpl(0b100);
+        //struct ShaderStageImpl {
+        //    constexpr operator ShaderStage() const { return ShaderStage(value); }
+        //    u32 value;
+        //};
+        //static constexpr auto vertex = ShaderStageImpl(0b1);
+        //static constexpr auto fragment = ShaderStageImpl(0b10);
+        //static constexpr auto compute = ShaderStageImpl(0b100);
+        static const ShaderStage vertex;
+        static const ShaderStage fragment;
+        static const ShaderStage compute;
         constexpr bool has(ShaderStage usage) const { return (value & usage.value) != 0; }
         friend constexpr bool operator==(ShaderStage lhs, ShaderStage rhs) {
             return lhs.value == rhs.value;
         }
         u32 value;
     };
+
+    // https://eel.is/c++draft/cmp.partialord#lib:partial_ordering
+    inline constexpr ShaderStage ShaderStage::vertex{0b1};
+    inline constexpr ShaderStage ShaderStage::fragment{0b10};
+    inline constexpr ShaderStage ShaderStage::compute{0b100};
 
     struct BufferAccess {
         struct BufferAccessImpl {
@@ -354,7 +362,7 @@ namespace spargel::gpu {
         VertexAttributeFormat format;
 
         /// @brief the offset of the vertex attribute to the start of the vertex data
-        ssize offset;
+        usize offset;
     };
 
     /// @brief description of one vertex buffer

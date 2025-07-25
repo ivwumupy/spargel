@@ -1,9 +1,11 @@
 source_set("gpu") {
     sources = [
         "gpu_context.cpp",
+        "gpu.cpp",
     ]
     public = [
         "gpu_context.h",
+        "gpu.h",
     ]
     deps = [
         "//source/spargel/base",
@@ -11,9 +13,11 @@ source_set("gpu") {
 
     if (is_macos) {
         sources += [
+            "gpu_metal.mm",
             "metal_context.mm",
         ]
         frameworks = [
+            "Foundation.framework",
             "Metal.framework",
         ]
     }

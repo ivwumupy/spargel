@@ -53,9 +53,7 @@ namespace spargel::render {
 
                 UIRenderer::TextureHandle handle;
 
-                // TODO: This broken.
-                //
-                // Glyph caching is blocked by this.
+                // TODO: This is broken.
                 //
                 if constexpr (ENABLE_SUBPIXEL_QUANTIZATION) {
                     math::Vector2f subpixel_variantf;

@@ -150,13 +150,13 @@ namespace spargel::gpu {
 
         auto vertex_descriptor = [MTLVertexDescriptor vertexDescriptor];
 
-        for (ssize i = 0; i < descriptor.vertex_buffers.count(); i++) {
+        for (usize i = 0; i < descriptor.vertex_buffers.count(); i++) {
             vertex_descriptor.layouts[i].stepFunction =
                 translateStepMode(descriptor.vertex_buffers[i].step_mode);
             vertex_descriptor.layouts[i].stride = descriptor.vertex_buffers[i].stride;
         }
 
-        for (ssize i = 0; i < descriptor.vertex_attributes.count(); i++) {
+        for (usize i = 0; i < descriptor.vertex_attributes.count(); i++) {
             vertex_descriptor.attributes[i].format =
                 translateVertexFormat(descriptor.vertex_attributes[i].format);
             vertex_descriptor.attributes[i].offset = descriptor.vertex_attributes[i].offset;
@@ -254,7 +254,7 @@ namespace spargel::gpu {
         return make_object<TextureMetal>(texture);
     }
 
-    void DeviceMetal::destroyTexture(ObjectPtr<Texture> texture) {
+    void DeviceMetal::destroyTexture([[maybe_unused]] ObjectPtr<Texture> texture) {
         // todo
     }
 
@@ -333,7 +333,7 @@ namespace spargel::gpu {
                                                  VertexBufferLocation const& loc) {
         [_encoder setVertexBuffer:b.cast<BufferMetal>()->buffer()
                            offset:0
-                          atIndex:loc.apple.buffer_index];
+                          atIndex:(NSUInteger)loc.apple.buffer_index];
     }
     void RenderPassEncoderMetal::setTexture(ObjectPtr<Texture> texture) {
         // todo: index
@@ -344,16 +344,16 @@ namespace spargel::gpu {
     }
     void RenderPassEncoderMetal::draw(int vertex_start, int vertex_count) {
         [_encoder drawPrimitives:MTLPrimitiveTypeTriangle
-                     vertexStart:vertex_start
-                     vertexCount:vertex_count];
+                     vertexStart:(NSUInteger)vertex_start
+                     vertexCount:(NSUInteger)vertex_count];
     }
     void RenderPassEncoderMetal::draw(int vertex_start, int vertex_count, int instance_start,
                                       int instance_count) {
         [_encoder drawPrimitives:MTLPrimitiveTypeTriangle
-                     vertexStart:vertex_start
-                     vertexCount:vertex_count
-                   instanceCount:instance_count
-                    baseInstance:instance_start];
+                     vertexStart:(NSUInteger)vertex_start
+                     vertexCount:(NSUInteger)vertex_count
+                   instanceCount:(NSUInteger)instance_count
+                    baseInstance:(NSUInteger)instance_start];
     }
 
     void TextureMetal::updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
@@ -390,13 +390,13 @@ namespace spargel::gpu {
 
         auto vertex_descriptor = [MTLVertexDescriptor vertexDescriptor];
 
-        for (ssize i = 0; i < descriptor.vertex_buffers.count(); i++) {
+        for (usize i = 0; i < descriptor.vertex_buffers.count(); i++) {
             vertex_descriptor.layouts[i].stepFunction =
                 translateStepMode(descriptor.vertex_buffers[i].step_mode);
             vertex_descriptor.layouts[i].stride = descriptor.vertex_buffers[i].stride;
         }
 
-        for (ssize i = 0; i < descriptor.vertex_attributes.count(); i++) {
+        for (usize i = 0; i < descriptor.vertex_attributes.count(); i++) {
             vertex_descriptor.attributes[i].format =
                 translateVertexFormat(descriptor.vertex_attributes[i].format);
             vertex_descriptor.attributes[i].offset = descriptor.vertex_attributes[i].offset;
