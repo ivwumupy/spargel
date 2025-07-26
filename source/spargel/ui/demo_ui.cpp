@@ -103,9 +103,9 @@ namespace spargel::ui {
         class DemoView : public ui::View {
         public:
             DemoView(text::FontManager* font_manager) {
-                font_ = font_manager->createDefaultFont();
+                font_ = font_manager->defaultFont();
                 // text_ = emplaceChild<TextView>(font_.get());
-                text_ = new TextView(font_.get());
+                text_ = new TextView(font_);
                 text_->setText("<test>hello"_sv);
                 auto fill = emplaceChild<FillLayout>();
                 fill->addChild(text_);
@@ -129,7 +129,7 @@ namespace spargel::ui {
 
         private:
             bool state_ = false;
-            base::UniquePtr<text::Font> font_;
+            text::Font* font_;
             TextView* text_;
         };
 

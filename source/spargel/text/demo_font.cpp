@@ -9,7 +9,7 @@ using namespace spargel;
 
 int main() {
     auto font_manager = text::FontManager::create();
-    auto font = font_manager->createDefaultFont();
+    auto font = font_manager->defaultFont();
     printf("default font: %s\n", base::CString{font->name()}.data());
     return 0;
 }

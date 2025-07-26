@@ -32,7 +32,7 @@ struct RenderResult {
     uint8_t* data;
 };
 
-//inline constexpr auto TEXT = "hello,world测试日本語"_sv;
+// inline constexpr auto TEXT = "hello,world测试日本語"_sv;
 inline constexpr auto TEXT = "<test>"_sv;
 
 void writeToFile(char const* filename, uint8_t const* data, size_t w, size_t h) {
@@ -112,7 +112,7 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
     auto manager = new text::FontManagerMac;
     auto shaper = new text::TextShaperMac(manager);
     auto renderer = new render::UIRendererMetal(context, shaper);
-    auto font = manager->createDefaultFont();
+    auto font = manager->defaultFont();
     render::UIScene scene;
     scene.setRenderer(renderer);
 
@@ -132,7 +132,7 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
     auto texture = [device newTextureWithDescriptor:desc];
 
     scene.setClip(0, 0, (float)truth.width, (float)truth.height);
-    scene.fillText(text::StyledText{TEXT, font.get()}, 0,
+    scene.fillText(text::StyledText{TEXT, font}, 0,
                    (float)truth.height - (float)truth.descent, 0xFFFFFFFF);
 
     auto command_buffer = renderer->renderToTexture(scene, texture);

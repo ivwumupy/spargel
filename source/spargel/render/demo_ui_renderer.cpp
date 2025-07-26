@@ -19,7 +19,7 @@ namespace spargel::render {
         public:
             Demo() {
                 font_manager_ = text::FontManager::create();
-                font_ = font_manager_->createDefaultFont();
+                font_ = font_manager_->defaultFont();
                 initRenderer();
                 initWindow();
                 prepareScene();
@@ -56,24 +56,24 @@ namespace spargel::render {
                 scene_.strokeLine(200, 200, 100, 200, 0xFFFF00FF);
                 scene_.strokeLine(100, 200, 100, 100, 0xFFFFFF00);
                 scene_.strokeCircle(150, 150, 50, 0xFF0000FF);
-                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_.get()}, 20, 250,
+                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_}, 20, 250,
                                 0xFF0000FF);
                 scene_.strokeLine(0, 250, 500, 250, 0xFFFFFFFF);
 
                 // move on a circle!
                 float x = 520.0f + 30.0f * math::cos((float)frame_count_ / 120.0f);
                 float y = 250.0f + 30.0f * math::sin((float)frame_count_ / 120.0f);
-                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_.get()}, x, y,
+                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_}, x, y,
                                 0xFF0000FF);
 
-                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_.get()}, 720, 750,
+                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_}, 720, 750,
                                 0xFF0000FF);
 
-                scene_.fillText(text::StyledText{"hello,worldकैसे हैं आप测试日本語"_sv, font_.get()},
-                                20, 750, 0xFF0000FF);
+                scene_.fillText(text::StyledText{"hello,worldकैसे हैं आप测试日本語"_sv, font_}, 20, 750,
+                                0xFF0000FF);
 
                 scene_.fillRoundedRect(200 - 5, 400, 100 + 10, 50, 5, 0xFFFFFFFF);
-                scene_.fillText(text::StyledText{"click"_sv, font_.get()}, 202, 442, 0xFF000000);
+                scene_.fillText(text::StyledText{"click"_sv, font_}, 202, 442, 0xFF000000);
 
                 // slide (width = 120)
                 float p = (frame_count_ % 1200) / 6.0f;
@@ -83,7 +83,7 @@ namespace spargel::render {
                                        120.0f * (100.0f - p) / 100.0f, 10, 5, 0xFFCCCCCC);
                 scene_.fillCircle(400 + 120.0f * p / 100.0f, 425 + 5, 8, 0xFF0055FF);
 
-                scene_.fillText(text::StyledText{"slide"_sv, font_.get()}, 410, 410, 0xFF777777);
+                scene_.fillText(text::StyledText{"slide"_sv, font_}, 410, 410, 0xFF777777);
 
                 scene_.strokeLine(50 + 6, 50, 50, 50 + 6, 0xFFFFFFFF);
                 scene_.strokeLine(50, 50, 50 + 6, 50 + 6, 0xFFFFFFFF);
@@ -97,7 +97,7 @@ namespace spargel::render {
             base::UniquePtr<render::UIRenderer> renderer_;
             base::UniquePtr<text::FontManager> font_manager_;
             base::UniquePtr<text::TextShaper> shaper_;
-            base::UniquePtr<text::Font> font_;
+            text::Font* font_;
             render::UIScene scene_;
             u32 frame_count_ = 0;
         };

@@ -21,9 +21,12 @@ namespace spargel::text {
     public:
         FontMac* translateFont(CTFontRef font);
         base::UniquePtr<Font> createDefaultFont() override;
+        FontMac* defaultFont() override;
+        Font* matchDescriptor(FontDescriptor const& descriptor) override;
 
     private:
         // Warp the handle.
         base::HashMap<CoreTextFont, FontMac*> fonts_;
+        FontMac* default_font_ = nullptr;
     };
 }  // namespace spargel::text

@@ -1,6 +1,8 @@
 #pragma once
 
+#include "spargel/base/optional.h"
 #include "spargel/base/string_view.h"
+#include "spargel/base/span.h"
 
 namespace spargel::text {
 
@@ -28,7 +30,7 @@ namespace spargel::text {
     // The list includes a (predefined) generic font family at the end.
     struct FontFamilyList {
         // The first family has the highest priority.
-        base::Vector<base::StringView> family_names;
+        base::Span<base::StringView> family_names;
         // A fallback family. It must be provided.
         GenericFontFamily generic_family;
     };
@@ -108,6 +110,8 @@ namespace spargel::text {
     //
     struct FontDescriptor {
         // Parse the font description.
+        //
+        // TODO:
         static FontDescriptor fromString(base::StringView str);
 
         // Provide default values for each selector.
