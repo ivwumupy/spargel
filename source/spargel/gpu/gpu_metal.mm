@@ -113,7 +113,7 @@ namespace spargel::gpu {
 
     base::unique_ptr<Device> make_device_metal() { return base::make_unique<DeviceMetal>(); }
 
-    DeviceMetal::DeviceMetal() : Device(DeviceKind::metal) {
+    DeviceMetal::DeviceMetal() {
         _device = MTLCreateSystemDefaultDevice();  // ns_returns_retained
         [_device retain];
     }
@@ -135,7 +135,7 @@ namespace spargel::gpu {
         if (library == nil) {
             return nullptr;
         }
-        return make_object<ShaderLibraryMetal>(library_data, library);
+        return new ShaderLibraryMetal(library_data, library);
     }
 
     RenderPipeline* DeviceMetal::createRenderPipeline(
@@ -199,7 +199,7 @@ namespace spargel::gpu {
 
         [desc release];
 
-        return make_object<RenderPipelineMetal>(vertex_function, state);
+        return new RenderPipelineMetal(vertex_function, state);
     }
 
     Buffer* DeviceMetal::createBuffer([[maybe_unused]] BufferUsage usage,
@@ -207,51 +207,62 @@ namespace spargel::gpu {
         auto buf = [_device newBufferWithBytes:bytes.data()
                                         length:bytes.count()
                                        options:MTLResourceStorageModeShared];
-        return make_object<BufferMetal>(buf);
+        return new BufferMetal(buf);
     }
 
     Buffer* DeviceMetal::createBuffer([[maybe_unused]] BufferUsage usage, u32 size) {
         auto buf = [_device newBufferWithLength:size options:MTLResourceStorageModeShared];
-        return make_object<BufferMetal>(buf);
+        return new BufferMetal(buf);
     }
 
     Surface* DeviceMetal::createSurface(ui::Window* w) {
         CAMetalLayer* l = (CAMetalLayer*)w->getHandle().value.apple.layer;
         l.device = _device;
-        return make_object<SurfaceMetal>(l);
+        return new SurfaceMetal(l);
     }
 
     void DeviceMetal::destroyShaderLibrary(ShaderLibrary* l) {
         auto library = static_cast<ShaderLibraryMetal*>(l);
-        destroy_object(library);
+        delete library;
     }
 
     void DeviceMetal::destroyRenderPipeline(RenderPipeline* p) {
         auto pipeline = static_cast<RenderPipelineMetal*>(p);
-        destroy_object(pipeline);
+        delete pipeline;
     }
 
     void DeviceMetal::destroyBuffer(Buffer* b) {
         auto buf = static_cast<BufferMetal*>(b);
-        destroy_object(buf);
+        delete buf;
     }
 
     CommandQueue* DeviceMetal::createCommandQueue() {
-        return make_object<CommandQueueMetal>([_device newCommandQueue]);
+        return new CommandQueueMetal([_device newCommandQueue]);
     }
 
     void DeviceMetal::destroyCommandQueue(CommandQueue* q) {
-        destroy_object(static_cast<CommandQueueMetal*>(q));
+        delete static_cast<CommandQueueMetal*>(q);
     }
 
-    Texture* DeviceMetal::createTexture(u32 width, u32 height) {
+    Texture* DeviceMetal::createTexture([[maybe_unused]] u32 width, [[maybe_unused]] u32 height) {
+        spargel_panic_here();
+        //auto desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatA8Unorm
+        //                                                               width:width
+        //                                                              height:height
+        //                                                           mipmapped:NO];
+        //desc.storageMode = MTLStorageModeShared;
+        //auto texture = [_device newTextureWithDescriptor:desc];
+        //return new TextureMetal(texture);
+    }
+
+    Texture* DeviceMetal::createMonochromeTexture(u32 width, u32 height) {
         auto desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatA8Unorm
                                                                        width:width
                                                                       height:height
                                                                    mipmapped:NO];
         desc.storageMode = MTLStorageModeShared;
         auto texture = [_device newTextureWithDescriptor:desc];
-        return make_object<TextureMetal>(texture);
+        return new TextureMetal(texture);
     }
 
     void DeviceMetal::destroyTexture([[maybe_unused]] Texture* texture) {
@@ -280,11 +291,11 @@ namespace spargel::gpu {
     BufferMetal::~BufferMetal() { [_buffer release]; }
 
     CommandBuffer* CommandQueueMetal::createCommandBuffer() {
-        return make_object<CommandBufferMetal>([_queue commandBuffer]);
+        return new CommandBufferMetal([_queue commandBuffer]);
     }
 
     void CommandQueueMetal::destroyCommandBuffer(CommandBuffer* cmdbuf) {
-        destroy_object(static_cast<CommandBufferMetal*>(cmdbuf));
+        delete static_cast<CommandBufferMetal*>(cmdbuf);
     }
 
     RenderPassEncoder* CommandBufferMetal::beginRenderPass(
@@ -300,14 +311,14 @@ namespace spargel::gpu {
             auto& c = descriptor.color_attachments[i].clear_color;
             desc.colorAttachments[i].clearColor = MTLClearColorMake(c.r, c.g, c.b, c.a);
         }
-        return make_object<RenderPassEncoderMetal>(
+        return new RenderPassEncoderMetal(
             [_cmdbuf renderCommandEncoderWithDescriptor:desc]);
     }
 
     void CommandBufferMetal::endRenderPass(RenderPassEncoder* e) {
         auto encoder = static_cast<RenderPassEncoderMetal*>(e);
         [encoder->encoder() endEncoding];
-        destroy_object(encoder);
+        delete encoder;
     }
 
     void CommandBufferMetal::present(Surface* s) {
@@ -317,13 +328,13 @@ namespace spargel::gpu {
     void CommandBufferMetal::submit() { [_cmdbuf commit]; }
 
     ComputePassEncoder* CommandBufferMetal::beginComputePass() {
-        return make_object<ComputePassEncoderMetal>([_cmdbuf computeCommandEncoder]);
+        return new ComputePassEncoderMetal([_cmdbuf computeCommandEncoder]);
     }
 
     void CommandBufferMetal::endComputePass(ComputePassEncoder* e) {
         auto encoder = static_cast<ComputePassEncoderMetal*>(e);
         [encoder->encoder() endEncoding];
-        destroy_object(encoder);
+        delete encoder;
     }
 
     void RenderPassEncoderMetal::setRenderPipeline(RenderPipeline* p) {
@@ -439,7 +450,7 @@ namespace spargel::gpu {
 
         [desc release];
 
-        return make_object<RenderPipeline2Metal>(vertex_function, frag_function, state,
+        return new RenderPipeline2Metal(vertex_function, frag_function, state,
                                                  descriptor.groups);
     }
 

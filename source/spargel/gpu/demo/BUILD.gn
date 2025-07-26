@@ -3,6 +3,7 @@ import("//gn/metal_library.gni")
 executable("demo_sort") {
     sources = [ "demo_sort.cpp" ]
     deps = [
+        "//source/spargel/base",
         "//source/spargel/gpu",
         "//source/spargel/resource",
     ]

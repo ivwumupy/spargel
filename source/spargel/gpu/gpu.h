@@ -1,7 +1,6 @@
 #pragma once
 
 #include "spargel/base/allocator.h"
-#include "spargel/base/intrinsic.h"
 #include "spargel/base/meta.h"
 #include "spargel/base/object.h"
 #include "spargel/base/span.h"
@@ -14,7 +13,7 @@ namespace spargel::ui {
     class Window;
 }
 
-// forward declarations
+// Forward declarations.
 namespace spargel::gpu {
     class BindGroup;
     class BindGroupLayout;
@@ -35,17 +34,8 @@ namespace spargel::gpu {
 
 namespace spargel::gpu {
 
-    template <typename T, typename... Args>
-    T* make_object(Args&&... args) {
-        return base::default_allocator()->allocObject<T>(base::forward<Args>(args)...);
-    }
-
-    template <typename T>
-    void destroy_object(T* ptr) {
-        base::default_allocator()->freeObject(ptr);
-    }
-
     // Enums
+    // -----
 
     enum class TextureFormat {
         a8_unorm,
@@ -71,36 +61,31 @@ namespace spargel::gpu {
         unknown,
     };
 
-    /// @brief triangles with particular facing will not be drawn
     enum class CullMode {
-        /// @brief no triangles are discarded
         none,
-        /// @brief front-facing triangles are discarded
+        // Front-facing triangles are discarded.
         front,
-        /// @brief back-facing triangles are discarded
+        // Back-facing triangles are discarded.
         back,
     };
 
-    /// @brief the front-facing orientation
+    // The front-facing orientation.
     enum class Orientation {
-        /// @brief clockwise triangles are front-facing
         clockwise,
-        /// @brief counter-clockwise triangles are front-facing
         counter_clockwise,
     };
 
-    /// @brief geometric primitive type for rendering
     enum class PrimitiveKind {
         point,
         line,
         triangle,
     };
 
-    /// @brief the rate of fetching vertex attributes
+    // The rate of fetching vertex attributes.
     enum class VertexStepMode {
-        /// @brief attributes are fetched per vertex
+        // Attributes are fetched per vertex.
         vertex,
-        /// @brief attributes are fetched per instance
+        // Attributes are fetched per instance.
         instance,
     };
 
@@ -177,25 +162,18 @@ namespace spargel::gpu {
     };
 
     // Bitflags
+    // --------
 
     struct BufferUsage {
-        struct BufferUsageImpl {
-            u32 value;
-            constexpr operator BufferUsage() const { return BufferUsage(value); }
-            constexpr BufferUsageImpl operator|(BufferUsageImpl other) const {
-                return BufferUsageImpl(value | other.value);
-            }
-        };
-
-        static constexpr auto map_read = BufferUsageImpl(1 << 0);
-        static constexpr auto map_write = BufferUsageImpl(1 << 1);
-        static constexpr auto copy_src = BufferUsageImpl(1 << 2);
-        static constexpr auto copy_dst = BufferUsageImpl(1 << 3);
-        static constexpr auto index = BufferUsageImpl(1 << 4);
-        static constexpr auto vertex = BufferUsageImpl(1 << 5);
-        static constexpr auto uniform = BufferUsageImpl(1 << 5);
-        static constexpr auto storage = BufferUsageImpl(1 << 6);
-        static constexpr auto indirect = BufferUsageImpl(1 << 7);
+        static const BufferUsage map_read;
+        static const BufferUsage map_write;
+        static const BufferUsage copy_src;
+        static const BufferUsage copy_dst;
+        static const BufferUsage index;
+        static const BufferUsage vertex;
+        static const BufferUsage uniform;
+        static const BufferUsage storage;
+        static const BufferUsage indirect;
 
         constexpr bool has(BufferUsage usage) const { return (value & usage.value) != 0; }
 
@@ -205,15 +183,17 @@ namespace spargel::gpu {
 
         u32 value;
     };
+    inline constexpr BufferUsage BufferUsage::map_read{1 << 0};
+    inline constexpr BufferUsage BufferUsage::map_write{1 << 1};
+    inline constexpr BufferUsage BufferUsage::copy_src{1 << 2};
+    inline constexpr BufferUsage BufferUsage::copy_dst{1 << 3};
+    inline constexpr BufferUsage BufferUsage::index{1 << 4};
+    inline constexpr BufferUsage BufferUsage::vertex{1 << 5};
+    inline constexpr BufferUsage BufferUsage::uniform{1 << 5};
+    inline constexpr BufferUsage BufferUsage::storage{1 << 6};
+    inline constexpr BufferUsage BufferUsage::indirect{1 << 7};
 
     struct ShaderStage {
-        //struct ShaderStageImpl {
-        //    constexpr operator ShaderStage() const { return ShaderStage(value); }
-        //    u32 value;
-        //};
-        //static constexpr auto vertex = ShaderStageImpl(0b1);
-        //static constexpr auto fragment = ShaderStageImpl(0b10);
-        //static constexpr auto compute = ShaderStageImpl(0b100);
         static const ShaderStage vertex;
         static const ShaderStage fragment;
         static const ShaderStage compute;
@@ -224,25 +204,23 @@ namespace spargel::gpu {
         u32 value;
     };
 
-    // https://eel.is/c++draft/cmp.partialord#lib:partial_ordering
-    inline constexpr ShaderStage ShaderStage::vertex{0b1};
-    inline constexpr ShaderStage ShaderStage::fragment{0b10};
-    inline constexpr ShaderStage ShaderStage::compute{0b100};
+    inline constexpr ShaderStage ShaderStage::vertex{1 << 0};
+    inline constexpr ShaderStage ShaderStage::fragment{1 << 1};
+    inline constexpr ShaderStage ShaderStage::compute{1 << 2};
 
     struct BufferAccess {
-        struct BufferAccessImpl {
-            constexpr operator BufferAccess() const { return BufferAccess(value); }
-            u32 value;
-        };
-        static constexpr auto read = BufferAccessImpl(0b1);
-        static constexpr auto write = BufferAccessImpl(0b10);
-        static constexpr auto read_write = BufferAccessImpl(0b11);
+        static const BufferAccess read;
+        static const BufferAccess write;
+        static const BufferAccess read_write;
         constexpr bool has(BufferAccess access) const { return (value & access.value) != 0; }
         friend constexpr bool operator==(BufferAccess lhs, BufferAccess rhs) {
             return lhs.value == rhs.value;
         }
         u32 value;
     };
+    inline constexpr BufferAccess BufferAccess::read{1 << 0};
+    inline constexpr BufferAccess BufferAccess::write{1 << 1};
+    inline constexpr BufferAccess BufferAccess::read_write{(1 << 0) | (1 << 1)};
 
     // Structs
 
@@ -282,27 +260,27 @@ namespace spargel::gpu {
         char const* entry;
     };
 
-    /// @brief one entry of a bind group
+    // One entry of a bind group.
     struct BindEntry {
-        /// @brief the unique identifier of this entry
-        ///
-        /// Syntax in shaders:
-        /// - glsl: `location (set = 0, binding = 1) ...`
-        /// - msl: `struct ArgBuf { float* buf [[id(1)]]; };`
-        ///
+        // The unique identifier of this entry.
+        //
+        // Syntax in shaders:
+        // - glsl: `location (set = 0, binding = 1) ...`
+        // - msl: `struct ArgBuf { float* buf [[id(1)]]; };`
+        //
         u32 binding;
 
-        /// @brief the kind of this entry
+        // The kind of this entry.
         BindEntryKind kind;
     };
 
     // Descriptors
 
     struct ShaderLibraryDescriptor {
-        base::span<u8> bytes;
+        base::span<base::Byte> bytes;
     };
 
-    /// @brief description of one vertex attribute
+    // Description of one vertex attribute.
     struct VertexAttributeDescriptor {
         /// @brief index of the vertex buffer where the data of the attribute is fetched
         u32 buffer;
@@ -392,6 +370,7 @@ namespace spargel::gpu {
         base::span<ColorAttachmentDescriptor> color_attachments;
     };
 
+    // NOTE: This is the same as a BindGroupEntry.
     struct PipelineArgument {
         u32 id;
         BindEntryKind kind;
@@ -451,21 +430,144 @@ namespace spargel::gpu {
     };
 
     // Interfaces
+    // ----------
 
+    // A logical GPU device.
+    class Device {
+    public:
+        virtual ~Device() = default;
+
+        // Command submission
+        // ------------------
+
+        // Create a command queue.
+        virtual CommandQueue* createCommandQueue() = 0;
+        // Destroy the command buffer.
+        virtual void destroyCommandQueue(CommandQueue* queue) = 0;
+
+        // Allocate a command buffer.
+        //
+        // Vulkan (and Metal 3) requires that every command buffer can
+        // be submitted only to the queue it was created with.
+        // This restrction is removed in Metal 4.
+        //
+        // The strategy here is to ask the user for the usage of the
+        // command buffer, e.g. rendering or async compute.
+        //
+        // TODO: Batch api.
+        virtual CommandBuffer* createCommandBuffer() = 0;
+
+        // Shader objects
+        // --------------
+
+        // TODO: Review the design of shader objects.
+        //
+        // Metal shaders are linked together (but still they can be separated on the source level).
+        // Vulkan spec allows multiple entries in a spirv file. But the implementation needs to be investiaged.
+        // Also, SPIRV-link is not stable.
+
+        // Create a shader library (consisting of several shader functions) from the given shader data.
+        //
+        // NOTE: The data is backend dependent (i.e. spirv, or metallib, or dxir).
+        virtual ShaderLibrary* createShaderLibrary(base::Span<base::Byte> bytes) = 0;
+        // Destroy the shader library.
+        virtual void destroyShaderLibrary(ShaderLibrary* library) = 0;
+
+        // Pipeline objects
+        // ----------------
+
+        // Create a render pipeline
+        //
+        // TODO: Batch api.
+        virtual RenderPipeline* createRenderPipeline(
+            RenderPipelineDescriptor const& descriptor) = 0;
+        // Create a render pipeline. Use BindGroup.
+        //
+        // TODO: Batch api.
+        virtual RenderPipeline2* createRenderPipeline2(
+            RenderPipeline2Descriptor const& desc) = 0;
+        // Destroy the render pipeline.
+        virtual void destroyRenderPipeline(RenderPipeline* pipeline) = 0;
+
+        // Create a compute pipeline
+        //
+        // TODO: Batch api.
+        virtual ComputePipeline* createComputePipeline(
+            ShaderFunction func, base::Span<BindGroupLayout*> layouts) = 0;
+        // Create a compute pipeline. Use BindGroup.
+        virtual ComputePipeline2* createComputePipeline2(
+            ComputePipeline2Descriptor const& desc) = 0;
+
+        // Argument binding
+        // ----------------
+
+        // Create a bind group layout object.
+        virtual BindGroupLayout* createBindGroupLayout(ShaderStage stage,
+                                                       base::Span<BindEntry> entries) = 0;
+
+        // Create a bind group.
+        virtual BindGroup* createBindGroup(BindGroupLayout* layout) = 0;
+        // Create a bind group for the `id`-th argument group of the pipeline.
+        virtual BindGroup* createBindGroup2(ComputePipeline2* pipeline,
+                                                      u32 id) = 0;
+        virtual BindGroup* createBindGroup2(RenderPipeline2* pipeline,
+                                                      u32 id) = 0;
+
+        // Resources
+        // ---------
+
+        // Create a buffer with given data.
+        virtual Buffer* createBuffer(BufferUsage usage, base::Span<base::Byte> bytes) = 0;
+        // Create a buffer with size.
+        virtual Buffer* createBuffer(BufferUsage usage, u32 size) = 0;
+        // Destroy the buffer.
+        virtual void destroyBuffer(Buffer* buffer) = 0;
+
+        // Create a texture with given dimensions.
+        //
+        // TODO: format, 2d
+        virtual Texture* createTexture(u32 width, u32 height) = 0;
+        virtual Texture* createMonochromeTexture(u32 width, u32 height) = 0;
+        // Destroy the texture.
+        virtual void destroyTexture(Texture* texture) = 0;
+
+        // Create a surface backing the window.
+        virtual Surface* createSurface(ui::Window* window) = 0;
+    };
+
+    // A group of shader arguments that are updated together.
+    //
+    // NOTE:
+    // - BindGroup of WebGPU
+    // - DescriptorSet of Vulkan
+    // - ArgumentBuffer of Metal 3
+    // - ArgumentTable of Metal 4
     class BindGroup {
     public:
         virtual ~BindGroup() = default;
+        // Set the `i`-th item in the bind group to be the buffer.
         virtual void setBuffer(u32 id, Buffer* buffer) = 0;
     };
 
-    class BindGroupLayout {};
+    // Layout of a BindGroup.
+    //
+    // It describes how many objects of each type the bind group can hold.
+    //
+    // TODO: Can we cache the layout?
+    class BindGroupLayout {
+    public:
+        virtual ~BindGroupLayout() = default;
+    };
 
+    // A buffer.
     class Buffer {
     public:
         virtual ~Buffer() = default;
+        // Get the mapped address.
         virtual void* mapAddr() = 0;
     };
 
+    // A
     class CommandBuffer {
     public:
         virtual ~CommandBuffer() = default;
@@ -502,71 +604,25 @@ namespace spargel::gpu {
 
     class ComputePipeline {
     public:
-        // virtual u32 maxGroupSize() = 0;
+        virtual ~ComputePipeline() = default;
     };
 
-    class Device {
+    // PipelineLayout describes the signature of a pipeline.
+    //
+    // A pipeline can be viewed abstractly as a function. Then pipeline layout is the description
+    // of its arguments.
+    //
+    // TODO: This is superseded by ??
+
+    class ComputePipeline2 {
     public:
-        virtual ~Device() = default;
-
-        DeviceKind kind() const { return _kind; }
-
-        virtual ShaderLibrary* createShaderLibrary(base::span<u8> bytes) = 0;
-        virtual RenderPipeline* createRenderPipeline(
-            RenderPipelineDescriptor const& descriptor) = 0;
-        virtual Surface* createSurface(ui::Window* w) = 0;
-        virtual void destroyShaderLibrary(ShaderLibrary* library) = 0;
-        virtual void destroyRenderPipeline(RenderPipeline* pipeline) = 0;
-
-        virtual Buffer* createBuffer(BufferUsage usage, base::span<u8> bytes) = 0;
-        virtual Buffer* createBuffer(BufferUsage usage, u32 size) = 0;
-        virtual void destroyBuffer(Buffer* buffer) = 0;
-
-        // todo: format, 2d
-        virtual Texture* createTexture(u32 width, u32 height) = 0;
-        virtual void destroyTexture(Texture* texture) = 0;
-
-        virtual CommandQueue* createCommandQueue() = 0;
-        virtual void destroyCommandQueue(CommandQueue* queue) = 0;
-
-        virtual ComputePipeline* createComputePipeline(
-            ShaderFunction func, base::span<BindGroupLayout*> layouts) = 0;
-        // virtual ComputePipeline* createComputePipeline2(
-        //     ComputePipeline2* program) = 0;
-
-        /// @brief create a bind group layout object
-        /// @param stage the stage where the layout is used
-        /// @param entries the entries of the layout
-        virtual BindGroupLayout* createBindGroupLayout(ShaderStage stage,
-                                                                 base::span<BindEntry> entries) = 0;
-
-        virtual BindGroup* createBindGroup(BindGroupLayout* layout) = 0;
-
-        virtual ComputePipeline2* createComputePipeline2(
-            ComputePipeline2Descriptor const& desc) = 0;
-        virtual RenderPipeline2* createRenderPipeline2(
-            RenderPipeline2Descriptor const& desc) = 0;
-        /// Create a bind group for the `id`-th argument group of the pipeline.
-        virtual BindGroup* createBindGroup2(ComputePipeline2* pipeline,
-                                                      u32 id) = 0;
-        virtual BindGroup* createBindGroup2(RenderPipeline2* pipeline,
-                                                      u32 id) = 0;
-
-    protected:
-        explicit Device(DeviceKind k) : _kind{k} {}
-
-    private:
-        DeviceKind _kind;
+        virtual ~ComputePipeline2() = default;
     };
 
-    /// PipelineLayout describes the signature of a pipeline.
-    ///
-    /// A pipeline can be viewed abstractly as a function. Then pipeline layout is the description
-    /// of its arguments.
-    ///
-
-    class ComputePipeline2 {};
-    class RenderPipeline2 {};
+    class RenderPipeline2 {
+    public:
+        virtual ~RenderPipeline2() = default;
+    };
 
     class RenderPassEncoder {
     public:
@@ -583,9 +639,15 @@ namespace spargel::gpu {
                           int instance_count) = 0;
     };
 
-    class RenderPipeline {};
+    class RenderPipeline {
+    public:
+        virtual ~RenderPipeline() = default;
+    };
 
-    class ShaderLibrary {};
+    class ShaderLibrary {
+    public:
+        virtual ~ShaderLibrary() = default;
+    };
 
     class Surface {
     public:
@@ -659,95 +721,13 @@ namespace spargel::gpu {
         base::vector<ColorAttachmentDescriptor> _color_attachments;
     };
 
-    // This is the allocator for device memory.
-    //
-    // The maximal memory allocation count (maxMemoryAllocationCount) returned by Vulkan drivers is
-    // still 4096 on half of the devices. So we should have few allocations of large device memory
-    // blocks, and then suballocate from these blocks. It's then our task to handle memory
-    // fragmentation.
-    //
-    // Two algorithms:
-    // - Bump allocator.
-    // - TLSF (two-level seggregated fit) allocator.
-    //
-
-    // The TLSF Allocator
-    //
-    // One instance manages a sequence of memory blocks, which are binned into a two levels.
-    //
-    // The number of (first level) bins is `bin_count`. Each bin contains `subbin_count` many
-    // (second level) sub-bins. Every sub-bin contains a sequence of memory blocks, organized as a
-    // free-list.
-    //
-    // Suppose the i-th (first level) bin is for memory blocks with size in [a, b).
-    // Let delta be ceil((b - a) / subbin_count).
-    // Then the j-th sub-bin is for blocks with size in [a + j * delta, a + (j + 1) * delta).
-    //
-    // We maintain two lookup structures:
-    // - The first one is a bitset indicating whether each bin contains free memory blocks.
-    // - The second one is a bitset for every bin, indicating which sub-bins contains free blocks.
-    //
-    // It remains to have a good choice of (first level) bins. A common approach is to associate
-    // [2^i, 2^(i+1)) with the i-th bin. Zero-sized allocations are special handled. However, this
-    // is not ideal for small sized bins.
-    //
-    // Therefore, we use the following ranges:
-    // - 0-th bin: [2^0, 2^linear_bits)
-    // - 1-th bin: [2^linear_bits, 2^(linear_bits + 1))
-    // - 2-th bin: ...
-    //
-    // Then delta for sub-bins in the 0-th bin is (2^linear_bits - 1) / subbin_count, which is
-    // about 3.9.
-    //
-    // Note: We would like 2^linear_bits to be divisible by subbin_count. So we take subbin_count to
-    // be a power of 2. Moreover, we require that subbin_count <= 2^(linear_bits - 2) so that delta
-    // >= 4.
-    //
-    //
-    // size   | [2^0, 2^8) | [2^8, 2^9) | [2^9, 2^10) | ...
-    // bin_id |     0      |      1     |       2     | ...
-    //
-    class TLSFAllocator {
-        static constexpr u8 linear_bits = 8;
-        static constexpr u8 subbin_bits = 5;
-        static constexpr u8 subbin_count = 1 << subbin_bits;
-
-    public:
-        TLSFAllocator() = default;
-
-    private:
-        struct BinResult {
-            u8 bin_id;
-            u8 subbin_id;
-        };
-
-        // BinResult binDown(usize size) {
-        //     spargel_assert(size > 0);
-
-        //     u8 bin_id;
-        //     if (size < (1 << linear_bits)) {
-        //         bin_id = 0;
-        //     } else {
-        //         bin_id = base::GetMostSignificantBit(size) - (linear_bits - 1);
-        //     }
-        //     u8 subbin_id = size >> (bin_id - subbin_bits);
-        //     return {bin_id, subbin_id};
-        // }
-
-        // BinResult binUp(usize size) {}
-
-        // u64 _first_bitset = 0;
-        // u64 _second_bitsets[subbin_count] = {0};
-    };
-
 }  // namespace spargel::gpu
 
 // ## Normalized Device Coordinates
 //
 // ### Vulkan
 //
-// Clip coordinates for a vertex result from shader execution, which yields a vertex coordinate
-// Position.
+// Clip coordinates for a vertex result from shader execution, which yields a vertex coordinate position.
 //
 // Perspective division on clip coordinates yields normalized device coordinates, followed by a
 // viewport transformation to convert these coordinates into framebuffer coordinates.
@@ -796,3 +776,6 @@ namespace spargel::gpu {
 // - textures (including texture buffers): `[[texture(index)]]`
 // - samplers: `[[sampler(index)]]`
 //
+
+// NOTE: For the bitflag technique, see
+// https://eel.is/c++draft/cmp.partialord#lib:partial_ordering
