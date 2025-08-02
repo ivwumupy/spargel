@@ -1,17 +1,18 @@
 #pragma once
 
+#include "spargel/base/check.h"
 #include "spargel/base/initializer_list.h"
 #include "spargel/base/types.h"
 
 namespace spargel::base {
 
     template <typename T>
-    class span {
+    class Span {
     public:
-        constexpr span() = default;
+        constexpr Span() = default;
 
-        explicit constexpr span(T const* begin, T const* end) : _begin{begin}, _end{end} {}
-        constexpr span(initializer_list<T> l) : _begin{l.begin()}, _end{l.end()} {}
+        explicit constexpr Span(T const* begin, T const* end) : _begin{begin}, _end{end} {}
+        constexpr Span(initializer_list<T> l) : _begin{l.begin()}, _end{l.end()} {}
 
         constexpr T const& operator[](usize i) const { return _begin[i]; }
 
@@ -24,8 +25,8 @@ namespace spargel::base {
         constexpr T const* begin() const { return _begin; }
         constexpr T const* end() const { return _end; }
 
-        constexpr span<Byte> asBytes() const {
-            return span<Byte>(reinterpret_cast<Byte const*>(_begin),
+        constexpr Span<Byte> asBytes() const {
+            return Span<Byte>(reinterpret_cast<Byte const*>(_begin),
                               reinterpret_cast<Byte const*>(_end));
         }
 
@@ -35,16 +36,16 @@ namespace spargel::base {
     };
 
     template <typename T>
-    span<T> make_span(usize count, T const* begin) {
-        return span<T>(begin, begin + count);
+    using span = Span<T>;
+
+    template <typename T>
+    Span<T> make_span(usize count, T const* begin) {
+        return Span<T>(begin, begin + count);
     }
 
     template <typename T, usize N>
-    span<T> make_span(T const (&arr)[N]) {
-        return span<T>(arr, arr + N);
+    Span<T> make_span(T const (&arr)[N]) {
+        return Span<T>(arr, arr + N);
     }
-
-    template <typename T>
-    using Span = span<T>;
 
 }  // namespace spargel::base

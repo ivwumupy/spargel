@@ -181,7 +181,7 @@ namespace spargel::base {
             T* end() { return _end; }
             T const* end() const { return _end; }
 
-            span<T> toSpan() const { return span<T>(_begin, _end); }
+            Span<T> toSpan() const { return Span<T>(_begin, _end); }
 
             // Allocator* getAllocator() { return _alloc; }
 

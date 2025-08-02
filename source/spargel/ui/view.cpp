@@ -11,12 +11,12 @@ namespace spargel::ui {
     }
     void View::setHost(ViewHost* host) {
         host_ = host;
-        for (auto* child : getChildren()) {
+        for (auto* child : children()) {
             child->setHost(host);
         }
     }
     void View::addChild(View* v) {
-        spargel_check(!v->getParent());
+        spargel_check(!v->parent());
         children_.emplace(v);
         v->setParent(this);
         v->setHost(host_);

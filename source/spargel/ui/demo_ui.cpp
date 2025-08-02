@@ -47,7 +47,7 @@ namespace spargel::ui {
 
         private:
             void shape() {
-                auto shaper = getHost()->getTextShaper();
+                auto shaper = host()->getTextShaper();
                 shape_result_ = shaper->shapeLine(text_);
                 spargel_log_info("shape done: width = %.3f", shape_result_->width);
             }
@@ -84,8 +84,8 @@ namespace spargel::ui {
                 return proposal;
             }
             void placeChildren() override {
-                spargel_check(getChildren().count() == 1);
-                child_->setFrame(getFrame());
+                spargel_check(children().count() == 1);
+                child_->setFrame(frame());
             }
 
         private:
@@ -113,12 +113,12 @@ namespace spargel::ui {
             ~DemoView() { spargel_log_info("destructed"); }
 
             void placeChildren() override {
-                spargel_log_info("%.3f %.3f", getFrame().size.width, getFrame().size.height);
+                spargel_log_info("%.3f %.3f", frame().size.width, frame().size.height);
                 text_->setFrame(50, 50, 100, 100);
             }
 
             void onPaint(render::UIScene& scene) override {
-                scene.setClip(getFrame());
+                scene.setClip(frame());
                 scene.strokeCircle(250, 250, 100, state_ ? 0xFF00FF00 : 0xFFFF0000);
             }
 
