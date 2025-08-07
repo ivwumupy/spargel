@@ -240,6 +240,12 @@
     return delegate->firstRectForCharacterRange(range, actualRange);
 }
 
+// NSResponder
+- (void)magnifyWithEvent:(NSEvent*)event {
+    auto m = [event magnification];
+    spargel_log_info("mag: %.3f", m);
+}
+
 @end
 
 @implementation SpargelWindowDelegate {

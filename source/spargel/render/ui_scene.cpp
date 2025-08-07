@@ -22,13 +22,16 @@ namespace spargel::render {
         pushCommand2(DrawCommand::sample_texture, x * scale_, y * scale_, width * scale_,
                      height * scale_, a, b, color);
 
+        spargel_log_info("texture: %.3f %.3f %.3f %.3f", x * scale_, y * scale_, width * scale_, height * scale_);
+        spargel_log_info("handle: %u %u %u %u", handle.x, handle.y, handle.width, handle.height);
+
         auto m = (math::ceil(width) + 1.0f) * scale_;
         auto n = (math::ceil(height) + 1.0f) * scale_;
         estimated_slots_ += (usize)((math::ceil(m / 8.0f) + 1.0f) * (math::ceil(n / 8.0f) + 1.0f));
     }
     namespace {
         inline constexpr bool ENABLE_SUBPIXEL_QUANTIZATION = true;
-        inline constexpr usize SUBPIXEL_SUBDIVISION = 4;
+        inline constexpr usize SUBPIXEL_SUBDIVISION = 40;
     }  // namespace
     void UIScene::fillText(text::StyledText text, float x, float y, u32 color) {
         spargel_check(renderer_);
@@ -50,6 +53,8 @@ namespace spargel::render {
                     modff((x + position.x + bbox.origin.x) * scale_, &integral_position.x);
                 subpixel_position.y =
                     1.0f - modff((y - position.y - bbox.origin.y) * scale_, &integral_position.y);
+
+                spargel_log_info("subpixel: %.3f %.3f", subpixel_position.x, subpixel_position.y);
 
                 UIRenderer::TextureHandle handle;
 

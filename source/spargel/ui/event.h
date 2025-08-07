@@ -59,4 +59,9 @@ namespace spargel::ui {
         char toChar();
     };
 
+    struct MouseDownEvent {
+        float x;
+        float y;
+    };
+
 }  // namespace spargel::ui

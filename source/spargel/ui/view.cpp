@@ -56,4 +56,6 @@ namespace spargel::ui {
             }
         }
     }
+    void View::processMousePressed() {}
+    void View::processMouseReleased() {}
 }  // namespace spargel::ui

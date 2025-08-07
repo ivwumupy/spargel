@@ -127,7 +127,7 @@ namespace spargel::ui {
     private:
         ViewHost* host_;
         View* parent_ = nullptr;
-        base::vector<View*> children_;
+        base::Vector<View*> children_;
 
         math::Rectangle frame_;
         // Offset in parent's coordinate.

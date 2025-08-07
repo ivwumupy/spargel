@@ -24,13 +24,13 @@ namespace spargel::text {
     }
     base::UniquePtr<Font> FontManagerMac::createDefaultFont() {
         return base::makeUnique<FontMac>(
-            CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 0, nullptr));
+            CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 50, nullptr));
     }
     FontMac* FontManagerMac::defaultFont() {
         if (default_font_) {
             return default_font_;
         }
-        auto font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 0, nullptr);
+        auto font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 50, nullptr);
         default_font_ = translateFont(font);
         return default_font_;
     }

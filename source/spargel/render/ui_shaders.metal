@@ -430,7 +430,8 @@ float4 sdf_frag2(
     constant BinSlot* slots [[buffer(2)]],
     texture2d<float> glyph_texture [[texture(0)]]
 ) {
-    constexpr sampler texture_sampler(mag_filter::linear, min_filter::linear);
+    //constexpr sampler texture_sampler(mag_filter::linear, min_filter::linear);
+    constexpr sampler texture_sampler;
 
     float2 p = in.position.xy;
     float4 col = float4(0, 0, 0, 1);

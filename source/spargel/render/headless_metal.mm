@@ -32,8 +32,8 @@ struct RenderResult {
     uint8_t* data;
 };
 
-// inline constexpr auto TEXT = "hello,world测试日本語"_sv;
-inline constexpr auto TEXT = "<test>"_sv;
+inline constexpr auto TEXT = "hello,world测试日本語"_sv;
+//inline constexpr auto TEXT = "<test>"_sv;
 
 void writeToFile(char const* filename, uint8_t const* data, size_t w, size_t h) {
     auto file = fopen(filename, "w");
@@ -51,7 +51,7 @@ void writeToFile(char const* filename, uint8_t const* data, size_t w, size_t h) 
 
 void buildGroundTruth(GroundTruth& output) {
     auto str = CFStringCreateWithCString(nullptr, TEXT.data(), kCFStringEncodingUTF8);
-    auto font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 0.0f, nullptr);
+    auto font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 50.0f, nullptr);
     void const* keys[] = {kCTFontAttributeName, kCTLigatureAttributeName};
     int val = 2;
     auto number = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &val);
