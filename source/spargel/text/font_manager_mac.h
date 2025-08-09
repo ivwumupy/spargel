@@ -8,19 +8,24 @@
 #include "spargel/text/font_manager.h"
 
 //
+#include <CoreFoundation/CoreFoundation.h>
 #include <CoreText/CoreText.h>
 
 namespace spargel::text {
     struct CoreTextFont {
         CTFontRef object;
-        friend bool operator==(CoreTextFont lhs, CoreTextFont rhs);
-        friend void tag_invoke(base::tag<base::hash>, base::HashRun& run, CoreTextFont font);
+        friend bool operator==(CoreTextFont lhs, CoreTextFont rhs) {
+            return CFEqual(lhs.object, rhs.object);
+        }
+        friend void tag_invoke(base::tag<base::hash>, base::HashRun& run, CoreTextFont font) {
+            run.combine(base::bitCast<CFHashCode, u64>(CFHash(font.object)));
+        }
     };
 
     class FontManagerMac final : public FontManager {
     public:
         FontMac* translateFont(CTFontRef font);
-        base::UniquePtr<Font> createDefaultFont() override;
+        base::UniquePtr<Font> createDefaultFont() override { return nullptr; }
         FontMac* defaultFont() override;
         Font* matchDescriptor(FontDescriptor const& descriptor) override;
 

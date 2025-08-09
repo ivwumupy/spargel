@@ -47,7 +47,7 @@ namespace spargel::ui {
 
         private:
             void shape() {
-                auto shaper = host()->getTextShaper();
+                auto shaper = host()->textShaper();
                 shape_result_ = shaper->shapeLine(text_);
                 spargel_log_info("shape done: width = %.3f", shape_result_->width);
             }

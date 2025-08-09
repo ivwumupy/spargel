@@ -1,0 +1,8 @@
+executable("driver") {
+    sources = [
+        "main.cpp",
+    ]
+    deps = [
+        "//source/spargel/base",
+    ]
+}

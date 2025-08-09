@@ -1,6 +1,5 @@
 #pragma once
 
-#include "spargel/base/unique_ptr.h"
 #include "spargel/render/ui_scene.h"
 #include "spargel/ui/window.h"
 
@@ -37,7 +36,7 @@ namespace spargel::ui {
         void onMouseDown(float x, float y) override;
 
         // TODO
-        text::TextShaper* getTextShaper();
+        text::TextShaper* textShaper() { return renderer_->textShaper(); }
 
     private:
         void computeLayout();

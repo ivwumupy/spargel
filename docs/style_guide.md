@@ -1,1 +1,0 @@
-# Spargel Style Guide

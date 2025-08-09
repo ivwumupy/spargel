@@ -51,7 +51,7 @@ void writeToFile(char const* filename, uint8_t const* data, size_t w, size_t h) 
 
 void buildGroundTruth(GroundTruth& output) {
     auto str = CFStringCreateWithCString(nullptr, TEXT.data(), kCFStringEncodingUTF8);
-    auto font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 50.0f, nullptr);
+    auto font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 0, nullptr);
     void const* keys[] = {kCTFontAttributeName, kCTLigatureAttributeName};
     int val = 2;
     auto number = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &val);
@@ -64,8 +64,6 @@ void buildGroundTruth(GroundTruth& output) {
     CGFloat descent;
     CGFloat leading;
     auto width = CTLineGetTypographicBounds(line, &ascent, &descent, &leading);
-
-    printf("%.3f %.3f %.3f %.3f\n", ascent, descent, leading, width);
 
     auto w = (size_t)ceil(width);
     auto h = (size_t)ceil(ascent + descent);

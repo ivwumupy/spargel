@@ -1,10 +1,6 @@
 #pragma once
 
-#include "spargel/base/allocator.h"
-#include "spargel/base/meta.h"
-#include "spargel/base/object.h"
 #include "spargel/base/span.h"
-#include "spargel/base/string_view.h"
 #include "spargel/base/types.h"
 #include "spargel/base/unique_ptr.h"
 #include "spargel/base/vector.h"
@@ -203,7 +199,6 @@ namespace spargel::gpu {
         }
         u32 value;
     };
-
     inline constexpr ShaderStage ShaderStage::vertex{1 << 0};
     inline constexpr ShaderStage ShaderStage::fragment{1 << 1};
     inline constexpr ShaderStage ShaderStage::compute{1 << 2};
@@ -463,10 +458,11 @@ namespace spargel::gpu {
         // TODO: Review the design of shader objects.
         //
         // Metal shaders are linked together (but still they can be separated on the source level).
-        // Vulkan spec allows multiple entries in a spirv file. But the implementation needs to be investiaged.
-        // Also, SPIRV-link is not stable.
+        // Vulkan spec allows multiple entries in a spirv file. But the implementation needs to be
+        // investiaged. Also, SPIRV-link is not stable.
 
-        // Create a shader library (consisting of several shader functions) from the given shader data.
+        // Create a shader library (consisting of several shader functions) from the given shader
+        // data.
         //
         // NOTE: The data is backend dependent (i.e. spirv, or metallib, or dxir).
         virtual ShaderLibrary* createShaderLibrary(base::Span<base::Byte> bytes) = 0;
@@ -484,16 +480,15 @@ namespace spargel::gpu {
         // Create a render pipeline. Use BindGroup.
         //
         // TODO: Batch api.
-        virtual RenderPipeline2* createRenderPipeline2(
-            RenderPipeline2Descriptor const& desc) = 0;
+        virtual RenderPipeline2* createRenderPipeline2(RenderPipeline2Descriptor const& desc) = 0;
         // Destroy the render pipeline.
         virtual void destroyRenderPipeline(RenderPipeline* pipeline) = 0;
 
         // Create a compute pipeline
         //
         // TODO: Batch api.
-        virtual ComputePipeline* createComputePipeline(
-            ShaderFunction func, base::Span<BindGroupLayout*> layouts) = 0;
+        virtual ComputePipeline* createComputePipeline(ShaderFunction func,
+                                                       base::Span<BindGroupLayout*> layouts) = 0;
         // Create a compute pipeline. Use BindGroup.
         virtual ComputePipeline2* createComputePipeline2(
             ComputePipeline2Descriptor const& desc) = 0;
@@ -508,10 +503,8 @@ namespace spargel::gpu {
         // Create a bind group.
         virtual BindGroup* createBindGroup(BindGroupLayout* layout) = 0;
         // Create a bind group for the `id`-th argument group of the pipeline.
-        virtual BindGroup* createBindGroup2(ComputePipeline2* pipeline,
-                                                      u32 id) = 0;
-        virtual BindGroup* createBindGroup2(RenderPipeline2* pipeline,
-                                                      u32 id) = 0;
+        virtual BindGroup* createBindGroup2(ComputePipeline2* pipeline, u32 id) = 0;
+        virtual BindGroup* createBindGroup2(RenderPipeline2* pipeline, u32 id) = 0;
 
         // Resources
         // ---------
@@ -571,8 +564,7 @@ namespace spargel::gpu {
     class CommandBuffer {
     public:
         virtual ~CommandBuffer() = default;
-        virtual RenderPassEncoder* beginRenderPass(
-            RenderPassDescriptor const& descriptor) = 0;
+        virtual RenderPassEncoder* beginRenderPass(RenderPassDescriptor const& descriptor) = 0;
         virtual void endRenderPass(RenderPassEncoder* encoder) = 0;
         virtual ComputePassEncoder* beginComputePass() = 0;
         virtual void endComputePass(ComputePassEncoder* encoder) = 0;
@@ -629,8 +621,7 @@ namespace spargel::gpu {
         virtual ~RenderPassEncoder() = default;
         virtual void setRenderPipeline(RenderPipeline* pipeline) = 0;
         virtual void setVertexBuffer(Buffer* buffer, VertexBufferLocation const& loc) = 0;
-        virtual void setFragmentBuffer(Buffer* buffer,
-                                       VertexBufferLocation const& loc) = 0;
+        virtual void setFragmentBuffer(Buffer* buffer, VertexBufferLocation const& loc) = 0;
 
         virtual void setTexture(Texture* texture) = 0;
         virtual void setViewport(Viewport viewport) = 0;
@@ -727,7 +718,8 @@ namespace spargel::gpu {
 //
 // ### Vulkan
 //
-// Clip coordinates for a vertex result from shader execution, which yields a vertex coordinate position.
+// Clip coordinates for a vertex result from shader execution, which yields a vertex coordinate
+// position.
 //
 // Perspective division on clip coordinates yields normalized device coordinates, followed by a
 // viewport transformation to convert these coordinates into framebuffer coordinates.

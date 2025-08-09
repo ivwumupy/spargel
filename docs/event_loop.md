@@ -1,4 +1,4 @@
-# The Main Loop
+# Event Loop
 
 ## AppKit Event Loop
 

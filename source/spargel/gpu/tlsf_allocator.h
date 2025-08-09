@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sparge/base/types.h"
+#include "spargel/base/types.h"
 
 namespace spargel::gpu {
 
@@ -85,5 +85,4 @@ namespace spargel::gpu {
         // u64 _second_bitsets[subbin_count] = {0};
     };
 
-
-}
+}  // namespace spargel::gpu

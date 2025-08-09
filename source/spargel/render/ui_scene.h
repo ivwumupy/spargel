@@ -2,7 +2,6 @@
 
 #include "spargel/base/bit_cast.h"
 #include "spargel/base/enum.h"
-#include "spargel/base/string_view.h"
 #include "spargel/base/types.h"
 #include "spargel/base/vector.h"
 #include "spargel/math/function.h"
@@ -161,7 +160,7 @@ namespace spargel::render {
 
         void popTransform() { transform_stack_.pop(); }
 
-        usize estimated_slots() const { return estimated_slots_; }
+        usize estimatedSlots() const { return estimated_slots_; }
 
     private:
         enum class DrawCommand : u8 {

@@ -40,11 +40,9 @@ namespace spargel::render {
         if (result) {
             return *result;
         }
-        spargel_log_info("glyph cache miss: %u %p %d %d", id.value, (void*)font, subpixel.x,
-                         subpixel.y);
         // TODO: Do not hardcode 0.25.
         auto handle = prepareGlyph(
-            id, font, math::Vector2f{(float)subpixel.x * 0.025f, (float)subpixel.y * 0.025f});
+            id, font, math::Vector2f{(float)subpixel.x * 0.25f, (float)subpixel.y * 0.25f});
         glyph_cache_.set(key, handle);
         spargel_check(glyph_cache_.get(key));
         return handle;

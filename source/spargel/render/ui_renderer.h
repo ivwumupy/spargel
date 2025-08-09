@@ -43,9 +43,8 @@ namespace spargel::render {
 
         virtual ~UIRenderer() = default;
 
-        gpu::GPUContext* context() { return context_; }
-        text::TextShaper* text_shaper() { return text_shaper_; }
-        text::TextShaper* getTextShaper() { return text_shaper_; }
+        gpu::GPUContext* context() const { return context_; }
+        text::TextShaper* textShaper() const { return text_shaper_; }
 
         virtual void render(UIScene const& scene) = 0;
 
@@ -55,7 +54,7 @@ namespace spargel::render {
                                    math::Vector2f subpixel_position);
 
         void setScaleFactor(float s) { scale_factor_ = s; }
-        float scale_factor() const { return scale_factor_; }
+        float scaleFactor() const { return scale_factor_; }
 
     protected:
         explicit UIRenderer(gpu::GPUContext* context, text::TextShaper* text_shaper)

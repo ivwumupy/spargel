@@ -1,6 +1,5 @@
 #include "spargel/ui/view_host.h"
 
-#include "spargel/base/logging.h"
 #include "spargel/render/ui_renderer.h"
 #include "spargel/ui/view.h"
 
@@ -53,5 +52,4 @@ namespace spargel::ui {
         root_view_->setFrame(0, 0, window_->width(), window_->height());
         root_view_->placeChildren();
     }
-    text::TextShaper* ViewHost::getTextShaper() { return renderer_->getTextShaper(); }
 }  // namespace spargel::ui

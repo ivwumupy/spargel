@@ -296,7 +296,7 @@ namespace spargel::render {
         //   tile_count = 79211 = 379 * 209
         // usize max_slot = command_count * 500 + tile_count;
         // TODO: Round before area.
-        usize max_slot = scene.estimated_slots() + tile_count;
+        usize max_slot = scene.estimatedSlots() + tile_count;
         bin_slots_buffer_.request(sizeof(BinSlot) * max_slot);
         bin_alloc_buffer_.request(sizeof(BinAlloc));
         // spargel_log_info("max_slot: %zu", max_slot);

@@ -11,6 +11,7 @@ namespace spargel::text {
 
         virtual ~FontManager() = default;
 
+        [[deprecated]]
         virtual base::UniquePtr<Font> createDefaultFont() = 0;
 
         virtual Font* defaultFont() = 0;
