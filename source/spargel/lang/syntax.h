@@ -3,6 +3,8 @@
 namespace spargel::lang {
     enum class SyntaxKind {
         SourceFile,
+        // Open entire module.
+        OpenDecl,
     };
     class SyntaxNode {
     public:

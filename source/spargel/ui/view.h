@@ -1,7 +1,6 @@
 #pragma once
 
 #include "spargel/base/span.h"
-#include "spargel/base/string.h"
 #include "spargel/base/vector.h"
 #include "spargel/math/rectangle.h"
 #include "spargel/math/vector.h"
@@ -30,7 +29,7 @@ namespace spargel::ui {
     //
     class View {
     public:
-        View() {}
+        View() = default;
         virtual ~View();
 
         // Host is set for every view in the hierarchy.
@@ -125,7 +124,7 @@ namespace spargel::ui {
         // virtual void onPaint([[maybe_unused]] gpu::GPUContext& ctx) {}
 
     private:
-        ViewHost* host_;
+        ViewHost* host_ = nullptr;
         View* parent_ = nullptr;
         base::Vector<View*> children_;
 
@@ -135,10 +134,4 @@ namespace spargel::ui {
 
         bool needs_layout_ = true;
     };
-
-    class ButtonView : public View {
-    public:
-        ButtonView();
-    };
-
 }  // namespace spargel::ui

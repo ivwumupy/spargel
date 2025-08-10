@@ -33,7 +33,7 @@ namespace spargel::ui {
 
         //
         void onRender() override;
-        void onMouseDown(float x, float y) override;
+        void onMouseDown(MouseDownEvent const& e) override;
 
         // TODO
         text::TextShaper* textShaper() { return renderer_->textShaper(); }

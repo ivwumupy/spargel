@@ -433,8 +433,8 @@ namespace spargel::ui {
     //   +----> x
     //
     void WindowAppKit::_bridgeMouseDown(float x, float y) {
-        if (getDelegate() != nullptr) {
-            getDelegate()->onMouseDown(x, height_ - y);
+        if (auto d = delegate()) {
+            d->onMouseDown(MouseDownEvent{x, height_ - y});
         }
     }
 

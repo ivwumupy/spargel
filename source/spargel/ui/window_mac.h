@@ -93,6 +93,8 @@ namespace spargel::ui {
 
         WindowDelegate* delegate() { return getDelegate(); }
 
+        CAMetalLayer* metalLayer() { return metal_layer_; }
+
     private:
         NSWindow* ns_window_;
         SpargelWindowDelegate* ns_window_delegate_;

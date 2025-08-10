@@ -1,6 +1,7 @@
 #include "spargel/gpu/gpu_metal.h"
 #include "spargel/base/unique_ptr.h"
 #include "spargel/ui/window.h"
+#include "spargel/ui/window_mac.h"
 
 // metal
 #import <Metal/Metal.h>
@@ -138,8 +139,7 @@ namespace spargel::gpu {
         return new ShaderLibraryMetal(library_data, library);
     }
 
-    RenderPipeline* DeviceMetal::createRenderPipeline(
-        RenderPipelineDescriptor const& descriptor) {
+    RenderPipeline* DeviceMetal::createRenderPipeline(RenderPipelineDescriptor const& descriptor) {
         auto desc = [[MTLRenderPipelineDescriptor alloc] init];
 
         auto vertex_library = static_cast<ShaderLibraryMetal*>(descriptor.vertex_shader.library);
@@ -202,8 +202,7 @@ namespace spargel::gpu {
         return new RenderPipelineMetal(vertex_function, state);
     }
 
-    Buffer* DeviceMetal::createBuffer([[maybe_unused]] BufferUsage usage,
-                                                base::span<u8> bytes) {
+    Buffer* DeviceMetal::createBuffer([[maybe_unused]] BufferUsage usage, base::span<u8> bytes) {
         auto buf = [_device newBufferWithBytes:bytes.data()
                                         length:bytes.count()
                                        options:MTLResourceStorageModeShared];
@@ -216,7 +215,7 @@ namespace spargel::gpu {
     }
 
     Surface* DeviceMetal::createSurface(ui::Window* w) {
-        CAMetalLayer* l = (CAMetalLayer*)w->getHandle().value.apple.layer;
+        CAMetalLayer* l = static_cast<ui::WindowAppKit*>(w)->metalLayer();
         l.device = _device;
         return new SurfaceMetal(l);
     }
@@ -246,13 +245,14 @@ namespace spargel::gpu {
 
     Texture* DeviceMetal::createTexture([[maybe_unused]] u32 width, [[maybe_unused]] u32 height) {
         spargel_panic_here();
-        //auto desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatA8Unorm
-        //                                                               width:width
-        //                                                              height:height
-        //                                                           mipmapped:NO];
-        //desc.storageMode = MTLStorageModeShared;
-        //auto texture = [_device newTextureWithDescriptor:desc];
-        //return new TextureMetal(texture);
+        // auto desc = [MTLTextureDescriptor
+        // texture2DDescriptorWithPixelFormat:MTLPixelFormatA8Unorm
+        //                                                                width:width
+        //                                                               height:height
+        //                                                            mipmapped:NO];
+        // desc.storageMode = MTLStorageModeShared;
+        // auto texture = [_device newTextureWithDescriptor:desc];
+        // return new TextureMetal(texture);
     }
 
     Texture* DeviceMetal::createMonochromeTexture(u32 width, u32 height) {
@@ -298,8 +298,7 @@ namespace spargel::gpu {
         delete static_cast<CommandBufferMetal*>(cmdbuf);
     }
 
-    RenderPassEncoder* CommandBufferMetal::beginRenderPass(
-        RenderPassDescriptor const& descriptor) {
+    RenderPassEncoder* CommandBufferMetal::beginRenderPass(RenderPassDescriptor const& descriptor) {
         auto desc = [MTLRenderPassDescriptor renderPassDescriptor];
         for (usize i = 0; i < descriptor.color_attachments.count(); i++) {
             desc.colorAttachments[i].texture =
@@ -311,8 +310,7 @@ namespace spargel::gpu {
             auto& c = descriptor.color_attachments[i].clear_color;
             desc.colorAttachments[i].clearColor = MTLClearColorMake(c.r, c.g, c.b, c.a);
         }
-        return new RenderPassEncoderMetal(
-            [_cmdbuf renderCommandEncoderWithDescriptor:desc]);
+        return new RenderPassEncoderMetal([_cmdbuf renderCommandEncoderWithDescriptor:desc]);
     }
 
     void CommandBufferMetal::endRenderPass(RenderPassEncoder* e) {
@@ -340,8 +338,7 @@ namespace spargel::gpu {
     void RenderPassEncoderMetal::setRenderPipeline(RenderPipeline* p) {
         [_encoder setRenderPipelineState:static_cast<RenderPipelineMetal*>(p)->pipeline()];
     }
-    void RenderPassEncoderMetal::setVertexBuffer(Buffer* b,
-                                                 VertexBufferLocation const& loc) {
+    void RenderPassEncoderMetal::setVertexBuffer(Buffer* b, VertexBufferLocation const& loc) {
         [_encoder setVertexBuffer:static_cast<BufferMetal*>(b)->buffer()
                            offset:0
                           atIndex:(NSUInteger)loc.apple.buffer_index];
@@ -381,7 +378,8 @@ namespace spargel::gpu {
     }
 
     void ComputePassEncoderMetal::setComputePipeline2(ComputePipeline2* pipeline) {
-        [_encoder setComputePipelineState:static_cast<ComputePipeline2Metal*>(pipeline)->pipeline()];
+        [_encoder
+            setComputePipelineState:static_cast<ComputePipeline2Metal*>(pipeline)->pipeline()];
     }
 
     void ComputePassEncoderMetal::useBuffer(Buffer* buffer, BufferAccess access) {
@@ -450,8 +448,7 @@ namespace spargel::gpu {
 
         [desc release];
 
-        return new RenderPipeline2Metal(vertex_function, frag_function, state,
-                                                 descriptor.groups);
+        return new RenderPipeline2Metal(vertex_function, frag_function, state, descriptor.groups);
     }
 
 }  // namespace spargel::gpu

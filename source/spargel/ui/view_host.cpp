@@ -37,11 +37,11 @@ namespace spargel::ui {
         renderer_->render(scene_);
         dirty_ = false;
     }
-    void ViewHost::onMouseDown(float x, float y) {
+    void ViewHost::onMouseDown(MouseDownEvent const& e) {
         if (!root_view_) {
             return;
         }
-        root_view_->onMouseDown(x, y);
+        root_view_->onMouseDown(e.x, e.y);
     }
     void ViewHost::invalidateLayout() {
         needs_layout_ = true;
