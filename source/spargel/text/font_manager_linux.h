@@ -19,6 +19,10 @@ namespace spargel::text {
 
         base::UniquePtr<Font> createDefaultFont() override;
 
+        Font* defaultFont() override { return nullptr; }
+
+        Font* matchDescriptor(FontDescriptor const& descriptor) override { return nullptr; }
+
     private:
         friend class FontLinux;
 
