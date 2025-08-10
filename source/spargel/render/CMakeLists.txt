@@ -24,27 +24,12 @@ spargel_add_executable(
 
 if (SPARGEL_IS_MACOS)
     spargel_add_executable(
-        NAME demo_metal
-        PRIVATE_MACOS
-            demo_metal.mm
-        DEPS
-            base
-            resource
-            ui
-    )
-    spargel_add_executable(
         NAME headless_metal
         PRIVATE_MACOS
             headless_metal.mm
         DEPS
             render
     )
-    # spargel_application_add_resources(
-    #     TARGET demo_metal
-    #     SRC ${CMAKE_CURRENT_SOURCE_DIR}/demo_assets
-    #     DST
-    #     DEPS
-    # )
 
     add_custom_command(
         OUTPUT
@@ -63,61 +48,6 @@ if (SPARGEL_IS_MACOS)
         DEPENDS
             ui_shaders.metal
     )
-
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.ir
-        COMMAND
-            xcrun metal -std=metal3.2 -frecord-sources -o ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.ir -c ${CMAKE_CURRENT_SOURCE_DIR}/shader/shader.metal
-        DEPENDS shader/shader.metal
-    )
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.metallib
-        COMMAND
-            xcrun metallib -o ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.metallib ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.ir
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.ir
-    )
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shader/metal_shader.generated.h
-        COMMAND
-            python3 ${CMAKE_CURRENT_SOURCE_DIR}/gen.py
-                --data ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.metallib
-                --output-dir ${CMAKE_CURRENT_BINARY_DIR}/shader/
-                --file-name metal_shader
-                --var-name spargel_render_metal_shader
-        DEPENDS
-            ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.metallib
-            ${CMAKE_CURRENT_SOURCE_DIR}/gen.py
-    )
-    # add_custom_command(
-    #     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
-    #     COMMAND
-    #         cp ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.metallib ${CMAKE_CURRENT_BINARY_DIR}/resources/shader.metallib
-    #     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.metallib
-    # )
-    add_custom_target(demo_render_metal_shaders
-        DEPENDS
-            # ${CMAKE_CURRENT_BINARY_DIR}/shader/shader.metallib
-            ${CMAKE_CURRENT_BINARY_DIR}/shader/metal_shader.generated.h
-    )
-    add_dependencies(demo_metal demo_render_metal_shaders)
-
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.ir
-        COMMAND
-            xcrun metal -frecord-sources -o ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.ir -c ${CMAKE_CURRENT_SOURCE_DIR}/ui_shaders.metal
-        DEPENDS ui_shaders.metal
-    )
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.metallib
-        COMMAND
-            xcrun metallib -o ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.metallib ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.ir
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.ir
-    )
-    add_custom_target(ui_renderer_metal_shaders
-        DEPENDS
-            ${CMAKE_CURRENT_BINARY_DIR}/ui_shaders.metallib
-    )
-    add_dependencies(render ui_renderer_metal_shaders)
     target_sources(render
         PRIVATE
             ${CMAKE_CURRENT_BINARY_DIR}/metal_shaders.h

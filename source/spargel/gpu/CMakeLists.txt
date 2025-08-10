@@ -11,19 +11,14 @@ spargel_add_library(
         spargel_config
 )
 
-# if(${SPARGEL_GPU_ENABLE_DIRECTX})
-#   target_sources(gpu
-#     PRIVATE
-#       gpu_dx.c
-#   )
-# endif()
-
-if(${SPARGEL_ENABLE_METAL})
+if(${SPARGEL_GPU_ENABLE_DIRECTX})
     #target_sources(gpu
     #    PRIVATE
-    #        gpu_metal.mm
-    #        metal_context.mm
+    #        gpu_directx.cpp
     #)
+endif()
+
+if(${SPARGEL_ENABLE_METAL})
     target_link_libraries(gpu PRIVATE ${FRAMEWORK_METAL})
 endif()
 
@@ -34,5 +29,3 @@ if(${SPARGEL_GPU_ENABLE_VULKAN})
     )
     target_link_libraries(gpu PRIVATE Vulkan::Headers)
 endif()
-
-add_subdirectory(demo)
