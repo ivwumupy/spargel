@@ -3,6 +3,7 @@
 #include "spargel/base/checked_convert.h"
 #include "spargel/base/logging.h"
 #include "spargel/config.h"
+#include "spargel/render/constants.h"
 
 namespace spargel::render {
 
@@ -41,8 +42,9 @@ namespace spargel::render {
             return *result;
         }
         // TODO: Do not hardcode 0.25.
+        constexpr float DELTA = 1.0f / SUBPIXEL_SUBDIVISION;
         auto handle = prepareGlyph(
-            id, font, math::Vector2f{(float)subpixel.x * 0.25f, (float)subpixel.y * 0.25f});
+            id, font, math::Vector2f{(float)subpixel.x * DELTA, (float)subpixel.y * DELTA});
         glyph_cache_.set(key, handle);
         spargel_check(glyph_cache_.get(key));
         return handle;

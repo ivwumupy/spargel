@@ -33,6 +33,7 @@ source_set("spargel") {
         "//source/spargel/gpu",
         "//source/spargel/render",
         "//source/spargel/resource",
+        "//source/spargel/task",
         "//source/spargel/text",
         "//source/spargel/ui",
         "//source/spargel/util",

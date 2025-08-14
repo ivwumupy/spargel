@@ -32,8 +32,7 @@ struct RenderResult {
     uint8_t* data;
 };
 
-inline constexpr auto TEXT = "hello,world测试日本語"_sv;
-//inline constexpr auto TEXT = "<test>"_sv;
+inline constexpr float FONT_SIZE = 0;
 
 void writeToFile(char const* filename, uint8_t const* data, size_t w, size_t h) {
     auto file = fopen(filename, "w");
@@ -49,9 +48,9 @@ void writeToFile(char const* filename, uint8_t const* data, size_t w, size_t h) 
     fclose(file);
 }
 
-void buildGroundTruth(GroundTruth& output) {
-    auto str = CFStringCreateWithCString(nullptr, TEXT.data(), kCFStringEncodingUTF8);
-    auto font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 0, nullptr);
+void buildGroundTruth(base::StringView text, GroundTruth& output) {
+    auto str = CFStringCreateWithCString(nullptr, text.data(), kCFStringEncodingUTF8);
+    auto font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, FONT_SIZE, nullptr);
     void const* keys[] = {kCTFontAttributeName, kCTLigatureAttributeName};
     int val = 2;
     auto number = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &val);
@@ -82,10 +81,10 @@ void buildGroundTruth(GroundTruth& output) {
     CGContextScaleCTM(ctx, 1.0, 1.0);
     CGContextSetTextPosition(ctx, 0, 0);
 
-    CGContextSetAllowsFontSubpixelPositioning(ctx, true);
-    CGContextSetAllowsFontSubpixelQuantization(ctx, true);
-    CGContextSetShouldSubpixelPositionFonts(ctx, true);
-    CGContextSetShouldSubpixelQuantizeFonts(ctx, true);
+    // CGContextSetAllowsFontSubpixelPositioning(ctx, true);
+    // CGContextSetAllowsFontSubpixelQuantization(ctx, true);
+    // CGContextSetShouldSubpixelPositionFonts(ctx, true);
+    // CGContextSetShouldSubpixelQuantizeFonts(ctx, true);
 
     CTLineDraw(line, ctx);
 
@@ -96,6 +95,15 @@ void buildGroundTruth(GroundTruth& output) {
     output.descent = descent;
     output.leading = leading;
 
+    for (usize i = 0; i < h; i++) {
+        for (usize j = 0; j < w; j++) {
+            auto value = data[i * w + j];
+            int code = value * (255 - 232) / 256 + 232;
+            printf("\033[38;5;196;48;5;%dm ", code);
+        }
+        printf("\033[0m\n");
+    }
+
     CFRelease(ctx);
     CFRelease(line);
     CFRelease(attr_str);
@@ -105,7 +113,7 @@ void buildGroundTruth(GroundTruth& output) {
     CFRelease(str);
 }
 
-void buildSpargel(GroundTruth const& truth, RenderResult& result) {
+void buildSpargel(base::StringView text, GroundTruth const& truth, RenderResult& result) {
     auto context = new gpu::MetalContext;
     auto manager = new text::FontManagerMac;
     auto shaper = new text::TextShaperMac(manager);
@@ -117,7 +125,8 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
     auto device = context->device();
 
     auto desc =
-        [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB
+        // [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB
+        [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
                                                            width:truth.width
                                                           height:truth.height
                                                        mipmapped:false];
@@ -130,8 +139,8 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
     auto texture = [device newTextureWithDescriptor:desc];
 
     scene.setClip(0, 0, (float)truth.width, (float)truth.height);
-    scene.fillText(text::StyledText{TEXT, font}, 0,
-                   (float)truth.height - (float)truth.descent, 0xFFFFFFFF);
+    scene.fillText(text::StyledText{text, font}, 0, (float)truth.height - (float)truth.descent,
+                   0xFFFFFFFF);
 
     auto command_buffer = renderer->renderToTexture(scene, texture);
 
@@ -159,6 +168,15 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
         result.data[i] = ((uint8_t*)buffer.contents)[i * 4];
     }
 
+    for (usize i = 0; i < truth.height; i++) {
+        for (usize j = 0; j < truth.width; j++) {
+            auto value = result.data[i * truth.width + j];
+            int code = value * (255 - 232) / 256 + 232;
+            printf("\033[38;5;196;48;5;%dm ", code);
+        }
+        printf("\033[0m\n");
+    }
+
     [texture release];
     [buffer release];
     delete renderer;
@@ -168,11 +186,16 @@ void buildSpargel(GroundTruth const& truth, RenderResult& result) {
 
 int abs(int x) { return x < 0 ? -x : x; }
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        return 1;
+    }
+    base::StringView text{argv[1], strlen(argv[1])};
+
     GroundTruth gt;
     RenderResult res;
-    buildGroundTruth(gt);
-    buildSpargel(gt, res);
+    buildGroundTruth(text, gt);
+    buildSpargel(text, gt, res);
     writeToFile("truth.pgm", gt.data, gt.width, gt.height);
     writeToFile("render.pgm", res.data, gt.width, gt.height);
 

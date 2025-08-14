@@ -1,0 +1,24 @@
+source_set("task") {
+    sources = [
+        "task_manager.cpp",
+    ]
+    public = [
+        "task_manager.h",
+    ]
+    deps = [
+        "//source/spargel/base",
+    ]
+    if (is_macos) {
+        sources += [
+            "task_manager_macos.cpp"
+        ]
+    }
+}
+
+executable("demo_task") {
+    sources = [ "demo_task.cpp" ]
+    deps = [
+        ":task",
+        "//source/spargel/base",
+    ]
+}

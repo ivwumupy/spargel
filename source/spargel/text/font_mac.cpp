@@ -42,9 +42,10 @@ namespace spargel::text {
 
         // spargel_log_info("font raster scale: %.3f", scale);
 
-        // TODO: Check whether subpixel position is non-zero.
-        width += 1;
-        height += 1;
+        // Make room for anti-aliasing, 1px in each direction.
+        // TODO: Do we need 1px more for subpixel position?
+        width += 2;
+        height += 2;
 
         Bitmap bitmap;
         bitmap.width = width;
@@ -62,28 +63,32 @@ namespace spargel::text {
         // NOTE: Scale does not change the translate part.
         //
         // TODO: Read the docs. Why we have to translate before scale?
-        CGContextTranslateCTM(ctx,
-                              //(-rect.origin.x + subpixel_position.x) * scale,
-                              //(-rect.origin.y + subpixel_position.y) * scale);
-                              -rect.origin.x * scale + subpixel_position.x,
-                              -rect.origin.y * scale + subpixel_position.y);
+        CGContextTranslateCTM(ctx, -rect.origin.x * scale, -rect.origin.y * scale);
         CGContextScaleCTM(ctx, scale, scale);
 
-        CGContextSetAllowsFontSubpixelPositioning(ctx, true);
-        CGContextSetAllowsFontSubpixelQuantization(ctx, true);
-        CGContextSetShouldSubpixelPositionFonts(ctx, true);
-        CGContextSetShouldSubpixelQuantizeFonts(ctx, true);
+        // TODO: It seems there's no need for this.
+        // CGContextSetAllowsFontSubpixelPositioning(ctx, true);
+        // CGContextSetAllowsFontSubpixelQuantization(ctx, true);
+        // CGContextSetShouldSubpixelPositionFonts(ctx, true);
+        // CGContextSetShouldSubpixelQuantizeFonts(ctx, true);
 
         // TODO: Shift for anti-aliasing.
         // TODO: Subpixel shifting is done here or above.
-        CGPoint point = CGPointMake(0, 0);
-        // CGPoint point = CGPointMake(1, 1);
+        //
+        // Maybe we should align texture pixel and CoreGraphics pixel.
+        // A consequence is that we need to do the subpixel shift here.
+        //
+        // Add 1 to make room for anti-aliasing. See the note in `ui_scene.cpp`.
+        CGPoint point = CGPointMake(1 + subpixel_position.x, 1 + subpixel_position.y);
 
         CGGlyph glyph = base::checkedConvert<CGGlyph>(id.value);
         CTFontDrawGlyphs(object_, &glyph, &point, 1, ctx);
 
         CFRelease(color_space);
         CGContextRelease(ctx);
+
+        // spargel_log_info("%.3f %.3f", subpixel_position.x, subpixel_position.y);
+        // bitmap.dump();
 
         return bitmap;
     }

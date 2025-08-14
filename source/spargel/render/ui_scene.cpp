@@ -1,6 +1,7 @@
 #include "spargel/render/ui_scene.h"
 
 #include "spargel/base/check.h"
+#include "spargel/render/constants.h"
 #include "spargel/render/ui_renderer.h"
 #include "spargel/text/text_shaper.h"
 
@@ -25,10 +26,6 @@ namespace spargel::render {
         auto n = (math::ceil(height) + 1.0f) * scale_;
         estimated_slots_ += (usize)((math::ceil(m / 8.0f) + 1.0f) * (math::ceil(n / 8.0f) + 1.0f));
     }
-    namespace {
-        inline constexpr bool ENABLE_SUBPIXEL_QUANTIZATION = true;
-        inline constexpr usize SUBPIXEL_SUBDIVISION = 4;
-    }  // namespace
     void UIScene::fillText(text::StyledText text, float x, float y, u32 color) {
         spargel_check(renderer_);
         auto shaper = renderer_->textShaper();
@@ -71,9 +68,14 @@ namespace spargel::render {
                     handle = renderer_->prepareGlyph(glyph, segment.font, subpixel_position);
                 }
 
+                // NOTE: It's expected that the bitmap of the rasterized glyph has enough space for
+                // anti-aliasing as follows.
+                // Assume that the bitmap uses the glyph coordinate space, i.e. the origin is at
+                // bottom left. Then the origin of the glyph should be placed at `1 +
+                // subpixel_shift`. This accounts for the +1/-1 on the `integral_position` below.
                 if (handle.width > 0 && handle.height > 0) {
-                    sampleTexture(integral_position.x / scale_,
-                                  (integral_position.y + 1.0f - handle.height) / scale_,
+                    sampleTexture((integral_position.x - 1) / scale_,
+                                  (integral_position.y + 2 - handle.height) / scale_,
                                   handle.width / scale_, handle.height / scale_, handle, color);
                 }
             }

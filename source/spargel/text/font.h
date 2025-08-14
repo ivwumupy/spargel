@@ -20,6 +20,9 @@ namespace spargel::text {
         usize width;
         usize height;
         base::Vector<base::Byte> data;
+
+        // Debug only.
+        void dump();
     };
     //  ^
     //  |  bounding box

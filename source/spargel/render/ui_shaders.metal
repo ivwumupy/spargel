@@ -270,7 +270,7 @@ void sdf_comp_v2(
     //for (uint i = 0; i < uniform.cmd_count; i++) {
     while (true) {
         threadgroup_barrier(mem_flags::mem_none);
-        
+
         uint cmd_id = slots[slot_id].command_index;
         uint next_slot = slots[slot_id].next_slot;
 
@@ -408,7 +408,7 @@ void sdf_binning(
         // Allocate a new slot.
 
         uint new_slot = atomic_fetch_add_explicit(&alloc.offset, 1, memory_order_relaxed);
-        
+
         if (new_slot >= uniform.max_slot) {
             alloc.out_of_space = true;
             continue;
@@ -444,7 +444,7 @@ float4 sdf_frag2(
     //    uint8_t cmd = cmds[i];
     while (true) {
         threadgroup_barrier(mem_flags::mem_none);
-        
+
         uint cmd_id = slots[slot_id].command_index;
         uint next_slot = slots[slot_id].next_slot;
 
@@ -511,4 +511,3 @@ float4 sdf_frag2(
     }
     return float4(col.xyz, 1.0);
 }
-

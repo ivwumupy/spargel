@@ -5,6 +5,9 @@
 #include "spargel/text/font_mac.h"
 
 namespace spargel::text {
+    namespace {
+        inline constexpr float DEFAULT_FONT_SIZE = 0;
+    }
     base::UniquePtr<FontManager> FontManager::create() {
         return base::makeUnique<FontManagerMac>();
     }
@@ -23,7 +26,7 @@ namespace spargel::text {
         if (default_font_) {
             return default_font_;
         }
-        auto font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, 0, nullptr);
+        auto font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, DEFAULT_FONT_SIZE, nullptr);
         default_font_ = translateFont(font);
         return default_font_;
     }
