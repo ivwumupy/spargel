@@ -4,7 +4,6 @@
 #include "spargel/base/check.h"
 #include "spargel/base/meta.h"
 #include "spargel/base/object.h"
-#include "spargel/base/panic.h"
 #include "spargel/base/tag_invoke.h"
 #include "spargel/base/type_list.h"
 #include "spargel/base/types.h"
@@ -76,8 +75,8 @@ namespace spargel::base {
                 return SumType(IndexWrapper<i>{}, forward<Args>(args)...);
             }
 
-            SumType(SumType const& other) : _index{other._index} {
-                visitByIndex<TypeCount>(_index, [&]<usize i>(IndexWrapper<i>) {
+            SumType(SumType const& other) : index_{other.index_} {
+                visitByIndex<TypeCount>(index_, [&]<usize i>(IndexWrapper<i>) {
                     using T = Get<Types, i>;
                     new (getPtr<T>()) T(other.getValue<i>());
                 });
@@ -88,8 +87,8 @@ namespace spargel::base {
                 return *this;
             }
 
-            SumType(SumType&& other) : _index{other._index} {
-                visitByIndex<TypeCount>(_index, [&]<usize i>(IndexWrapper<i>) {
+            SumType(SumType&& other) : index_{other.index_} {
+                visitByIndex<TypeCount>(index_, [&]<usize i>(IndexWrapper<i>) {
                     using T = Get<Types, i>;
                     new (getPtr<T>()) T(base::move(other.getValue<i>()));
                 });
@@ -101,18 +100,28 @@ namespace spargel::base {
             }
 
             ~SumType() {
-                visitByIndex<TypeCount>(_index, [&]<usize i>(IndexWrapper<i>) {
+                visitByIndex<TypeCount>(index_, [&]<usize i>(IndexWrapper<i>) {
                     using T = Get<Types, i>;
                     destruct_at(getPtr<T>());
                 });
             }
 
-            usize getIndex() const { return _index; }
+            usize index() const { return index_; }
+            usize getIndex() const { return index_; }
+            // unsafe
             void setIndex(usize i) {
                 spargel_check(i < TypeCount);
-                _index = i;
+                index_ = i;
             }
 
+            template <usize i, typename T = Get<Types, i>>
+            T& value() {
+                return *getPtr<T>();
+            }
+            template <usize i, typename T = Get<Types, i>>
+            T const& value() const {
+                return *getPtr<T>();
+            }
             template <usize i, typename T = Get<Types, i>>
             T& getValue() {
                 return *getPtr<T>();
@@ -123,48 +132,50 @@ namespace spargel::base {
             }
 
             friend void tag_invoke(tag<swap>, SumType& lhs, SumType& rhs) {
-                if (lhs._index == rhs._index) {
-                    visitByIndex<TypeCount>(lhs._index, [&]<usize i>(IndexWrapper<i>) {
+                if (lhs.index_ == rhs.index_) {
+                    visitByIndex<TypeCount>(lhs.index_, [&]<usize i>(IndexWrapper<i>) {
                         swap(lhs.getValue<i>(), rhs.getValue<i>());
                     });
                 } else {
                     alignas(Alignment<Ts...>) Byte tmp[StorageSize<Ts...>];
-                    visitByIndex<TypeCount>(lhs._index, [&]<usize i>(IndexWrapper<i>) {
-                        visitByIndex<SumType::TypeCount /*MSVC wants this*/>(
-                            rhs._index, [&]<usize j>(IndexWrapper<j>) {
-                                using T1 = Get<Types, i>;
-                                using T2 = Get<Types, j>;
-                                new (reinterpret_cast<T1*>(tmp)) T1(base::move(lhs.getValue<i>()));
-                                new (lhs.getPtr<T2>()) T2(base::move(rhs.getValue<j>()));
-                                new (rhs.getPtr<T1>()) T1(base::move(*reinterpret_cast<T1*>(tmp)));
-                            });
+                    visitByIndex<TypeCount>(lhs.index_, [&]<usize i>(IndexWrapper<i>) {
+                        // MSVC requires `SumType::`.
+                        visitByIndex<SumType::TypeCount>(rhs.index_, [&]<usize j>(IndexWrapper<j>) {
+                            using T1 = Get<Types, i>;
+                            using T2 = Get<Types, j>;
+                            new (reinterpret_cast<T1*>(tmp)) T1(base::move(lhs.getValue<i>()));
+                            new (lhs.getPtr<T2>()) T2(base::move(rhs.getValue<j>()));
+                            new (rhs.getPtr<T1>()) T1(base::move(*reinterpret_cast<T1*>(tmp)));
+                        });
                     });
-                    swap(lhs._index, rhs._index);
+                    swap(lhs.index_, rhs.index_);
                 }
             }
 
         private:
             template <usize i, typename... Args>
-            SumType(IndexWrapper<i>, Args&&... args) : _index{i} {
+            SumType(IndexWrapper<i>, Args&&... args) : index_{i} {
                 construct_at(getPtr<Get<Types, i>>(), forward<Args>(args)...);
             }
 
             template <typename T>
             T* getPtr() {
-                return reinterpret_cast<T*>(_bytes);
+                return reinterpret_cast<T*>(bytes_);
             }
             template <typename T>
             T const* getPtr() const {
-                return reinterpret_cast<T const*>(_bytes);
+                return reinterpret_cast<T const*>(bytes_);
             }
 
-            alignas(Alignment<Ts...>) Byte _bytes[StorageSize<Ts...>];
-
-            usize _index;
+            usize index_;
+            alignas(Alignment<Ts...>) Byte bytes_[StorageSize<Ts...>];
         };
 
     }  // namespace _sum_type
 
     using _sum_type::SumType;
+
+    template <typename... Ts>
+    using Variant = SumType<Ts...>;
 
 }  // namespace spargel::base

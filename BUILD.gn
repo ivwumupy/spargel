@@ -1,0 +1,12 @@
+group("gn_all") {
+    deps = [
+        "//source/spargel",
+        "//source/refl",
+        "//source/spargel/lang:driver",
+    ]
+    if (is_macos) {
+        deps += [
+            "//source:proto_mac",
+        ]
+    }
+}

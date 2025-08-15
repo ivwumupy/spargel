@@ -12,6 +12,7 @@ tmp*
 
 # Build
 /build*
+!BUILD.gn
 CMakeUserPresets.json
 /out*
 

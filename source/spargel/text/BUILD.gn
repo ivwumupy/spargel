@@ -26,13 +26,3 @@ source_set("text") {
         ]
     }
 }
-
-if (is_macos) {
-    executable("proto_mac") {
-        sources = [ "proto_mac.cpp" ]
-        frameworks = [
-            "CoreFoundation.framework",
-            "CoreText.framework",
-        ]
-    }
-}
