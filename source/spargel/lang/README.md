@@ -2,97 +2,98 @@
 
 We need a better language for shaders, scripts, and the engine itself.
 
-## Table of Contents
+Roadmap:
 
-- [Introduction](#introduction)
-  - [Tour](#tour)
-  - [Notations](#notations)
-- [Lexical Structure](#lexical-structure)
-  - [Source Format](#source-format)
-  - [Whitespace](#whitespace)
-  - [Comments](#comments)
-  - [Identifiers](#identifiers)
+- Implement frontend.
+- C++ backend
 
-## Introduction
-
-### Tour
+## Tour
 
 ```
-// this is a comment
+// This is a comment.
 
-// # The Module System
-//
-// foo/
-//   a.xxx <-+ <--- current file
-//   b.xxx <-+- module `foo`
-//   c.xxx <-+
-//   bar/
-//     d.xxx <- module `foo/bar`
-//   baz/
-import bar // module bar is resolved in the compiler args
+// A module consists of all the sources in a directory.
+open bar // Introduce all the names in the module `bar` into the current scope.
+// Modules are resolved in the compiler args.
 // compiler --module bar=/path/to/build/dir/foo/bar/bar.xxxmod
 
-// defining a function
-def main() // this line has indentation 0
-    // this line has indentation 4, which is larger than that of the last line
-    // so a block starts
-
-    // there is no need for semicolon
+// Defining a function.
+func main() {
+    // There is no need for semicolons.
     print("hello") // calling a function
 
-    if 1 + 1 > 2 then
-        // a new block!
-        print("1 + 1 > 2")
-    else
-        print("1 + 1 <= 2")
-
-    // it is equivalent to the following
-    if { 1 + 1 > 2 } then { // note the block between if and else
+    if 1 + 1 > 2 {
         print("1 + 1 > 2")
     } else {
         print("1 + 1 <= 2")
     }
 
-    // what is a block?
-    // it should be understood as a function!
-
     // a nested definition
-    def my_if_else(cond, succ, fail)
+    func my_if_else(cond, succ, fail) {
         // pattern matching
-        match cond()
-            // special syntax
+        match cond() {
             true => succ()
             false => fail()
+        }
+    }
+}
 
-def fib(n: nat)
-    match n
+func fib(n: nat) {
+    match n {
         0 => 0
         1 => 0
         n => fib(n - 1) + fib(n - 2)
+    }
+}
 
-struct VertexInput
+struct VertexInput {
     @shader.location(0)
     position: vec2(float)
+
     @shader.location(1)
     color: vec4(float)
+}
 
-struct RasterInput
+struct RasterInput {
     @shader.position
     position: vec3(float)
+
     color: vec4(float)
+}
 
 @shader(stage: vertex)
-def vertex_shader(@shader.input input: VertexInput,
-                  @shader.vertex_id vid: uint,
-                  @shader.instance_id iid: uint,
-                  @shader.binding(group: 0, location: 0) viewport: &float2)
+func vertex_shader(@shader.input input: VertexInput,
+                   @shader.vertex_id vid: uint,
+                   @shader.instance_id iid: uint,
+                   @shader.binding(group: 0, location: 0) viewport: &float2) {
     var pos = input.position / ( viewport / 2.0 )
     RasterInput { // position: &mut vec3(float), color: &mut vec4(float)
         position = vec3(float)(pos)
         color = input.color
     }
+}
 
 @shader(stage = pixel)
-def pixel_shader(@shader.input input: RasterInput)
+func pixel_shader(@shader.input input: RasterInput) {
     input.color
+}
+```
+
+## C++ Interop
+
+Use annotations to instruct code generation (for the C++ backend only).
+
+- Mark a function as defined in C++.
+
+```
+@cpp.extern_func
+func fib(n: int) -> int
+```
+
+Renaming and namespaces are supported.
+
+```
+@cpp.extern_func(header: "spargel/base/panic.h",
+                 name: "spargel::base::panic_at")
+func panic(msg: *const char, file: *const char, func: *const char, line: u32) -> never
 ```

@@ -1,6 +1,10 @@
 executable("driver") {
     sources = [
         "main.cpp",
+        "lexer.cpp",
+        "parser.cpp",
+        "syntax_token.cpp",
+        "token_kind.cpp",
     ]
     deps = [
         "//source/spargel/base",

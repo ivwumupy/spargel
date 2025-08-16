@@ -1,6 +1,7 @@
 source_set("base") {
     sources = [
         "allocator.cpp",
+        "console.cpp",
         "deflate.cpp",
         "logging.cpp",
         "panic.cpp",
@@ -20,6 +21,7 @@ source_set("base") {
         "command_line.h",
         "compiler.h",
         "concept.h",
+        "console.h",
         "coroutine.h",
         "deflate.h",
         "either.h",
