@@ -1,4 +1,5 @@
 #include "spargel/lang/lexer.h"
+#include "spargel/lang/parser.h"
 
 namespace spargel::lang {
     namespace {
@@ -10,13 +11,15 @@ namespace spargel::lang {
                     return 0
                 }
             )"};
-            while (true) {
-                auto tok = c.nextToken();
-                tok.dump();
-                if (tok.kind == TokenKind::end_of_file) {
-                    break;
-                }
-            }
+            Parser p{c};
+            p.parse();
+            // while (true) {
+            //     auto tok = c.nextToken();
+            //     tok.dump();
+            //     if (tok.kind == TokenKind::end_of_file) {
+            //         break;
+            //     }
+            // }
         }
     }  // namespace
 }  // namespace spargel::lang

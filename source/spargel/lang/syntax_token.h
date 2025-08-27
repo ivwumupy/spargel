@@ -8,6 +8,6 @@ namespace spargel::lang {
         TokenKind kind;
         base::StringView text;
 
-        void dump();
+        void dump() const;
     };
 }  // namespace spargel::lang

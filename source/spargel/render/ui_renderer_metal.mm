@@ -60,7 +60,7 @@ namespace spargel::render {
         // Create pipeline.
         auto ppl_desc = [[MTLRenderPipelineDescriptor alloc] init];
         // ppl_desc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
-        // TODO: Rever to above or find a better way to deal with the target format.
+        // TODO: Revert to above or find a better way to deal with the target format.
         // srgb is required for presenting, and non-srgb (i.e. linear) is for headless rendering.
         ppl_desc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
         // ppl_desc.colorAttachments[0].blendingEnabled = true;

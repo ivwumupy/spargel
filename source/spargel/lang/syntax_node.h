@@ -13,19 +13,24 @@ namespace spargel::lang {
     class SyntaxChild;
     class SyntaxNode {
     public:
+        explicit SyntaxNode(SyntaxKind kind) : kind_{kind} {}
+
         SyntaxKind kind() const { return kind_; }
 
-        void push(SyntaxToken token) { children_.emplace(token); }
-        void push(SyntaxNode node) { children_.emplace(node); }
+        base::Span<SyntaxChild> children() const { return children_.toSpan(); }
+
+        void dump();
 
     private:
+        friend class SyntaxBuilder;
+
         SyntaxKind kind_;
         base::Vector<SyntaxChild> children_;
     };
     class SyntaxChild {
     public:
         SyntaxChild(SyntaxToken token) : value_{base::Left{token}} {}
-        SyntaxChild(SyntaxNode node) : value_{base::Right{node}} {}
+        SyntaxChild(SyntaxKind kind) : value_{base::Right{SyntaxNode{kind}}} {}
 
         bool isToken() const { return value_.isLeft(); }
         bool isNode() const { return value_.isRight(); }
@@ -38,5 +43,13 @@ namespace spargel::lang {
     };
     class SyntaxBuilder {
     public:
+        // Start building a new child node.
+        void beginNode([[maybe_unused]] SyntaxKind kind) {}
+        // Finish the current child.
+        void endNode() {}
+        void pushToken(SyntaxToken token);
+
+    private:
+        SyntaxNode* current_ = nullptr;
     };
 }  // namespace spargel::lang

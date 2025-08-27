@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 namespace spargel::lang {
-    void SyntaxToken::dump() {
+    void SyntaxToken::dump() const {
         auto& console = base::Console::instance();
         console.write("SyntaxToken: ");
         console.write(toStringLiteral(kind));

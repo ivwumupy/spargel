@@ -9,6 +9,9 @@ namespace spargel::lang {
         Cursor(char const* begin, char const* end) : input_{begin}, end_{end} {}
         Cursor(base::StringView s) : Cursor{s.begin(), s.end()} {}
 
+        SyntaxToken nextToken();
+
+    private:
         bool isAtEnd() const { return input_ >= end_; }
 
         // Return '\0' if out-of-bound.
@@ -35,9 +38,6 @@ namespace spargel::lang {
             }
         }
 
-        SyntaxToken nextToken();
-
-    private:
         SyntaxToken makeToken(char const* start, TokenKind kind) {
             return SyntaxToken{kind, base::StringView{start, input_}};
         }
