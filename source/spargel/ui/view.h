@@ -3,7 +3,7 @@
 #include "spargel/base/span.h"
 #include "spargel/base/vector.h"
 #include "spargel/math/rectangle.h"
-#include "spargel/math/vector.h"
+#include "spargel/ui/event.h"
 
 namespace spargel::gpu {
     class GPUContext;
@@ -109,11 +109,11 @@ namespace spargel::ui {
         // Event Handling
         // --------------
         //
+        // Events received are in the parent coordinate.
+        //
 
-        void processMousePressed();
-        void processMouseReleased();
-        void processKeyPressed();
-        void processKeyReleased();
+        void handleMousePressed(MouseDownEvent const& e);
+        void handleMouseReleased();
 
         virtual void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) {}
 
@@ -130,7 +130,7 @@ namespace spargel::ui {
 
         math::Rectangle frame_;
         // Offset in parent's coordinate.
-        math::Vector2f offset_;
+        // math::Vector2f offset_;
 
         bool needs_layout_ = true;
     };

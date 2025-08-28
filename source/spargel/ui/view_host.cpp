@@ -41,7 +41,8 @@ namespace spargel::ui {
         if (!root_view_) {
             return;
         }
-        root_view_->onMouseDown(e.x, e.y);
+        // root_view_->onMouseDown(e.x, e.y);
+        root_view_->handleMousePressed(e);
     }
     void ViewHost::invalidateLayout() {
         needs_layout_ = true;

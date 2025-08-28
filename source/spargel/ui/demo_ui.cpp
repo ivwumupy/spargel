@@ -42,7 +42,12 @@ namespace spargel::ui {
                 float x = width() / 2.0f - shape_result_->width / 2.0f - shape_result_->leading;
                 float y =
                     height() / 2.0f + shape_result_->ascent / 2.0f + shape_result_->descent / 2.0f;
-                scene.fillText(text_, x, y, 0xFFFFFFFF);
+                scene.fillText(text_, x, y, state_ ? 0xFFFFFFFF : 0xFF0000FF);
+            }
+
+            void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) override {
+                state_ = !state_;
+                requestRepaint();
             }
 
         private:
@@ -54,19 +59,8 @@ namespace spargel::ui {
 
             text::StyledText text_;
             base::Optional<text::ShapedLine> shape_result_;
-        };
 
-        class BoxView : public ui::View {
-        public:
-            BoxView(u32 color) : color_{color} {}
-
-            void onPaint(render::UIScene& scene) override {
-                scene.setClip(0, 0, 500, 500);
-                scene.strokeCircle(250, 250, 100, color_);
-            }
-
-        private:
-            u32 color_;
+            bool state_ = true;
         };
 
         class FillLayout : public ui::View {
@@ -85,19 +79,11 @@ namespace spargel::ui {
             }
             void placeChildren() override {
                 spargel_check(children().count() == 1);
-                child_->setFrame(frame());
+                child_->setFrame(0, 0, width(), height());
             }
 
         private:
             ui::View* child_ = nullptr;
-        };
-
-        class HStackLayout : public ui::View {
-        public:
-            math::RectangleSize getPreferredSize(math::RectangleSize proposal) override {
-                return proposal;
-            }
-            void placeChildren() override {}
         };
 
         class DemoView : public ui::View {
@@ -107,18 +93,18 @@ namespace spargel::ui {
                 // text_ = emplaceChild<TextView>(font_.get());
                 text_ = new TextView(font_);
                 text_->setText("<test>hello"_sv);
-                auto fill = emplaceChild<FillLayout>();
-                fill->addChild(text_);
+                fill_ = emplaceChild<FillLayout>();
+                fill_->setChild(text_);
             }
             ~DemoView() { spargel_log_info("destructed"); }
 
             void placeChildren() override {
-                spargel_log_info("%.3f %.3f", frame().size.width, frame().size.height);
-                text_->setFrame(50, 50, 100, 100);
+                fill_->setFrame(50, 50, 100, 100);
+                fill_->placeChildren();
             }
 
             void onPaint(render::UIScene& scene) override {
-                scene.setClip(frame());
+                // scene.setClip(frame());
                 scene.strokeCircle(250, 250, 100, state_ ? 0xFF00FF00 : 0xFFFF0000);
             }
 
@@ -130,6 +116,7 @@ namespace spargel::ui {
         private:
             bool state_ = false;
             text::Font* font_;
+            FillLayout* fill_;
             TextView* text_;
         };
 

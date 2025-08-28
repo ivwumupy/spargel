@@ -36,6 +36,7 @@ namespace spargel::ui {
         // TODO: Support alternative path.
         // TODO: Should we put the transform stack in the paint context.
         context.scene->pushTransform(frame_.origin.x, frame_.origin.y);
+        context.scene->setClip(0, 0, frame_.size.width, frame_.size.height);
         onPaint(*context.scene);
         for (auto* child : children_) {
             child->paint(context);
@@ -56,6 +57,15 @@ namespace spargel::ui {
             }
         }
     }
-    void View::processMousePressed() {}
-    void View::processMouseReleased() {}
+    void View::handleMousePressed(MouseDownEvent const& e) {
+        if (!frame_.contains({e.x, e.y})) {
+            return;
+        }
+        MouseDownEvent converted{e.x - frame().origin.x, e.y - frame().origin.y};
+        for (auto* child : children()) {
+            child->handleMousePressed(converted);
+        }
+        onMouseDown(e.x, e.y);
+    }
+    void View::handleMouseReleased() {}
 }  // namespace spargel::ui
