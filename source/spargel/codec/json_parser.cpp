@@ -121,19 +121,19 @@ namespace spargel::codec {
 
         void appendUtf8(base::vector<char>& chars, u32 code) {
             if (code <= 0x7f) {
-                chars.emplace(code);
+                chars.emplace((char)code);
             } else if (code <= 0x7ff) {
-                chars.emplace(0xc0 | (code >> 6));
-                chars.emplace(0x80 | (code & 0x3f));
+                chars.emplace((char)(0xc0 | (code >> 6)));
+                chars.emplace((char)(0x80 | (code & 0x3f)));
             } else if (code <= 0xffff) {
-                chars.emplace(0xe0 | (code >> 12));
-                chars.emplace(0x80 | ((code >> 6) & 0x3f));
-                chars.emplace(0x80 | (code & 0x3f));
+                chars.emplace((char)(0xe0 | (code >> 12)));
+                chars.emplace((char)(0x80 | ((code >> 6) & 0x3f)));
+                chars.emplace((char)(0x80 | (code & 0x3f)));
             } else if (code <= 0x10ffff) {
-                chars.emplace(0xf0 | (code >> 18));
-                chars.emplace(0x80 | ((code >> 12) & 0x3f));
-                chars.emplace(0x80 | ((code >> 6) & 0x3f));
-                chars.emplace(0x80 | (code & 0x3f));
+                chars.emplace((char)(0xf0 | (code >> 18)));
+                chars.emplace((char)(0x80 | ((code >> 12) & 0x3f)));
+                chars.emplace((char)(0x80 | ((code >> 6) & 0x3f)));
+                chars.emplace((char)(0x80 | (code & 0x3f)));
             }
         }
 
@@ -173,7 +173,7 @@ namespace spargel::codec {
 
             auto& cursor = ctx.cursor;
             while (!cursorIsEnd(cursor)) {
-                char ch = cursorPeek(cursor);
+                char ch = (char)cursorPeek(cursor);
                 if (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t')
                     cursorAdvance(cursor);
                 else
@@ -197,7 +197,7 @@ namespace spargel::codec {
             auto& cursor = ctx.cursor;
             if (cursorIsEnd(cursor)) return Right(JsonParseError("expected a value"_sv));
 
-            char ch = cursorPeek(cursor);
+            char ch = (char)cursorPeek(cursor);
             switch (ch) {
             case '{':
                 /* object */
@@ -326,7 +326,7 @@ namespace spargel::codec {
             base::vector<char> chars;
 
             while (!cursorIsEnd(cursor)) {
-                char ch = cursorGetChar(cursor);
+                char ch = (char)cursorGetChar(cursor);
 
                 if (isGood(ch)) {
                     chars.emplace(ch);
@@ -342,7 +342,7 @@ namespace spargel::codec {
                 if (ch == '\\') {
                     if (cursorIsEnd(cursor)) return Right(JsonParseError("unfinished escape"_sv));
 
-                    ch = cursorGetChar(cursor);
+                    ch = (char)cursorGetChar(cursor);
                     switch (ch) {
                     case '\"':
                     case '\\':
@@ -370,8 +370,8 @@ namespace spargel::codec {
                         for (int i = 0; i < 4; i++) {
                             if (cursorIsEnd(cursor))
                                 return Right(JsonParseError("expected a hex digit"_sv));
-                            ch = cursorGetChar(cursor);
-                            u8 v;
+                            ch = (char)cursorGetChar(cursor);
+                            char v;
                             if ('0' <= ch && ch <= '9')
                                 v = ch - '0';
                             else if ('A' <= ch && ch <= 'F')
@@ -380,7 +380,7 @@ namespace spargel::codec {
                                 v = ch - 'a' + 0xa;
                             else
                                 return Right(JsonParseError("bad hex digit"_sv));
-                            code = code * 0x10 + v;
+                            code = (u16)(code * 0x10 + v);
                         }
                         appendUtf8(chars, code);
                     } break;
@@ -426,13 +426,13 @@ namespace spargel::codec {
             if (cursorIsEnd(cursor)) return makeOptional<JsonParseError>(UNEXPECTED_END);
 
             minus = false;
-            char ch = cursorPeek(cursor);
+            char ch = (char)cursorPeek(cursor);
 
             // '-'
             if (ch == '-') {
                 minus = true;
                 cursorAdvance(cursor);
-                ch = cursorPeek(cursor);
+                ch = (char)cursorPeek(cursor);
             }
 
             // digit
@@ -447,7 +447,7 @@ namespace spargel::codec {
                 number = (ch - '0');
                 cursorAdvance(cursor);
                 while (!cursorIsEnd(cursor)) {
-                    ch = cursorPeek(cursor);
+                    ch = (char)cursorPeek(cursor);
                     if ('0' <= ch && ch <= '9') {
                         number = number * 10 + (ch - '0');
                         cursorAdvance(cursor);
@@ -478,12 +478,12 @@ namespace spargel::codec {
             cursorAdvance(cursor);
 
             // digits
-            char ch = cursorPeek(cursor);
+            char ch = (char)cursorPeek(cursor);
             if (!('0' <= ch && ch <= '9'))
                 return makeOptional<JsonParseError>("expected fractional part"_sv);
             JsonNumber x = 0.1;
             while (!cursorIsEnd(cursor)) {
-                ch = cursorPeek(cursor);
+                ch = (char)cursorPeek(cursor);
                 if ('0' <= ch && ch <= '9') {
                     number += x * (ch - '0');
                     x *= 0.1;
@@ -522,12 +522,12 @@ namespace spargel::codec {
             }
 
             // digits
-            char ch = cursorPeek(cursor);
+            char ch = (char)cursorPeek(cursor);
             if (!('0' <= ch && ch <= '9'))
                 return makeOptional<JsonParseError>("expected exponential part"_sv);
             JsonNumber exponent = 0;
             while (!cursorIsEnd(cursor)) {
-                ch = cursorPeek(cursor);
+                ch = (char)cursorPeek(cursor);
                 if ('0' <= ch && ch <= '9') {
                     exponent = exponent * 10 + (ch - '0');
                     cursorAdvance(cursor);

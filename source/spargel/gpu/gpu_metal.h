@@ -63,29 +63,29 @@ namespace spargel::gpu {
         id<MTLTexture> _texture;
     };
 
-    class SurfaceMetal final : public Surface {
-    public:
-        explicit SurfaceMetal(CAMetalLayer* layer) : _layer{layer}, _texture(nil) {}
-        ~SurfaceMetal() {}
+    // class SurfaceMetal final : public Surface {
+    // public:
+    //     explicit SurfaceMetal(CAMetalLayer* layer) : _layer{layer}, _texture(nil) {}
+    //     ~SurfaceMetal() {}
 
-        auto layer() { return _layer; }
+    //     auto layer() { return _layer; }
 
-        Texture* nextTexture() override {
-            _drawable = [_layer nextDrawable];
-            base::construct_at(&_texture, _drawable.texture);
-            return &_texture;
-        }
+    //     Texture* nextTexture() override {
+    //         _drawable = [_layer nextDrawable];
+    //         base::construct_at(&_texture, _drawable.texture);
+    //         return &_texture;
+    //     }
 
-        auto drawable() { return _drawable; }
+    //     auto drawable() { return _drawable; }
 
-        float width() override { return (float)_layer.drawableSize.width; }
-        float height() override { return (float)_layer.drawableSize.height; }
+    //     float width() override { return (float)_layer.drawableSize.width; }
+    //     float height() override { return (float)_layer.drawableSize.height; }
 
-    private:
-        CAMetalLayer* _layer;
-        id<CAMetalDrawable> _drawable;
-        TextureMetal _texture;
-    };
+    // private:
+    //     CAMetalLayer* _layer;
+    //     id<CAMetalDrawable> _drawable;
+    //     TextureMetal _texture;
+    // };
 
     class CommandQueueMetal final : public CommandQueue {
     public:
@@ -108,10 +108,9 @@ namespace spargel::gpu {
 
         id<MTLCommandBuffer> commandBuffer() { return _cmdbuf; }
 
-        RenderPassEncoder* beginRenderPass(
-            RenderPassDescriptor const& descriptor) override;
+        RenderPassEncoder* beginRenderPass(RenderPassDescriptor const& descriptor) override;
         void endRenderPass(RenderPassEncoder* encoder) override;
-        void present(Surface* surface) override;
+        // void present(Surface* surface) override;
         void submit() override;
 
         ComputePassEncoder* beginComputePass() override;
@@ -170,7 +169,8 @@ namespace spargel::gpu {
             : _encoder{encoder} {}
 
         void setComputePipeline(ComputePipeline* pipeline) override {
-            [_encoder setComputePipelineState:static_cast<ComputePipelineMetal*>(pipeline)->pipeline()];
+            [_encoder
+                setComputePipelineState:static_cast<ComputePipelineMetal*>(pipeline)->pipeline()];
         }
         void setComputePipeline2(ComputePipeline2* pipeline) override;
         // `index` is the index in the `PipelineProgram`.
@@ -222,7 +222,8 @@ namespace spargel::gpu {
                 if (group.stage.has(ShaderStage::compute)) {
                     _compute_groups.emplace((u32)i, group.location.metal.buffer_id);
                     for (auto const& arg : group.arguments) {
-                        _compute_args.emplace((u32)i, group.location.metal.buffer_id, arg.id, arg.kind);
+                        _compute_args.emplace((u32)i, group.location.metal.buffer_id, arg.id,
+                                              arg.kind);
                     }
                 }
             }
@@ -270,13 +271,15 @@ namespace spargel::gpu {
                 if (group.stage.has(ShaderStage::vertex)) {
                     _vert_groups.emplace((u32)i, group.location.metal.buffer_id);
                     for (auto const& arg : group.arguments) {
-                        _vert_args.emplace((u32)i, group.location.metal.buffer_id, arg.id, arg.kind);
+                        _vert_args.emplace((u32)i, group.location.metal.buffer_id, arg.id,
+                                           arg.kind);
                     }
                 }
                 if (group.stage.has(ShaderStage::fragment)) {
                     _frag_groups.emplace((u32)i, group.location.metal.buffer_id);
                     for (auto const& arg : group.arguments) {
-                        _frag_args.emplace((u32)i, group.location.metal.buffer_id, arg.id, arg.kind);
+                        _frag_args.emplace((u32)i, group.location.metal.buffer_id, arg.id,
+                                           arg.kind);
                     }
                 }
             }
@@ -341,13 +344,13 @@ namespace spargel::gpu {
         ~DeviceMetal() override;
 
         CommandBuffer* createCommandBuffer() override { return nullptr; }
+        void destroyCommandBuffer(CommandBuffer*) override {}
 
         ShaderLibrary* createShaderLibrary(base::span<u8> bytes) override;
-        RenderPipeline* createRenderPipeline(
-            RenderPipelineDescriptor const& descriptor) override;
+        RenderPipeline* createRenderPipeline(RenderPipelineDescriptor const& descriptor) override;
         Buffer* createBuffer(BufferUsage usage, base::span<u8> bytes) override;
         Buffer* createBuffer(BufferUsage usage, u32 size) override;
-        Surface* createSurface(ui::Window* w) override;
+        // Surface* createSurface(ui::Window* w) override;
 
         Texture* createTexture(u32 width, u32 height) override;
         Texture* createMonochromeTexture(u32 width, u32 height) override;
@@ -377,16 +380,16 @@ namespace spargel::gpu {
         //         func, [_device newComputePipelineStateWithFunction:func error:&err]);
         // }
 
-        BindGroupLayout* createBindGroupLayout([[maybe_unused]] ShaderStage stage,
-                                                         [[maybe_unused]] base::span<BindEntry> entries) override {
+        BindGroupLayout* createBindGroupLayout(
+            [[maybe_unused]] ShaderStage stage,
+            [[maybe_unused]] base::span<BindEntry> entries) override {
             return new BindGroupLayoutMetal;
         }
         BindGroup* createBindGroup([[maybe_unused]] BindGroupLayout* layout) override {
             return nullptr;
         }
 
-        ComputePipeline2* createComputePipeline2(
-            ComputePipeline2Descriptor const& desc) override {
+        ComputePipeline2* createComputePipeline2(ComputePipeline2Descriptor const& desc) override {
             auto lib = static_cast<ShaderLibraryMetal*>(desc.compute.library);
             auto func = [lib->library()
                 newFunctionWithName:[NSString stringWithUTF8String:desc.compute.entry]];
@@ -397,8 +400,7 @@ namespace spargel::gpu {
             return new ComputePipeline2Metal(func, pipeline, desc.groups);
         }
 
-        RenderPipeline2* createRenderPipeline2(
-            RenderPipeline2Descriptor const& desc) override;
+        RenderPipeline2* createRenderPipeline2(RenderPipeline2Descriptor const& desc) override;
 
         // `id` is the index of the argument group in the program.
         BindGroup* createBindGroup2(ComputePipeline2* p, u32 id) override {
@@ -413,7 +415,8 @@ namespace spargel::gpu {
             return new BindGroupMetal(buffer, encoder, pipeline);
         }
 
-        BindGroup* createBindGroup2([[maybe_unused]] RenderPipeline2* p, [[maybe_unused]] u32 id) override {
+        BindGroup* createBindGroup2([[maybe_unused]] RenderPipeline2* p,
+                                    [[maybe_unused]] u32 id) override {
             return nullptr;
         }
 

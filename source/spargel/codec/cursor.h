@@ -13,7 +13,7 @@ namespace spargel::codec {
 
     inline u8 cursorPeek(const Cursor& cursor) {
         if (cursorIsEnd(cursor)) return 0;
-        return *cursor.cur;
+        return (u8)*cursor.cur;
     }
 
     inline void cursorAdvance(Cursor& cursor, int steps = 1) { cursor.cur += steps; }

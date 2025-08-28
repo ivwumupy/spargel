@@ -54,7 +54,7 @@ namespace spargel::codec {
 
         JsonValue() : type(JsonValueType::null) {}
 
-        JsonValue(JsonNull&& null) : type(JsonValueType::null) {}
+        JsonValue(JsonNull) : type(JsonValueType::null) {}
         JsonValue(JsonObject&& object) : type(JsonValueType::object), object(base::move(object)) {}
         JsonValue(JsonArray&& array) : type(JsonValueType::array), array(base::move(array)) {}
         JsonValue(JsonString&& string) : type(JsonValueType::string), string(base::move(string)) {}
@@ -87,6 +87,9 @@ namespace spargel::codec {
      */
 
     base::Either<JsonValue, JsonParseError> parseJson(const char* str, usize length);
+    inline base::Either<JsonValue, JsonParseError> parseJson(base::StringView s) {
+        return parseJson(s.data(), s.length());
+    }
 
     /*
      * Codec Backend

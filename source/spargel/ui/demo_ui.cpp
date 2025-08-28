@@ -86,6 +86,7 @@ namespace spargel::ui {
             ui::View* child_ = nullptr;
         };
 
+        // `DemoView` is the root view of the window.
         class DemoView : public ui::View {
         public:
             DemoView(text::FontManager* font_manager) {
@@ -96,7 +97,6 @@ namespace spargel::ui {
                 fill_ = emplaceChild<FillLayout>();
                 fill_->setChild(text_);
             }
-            ~DemoView() { spargel_log_info("destructed"); }
 
             void placeChildren() override {
                 fill_->setFrame(50, 50, 100, 100);
@@ -104,7 +104,6 @@ namespace spargel::ui {
             }
 
             void onPaint(render::UIScene& scene) override {
-                // scene.setClip(frame());
                 scene.strokeCircle(250, 250, 100, state_ ? 0xFF00FF00 : 0xFFFF0000);
             }
 

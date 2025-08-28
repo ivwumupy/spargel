@@ -9,6 +9,7 @@ source_set("gpu") {
     ]
     deps = [
         "//source/spargel/base",
+        "//source/spargel/codec",
     ]
 
     if (is_macos) {
@@ -21,4 +22,12 @@ source_set("gpu") {
             "Metal.framework",
         ]
     }
+}
+
+executable("demo_gpu") {
+    sources = [ "demo_gpu.cpp" ]
+    deps = [
+        ":gpu",
+        "//source/spargel/codec",
+    ]
 }

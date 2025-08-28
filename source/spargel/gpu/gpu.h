@@ -4,10 +4,7 @@
 #include "spargel/base/types.h"
 #include "spargel/base/unique_ptr.h"
 #include "spargel/base/vector.h"
-
-namespace spargel::ui {
-    class Window;
-}
+#include "spargel/codec/codec.h"
 
 // Forward declarations.
 namespace spargel::gpu {
@@ -24,7 +21,7 @@ namespace spargel::gpu {
     class RenderPipeline;
     class RenderPipeline2;
     class ShaderLibrary;
-    class Surface;
+    // class Surface;
     class Texture;
 }  // namespace spargel::gpu
 
@@ -277,39 +274,39 @@ namespace spargel::gpu {
 
     // Description of one vertex attribute.
     struct VertexAttributeDescriptor {
-        /// @brief index of the vertex buffer where the data of the attribute is fetched
+        // @brief index of the vertex buffer where the data of the attribute is fetched
         u32 buffer;
 
-        /// @brief the location of the vertex attribute
-        ///
-        /// This is called input element in directx.
-        ///
-        /// Synatx in shaders:
-        /// - glsl: `layout (location = 0) in vec3 position;`
-        /// - msl: `float3 position [[attribute(0)]];`
-        /// - hlsl: this is specified via semantic name and semantic index.
-        ///
-        /// Note:
-        /// - Both dawn and wgpu use dummy SemanticName, and use SemanticIndex for location.
-        /// - Dawn chooses "TEXCOORD", and wgpu/naga uses "LOC".
-        /// - SPIRV-Cross uses "TEXCOORD" by default, and provides the options for remapping.
-        /// - dxc relies on user declaration `[[vk::location(0)]]`.
-        ///
+        // @brief the location of the vertex attribute
+        //
+        // This is called input element in directx.
+        //
+        // Synatx in shaders:
+        // - glsl: `layout (location = 0) in vec3 position;`
+        // - msl: `float3 position [[attribute(0)]];`
+        // - hlsl: this is specified via semantic name and semantic index.
+        //
+        // Note:
+        // - Both dawn and wgpu use dummy SemanticName, and use SemanticIndex for location.
+        // - Dawn chooses "TEXCOORD", and wgpu/naga uses "LOC".
+        // - SPIRV-Cross uses "TEXCOORD" by default, and provides the options for remapping.
+        // - dxc relies on user declaration `[[vk::location(0)]]`.
+        //
         u32 location;
 
-        /// @brief the format of the vertex attribute
+        // @brief the format of the vertex attribute
         VertexAttributeFormat format;
 
-        /// @brief the offset of the vertex attribute to the start of the vertex data
+        // @brief the offset of the vertex attribute to the start of the vertex data
         usize offset;
     };
 
-    /// @brief description of one vertex buffer
+    // @brief description of one vertex buffer
     struct VertexBufferDescriptor {
-        /// @brief the number of bytes between consecutive elements in the buffer
+        // @brief the number of bytes between consecutive elements in the buffer
         usize stride;
 
-        /// @brief the rate of fetching vertex attributes
+        // @brief the rate of fetching vertex attributes
         VertexStepMode step_mode;
 
         // TODO: step rate is not supported by vulkan.
@@ -327,10 +324,10 @@ namespace spargel::gpu {
         bool enable_blend = false;
     };
 
-    /// @brief The description of a compute pipeline.
-    ///
-    /// Most information should be automatically generated using reflection.
-    ///
+    // @brief The description of a compute pipeline.
+    //
+    // Most information should be automatically generated using reflection.
+    //
     struct ComputePipelineDescriptor {
         ShaderFunction shader;
     };
@@ -339,27 +336,27 @@ namespace spargel::gpu {
         base::span<ColorAttachmentBindDescriptor> color_attachments;
     };
 
-    /// @brief description of a render pipeline
+    // @brief description of a render pipeline
     struct RenderPipelineDescriptor {
-        /// @brief the geometric primitive for this render pipeline
+        // @brief the geometric primitive for this render pipeline
         PrimitiveKind primitive = PrimitiveKind::triangle;
 
-        /// @brief the orientation of front-facing triangles
+        // @brief the orientation of front-facing triangles
         Orientation front_face = Orientation::counter_clockwise;
 
-        /// @brief which triangles to discard
+        // @brief which triangles to discard
         CullMode cull = CullMode::none;
 
-        /// @brief the vertex function
+        // @brief the vertex function
         ShaderFunction vertex_shader;
 
-        /// @brief the vertex buffers used in this pipeline
+        // @brief the vertex buffers used in this pipeline
         base::span<VertexBufferDescriptor> vertex_buffers;
 
-        /// @brief the vertex attributes used in this pipeline
+        // @brief the vertex attributes used in this pipeline
         base::span<VertexAttributeDescriptor> vertex_attributes;
 
-        /// @brief the fragment function
+        // @brief the fragment function
         ShaderFunction fragment_shader;
 
         base::span<ColorAttachmentDescriptor> color_attachments;
@@ -381,7 +378,7 @@ namespace spargel::gpu {
     };
 
     struct PipelineArgumentGroup {
-        /// @brief stage where this group of arguments is used
+        // @brief stage where this group of arguments is used
         ShaderStage stage;
         GroupLocation location;
         base::span<PipelineArgument> arguments;
@@ -398,30 +395,52 @@ namespace spargel::gpu {
     };
 
     struct RenderPipeline2Descriptor {
-        /// @brief the geometric primitive for this render pipeline
+        // @brief the geometric primitive for this render pipeline
         PrimitiveKind primitive = PrimitiveKind::triangle;
 
-        /// @brief the orientation of front-facing triangles
+        // @brief the orientation of front-facing triangles
         Orientation front_face = Orientation::counter_clockwise;
 
-        /// @brief which triangles to discard
+        // @brief which triangles to discard
         CullMode cull = CullMode::none;
 
-        /// @brief the vertex function
+        // @brief the vertex function
         ShaderFunction vertex_shader;
 
-        /// @brief the vertex buffers used in this pipeline
+        // @brief the vertex buffers used in this pipeline
         base::span<VertexBufferDescriptor> vertex_buffers;
 
-        /// @brief the vertex attributes used in this pipeline
+        // @brief the vertex attributes used in this pipeline
         base::span<VertexAttributeDescriptor> vertex_attributes;
 
-        /// @brief the fragment function
+        // @brief the fragment function
         ShaderFunction fragment_shader;
 
         base::span<ColorAttachmentDescriptor> color_attachments;
 
         base::span<PipelineArgumentGroup> groups;
+    };
+
+    //
+    struct BindTableEntry {
+        u32 id;
+        BindEntryKind kind;
+
+        static constexpr auto CODEC = codec::makeRecordCodec<BindTableEntry>(
+            base::Constructor<BindTableEntry>{},
+            codec::makeNormalField<BindTableEntry>("id", codec::U32Codec{}, &BindTableEntry::id));
+    };
+    struct BindTable {
+        u32 id;
+        char const* name;
+        base::Span<BindTableEntry> entries;
+    };
+    struct PipelineStage {
+        ShaderStage stage;
+        base::Span<BindTable> tables;
+    };
+    struct PipelineDescriptor {
+        base::Span<PipelineStage> stages;
     };
 
     // Interfaces
@@ -430,6 +449,8 @@ namespace spargel::gpu {
     // A logical GPU device.
     class Device {
     public:
+        static base::UniquePtr<Device> create();
+
         virtual ~Device() = default;
 
         // Command submission
@@ -446,11 +467,13 @@ namespace spargel::gpu {
         // be submitted only to the queue it was created with.
         // This restrction is removed in Metal 4.
         //
+        // TODO:
         // The strategy here is to ask the user for the usage of the
         // command buffer, e.g. rendering or async compute.
         //
         // TODO: Batch api.
         virtual CommandBuffer* createCommandBuffer() = 0;
+        virtual void destroyCommandBuffer(CommandBuffer* buffer) = 0;
 
         // Shader objects
         // --------------
@@ -458,8 +481,10 @@ namespace spargel::gpu {
         // TODO: Review the design of shader objects.
         //
         // Metal shaders are linked together (but still they can be separated on the source level).
-        // Vulkan spec allows multiple entries in a spirv file. But the implementation needs to be
-        // investiaged. Also, SPIRV-link is not stable.
+        // Vulkan spec allows multiple entries in a spirv file. Note that SPIRV-link is not stable.
+        // Mesa supports using multiple entry points in one spirv file, see
+        // <<@mesa//src/compiler/spirv/nir_spirv.h>>.
+        // TODO: Investigate other implementations.
 
         // Create a shader library (consisting of several shader functions) from the given shader
         // data.
@@ -525,7 +550,7 @@ namespace spargel::gpu {
         virtual void destroyTexture(Texture* texture) = 0;
 
         // Create a surface backing the window.
-        virtual Surface* createSurface(ui::Window* window) = 0;
+        // virtual Surface* createSurface(ui::Window* window) = 0;
     };
 
     // A group of shader arguments that are updated together.
@@ -560,7 +585,6 @@ namespace spargel::gpu {
         virtual void* mapAddr() = 0;
     };
 
-    // A
     class CommandBuffer {
     public:
         virtual ~CommandBuffer() = default;
@@ -568,7 +592,7 @@ namespace spargel::gpu {
         virtual void endRenderPass(RenderPassEncoder* encoder) = 0;
         virtual ComputePassEncoder* beginComputePass() = 0;
         virtual void endComputePass(ComputePassEncoder* encoder) = 0;
-        virtual void present(Surface* surface) = 0;
+        // virtual void present(Surface* surface) = 0;
         virtual void submit() = 0;
         virtual void wait() = 0;
     };
@@ -640,13 +664,13 @@ namespace spargel::gpu {
         virtual ~ShaderLibrary() = default;
     };
 
-    class Surface {
-    public:
-        virtual ~Surface() = default;
-        virtual Texture* nextTexture() = 0;
-        virtual float width() = 0;
-        virtual float height() = 0;
-    };
+    // class Surface {
+    // public:
+    //     virtual ~Surface() = default;
+    //     virtual Texture* nextTexture() = 0;
+    //     virtual float width() = 0;
+    //     virtual float height() = 0;
+    // };
 
     class Texture {
     public:

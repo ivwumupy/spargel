@@ -5,7 +5,7 @@
 
 #if SPARGEL_ENABLE_METAL
 namespace spargel::gpu {
-    base::unique_ptr<Device> make_device_metal();
+    base::unique_ptr<Device> makeMetalDevice();
 }
 #endif
 
@@ -21,7 +21,7 @@ namespace spargel::gpu {
         switch (kind) {
 #if SPARGEL_ENABLE_METAL
         case DeviceKind::metal:
-            return make_device_metal();
+            return makeMetalDevice();
 #endif
 #if SPARGEL_GPU_ENABLE_VULKAN
         case DeviceKind::vulkan:
@@ -32,6 +32,14 @@ namespace spargel::gpu {
             spargel_panic_here();
             return nullptr;
         }
+    }
+
+    base::unique_ptr<Device> Device::create() {
+#if SPARGEL_ENABLE_METAL
+        return makeMetalDevice();
+#else
+        return nullptr;
+#endif
     }
 
 }  // namespace spargel::gpu

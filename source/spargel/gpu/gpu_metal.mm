@@ -1,7 +1,5 @@
 #include "spargel/gpu/gpu_metal.h"
 #include "spargel/base/unique_ptr.h"
-#include "spargel/ui/window.h"
-#include "spargel/ui/window_mac.h"
 
 // metal
 #import <Metal/Metal.h>
@@ -112,7 +110,7 @@ namespace spargel::gpu {
 
     }  // namespace
 
-    base::unique_ptr<Device> make_device_metal() { return base::make_unique<DeviceMetal>(); }
+    base::unique_ptr<Device> makeMetalDevice() { return base::make_unique<DeviceMetal>(); }
 
     DeviceMetal::DeviceMetal() {
         _device = MTLCreateSystemDefaultDevice();  // ns_returns_retained
@@ -214,11 +212,11 @@ namespace spargel::gpu {
         return new BufferMetal(buf);
     }
 
-    Surface* DeviceMetal::createSurface(ui::Window* w) {
-        CAMetalLayer* l = static_cast<ui::WindowAppKit*>(w)->metalLayer();
-        l.device = _device;
-        return new SurfaceMetal(l);
-    }
+    // Surface* DeviceMetal::createSurface(ui::Window* w) {
+    //     CAMetalLayer* l = static_cast<ui::WindowAppKit*>(w)->metalLayer();
+    //     l.device = _device;
+    //     return new SurfaceMetal(l);
+    // }
 
     void DeviceMetal::destroyShaderLibrary(ShaderLibrary* l) {
         auto library = static_cast<ShaderLibraryMetal*>(l);
@@ -319,9 +317,9 @@ namespace spargel::gpu {
         delete encoder;
     }
 
-    void CommandBufferMetal::present(Surface* s) {
-        [_cmdbuf presentDrawable:static_cast<SurfaceMetal*>(s)->drawable()];
-    }
+    // void CommandBufferMetal::present(Surface* s) {
+    // [_cmdbuf presentDrawable:static_cast<SurfaceMetal*>(s)->drawable()];
+    // }
 
     void CommandBufferMetal::submit() { [_cmdbuf commit]; }
 

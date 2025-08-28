@@ -1,0 +1,13 @@
+source_set("codec") {
+    public = [
+        "codec.h",
+    ]
+    sources = [
+        "cursor.cpp",
+        "json_codec.cpp",
+        "json_parser.cpp",
+    ]
+    deps = [
+        "//source/spargel/base",
+    ]
+}
