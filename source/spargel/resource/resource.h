@@ -15,9 +15,6 @@ namespace spargel::resource {
     public:
         static constexpr base::StringView default_namespace = base::StringView("core", 4);
 
-        ResourceId(const base::String& ns, const base::String& path)
-            : _namespace(ns), _path(path) {}
-        ResourceId(const base::String& path) : _namespace(default_namespace), _path(path) {}
         ResourceId(base::StringView ns, base::StringView path) : _namespace(ns), _path(path) {}
         ResourceId(base::StringView path) : _namespace(default_namespace), _path(path) {}
 
