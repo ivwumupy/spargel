@@ -43,6 +43,10 @@
         _tracking = nil;
         self.layer = _layer;
         self.wantsLayer = YES;  // layer-hosting view
+
+        [self recreateTrackingArea];
+
+        // TODO: Remove.
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(keyboardWasConnected:)
                                                      name:GCKeyboardDidConnectNotification
@@ -50,6 +54,7 @@
     }
     return self;
 }
+// TODO: Remove.
 - (void)keyboardWasConnected:(NSNotification*)notification {
     auto keyboard = (GCKeyboard*)notification.object;
     spargel_check(keyboard);
@@ -70,7 +75,6 @@
 
     NSTrackingAreaOptions options = NSTrackingActiveAlways | NSTrackingInVisibleRect |
                                     NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved;
-
     _tracking = [[NSTrackingArea alloc] initWithRect:[self bounds]
                                              options:options
                                                owner:self
@@ -78,7 +82,8 @@
     [self addTrackingArea:_tracking];
 }
 - (void)mouseMoved:(NSEvent*)event {
-    spargel_log_info("mouse moved");
+    auto loc = [event locationInWindow];
+    _bridge->emitMouseMoved({(float)loc.x, (float)loc.y, (float)event.deltaX, (float)event.deltaX});
 }
 - (void)mouseDragged:(NSEvent*)event {
     _bridge->_bridgeMouseDragged((float)event.deltaX, (float)event.deltaY);
@@ -457,4 +462,9 @@ namespace spargel::ui {
     float WindowAppKit::width() { return (float)ns_window_.contentView.frame.size.width; }
     float WindowAppKit::height() { return (float)ns_window_.contentView.frame.size.height; }
 
+    void WindowAppKit::emitMouseMoved(const MouseMovedEvent& e) {
+        if (delegate()) {
+            delegate()->onMouseMoved(e);
+        }
+    }
 }  // namespace spargel::ui

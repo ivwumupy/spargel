@@ -5,10 +5,8 @@
 
 #pragma once
 
-#include "spargel/base/attribute.h"
 #include "spargel/base/concept.h"
 #include "spargel/base/either.h"
-#include "spargel/base/functional.h"
 #include "spargel/base/hash_map.h"
 #include "spargel/base/meta.h"
 #include "spargel/base/optional.h"
@@ -341,7 +339,7 @@ namespace spargel::codec {
 
         template <DecodeBackend DB>
         base::Either<bool, typename DB::ErrorType> decode(DB& backend,
-                                                          const typename DB::DataType& data) {
+                                                          const typename DB::DataType& data) const {
             return backend.getBoolean(data);
         }
     };
@@ -371,7 +369,7 @@ namespace spargel::codec {
 
         template <DecodeBackend DB>
         base::Either<i32, typename DB::ErrorType> decode(DB& backend,
-                                                         const typename DB::DataType& data) {
+                                                         const typename DB::DataType& data) const {
             return backend.getI32(data);
         }
     };
@@ -386,7 +384,7 @@ namespace spargel::codec {
 
         template <DecodeBackend DB>
         base::Either<f32, typename DB::ErrorType> decode(DB& backend,
-                                                         const typename DB::DataType& data) {
+                                                         const typename DB::DataType& data) const {
             return backend.getF32(data);
         }
     };
@@ -417,7 +415,7 @@ namespace spargel::codec {
 
         template <DecodeBackend DB>
         base::Either<base::String, typename DB::ErrorType> decode(
-            DB& backend, const typename DB::DataType& data) {
+            DB& backend, const typename DB::DataType& data) const {
             return backend.getString(data);
         }
     };
@@ -522,7 +520,7 @@ namespace spargel::codec {
 
         template <DecodeBackend DB>
         base::Either<base::vector<T>, typename DB::ErrorType> decode(
-            DB& backend, const typename DB::DataType& data) {
+            DB& backend, const typename DB::DataType& data) const {
             return _vector::decode(_codec, backend, data);
         }
 
@@ -538,9 +536,9 @@ namespace spargel::codec {
     template <typename B>
     concept RecordBuilder =
         requires { typename B::BackendType; } && EncodeBackend<typename B::BackendType> &&
-        requires(B& builder, const base::String& name, const B::BackendType::DataType& value) {
+        requires(B& builder, base::StringView name, const B::BackendType::DataType& value) {
             builder.add(name, value);
-        } && requires(B& builder, const base::String& name, B::BackendType::DataType&& value) {
+        } && requires(B& builder, base::StringView name, B::BackendType::DataType&& value) {
             builder.add(name, base::move(value));
         } && requires(B& builder, B::BackendType& backend) {
             {
@@ -559,8 +557,8 @@ namespace spargel::codec {
 
         RecordBuilderImpl() {}
 
-        void add(const base::String& name, const DataType& value) { _map.set(name, value); }
-        void add(const base::String& name, DataType&& value) { _map.set(name, base::move(value)); }
+        void add(base::StringView name, const DataType& value) { _map.set(name, value); }
+        void add(base::StringView name, DataType&& value) { _map.set(name, base::move(value)); }
 
         base::Either<DataType, ErrorType> build(EB& backend) { return backend.makeMap(_map); }
 

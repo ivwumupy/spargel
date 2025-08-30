@@ -40,18 +40,18 @@ namespace spargel::ui {
     public:
         virtual ~WindowDelegate() = default;
 
-        /// @brief the window is requested to draw the contents
+        // The window is requested to draw the contents.
         virtual void onRender() {}
 
-        /// @brief the window is requested to close
-        // willClose
+        // The window is requested to close.
+        // TODO: willClose
         virtual void onCloseRequested() {}
 
-        /// @brief the window is closed
-        // didClose
+        // The window is closed.
+        // TODO: didClose
         virtual void onClosed() {}
 
-        /// @brief a keyboard event is received
+        // A keyboard event is received.
         virtual void onKeyboard([[maybe_unused]] KeyboardEvent& e) {}
 
         // virtual void onKeyDown([[maybe_unused]] PhysicalKey key) {}
@@ -60,8 +60,10 @@ namespace spargel::ui {
         virtual void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) {}
         virtual void onMouseDown([[maybe_unused]] MouseDownEvent const& e) {}
 
-        /// User has moved the mouse with left button pressed.
+        // User has moved the mouse with left button pressed.
         virtual void onMouseDragged([[maybe_unused]] float dx, [[maybe_unused]] float dy) {}
+
+        virtual void onMouseMoved([[maybe_unused]] const MouseMovedEvent& e) {}
     };
 
     // The coordinate system is TLO (top-left origin).
@@ -79,7 +81,7 @@ namespace spargel::ui {
 
         virtual void requestRedraw() = 0;
 
-        // todo: improve
+        // TODO: Improve.
         // This is an abstraction leak. One should obtain the handle from the subclasses.
         [[deprecated]]
         virtual WindowHandle getHandle() = 0;

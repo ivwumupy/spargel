@@ -44,7 +44,7 @@ namespace spargel::ui {
         // Every view owns its children.
         //
 
-        base::Span<View*> children() { return children_.toSpan(); }
+        base::Span<View*> children() const { return children_.toSpan(); }
 
         View* childAt(usize i) { return children_[i]; }
 
@@ -114,8 +114,10 @@ namespace spargel::ui {
 
         void handleMousePressed(MouseDownEvent const& e);
         void handleMouseReleased();
+        void handleMouseMoved(const MouseMovedEvent& e);
 
         virtual void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) {}
+        virtual void onMouseMoved([[maybe_unused]] const MouseMovedEvent& e) {}
 
         // Record painting commands to the scene.
         virtual void onPaint([[maybe_unused]] render::UIScene& scene) {}

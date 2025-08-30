@@ -64,4 +64,11 @@ namespace spargel::ui {
         float y;
     };
 
+    struct MouseMovedEvent {
+        float x;
+        float y;
+        float dx;
+        float dy;
+    };
+
 }  // namespace spargel::ui

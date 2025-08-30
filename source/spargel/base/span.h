@@ -6,6 +6,7 @@
 
 namespace spargel::base {
 
+    // Readonly.
     template <typename T>
     class Span {
     public:

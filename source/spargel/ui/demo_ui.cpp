@@ -12,11 +12,9 @@
 
 namespace spargel::ui {
     namespace {
-        using namespace base::literals;
-
         class TextView : public ui::View {
         public:
-            TextView(text::Font* font) : text_{""_sv, font} {}
+            TextView(text::Font* font) : text_{"", font} {}
             ~TextView() { spargel_log_info("destructed"); }
 
             void setText(base::StringView s) {
@@ -63,8 +61,15 @@ namespace spargel::ui {
             bool state_ = true;
         };
 
-        class FillLayout : public ui::View {
+        class FillLayout final : public ui::View {
         public:
+            bool hasChild() const { return children().count() == 1; }
+            ui::View* child() {
+                if (children().count() == 0) {
+                    return nullptr;
+                }
+                return children()[0];
+            }
             void setChild(ui::View* child) {
                 if (child_) {
                     auto old = removeChild(0);
@@ -78,7 +83,7 @@ namespace spargel::ui {
                 return proposal;
             }
             void placeChildren() override {
-                spargel_check(children().count() == 1);
+                spargel_check(hasChild());
                 child_->setFrame(0, 0, width(), height());
             }
 
@@ -87,13 +92,11 @@ namespace spargel::ui {
         };
 
         // `DemoView` is the root view of the window.
-        class DemoView : public ui::View {
+        class DemoView final : public ui::View {
         public:
             DemoView(text::FontManager* font_manager) {
-                font_ = font_manager->defaultFont();
-                // text_ = emplaceChild<TextView>(font_.get());
-                text_ = new TextView(font_);
-                text_->setText("<test>hello"_sv);
+                text_ = new TextView(font_manager->defaultFont());
+                text_->setText("<test>hello");
                 fill_ = emplaceChild<FillLayout>();
                 fill_->setChild(text_);
             }
@@ -114,7 +117,6 @@ namespace spargel::ui {
 
         private:
             bool state_ = false;
-            text::Font* font_;
             FillLayout* fill_;
             TextView* text_;
         };

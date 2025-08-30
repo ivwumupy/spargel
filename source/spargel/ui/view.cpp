@@ -68,4 +68,5 @@ namespace spargel::ui {
         onMouseDown(e.x, e.y);
     }
     void View::handleMouseReleased() {}
+    void View::handleMouseMoved(const MouseMovedEvent& e) { onMouseMoved(e); }
 }  // namespace spargel::ui

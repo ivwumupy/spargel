@@ -44,6 +44,12 @@ namespace spargel::ui {
         // root_view_->onMouseDown(e.x, e.y);
         root_view_->handleMousePressed(e);
     }
+    void ViewHost::onMouseMoved(const MouseMovedEvent& e) {
+        if (!root_view_) {
+            return;
+        }
+        root_view_->handleMouseMoved(e);
+    }
     void ViewHost::invalidateLayout() {
         needs_layout_ = true;
         window_->requestRedraw();

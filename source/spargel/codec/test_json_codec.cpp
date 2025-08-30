@@ -1,3 +1,4 @@
+#include "spargel/base/functional.h"
 #include "spargel/base/string_view.h"
 #include "spargel/codec/codec.h"
 #include "spargel/codec/test_json.h"

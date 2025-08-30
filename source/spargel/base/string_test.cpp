@@ -29,21 +29,21 @@ namespace spargel::base {
         }
 
         TEST(String_Basic) {
-            String s = "ABC"_sv;
+            String s{"ABC"_sv};
             spargel_check(s.length() == 3);
             spargel_check(compare(s, "ABC"));
         }
 
         TEST(String_Add) {
-            String s1 = "1"_sv;
-            String s2 = "234"_sv;
+            String s1{"1"_sv};
+            String s2{"234"};
             String s = s1 + s2;
             spargel_check(s.length() == 4);
             spargel_check(compare(s, "1234"));
         }
 
         TEST(String_Iterate) {
-            String s = "0123456789"_sv;
+            String s{"0123456789"_sv};
             for (auto ch : s) {
                 spargel_check('0' <= ch && ch <= '9');
             }

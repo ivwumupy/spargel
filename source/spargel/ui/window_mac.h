@@ -66,6 +66,8 @@ namespace spargel::ui {
         void _bridgeMouseDown(float x, float y);
         void _bridgeMouseDragged(float dx, float dy);
 
+        void emitMouseMoved(MouseMovedEvent const& e);
+
         void _updateSize(float width, float height) {
             width_ = width;
             height_ = height;

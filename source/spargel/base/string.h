@@ -167,7 +167,7 @@ namespace spargel::base {
             ~String() = default;
 
             // migration from base::String
-            /*explicit*/ String(StringView view) {
+            explicit String(StringView view) {
                 usize len = view.length();
                 _bytes.reserve(len);
                 _bytes.set_count(len);
@@ -211,6 +211,10 @@ namespace spargel::base {
                 if (lhs.length() != rhs.length()) return false;
                 return memcmp(lhs.data(), rhs.data(), lhs.length()) == 0;
             }
+            friend bool operator==(String const& lhs, StringView rhs) {
+                if (lhs.length() != rhs.length()) return false;
+                return memcmp(lhs.data(), rhs.data(), lhs.length()) == 0;
+            }
             friend String operator+(String const& lhs, String const& rhs) {
                 usize len = lhs.length() + rhs.length();
                 String result;
@@ -223,6 +227,22 @@ namespace spargel::base {
             // not efficient
             friend String operator+(String const& s, char ch) { return s + String(ch); }
             friend String operator+(String const& s, char const* s2) { return s + String(s2); }
+
+            String& operator+(StringView view) {
+                _bytes.reserve(length() + view.length());
+                memcpy(_bytes.data() + length(), view.data(), view.length());
+                return *this;
+            }
+
+            friend String operator+(String const& lhs, StringView rhs) {
+                usize len = lhs.length() + rhs.length();
+                String result;
+                result._bytes.reserve(len);
+                result._bytes.set_count(len);
+                memcpy(result._bytes.data(), lhs.data(), lhs.length());
+                memcpy(result._bytes.data() + lhs.length(), rhs.data(), rhs.length());
+                return result;
+            }
 
             /// Get the `i`-th byte.
             Byte getByte(usize i) const { return (Byte)_bytes[i]; }

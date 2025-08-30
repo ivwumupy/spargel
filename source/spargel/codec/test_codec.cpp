@@ -1,4 +1,5 @@
 #include "spargel/base/check.h"
+#include "spargel/base/functional.h"
 #include "spargel/base/test.h"
 #include "spargel/codec/codec.h"
 
@@ -221,7 +222,7 @@ TEST(Codec_Encode_Primitive) {
     result = F64Codec{}.encode(encodeBackend, 12345.6789);
     spargel_check(result.isLeft());
 
-    result = StringCodec{}.encode(encodeBackend, "ABC"_sv);
+    result = StringCodec{}.encode(encodeBackend, base::String{"ABC"});
     spargel_check(result.isLeft());
 }
 
@@ -342,22 +343,23 @@ TEST(Codec_Decode_Record) {
 TEST(Codec_Encode_Record_FailFast) {
     {
         int counter = 0;
-        auto result = makeRecordEncoder<int>(makeNormalEncodeField<int>("boo"_sv, BooleanCodec{},
-                                                                        [&](int n) {
-                                                                            counter++;
-                                                                            return true;
-                                                                        }),
-                                             makeNormalEncodeField<int>("i32"_sv, I32Codec{},
-                                                                        [&](int n) {
-                                                                            counter++;
-                                                                            return 0;
-                                                                        }),
-                                             makeNormalEncodeField<int>("string"_sv, StringCodec{},
-                                                                        [&](int n) {
-                                                                            counter++;
-                                                                            return "string"_sv;
-                                                                        }))
-                          .encode(encodeBackend, 0);
+        auto result =
+            makeRecordEncoder<int>(makeNormalEncodeField<int>("boo"_sv, BooleanCodec{},
+                                                              [&](int n) {
+                                                                  counter++;
+                                                                  return true;
+                                                              }),
+                                   makeNormalEncodeField<int>("i32"_sv, I32Codec{},
+                                                              [&](int n) {
+                                                                  counter++;
+                                                                  return 0;
+                                                              }),
+                                   makeNormalEncodeField<int>("string"_sv, StringCodec{},
+                                                              [&](int n) {
+                                                                  counter++;
+                                                                  return base::String{"string"};
+                                                              }))
+                .encode(encodeBackend, 0);
         spargel_check(result.isLeft());
         spargel_check(counter == 3);
     }
@@ -377,7 +379,7 @@ TEST(Codec_Encode_Record_FailFast) {
                           makeNormalEncodeField<int>("string"_sv, StringCodec{},
                                                      [&](int n) {
                                                          counter++;
-                                                         return "string"_sv;
+                                                         return base::String{"string"};
                                                      }))
                           .encode(encodeBackend, 0);
         spargel_check(result.isRight());
