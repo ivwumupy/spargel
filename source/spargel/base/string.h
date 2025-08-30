@@ -228,7 +228,7 @@ namespace spargel::base {
             friend String operator+(String const& s, char ch) { return s + String(ch); }
             friend String operator+(String const& s, char const* s2) { return s + String(s2); }
 
-            String& operator+(StringView view) {
+            String& operator+=(StringView view) {
                 _bytes.reserve(length() + view.length());
                 memcpy(_bytes.data() + length(), view.data(), view.length());
                 return *this;
