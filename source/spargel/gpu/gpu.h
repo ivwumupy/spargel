@@ -363,26 +363,20 @@ namespace spargel::gpu {
         base::span<ColorAttachmentDescriptor> color_attachments;
     };
 
-    // NOTE: This is the same as a BindGroupEntry.
-    struct PipelineArgument {
+    struct BindGroupEntry {
         u32 id;
         BindEntryKind kind;
-    };
-
-    struct GroupLocation {
-        struct {
-            u32 buffer_id;
-        } metal;
-        struct {
-            u32 set_id;
-        } vulkan;
+        char const* name = nullptr;
     };
 
     struct PipelineArgumentGroup {
-        // @brief stage where this group of arguments is used
-        ShaderStage stage;
-        GroupLocation location;
-        base::span<PipelineArgument> arguments;
+        u32 location;
+        base::span<BindGroupEntry> arguments;
+        char const* name = nullptr;
+    };
+    struct PipelineStage {
+        ShaderFunction shader;
+        base::Span<PipelineArgumentGroup> groups;
     };
 
     struct PipelinePart {
@@ -391,8 +385,8 @@ namespace spargel::gpu {
     };
 
     struct ComputePipeline2Descriptor {
-        ShaderFunction compute;
-        base::span<PipelineArgumentGroup> groups;
+        PipelineStage compute_stage;
+        char const* name = nullptr;
     };
 
     struct RenderPipeline2Descriptor {
@@ -426,22 +420,12 @@ namespace spargel::gpu {
     struct BindTableEntry {
         u32 id;
         BindEntryKind kind;
+        // debug
+        char const* name;
 
         static constexpr auto CODEC = codec::makeRecordCodec<BindTableEntry>(
             base::Constructor<BindTableEntry>{},
             codec::makeNormalField<BindTableEntry>("id", codec::U32Codec{}, &BindTableEntry::id));
-    };
-    struct BindTable {
-        u32 id;
-        char const* name;
-        base::Span<BindTableEntry> entries;
-    };
-    struct PipelineStage {
-        ShaderStage stage;
-        base::Span<BindTable> tables;
-    };
-    struct PipelineDescriptor {
-        base::Span<PipelineStage> stages;
     };
 
     // Interfaces
@@ -513,9 +497,6 @@ namespace spargel::gpu {
         // Create a compute pipeline
         //
         // TODO: Batch api.
-        virtual ComputePipeline* createComputePipeline(ShaderFunction func,
-                                                       base::Span<BindGroupLayout*> layouts) = 0;
-        // Create a compute pipeline. Use BindGroup.
         virtual ComputePipeline2* createComputePipeline2(
             ComputePipeline2Descriptor const& desc) = 0;
 
@@ -527,6 +508,7 @@ namespace spargel::gpu {
                                                        base::Span<BindEntry> entries) = 0;
 
         // Create a bind group.
+        [[deprecated]]
         virtual BindGroup* createBindGroup(BindGroupLayout* layout) = 0;
         // Create a bind group for the `id`-th argument group of the pipeline.
         virtual BindGroup* createBindGroup2(ComputePipeline2* pipeline, u32 id) = 0;

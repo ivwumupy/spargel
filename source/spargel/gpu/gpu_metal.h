@@ -215,16 +215,13 @@ namespace spargel::gpu {
     class ComputePipeline2Metal final : public ComputePipeline2 {
     public:
         ComputePipeline2Metal(id<MTLFunction> func, id<MTLComputePipelineState> pipeline,
-                              base::span<PipelineArgumentGroup> groups)
+                              PipelineStage stage)
             : _func{func}, _pipeline{pipeline} {
-            for (usize i = 0; i < groups.count(); i++) {
-                auto const& group = groups[i];
-                if (group.stage.has(ShaderStage::compute)) {
-                    _compute_groups.emplace((u32)i, group.location.metal.buffer_id);
-                    for (auto const& arg : group.arguments) {
-                        _compute_args.emplace((u32)i, group.location.metal.buffer_id, arg.id,
-                                              arg.kind);
-                    }
+            for (usize i = 0; i < stage.groups.count(); i++) {
+                auto const& group = stage.groups[i];
+                _compute_groups.emplace((u32)i, group.location);
+                for (auto const& arg : group.arguments) {
+                    _compute_args.emplace((u32)i, group.location, arg.id, arg.kind);
                 }
             }
         }
@@ -264,25 +261,26 @@ namespace spargel::gpu {
     public:
         RenderPipeline2Metal(id<MTLFunction> vert_func, id<MTLFunction> frag_func,
                              id<MTLRenderPipelineState> pipeline,
-                             base::span<PipelineArgumentGroup> groups)
+                             [[maybe_unused]] base::span<PipelineArgumentGroup> groups)
             : _vert_func{vert_func}, _frag_func{frag_func}, _pipeline{pipeline} {
-            for (usize i = 0; i < groups.count(); i++) {
-                auto const& group = groups[i];
-                if (group.stage.has(ShaderStage::vertex)) {
-                    _vert_groups.emplace((u32)i, group.location.metal.buffer_id);
-                    for (auto const& arg : group.arguments) {
-                        _vert_args.emplace((u32)i, group.location.metal.buffer_id, arg.id,
-                                           arg.kind);
-                    }
-                }
-                if (group.stage.has(ShaderStage::fragment)) {
-                    _frag_groups.emplace((u32)i, group.location.metal.buffer_id);
-                    for (auto const& arg : group.arguments) {
-                        _frag_args.emplace((u32)i, group.location.metal.buffer_id, arg.id,
-                                           arg.kind);
-                    }
-                }
-            }
+            spargel_panic_here();
+            // for (usize i = 0; i < groups.count(); i++) {
+            //     auto const& group = groups[i];
+            //     if (group.stage.has(ShaderStage::vertex)) {
+            //         _vert_groups.emplace((u32)i, group.location.metal.buffer_id);
+            //         for (auto const& arg : group.arguments) {
+            //             _vert_args.emplace((u32)i, group.location.metal.buffer_id, arg.id,
+            //                                arg.kind);
+            //         }
+            //     }
+            //     if (group.stage.has(ShaderStage::fragment)) {
+            //         _frag_groups.emplace((u32)i, group.location.metal.buffer_id);
+            //         for (auto const& arg : group.arguments) {
+            //             _frag_args.emplace((u32)i, group.location.metal.buffer_id, arg.id,
+            //                                arg.kind);
+            //         }
+            //     }
+            // }
         }
 
         // Get the MTLFunction which contains the `id`-th argument group.
@@ -363,8 +361,9 @@ namespace spargel::gpu {
         CommandQueue* createCommandQueue() override;
         void destroyCommandQueue(CommandQueue* q) override;
 
+        [[deprecated]]
         ComputePipeline* createComputePipeline(
-            ShaderFunction f, [[maybe_unused]] base::span<BindGroupLayout*> layouts) override {
+            ShaderFunction f, [[maybe_unused]] base::span<BindGroupLayout*> layouts) {
             NSError* err;
             auto func = [static_cast<ShaderLibraryMetal*>(f.library)->library()
                 newFunctionWithName:[NSString stringWithUTF8String:f.entry]];
@@ -372,13 +371,6 @@ namespace spargel::gpu {
             return new ComputePipelineMetal(
                 func, [_device newComputePipelineStateWithFunction:func error:&err]);
         }
-        // ComputePipeline* createComputePipeline2(
-        //     ComputePipeline2* program) override {
-        //     NSError* err;
-        //     auto func = program.cast<ComputePipeline2Metal>()->compute();
-        //     return make_object<ComputePipelineMetal>(
-        //         func, [_device newComputePipelineStateWithFunction:func error:&err]);
-        // }
 
         BindGroupLayout* createBindGroupLayout(
             [[maybe_unused]] ShaderStage stage,
@@ -390,14 +382,15 @@ namespace spargel::gpu {
         }
 
         ComputePipeline2* createComputePipeline2(ComputePipeline2Descriptor const& desc) override {
-            auto lib = static_cast<ShaderLibraryMetal*>(desc.compute.library);
+            auto lib = static_cast<ShaderLibraryMetal*>(desc.compute_stage.shader.library);
             auto func = [lib->library()
-                newFunctionWithName:[NSString stringWithUTF8String:desc.compute.entry]];
+                newFunctionWithName:[NSString
+                                        stringWithUTF8String:desc.compute_stage.shader.entry]];
             spargel_assert(func != nullptr);
             NSError* err;
             auto pipeline = [_device newComputePipelineStateWithFunction:func error:&err];
             spargel_assert(pipeline != nullptr);
-            return new ComputePipeline2Metal(func, pipeline, desc.groups);
+            return new ComputePipeline2Metal(func, pipeline, desc.compute_stage);
         }
 
         RenderPipeline2* createRenderPipeline2(RenderPipeline2Descriptor const& desc) override;

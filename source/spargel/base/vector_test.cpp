@@ -10,9 +10,9 @@ namespace spargel::base {
             vector<int> v1;
             spargel_check(v1.count() == 0);
             spargel_check(v1.capacity() == 0);
-            for (u32 i = 1; i <= 100; i++) {
+            for (int i = 1; i <= 100; i++) {
                 v1.emplace(i);
-                spargel_check(v1.count() == i);
+                spargel_check(v1.count() == (usize)i);
             }
             spargel_check(v1[50] == 51);
             vector<int> v2(spargel::base::move(v1));

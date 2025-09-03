@@ -54,9 +54,53 @@ source_set("base") {
         "vector.h",
     ]
 
+    deps = [
+        "//source/spargel:config",
+    ]
+
     if (is_macos) {
         sources += [
             "platform_mac.cpp",
         ]
     }
+}
+
+source_set("test_main") {
+    public = [
+        "test.h",
+    ]
+    sources = [
+        "test.cpp",
+        "test_main.cpp",
+    ]
+    deps = [
+        ":base",
+    ]
+}
+
+executable("base_tests") {
+    sources = [
+        "allocator_tests.cpp",
+        "array_storage_test.cpp",
+        "checked_convert_tests.cpp",
+        "either_test.cpp",
+        "functional_test.cpp",
+        "hash_map_test.cpp",
+        "hash_test.cpp",
+        "inline_array_test.cpp",
+        "meta_test.cpp",
+        "optional_test.cpp",
+        "ref_ptr_tests.cpp",
+        "string_test.cpp",
+        "string_view_test.cpp",
+        "sum_type_test.cpp",
+        "tagged_union_test.cpp",
+        "tuple_test.cpp",
+        "vector_test.cpp",
+    ]
+
+    deps = [
+        ":base",
+        ":test_main",
+    ]
 }

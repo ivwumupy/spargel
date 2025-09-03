@@ -44,6 +44,9 @@ template("metal_library") {
     source_set(library_target) {
         sources = [ "$root_gen_dir/$output_cpp" ]
         public = [ "$root_gen_dir/$output_h" ]
-        deps = [ ":$compile_action" ]
+        deps = [
+            ":$compile_action",
+            "//source/spargel/base",
+        ]
     }
 }

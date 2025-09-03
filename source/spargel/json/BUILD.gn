@@ -1,0 +1,31 @@
+source_set("json") {
+    sources = [
+        "cursor.cpp",
+        "json_parser.cpp",
+    ]
+    deps = [
+        "//source/spargel/base",
+    ]
+}
+
+executable("dump_json") {
+    sources = [
+        "dump_json.cpp",
+    ]
+    deps = [
+        "//source/spargel/base",
+        "//source/spargel/codec",
+        "//source/spargel/resource",
+    ]
+}
+
+executable("json_tests") {
+    sources = [
+        "json_tests.cpp",
+    ]
+    deps = [
+        ":json",
+        "//source/spargel/base",
+        "//source/spargel/base:test_main",
+    ]
+}

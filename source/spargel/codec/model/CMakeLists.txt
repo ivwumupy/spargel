@@ -3,7 +3,7 @@ spargel_add_library(
     PRIVATE
         gltf.cpp
     DEPS
-        codec_json
+        codec
 )
 
 spargel_add_executable(

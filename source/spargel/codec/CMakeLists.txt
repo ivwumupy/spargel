@@ -1,18 +1,10 @@
 spargel_add_library(
     NAME codec
     PRIVATE
-        cursor.cpp
+        json_codec.cpp
     DEPS
         base
-)
-
-spargel_add_library(
-    NAME codec_json
-    PRIVATE
-        json_codec.cpp
-        json_parser.cpp
-    DEPS
-        codec
+        json
 )
 
 # TEST
@@ -29,38 +21,18 @@ add_test(
     COMMAND test_codec
 )
 
-spargel_add_executable(
-    NAME test_json
-    PRIVATE test_json.cpp
-    DEPS
-        codec_json
-        test_main
-)
-add_test(
-    NAME test_json
-    COMMAND test_json
-)
-
-spargel_add_executable(
-    NAME test_json_codec
-    PRIVATE test_json_codec.cpp
-    DEPS
-        codec_json
-        test_main
-)
-add_test(
-    NAME test_json_codec
-    COMMAND test_json_codec
-)
+#spargel_add_executable(
+#    NAME test_json_codec
+#    PRIVATE test_json_codec.cpp
+#    DEPS
+#        codec_json
+#        test_main
+#)
+#add_test(
+#    NAME test_json_codec
+#    COMMAND test_json_codec
+#)
 
 # OTHER
-
-spargel_add_executable(
-    NAME dump_json
-    PRIVATE dump_json.cpp
-    DEPS
-        codec_json
-        resource
-)
 
 add_subdirectory(model/)

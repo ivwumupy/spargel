@@ -3,7 +3,8 @@
 #include "spargel/base/functional.h"
 #include "spargel/base/string_view.h"
 #include "spargel/codec/codec.h"
-#include "spargel/codec/json.h"
+#include "spargel/codec/json_codec.h"
+#include "spargel/json/json.h"
 
 using namespace spargel::base::literals;
 
@@ -169,7 +170,7 @@ namespace spargel::codec::model {
     }  // namespace
 
     base::Either<GlTF, GlTFDecodeError> parseGlTF(const char* text, usize len) {
-        auto json_result = parseJson(text, len);
+        auto json_result = json::parseJson(text, len);
         if (json_result.isRight())
             return base::Right<GlTFDecodeError>(json_result.right().message());
 

@@ -1,4 +1,5 @@
 import("//gn/config/sysroot.gni")
+import("//gn/config/coverage.gni")
 
 config("basics") {
     cflags = []
@@ -45,4 +46,28 @@ config("warnings") {
         "-Wconversion",
         "-Werror",
     ]
+}
+
+config("default_optimize") {
+    cflags = []
+    if (!is_debug) {
+        cflags += [
+            "-O2",
+        ]
+    }
+}
+
+config("default_coverage") {
+    cflags = []
+    ldflags = []
+
+    if (enable_clang_coverage) {
+        cflags += [
+            "-fprofile-instr-generate",
+            "-fcoverage-mapping",
+        ]
+        ldflags += [
+            "-fprofile-instr-generate",
+        ]
+    }
 }

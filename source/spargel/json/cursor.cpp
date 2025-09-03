@@ -1,9 +1,9 @@
-#include "spargel/codec/cursor.h"
+#include "spargel/json/cursor.h"
 
 /* libc */
 #include <string.h>
 
-namespace spargel::codec {
+namespace spargel::json {
 
     bool cursorTryEatChar(Cursor& cursor, char ch) {
         if (cursor.cur + 1 > cursor.end) return false;

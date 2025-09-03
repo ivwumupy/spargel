@@ -2,13 +2,13 @@
 #include "spargel/base/optional.h"
 #include "spargel/base/string_view.h"
 #include "spargel/base/trace.h"
-#include "spargel/codec/cursor.h"
-#include "spargel/codec/json.h"
+#include "spargel/json/cursor.h"
+#include "spargel/json/json.h"
 
 // libm
 #include <math.h>
 
-namespace spargel::codec {
+namespace spargel::json {
 
     using namespace base::literals;
 

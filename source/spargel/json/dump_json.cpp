@@ -1,19 +1,20 @@
+#include "spargel/base/command_line.h"
 #include "spargel/base/trace.h"
-#include "spargel/codec/json.h"
+#include "spargel/json/json.h"
 #include "spargel/resource/directory.h"
 
 /* libc */
 #include <stdio.h>
 
 using namespace spargel;
-using namespace spargel::codec;
+using namespace spargel::json;
 using namespace spargel::base::literals;
 
 namespace {
 
     void dumpValue(const JsonValue& value);
 
-    void dumpObject(const JsonObject& object) { printf("{TODO}"); }
+    void dumpObject([[maybe_unused]] const JsonObject& object) { printf("{TODO}"); }
 
     void dumpArray(const JsonArray& array) {
         putchar('[');
@@ -69,6 +70,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    base::CommandLine cmdline{argc, argv};
+
     auto manager = resource::ResourceManagerDirectory(""_sv);
     auto optional = manager.open(resource::ResourceId(argv[1]));
     if (!optional.hasValue()) {
@@ -79,6 +82,9 @@ int main(int argc, char* argv[]) {
 
     auto result = parseJson((char*)resource->mapData(), resource->size());
     if (result.isLeft()) {
+        if (cmdline.hasSwitch("no-dump")) {
+            return 0;
+        }
         dumpValue(base::move(result.left()));
         putchar('\n');
     } else {

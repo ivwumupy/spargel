@@ -10,7 +10,7 @@
 namespace spargel::base {
     namespace {
         struct Foo {
-            Foo(int x) { spargel_log_info("Foo()"); }
+            Foo(int) { spargel_log_info("Foo()"); }
             ~Foo() { spargel_log_info("~Foo()"); }
         };
 

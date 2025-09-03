@@ -31,6 +31,8 @@ set_default_toolchain(_default_toolchain)
 _default_compiler_configs = [
     "//gn/config:basics",
     "//gn/config:warnings",
+    "//gn/config:default_coverage",
+    "//gn/config:default_optimize",
 ]
 
 set_defaults("static_library") {

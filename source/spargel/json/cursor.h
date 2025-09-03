@@ -2,7 +2,7 @@
 
 #include "spargel/base/types.h"
 
-namespace spargel::codec {
+namespace spargel::json {
 
     struct Cursor {
         const char* cur;
