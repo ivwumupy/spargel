@@ -1,5 +1,7 @@
 source_set("json") {
     public = [
+        "json_value.h",
+        "json_parser.h",
     ]
     sources = [
         "cursor.cpp",
@@ -16,8 +18,8 @@ executable("dump_json") {
         "dump_json.cpp",
     ]
     deps = [
+        ":json",
         "//source/spargel/base",
-        "//source/spargel/codec",
         "//source/spargel/resource",
     ]
 }

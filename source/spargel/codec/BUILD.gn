@@ -4,6 +4,7 @@ source_set("codec") {
         "json_codec.h",
     ]
     sources = [
+        "codec.cpp",
         "json_codec.cpp",
     ]
     deps = [
@@ -19,6 +20,8 @@ executable("codec_tests") {
     ]
     deps = [
         ":codec",
+        "//source/spargel/base",
         "//source/spargel/base:test_main",
+        "//source/spargel/json",
     ]
 }

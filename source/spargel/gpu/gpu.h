@@ -416,6 +416,31 @@ namespace spargel::gpu {
         base::span<PipelineArgumentGroup> groups;
     };
 
+    struct BindEntryKindCodec {
+        using TargetType = BindEntryKind;
+
+        template <codec::DecodeBackend DB>
+        base::Either<TargetType, codec::ErrorType<DB>> decode(
+            DB& backend, const codec::DataType<DB>& data) const {
+            auto maybe_str = backend.getString(data);
+            if (maybe_str.isRight()) {
+                auto& err = maybe_str.right();
+                err.append(base::StringView{"BindEntryKind expects a string."});
+                return base::Right<codec::ErrorType<DB>>(base::move(err));
+            }
+            auto& str = maybe_str.left();
+            if (str == base::StringView{"uniform_buffer"}) {
+                return base::Left{BindEntryKind::uniform_buffer};
+            }
+            return base::Right<codec::ErrorType<DB>>(base::StringView{"Unknown bind entry kind."});
+        }
+
+        template <codec::EncodeBackend EB>
+        base::Either<codec::DataType<EB>, codec::ErrorType<EB>> encode(EB&, TargetType) const {
+            return base::Right<codec::ErrorType<EB>>(base::StringView{"<TODO>"});
+        }
+    };
+
     //
     struct BindTableEntry {
         u32 id;
@@ -425,7 +450,9 @@ namespace spargel::gpu {
 
         static constexpr auto CODEC = codec::makeRecordCodec<BindTableEntry>(
             base::Constructor<BindTableEntry>{},
-            codec::makeNormalField<BindTableEntry>("id", codec::U32Codec{}, &BindTableEntry::id));
+            codec::makeNormalField<BindTableEntry>("id", codec::U32Codec{}, &BindTableEntry::id),
+            codec::makeNormalField<BindTableEntry>("kind", BindEntryKindCodec{},
+                                                   &BindTableEntry::kind));
     };
 
     // Interfaces

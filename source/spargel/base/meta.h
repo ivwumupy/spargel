@@ -101,6 +101,8 @@ namespace spargel::base {
     template <typename T>
     using remove_reference = detail::RemoveReferenceFallback<T>::type;
 #endif
+    template <typename T>
+    using RemoveReference = remove_reference<T>;
 
     template <typename T>
     constexpr remove_reference<T>&& move(T&& t) {

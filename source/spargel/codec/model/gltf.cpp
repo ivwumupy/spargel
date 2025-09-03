@@ -16,9 +16,8 @@ namespace spargel::codec::model {
             using TargetType = Vector3f;
 
             template <DecodeBackend DB>
-            base::Either<Vector3f, typename DB::ErrorType> decode(
-                DB& backend, const typename DB::DataType& data) {
-                auto result = makeVectorDecoder(F64Codec{}).decode(backend, data);
+            base::Either<Vector3f, ErrorType<DB>> decode(DB& backend, const DataType<DB>& data) {
+                auto result = makeVectorDecoder(F32Codec{}).decode(backend, data);
                 if (result.isLeft()) {
                     auto array = result.left();
                     if (array.count() == 3) {
@@ -28,8 +27,7 @@ namespace spargel::codec::model {
                         v.z = array[2];
                         return base::Left(base::move(v));
                     } else {
-                        return base::Right<typename DB::ErrorType>(
-                            "Vector3f expected 3 numbers"_sv);
+                        return base::Right<ErrorType<DB>>("Vector3f expected 3 numbers"_sv);
                     }
                 } else {
                     return base::Right(base::move(result.right()));
@@ -42,21 +40,19 @@ namespace spargel::codec::model {
             using TargetType = Vector4f;
 
             template <DecodeBackend DB>
-            base::Either<Vector4f, typename DB::ErrorType> decode(
-                DB& backend, const typename DB::DataType& data) {
+            base::Either<Vector4f, ErrorType<DB>> decode(DB& backend, const DataType<DB>& data) {
                 auto result = makeVectorDecoder(F64Codec{}).decode(backend, data);
                 if (result.isLeft()) {
                     auto array = result.left();
                     if (array.count() == 4) {
                         Vector4f v;
-                        v.x = array[0];
-                        v.y = array[1];
-                        v.z = array[2];
-                        v.w = array[3];
+                        v.x = (float)array[0];
+                        v.y = (float)array[1];
+                        v.z = (float)array[2];
+                        v.w = (float)array[3];
                         return base::Left(base::move(v));
                     } else {
-                        return base::Right<typename DB::ErrorType>(
-                            "Vector4f expected 4 numbers"_sv);
+                        return base::Right<ErrorType<DB>>("Vector4f expected 4 numbers"_sv);
                     }
                 } else {
                     return base::Right(base::move(result.right()));
@@ -69,18 +65,19 @@ namespace spargel::codec::model {
             using TargetType = Matrix4x4f;
 
             template <DecodeBackend DB>
-            static base::Either<Matrix4x4f, typename DB::ErrorType> decode(
-                DB& backend, const typename DB::DataType& data) {
-                auto result = makeVectorDecoder(F64Codec{}).decode(backend, data);
+            static base::Either<Matrix4x4f, ErrorType<DB>> decode(DB& backend,
+                                                                  const DataType<DB>& data) {
+                auto result = makeVectorDecoder(F32Codec{}).decode(backend, data);
                 if (result.isLeft()) {
                     auto array = result.left();
                     if (array.count() == 16) {
                         Matrix4x4f mat;
-                        for (int i = 0; i < 16; i++) mat.entries[i] = array[i];
+                        for (u8 i = 0; i < 16; i++) {
+                            mat.entries[i] = array[i];
+                        }
                         return base::Left(base::move(mat));
                     } else {
-                        return base::Right<typename DB::ErrorType>(
-                            "Matrix4x4f expected 16 numbers"_sv);
+                        return base::Right<ErrorType<DB>>("Matrix4x4f expected 16 numbers"_sv);
                     }
                 } else {
                     return base::Right(base::move(result.right()));
