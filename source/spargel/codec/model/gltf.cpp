@@ -4,7 +4,7 @@
 #include "spargel/base/string_view.h"
 #include "spargel/codec/codec.h"
 #include "spargel/codec/json_codec.h"
-#include "spargel/json/json.h"
+#include "spargel/json/json_parser.h"
 
 using namespace spargel::base::literals;
 

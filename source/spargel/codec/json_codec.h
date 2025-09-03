@@ -1,7 +1,7 @@
 #pragma once
 
 #include "spargel/codec/codec.h"
-#include "spargel/json/json.h"
+#include "spargel/json/json_value.h"
 
 namespace spargel::codec {
 

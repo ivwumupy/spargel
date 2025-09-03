@@ -1,6 +1,7 @@
 #include "spargel/base/check.h"
 #include "spargel/base/test.h"
-#include "spargel/json/json.h"
+#include "spargel/json/json_parser.h"
+#include "spargel/json/json_value.h"
 
 // libc
 #include <string.h>

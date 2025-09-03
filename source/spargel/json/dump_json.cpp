@@ -1,6 +1,7 @@
 #include "spargel/base/command_line.h"
 #include "spargel/base/trace.h"
-#include "spargel/json/json.h"
+#include "spargel/json/json_parser.h"
+#include "spargel/json/json_value.h"
 #include "spargel/resource/directory.h"
 
 /* libc */

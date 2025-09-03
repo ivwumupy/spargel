@@ -3,7 +3,6 @@
 #include "spargel/base/hash_map.h"
 #include "spargel/base/string.h"
 #include "spargel/base/vector.h"
-#include "spargel/codec/codec.h"
 
 namespace spargel::json {
 
@@ -79,15 +78,5 @@ namespace spargel::json {
         void move_from(JsonValue&& other);
     };
 
-    using JsonParseError = codec::CodecError;
-
-    /*
-     * Parser
-     */
-
-    base::Either<JsonValue, JsonParseError> parseJson(const char* str, usize length);
-    inline base::Either<JsonValue, JsonParseError> parseJson(base::StringView s) {
-        return parseJson(s.data(), s.length());
-    }
 
 }  // namespace spargel::json

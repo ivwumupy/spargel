@@ -1,7 +1,10 @@
 source_set("json") {
+    public = [
+    ]
     sources = [
         "cursor.cpp",
         "json_parser.cpp",
+        "json_value.cpp",
     ]
     deps = [
         "//source/spargel/base",

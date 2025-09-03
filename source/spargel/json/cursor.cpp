@@ -5,23 +5,23 @@
 
 namespace spargel::json {
 
-    bool cursorTryEatChar(Cursor& cursor, char ch) {
-        if (cursor.cur + 1 > cursor.end) return false;
-        if (cursorPeek(cursor) != ch) return false;
-        cursorAdvance(cursor);
+    bool Cursor::tryEatChar(char ch) {
+        if (cur + 1 > end) return false;
+        if (peek() != ch) return false;
+        advance();
         return true;
     }
 
-    bool cursorTryEatString(Cursor& cursor, const char* str) {
+    bool Cursor::tryEatString(const char* str) {
         usize len = (usize)strlen(str);
-        return cursorTryEatBytes(cursor, (const u8*)str, len);
+        return tryEatBytes((const u8*)str, len);
     }
 
-    bool cursorTryEatBytes(Cursor& cursor, const u8* bytes, usize len) {
-        if (cursor.cur + len > cursor.end) return false;
-        if (memcmp(bytes, cursor.cur, len) != 0) return false;
-        cursor.cur += len;
+    bool Cursor::tryEatBytes(const u8* bytes, usize len) {
+        if (cur + len > end) return false;
+        if (memcmp(bytes, cur, len) != 0) return false;
+        cur += len;
         return true;
     }
 
-}  // namespace spargel::codec
+}  // namespace spargel::json
