@@ -228,8 +228,8 @@ namespace spargel::base {
                     new_begin =
                         static_cast<T*>(default_allocator()->allocate(sizeof(T) * new_capacity));
                     if (_begin != nullptr) [[likely]] {
-#if spargel_has_builtin(__is_trivially_relocatable)
-                        if constexpr (__is_trivially_relocatable(T)) {
+#if spargel_has_builtin(__builtin_is_cpp_trivially_relocatable)
+                        if constexpr (__builtin_is_cpp_trivially_relocatable(T)) {
                             memcpy(new_begin, _begin, old_count * sizeof(T));
                         } else
 // #elif spargel_has_builtin(__is_trivially_copyable)
