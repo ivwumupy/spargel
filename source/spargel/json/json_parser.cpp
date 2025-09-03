@@ -139,26 +139,23 @@ namespace spargel::json {
 
         class JsonParser {
         public:
-            struct JsonParseContext {
-                Cursor cursor;
-            };
-            void eatWhitespaces(JsonParseContext& ctx);
-            Either<JsonValue, JsonParseError> parseValue(JsonParseContext& ctx);
-            Either<JsonObject, JsonParseError> parseObject(JsonParseContext& ctx);
-            Either<JsonArray, JsonParseError> parseArray(JsonParseContext& ctx);
-            Either<JsonString, JsonParseError> parseString(JsonParseContext& ctx);
-            Optional<JsonParseError> parseInteger(JsonParseContext& ctx, JsonNumber& number,
-                                                  bool& minus);
-            Optional<JsonParseError> parseFraction(JsonParseContext& ctx, JsonNumber& number);
-            Optional<JsonParseError> parseExponent(JsonParseContext& ctx, JsonNumber& number);
-            Either<JsonNumber, JsonParseError> parseNumber(JsonParseContext& ctx);
-            Either<JsonBoolean, JsonParseError> parseBoolean(JsonParseContext& ctx);
-            Optional<JsonParseError> parseNull(JsonParseContext& ctx);
-            Either<JsonObject, JsonParseError> parseMembers(JsonParseContext& ctx);
-            Optional<JsonParseError> parseMember(JsonParseContext& ctx, JsonString& key,
-                                                 JsonValue& value);
-            Either<JsonArray, JsonParseError> parseElements(JsonParseContext& ctx);
-            Either<JsonValue, JsonParseError> parseElement(JsonParseContext& ctx);
+            Cursor cursor;
+
+            void eatWhitespaces();
+            Either<JsonValue, JsonParseError> parseValue();
+            Either<JsonObject, JsonParseError> parseObject();
+            Either<JsonArray, JsonParseError> parseArray();
+            Either<JsonString, JsonParseError> parseString();
+            Optional<JsonParseError> parseInteger(JsonNumber& number, bool& minus);
+            Optional<JsonParseError> parseFraction(JsonNumber& number);
+            Optional<JsonParseError> parseExponent(JsonNumber& number);
+            Either<JsonNumber, JsonParseError> parseNumber();
+            Either<JsonBoolean, JsonParseError> parseBoolean();
+            Optional<JsonParseError> parseNull();
+            Either<JsonObject, JsonParseError> parseMembers();
+            Optional<JsonParseError> parseMember(JsonString& key, JsonValue& value);
+            Either<JsonArray, JsonParseError> parseElements();
+            Either<JsonValue, JsonParseError> parseElement();
         };
 
         /*
@@ -175,10 +172,9 @@ namespace spargel::json {
          *   '000D' ws
          *   '0009' ws
          */
-        void JsonParser::eatWhitespaces(JsonParseContext& ctx) {
+        void JsonParser::eatWhitespaces() {
             spargel_trace_scope("eatWhitespaces");
 
-            auto& cursor = ctx.cursor;
             while (!cursorIsEnd(cursor)) {
                 char ch = (char)cursorPeek(cursor);
                 if (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t')
@@ -198,30 +194,29 @@ namespace spargel::json {
          *   "false"
          *   "null"
          */
-        Either<JsonValue, JsonParseError> JsonParser::parseValue(JsonParseContext& ctx) {
+        Either<JsonValue, JsonParseError> JsonParser::parseValue() {
             spargel_trace_scope("parseValue");
 
-            auto& cursor = ctx.cursor;
             if (cursorIsEnd(cursor)) return Right(JsonParseError("expected a value"_sv));
 
             char ch = (char)cursorPeek(cursor);
             switch (ch) {
             case '{':
                 /* object */
-                return parseObject(ctx);
+                return parseObject();
             case '[':
                 /* array */
-                return parseArray(ctx);
+                return parseArray();
             case '"':
                 /* string */
-                return parseString(ctx);
+                return parseString();
             case 't':
             case 'f':
                 /* boolean: true/false */
-                return parseBoolean(ctx);
+                return parseBoolean();
             case 'n': {
                 /* null */
-                auto result = parseNull(ctx);
+                auto result = parseNull();
                 if (result.hasValue()) {
                     return Right(base::move(result.value()));
                 } else {
@@ -231,7 +226,7 @@ namespace spargel::json {
             default:
                 /* number */
                 if ((ch >= '0' && ch <= '9') || ch == '-') {
-                    return parseNumber(ctx);
+                    return parseNumber();
                 } else {
                     return Right(JsonParseError(String("unexpected character: '") + ch + '\''));
                 }
@@ -243,21 +238,19 @@ namespace spargel::json {
          *   '{' ws '}'
          *   '{' members '}'
          */
-        Either<JsonObject, JsonParseError> JsonParser::parseObject(JsonParseContext& ctx) {
+        Either<JsonObject, JsonParseError> JsonParser::parseObject() {
             spargel_trace_scope("parseObject");
-
-            auto& cursor = ctx.cursor;
 
             // '{' ws
             if (!cursorTryEatChar(cursor, '{')) return Right(JsonParseError("expected a value"_sv));
-            eatWhitespaces(ctx);
+            eatWhitespaces();
             if (cursorIsEnd(cursor)) return Right(JsonParseError(UNEXPECTED_END));
 
             // '}'
             if (cursorTryEatChar(cursor, '}')) return Left(JsonObject());
 
             // members '}'
-            auto result = parseMembers(ctx);
+            auto result = parseMembers();
             if (result.isRight()) return result;
             if (!cursorTryEatChar(cursor, '}')) return Right(JsonParseError("expected '}'"_sv));
 
@@ -269,21 +262,19 @@ namespace spargel::json {
          *   '[' ws ']'
          *   '[' elements ']'
          */
-        Either<JsonArray, JsonParseError> JsonParser::parseArray(JsonParseContext& ctx) {
+        Either<JsonArray, JsonParseError> JsonParser::parseArray() {
             spargel_trace_scope("parseArray");
-
-            auto& cursor = ctx.cursor;
 
             // '[' ws
             if (!cursorTryEatChar(cursor, '[')) return Right(JsonParseError("expected '['"_sv));
-            eatWhitespaces(ctx);
+            eatWhitespaces();
             if (cursorIsEnd(cursor)) return Right(JsonParseError(UNEXPECTED_END));
 
             // ']'
             if (cursorTryEatChar(cursor, ']')) return Left(JsonArray());
 
             // elements ']'
-            auto result = parseElements(ctx);
+            auto result = parseElements();
             if (result.isRight()) return result;
             if (!cursorTryEatChar(cursor, ']')) return Right(JsonParseError("expected ']'"_sv));
 
@@ -321,10 +312,8 @@ namespace spargel::json {
          *   'A' . 'F'
          *   'a' . 'f'
          */
-        Either<JsonString, JsonParseError> JsonParser::parseString(JsonParseContext& ctx) {
+        Either<JsonString, JsonParseError> JsonParser::parseString() {
             spargel_trace_scope("parseString");
-
-            auto& cursor = ctx.cursor;
 
             // '"'
             if (!cursorTryEatChar(cursor, '"')) return Right(JsonParseError("expected '\"'"_sv));
@@ -425,11 +414,9 @@ namespace spargel::json {
          * onenine:
          *   '1' . '9'
          */
-        Optional<JsonParseError> JsonParser::parseInteger(JsonParseContext& ctx, JsonNumber& number,
-                                                          bool& minus) {
+        Optional<JsonParseError> JsonParser::parseInteger(JsonNumber& number, bool& minus) {
             spargel_trace_scope("parseInteger");
 
-            auto& cursor = ctx.cursor;
             if (cursorIsEnd(cursor)) return makeOptional<JsonParseError>(UNEXPECTED_END);
 
             minus = false;
@@ -474,11 +461,9 @@ namespace spargel::json {
          *   ""
          *   '.' digits
          */
-        Optional<JsonParseError> JsonParser::parseFraction(JsonParseContext& ctx,
-                                                           JsonNumber& number) {
+        Optional<JsonParseError> JsonParser::parseFraction(JsonNumber& number) {
             spargel_trace_scope("parseFraction");
 
-            auto& cursor = ctx.cursor;
             if (cursorIsEnd(cursor)) return nullopt;
 
             // '.'
@@ -515,11 +500,8 @@ namespace spargel::json {
          *   '+'
          *   '-'
          */
-        Optional<JsonParseError> JsonParser::parseExponent(JsonParseContext& ctx,
-                                                           JsonNumber& number) {
+        Optional<JsonParseError> JsonParser::parseExponent(JsonNumber& number) {
             spargel_trace_scope("parseExponent");
-
-            auto& cursor = ctx.cursor;
 
             if (!cursorTryEatChar(cursor, 'E') && !cursorTryEatChar(cursor, 'e')) return nullopt;
 
@@ -557,18 +539,18 @@ namespace spargel::json {
          * number:
          *   integer fraction exponent
          */
-        Either<JsonNumber, JsonParseError> JsonParser::parseNumber(JsonParseContext& ctx) {
+        Either<JsonNumber, JsonParseError> JsonParser::parseNumber() {
             spargel_trace_scope("parseNumber");
 
             JsonNumber number(0);
             bool minus;
-            auto result = parseInteger(ctx, number, minus);
+            auto result = parseInteger(number, minus);
             if (result.hasValue()) return Right(base::move(result.value()));
 
-            result = parseFraction(ctx, number);
+            result = parseFraction(number);
             if (result.hasValue()) return Right(base::move(result.value()));
 
-            result = parseExponent(ctx, number);
+            result = parseExponent(number);
             if (result.hasValue()) return Right(base::move(result.value()));
 
             if (minus) number = -number;
@@ -580,10 +562,8 @@ namespace spargel::json {
          *   "true"
          *   "false"
          */
-        Either<JsonBoolean, JsonParseError> JsonParser::parseBoolean(JsonParseContext& ctx) {
+        Either<JsonBoolean, JsonParseError> JsonParser::parseBoolean() {
             spargel_trace_scope("parseBoolean");
-
-            auto& cursor = ctx.cursor;
 
             if (cursorTryEatString(cursor, "true")) {
                 return Left(JsonBoolean(true));
@@ -597,10 +577,8 @@ namespace spargel::json {
         /*
          *   "null"
          */
-        Optional<JsonParseError> JsonParser::parseNull(JsonParseContext& ctx) {
+        Optional<JsonParseError> JsonParser::parseNull() {
             spargel_trace_scope("parseNull");
-
-            auto& cursor = ctx.cursor;
 
             if (cursorTryEatString(cursor, "null"))
                 return nullopt;
@@ -613,17 +591,15 @@ namespace spargel::json {
          *   member
          *   member ',' members
          */
-        Either<JsonObject, JsonParseError> JsonParser::parseMembers(JsonParseContext& ctx) {
+        Either<JsonObject, JsonParseError> JsonParser::parseMembers() {
             spargel_trace_scope("parseMembers");
-
-            auto& cursor = ctx.cursor;
 
             base::HashMap<JsonString, JsonValue> members;
             while (!cursorIsEnd(cursor)) {
                 // member
                 JsonString key;
                 JsonValue value;
-                auto result = parseMember(ctx, key, value);
+                auto result = parseMember(key, value);
                 if (result.hasValue()) return Right(base::move(result.value()));
 
                 members.set(base::move(key), base::move(value));
@@ -639,30 +615,27 @@ namespace spargel::json {
          * member:
          *   ws string ws ':' element
          */
-        Optional<JsonParseError> JsonParser::parseMember(JsonParseContext& ctx, JsonString& key,
-                                                         JsonValue& value) {
+        Optional<JsonParseError> JsonParser::parseMember(JsonString& key, JsonValue& value) {
             spargel_trace_scope("parseMember");
 
-            auto& cursor = ctx.cursor;
-
             // ws
-            eatWhitespaces(ctx);
+            eatWhitespaces();
 
             // string
-            auto result_key = parseString(ctx);
+            auto result_key = parseString();
             if (result_key.isRight())
                 return makeOptional<JsonParseError>(base::move(result_key.right()));
             key = base::move(result_key.left());
 
             // ws
-            eatWhitespaces(ctx);
+            eatWhitespaces();
 
             // ':'
             if (!cursorTryEatChar(cursor, ':'))
                 return makeOptional<JsonParseError>("expected ':'"_sv);
 
             // element
-            auto result_value = parseElement(ctx);
+            auto result_value = parseElement();
             if (result_value.isRight())
                 return makeOptional<JsonParseError>(base::move(result_value.right()));
             value = base::move(result_value.left());
@@ -675,15 +648,13 @@ namespace spargel::json {
          *   element
          *   element ',' elements
          */
-        Either<JsonArray, JsonParseError> JsonParser::parseElements(JsonParseContext& ctx) {
+        Either<JsonArray, JsonParseError> JsonParser::parseElements() {
             spargel_trace_scope("parseElements");
-
-            auto& cursor = ctx.cursor;
 
             base::vector<JsonValue> elements;
             while (!cursorIsEnd(cursor)) {
                 // element
-                auto result = parseElement(ctx);
+                auto result = parseElement();
                 if (result.isRight()) return Right(base::move(result.right()));
 
                 elements.emplace(base::move(result.left()));
@@ -699,18 +670,18 @@ namespace spargel::json {
          * element:
          *   ws value ws
          */
-        Either<JsonValue, JsonParseError> JsonParser::parseElement(JsonParseContext& ctx) {
+        Either<JsonValue, JsonParseError> JsonParser::parseElement() {
             spargel_trace_scope("parseElement");
 
             // ws
-            eatWhitespaces(ctx);
+            eatWhitespaces();
 
             // value
-            auto result = parseValue(ctx);
+            auto result = parseValue();
             if (result.isRight()) return result;
 
             // ws
-            eatWhitespaces(ctx);
+            eatWhitespaces();
 
             return result;
         }
@@ -720,10 +691,8 @@ namespace spargel::json {
     Either<JsonValue, JsonParseError> parseJson(const char* str, usize length) {
         spargel_trace_scope("parseJson");
 
-        JsonParser::JsonParseContext ctx;
-        ctx.cursor.cur = str;
-        ctx.cursor.end = str + length;
-        return JsonParser{}.parseElement(ctx);
+        JsonParser parser{Cursor{str, str + length}};
+        return parser.parseElement();
     }
 
 }  // namespace spargel::json
