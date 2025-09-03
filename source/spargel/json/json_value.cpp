@@ -2,14 +2,10 @@
 
 namespace spargel::json {
 
-    JsonValue::JsonValue(const JsonValue& other) { construct_from(other); }
-
-    JsonValue::JsonValue(JsonValue&& other) { move_from(base::move(other)); }
-
     JsonValue& JsonValue::operator=(const JsonValue& other) {
         if (this != &other) {
             destroy();
-            construct_from(other);
+            initByCopy(other);
         }
         return *this;
     }
@@ -17,7 +13,7 @@ namespace spargel::json {
     JsonValue& JsonValue::operator=(JsonValue&& other) {
         if (this != &other) {
             destroy();
-            move_from(base::move(other));
+            initByMove(base::move(other));
         }
         return *this;
     }
@@ -45,7 +41,7 @@ namespace spargel::json {
         type = JsonValueType::null;
     }
 
-    void JsonValue::construct_from(const JsonValue& other) {
+    void JsonValue::initByCopy(const JsonValue& other) {
         switch (other.type) {
         case JsonValueType::object:
             base::construct_at(&object, other.object);
@@ -68,7 +64,7 @@ namespace spargel::json {
         type = other.type;
     }
 
-    void JsonValue::move_from(JsonValue&& other) {
+    void JsonValue::initByMove(JsonValue&& other) {
         switch (other.type) {
         case JsonValueType::object:
             base::construct_at(&object, base::move(other.object));
@@ -89,6 +85,24 @@ namespace spargel::json {
             break;
         }
         type = other.type;
+    }
+
+    bool operator==(JsonValue const& v1, JsonValue const& v2) {
+        if (&v1 == &v2) return true;
+        if (v1.type != v2.type) return false;
+
+        switch (v1.type) {
+        case JsonValueType::string:
+            return v1.string == v2.string;
+        case JsonValueType::number:
+            return abs(v1.number - v2.number) < 1e-9;
+        case JsonValueType::boolean:
+            return v1.boolean == v2.boolean;
+        case JsonValueType::null:
+            return true;
+        default:
+            return false;
+        }
     }
 
 }  // namespace spargel::json

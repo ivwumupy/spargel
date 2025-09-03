@@ -18,35 +18,6 @@ namespace {
         return json::parseJson(str, strlen(str));
     }
 
-    bool isEqual(const JsonValue& v1, const JsonValue& v2) {
-        if (&v1 == &v2) return true;
-        if (v1.type != v2.type) return false;
-
-        switch (v1.type) {
-        case JsonValueType::string:
-            return v1.string == v2.string;
-        case JsonValueType::number:
-            return abs(v1.number - v2.number) < 1e-9;
-        case JsonValueType::boolean:
-            return v1.boolean == v2.boolean;
-        case JsonValueType::null:
-            return true;
-        default:
-            return false;
-        }
-    }
-
-    bool isMemberEqual(JsonObject& object, const JsonString& key, const JsonValue& v) {
-        auto* ptr = object.members.get(key);
-        if (ptr == nullptr) return false;
-
-        return isEqual(*ptr, v);
-    }
-
-}  // namespace
-
-namespace {
-
     TEST(JSON_JsonValue) {
         JsonValue v = JsonObject();
         v.object.members.set(JsonString("error"), JsonNull());
@@ -79,68 +50,67 @@ namespace {
         base::Either<JsonValue, JsonParseError> result = base::Left(JsonValue());
 
         result = parseJson("null");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonNull()));
+        spargel_check(result.isLeft() && result.left() == JsonNull());
 
         result = parseJson("true");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonBoolean(true)));
+        spargel_check(result.isLeft() && result.left() == JsonBoolean(true));
 
         result = parseJson("false");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonBoolean(false)));
+        spargel_check(result.isLeft() && result.left() == JsonBoolean(false));
 
         result = parseJson("\"string\"");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonString("string")));
+        spargel_check(result.isLeft() && result.left() == JsonString("string"));
 
         result = parseJson("\"123\\n\\\"xyz\"");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonString("123\n\"xyz")));
+        spargel_check(result.isLeft() && result.left() == JsonString("123\n\"xyz"));
 
         result = parseJson("\" \\\" \\\\ \\/ \\b \\f \\n \\r \\t \"");
-        spargel_check(result.isLeft() &&
-                      isEqual(result.left(), JsonString(" \" \\ / \b \f \n \r \t ")));
+        spargel_check(result.isLeft() && result.left() == JsonString(" \" \\ / \b \f \n \r \t "));
 
         result = parseJson("\"\\u0020\\u0041\\u0061\"");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonString(" Aa")));
+        spargel_check(result.isLeft() && result.left() == JsonString(" Aa"));
 
         result = parseJson("\"\\u4e2d\\u6587\"");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonString("中文")));
+        spargel_check(result.isLeft() && result.left() == JsonString("中文"));
 
         result = parseJson("\"\\u65e5\\u672c\\u8a9e\"");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonString("日本語")));
+        spargel_check(result.isLeft() && result.left() == JsonString("日本語"));
 
         result = parseJson("\"\\ud55c\\uad6d\\uc5b4\"");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonString("한국어")));
+        spargel_check(result.isLeft() && result.left() == JsonString("한국어"));
 
         result = parseJson("\"\n\"");
         spargel_check(result.isRight());
 
         result = parseJson("0");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(0)));
+        spargel_check(result.isLeft() && result.left() == JsonNumber(0));
 
         result = parseJson("12345");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(12345)));
+        spargel_check(result.isLeft() && result.left() == JsonNumber(12345));
 
         result = parseJson("-54321");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(-54321)));
+        spargel_check(result.isLeft() && result.left() == JsonNumber(-54321));
 
         result = parseJson("123.000456");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(123.000456)));
+        spargel_check(result.isLeft() && result.left() == JsonNumber(123.000456));
 
         result = parseJson("-654.000321");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(-654.000321)));
+        spargel_check(result.isLeft() && result.left() == JsonNumber(-654.000321));
 
         result = parseJson("0.001");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(0.001)));
+        spargel_check(result.isLeft() && result.left() == JsonNumber(0.001));
 
         result = parseJson("-0.001");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(-0.001)));
+        spargel_check(result.isLeft() && result.left() == JsonNumber(-0.001));
 
         result = parseJson("0.001e4");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(0.001e4)));
+        spargel_check(result.isLeft() && result.left() == JsonNumber(0.001e4));
 
         result = parseJson("-0.001e+3");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(-0.001e+3)));
+        spargel_check(result.isLeft() && result.left() == JsonNumber(-0.001e+3));
 
         result = parseJson("-0.001E-3");
-        spargel_check(result.isLeft() && isEqual(result.left(), JsonNumber(-0.001E-3)));
+        spargel_check(result.isLeft() && result.left() == JsonNumber(-0.001E-3));
     }
 
     TEST(JSON_Parse_Array) {
@@ -154,11 +124,11 @@ namespace {
         spargel_check(result.isLeft() && result.left().type == JsonValueType::array);
         auto array = result.left().array;
         spargel_check(array.elements.count() == 5);
-        spargel_check(isEqual(array.elements[0], JsonBoolean(true)));
-        spargel_check(isEqual(array.elements[1], JsonString("ABC")));
-        spargel_check(isEqual(array.elements[2], JsonNumber(-123.456)));
-        spargel_check(isEqual(array.elements[3], JsonNull()));
-        spargel_check(isEqual(array.elements[4], JsonBoolean(false)));
+        spargel_check(array.elements[0] == JsonBoolean(true));
+        spargel_check(array.elements[1] == JsonString("ABC"));
+        spargel_check(array.elements[2] == JsonNumber(-123.456));
+        spargel_check(array.elements[3] == JsonNull());
+        spargel_check(array.elements[4] == JsonBoolean(false));
     }
 
     TEST(JSON_Parse_Object) {

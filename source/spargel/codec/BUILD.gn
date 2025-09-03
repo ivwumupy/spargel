@@ -11,3 +11,14 @@ source_set("codec") {
         "//source/spargel/json",
     ]
 }
+
+executable("codec_tests") {
+    sources = [
+        "test_codec.cpp",
+        "test_json_codec.cpp",
+    ]
+    deps = [
+        ":codec",
+        "//source/spargel/base:test_main",
+    ]
+}

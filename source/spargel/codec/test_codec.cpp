@@ -17,30 +17,29 @@ namespace {
 
         base::Either<TestData, CodecError> makeNull() { return base::Left(TestData{}); }
 
-        base::Either<TestData, CodecError> makeBoolean(bool b) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeBoolean(bool) { return base::Left(TestData{}); }
 
-        base::Either<TestData, CodecError> makeU8(u8 n) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeI8(i8 n) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeU16(u16 n) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeI16(i16 n) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeU32(u32 n) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeI32(i32 n) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeU64(u64 n) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeI64(i64 n) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeU8(u8) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeI8(i8) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeU16(u16) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeI16(i16) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeU32(u32) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeI32(i32) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeU64(u64) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeI64(i64) { return base::Left(TestData{}); }
 
-        base::Either<TestData, CodecError> makeF32(f32 v) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeF64(f64 v) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeF32(f32) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeF64(f64) { return base::Left(TestData{}); }
 
-        base::Either<TestData, CodecError> makeString(const base::String& s) {
+        base::Either<TestData, CodecError> makeString(const base::String&) {
             return base::Left(TestData{});
         }
 
-        base::Either<TestData, CodecError> makeArray(const base::vector<TestData>& array) {
+        base::Either<TestData, CodecError> makeArray(const base::vector<TestData>&) {
             return base::Left(TestData{});
         }
 
-        base::Either<TestData, CodecError> makeMap(
-            const base::HashMap<base::String, TestData>& map) {
+        base::Either<TestData, CodecError> makeMap(const base::HashMap<base::String, TestData>&) {
             return base::Left(TestData{});
         }
     };
@@ -51,32 +50,32 @@ namespace {
         using DataType = TestData;
         using ErrorType = CodecError;
 
-        base::Optional<CodecError> getNull(const TestData& data) { return base::nullopt; }
+        base::Optional<CodecError> getNull(const TestData&) { return base::nullopt; }
 
-        base::Either<bool, CodecError> getBoolean(const TestData& data) { return base::Left(true); }
+        base::Either<bool, CodecError> getBoolean(const TestData&) { return base::Left(true); }
 
-        base::Either<u8, CodecError> getU8(const TestData& data) { return base::Left((u8)0); }
-        base::Either<i8, CodecError> getI8(const TestData& data) { return base::Left((i8)0); }
-        base::Either<u16, CodecError> getU16(const TestData& data) { return base::Left((u16)0); }
-        base::Either<i16, CodecError> getI16(const TestData& data) { return base::Left((i16)0); }
-        base::Either<u32, CodecError> getU32(const TestData& data) { return base::Left((u32)0); }
-        base::Either<i32, CodecError> getI32(const TestData& data) { return base::Left((i32)0); }
-        base::Either<u64, CodecError> getU64(const TestData& data) { return base::Left((u64)0); }
-        base::Either<i64, CodecError> getI64(const TestData& data) { return base::Left((i64)0); }
+        base::Either<u8, CodecError> getU8(const TestData&) { return base::Left((u8)0); }
+        base::Either<i8, CodecError> getI8(const TestData&) { return base::Left((i8)0); }
+        base::Either<u16, CodecError> getU16(const TestData&) { return base::Left((u16)0); }
+        base::Either<i16, CodecError> getI16(const TestData&) { return base::Left((i16)0); }
+        base::Either<u32, CodecError> getU32(const TestData&) { return base::Left((u32)0); }
+        base::Either<i32, CodecError> getI32(const TestData&) { return base::Left((i32)0); }
+        base::Either<u64, CodecError> getU64(const TestData&) { return base::Left((u64)0); }
+        base::Either<i64, CodecError> getI64(const TestData&) { return base::Left((i64)0); }
 
-        base::Either<f32, CodecError> getF32(const TestData& data) { return base::Left((f32)0); }
-        base::Either<f64, CodecError> getF64(const TestData& data) { return base::Left((f64)0); }
+        base::Either<f32, CodecError> getF32(const TestData&) { return base::Left((f32)0); }
+        base::Either<f64, CodecError> getF64(const TestData&) { return base::Left((f64)0); }
 
-        base::Either<base::String, CodecError> getString(const TestData& data) {
+        base::Either<base::String, CodecError> getString(const TestData&) {
             return base::Left(base::String(""));
         }
 
-        base::Either<base::vector<TestData>, CodecError> getArray(const TestData& data) {
+        base::Either<base::vector<TestData>, CodecError> getArray(const TestData&) {
             return base::Left(base::vector<TestData>{});
         }
 
-        base::Either<base::Optional<TestData>, CodecError> getMember(const TestData& data,
-                                                                     base::StringView key) {
+        base::Either<base::Optional<TestData>, CodecError> getMember(const TestData&,
+                                                                     base::StringView) {
             return base::Left(base::makeOptional<TestData>());
         }
     };
@@ -314,9 +313,9 @@ TEST(Codec_Encode_Record) {
     student.age = 20;
     student.happy = true;
     base::vector<f32> scores;
-    scores.emplace(98);
+    scores.emplace(98.0f);
     scores.emplace(87.5f);
-    scores.emplace(92);
+    scores.emplace(92.0f);
     student.scores = base::move(scores);
 
     {
@@ -345,17 +344,17 @@ TEST(Codec_Encode_Record_FailFast) {
         int counter = 0;
         auto result =
             makeRecordEncoder<int>(makeNormalEncodeField<int>("boo"_sv, BooleanCodec{},
-                                                              [&](int n) {
+                                                              [&](int) {
                                                                   counter++;
                                                                   return true;
                                                               }),
                                    makeNormalEncodeField<int>("i32"_sv, I32Codec{},
-                                                              [&](int n) {
+                                                              [&](int) {
                                                                   counter++;
                                                                   return 0;
                                                               }),
                                    makeNormalEncodeField<int>("string"_sv, StringCodec{},
-                                                              [&](int n) {
+                                                              [&](int) {
                                                                   counter++;
                                                                   return base::String{"string"};
                                                               }))
@@ -367,17 +366,17 @@ TEST(Codec_Encode_Record_FailFast) {
         int counter = 0;
         auto result = makeRecordEncoder<int>(
                           makeNormalEncodeField<int>("boo"_sv, BooleanCodec{},
-                                                     [&](int n) {
+                                                     [&](int) {
                                                          counter++;
                                                          return true;
                                                      }),
                           makeNormalEncodeField<int>("i32"_sv, ErrorEncoder<i32>("error"_sv),
-                                                     [&](int n) {
+                                                     [&](int) {
                                                          counter++;
                                                          return 0;
                                                      }),
                           makeNormalEncodeField<int>("string"_sv, StringCodec{},
-                                                     [&](int n) {
+                                                     [&](int) {
                                                          counter++;
                                                          return base::String{"string"};
                                                      }))
