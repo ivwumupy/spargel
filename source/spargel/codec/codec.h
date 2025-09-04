@@ -206,6 +206,9 @@ namespace spargel::codec {
 
     }  // namespace
 
+    template <typename T>
+    using TargetType = T::TargetType;
+
     template <typename C>
     concept Encoder = requires { typename C::TargetType; } &&
                       requires(C& codec, DummyEncodeBackend& backend, const C::TargetType& object) {
@@ -225,6 +228,7 @@ namespace spargel::codec {
     template <typename C>
     concept Codec = Encoder<C> && Decoder<C>;
 
+    // Generate an error (by copy as the encoder may be reused).
     template <typename T>
     class ErrorEncoder {
     public:
@@ -233,8 +237,8 @@ namespace spargel::codec {
         ErrorEncoder(base::StringView message) : message_(message) {}
 
         template <EncodeBackend EB>
-        base::Either<DataType<EB>, ErrorType<EB>> encode([[maybe_unused]] EB& backend,
-                                                         [[maybe_unused]] const T& object) {
+        base::Either<DataType<EB>, ErrorType<EB>> encode(
+            [[maybe_unused]] EB& backend, [[maybe_unused]] const TargetType& object) const {
             return base::Right(ErrorType<EB>(message_));
         }
 
@@ -251,7 +255,7 @@ namespace spargel::codec {
 
         template <DecodeBackend DB>
         base::Either<T, ErrorType<DB>> decode([[maybe_unused]] DB& backend,
-                                              [[maybe_unused]] const DB::DataType& data) {
+                                              [[maybe_unused]] const DataType<DB>& data) const {
             return base::Right(ErrorType<DB>(message_));
         }
 
@@ -272,12 +276,13 @@ namespace spargel::codec {
         using TargetType = nullptr_t;
 
         template <EncodeBackend EB>
-        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, base::nullptr_t) {
+        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, base::nullptr_t) const {
             return backend.makeNull();
         }
 
         template <DecodeBackend DB>
-        base::Either<base::nullptr_t, ErrorType<DB>> decode(DB& backend, const DataType<DB>& data) {
+        base::Either<base::nullptr_t, ErrorType<DB>> decode(DB& backend,
+                                                            const DataType<DB>& data) const {
             auto result = backend.getNull(data);
             if (!result.hasValue()) {
                 return base::Left(nullptr);
@@ -291,7 +296,7 @@ namespace spargel::codec {
         using TargetType = bool;
 
         template <EncodeBackend EB>
-        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, bool b) {
+        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, bool b) const {
             return backend.makeBoolean(b);
         }
 
@@ -305,7 +310,7 @@ namespace spargel::codec {
         using TargetType = u32;
 
         template <EncodeBackend EB>
-        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, u32 n) {
+        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, u32 n) const {
             return backend.makeU32(n);
         }
 
@@ -319,7 +324,7 @@ namespace spargel::codec {
         using TargetType = i32;
 
         template <EncodeBackend EB>
-        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, i32 n) {
+        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, i32 n) const {
             return backend.makeI32(n);
         }
 
@@ -333,7 +338,7 @@ namespace spargel::codec {
         using TargetType = f32;
 
         template <EncodeBackend EB>
-        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, f32 x) {
+        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, f32 x) const {
             return backend.makeF32(x);
         }
 
@@ -347,12 +352,12 @@ namespace spargel::codec {
         using TargetType = f64;
 
         template <EncodeBackend EB>
-        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, f64 x) {
+        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, f64 x) const {
             return backend.makeF64(x);
         }
 
         template <DecodeBackend DB>
-        base::Either<f64, ErrorType<DB>> decode(DB& backend, const DataType<DB>& data) {
+        base::Either<f64, ErrorType<DB>> decode(DB& backend, const DataType<DB>& data) const {
             return backend.getF64(data);
         }
     };
@@ -361,7 +366,7 @@ namespace spargel::codec {
         using TargetType = base::String;
 
         template <EncodeBackend EB>
-        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, const base::String& s) {
+        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend, const TargetType& s) const {
             return backend.makeString(s);
         }
 
@@ -376,26 +381,32 @@ namespace spargel::codec {
 
         template <Encoder E, EncodeBackend EB>
         base::Either<DataType<EB>, ErrorType<EB>> encodeVector(
-            E& encoder, EB& backend, const base::Vector<typename E::TargetType>& v) {
+            E& encoder, EB& backend, const base::Vector<TargetType<E>>& v) {
             base::Vector<DataType<EB>> array;
-            for (auto& item : v) {
+            for (auto const& item : v) {
                 auto result = encoder.encode(backend, item);
-                if (result.isRight()) return base::Right(base::move(result.right()));
+                if (result.isRight()) {
+                    return base::Right(base::move(result.right()));
+                }
                 array.emplace(base::move(result.left()));
             }
             return backend.makeArray(base::move(array));
         }
 
         template <Decoder D, DecodeBackend DB>
-        base::Either<base::Vector<typename D::TargetType>, ErrorType<DB>> decode(
-            D& decoder, DB& backend, const DataType<DB>& data) {
+        base::Either<base::Vector<TargetType<D>>, ErrorType<DB>> decodeVector(
+            D& decoder, DB& backend, DataType<DB> const& data) {
             auto data_array = backend.getArray(data);
-            if (data_array.isRight()) return base::Right(base::move(data_array.right()));
+            if (data_array.isRight()) {
+                return base::Right(base::move(data_array.right()));
+            }
 
-            base::Vector<typename D::TargetType> array;
-            for (auto& item : data_array.left()) {
+            base::Vector<TargetType<D>> array;
+            for (auto const& item : data_array.left()) {
                 auto result = decoder.decode(backend, item);
-                if (result.isRight()) return base::Right(base::move(result.right()));
+                if (result.isRight()) {
+                    return base::Right(base::move(result.right()));
+                }
                 array.emplace(base::move(result.left()));
             }
 
@@ -440,7 +451,7 @@ namespace spargel::codec {
 
         template <DecodeBackend DB>
         base::Either<base::Vector<T>, ErrorType<DB>> decode(DB& backend, const DataType<DB>& data) {
-            return _vector::decode(_decoder, backend, data);
+            return _vector::decodeVector(_decoder, backend, data);
         }
 
     private:
@@ -449,7 +460,7 @@ namespace spargel::codec {
 
     template <typename D>
     auto makeVectorDecoder(D&& decoder) {
-        return VectorDecoder<base::remove_reference<D>>(base::forward<D>(decoder));
+        return VectorDecoder<base::RemoveCVRef<D>>(base::forward<D>(decoder));
     }
 
     template <Codec C>
@@ -470,7 +481,7 @@ namespace spargel::codec {
         template <DecodeBackend DB>
         base::Either<base::Vector<T>, ErrorType<DB>> decode(DB& backend,
                                                             const DataType<DB>& data) const {
-            return _vector::decode(_codec, backend, data);
+            return _vector::decodeVector(_codec, backend, data);
         }
 
     private:

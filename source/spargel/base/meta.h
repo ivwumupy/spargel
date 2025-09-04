@@ -1,7 +1,6 @@
 #pragma once
 
 #include "spargel/base/compiler.h"
-#include "spargel/base/types.h"
 
 // notes:
 //
@@ -138,6 +137,14 @@ namespace spargel::base {
     }  // namespace _remove_cv
     template <typename T>
     using remove_cv = _remove_cv::remove_cv<T>::type;
+#endif
+
+#if spargel_has_builtin(__remove_cvref)
+    template <typename T>
+    using RemoveCVRef = __remove_cvref(T);
+#else
+    template <typename T>
+    using RemoveCVRef = remove_cv<RemoveReference<T>>;
 #endif
 
 #if spargel_has_builtin(__is_array)
