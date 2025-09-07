@@ -29,6 +29,11 @@ source_set("ui") {
             "QuartzCore.framework",
         ]
     }
+    if (is_windows) {
+        sources += [
+            "ui_win32.cpp",
+        ]
+    }
 }
 
 executable("demo_ui") {

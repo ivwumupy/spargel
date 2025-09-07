@@ -21,9 +21,9 @@ namespace spargel::ui {
         void startLoop() override;
 
         base::unique_ptr<Window> makeWindow(u32 width, u32 height) override;
-        base::unique_ptr<TextSystem> createTextSystem() override {
-            return base::make_unique<TextSystemDummy>();
-        }
+        // base::unique_ptr<TextSystem> createTextSystem() override {
+        //     return base::make_unique<TextSystemDummy>();
+        // }
 
     private:
         HINSTANCE _hInstance;
@@ -47,6 +47,17 @@ namespace spargel::ui {
         void requestRedraw() override {}
 
         WindowHandle getHandle() override;
+
+        void bindRenderer(render::UIRenderer* renderer) {}
+
+        // HACK: Whether this window has focus on text input.
+        // TODO: Introduce TextInputClient.
+        void setTextFocus(bool focus) {}
+
+        float scaleFactor() { return 1.0; }
+
+        float width() { return 0.0; }
+        float height() { return 0.0; }
 
     private:
         PlatformWin32* _platform;

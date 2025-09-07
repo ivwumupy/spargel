@@ -1,6 +1,7 @@
 #pragma once
 
 #include "spargel/base/compiler.h"
+#include "spargel/base/types.h" // IWYU pragma: keep
 
 // notes:
 //

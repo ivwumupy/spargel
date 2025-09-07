@@ -15,6 +15,9 @@ is_linux = current_os == "linux"
 is_macos = current_os == "mac"
 is_windows = current_os == "win"
 
+# TODO:
+is_msvc = is_windows
+
 declare_args() {
     is_debug = true
 }
@@ -23,6 +26,9 @@ _default_toolchain = ""
 if (target_os == "mac") {
     assert(host_os == "mac")
     _default_toolchain = "//gn/toolchain:macos_clang"
+} else if (target_os == "win") {
+    assert(host_os == "win")
+    _default_toolchain = "//gn/toolchain:windows_msvc"
 } else {
     assert(false)
 }

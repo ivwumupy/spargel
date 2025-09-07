@@ -1016,7 +1016,7 @@ namespace spargel::codec {
                 const auto i = indices;
                 auto& builder = base::get<i>(builders);
                 auto result =
-                    DecoderFrom<__remove_cvref(base::remove_reference<decltype(builder)>)>{builder}
+                    DecoderFrom<base::RemoveCVRef<base::remove_reference<decltype(builder)>>>{builder}
                         .decoder.decode(backend, data);
                 using Type = base::Get<base::TypeList<typename Builders::TargetType...>, i>;
                 if (result.isLeft()) {

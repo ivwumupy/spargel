@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 // cpp std
-#include <cstddef>  // std::byte
+// #include <cstddef>  // std::byte
 
 using ssize = ptrdiff_t;
 using usize = size_t;

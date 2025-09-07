@@ -73,7 +73,7 @@ namespace spargel::lang {
             return makeToken(start, TokenKind::unknown);
         }
         }
-        __builtin_unreachable();
+        // __builtin_unreachable();
     }
     SyntaxToken Cursor::handleWhitespace() {
         auto start = input_;

@@ -3,9 +3,13 @@
 //
 #include "spargel/base/check.h"
 #include "spargel/base/checked_convert.h"
+#include "spargel/base/panic.h"
+#include "spargel/base/memory.h"
 
+#if SPARGEL_IS_POSIX
 //
 #include <unistd.h>
+#endif
 
 namespace spargel::base {
     namespace {
@@ -61,12 +65,19 @@ namespace spargel::base {
     }
     void Console::copy_to_buffer(char const* p, usize len) {
         spargel_check(len <= usize(end_ - cur_));
-        __builtin_memcpy(cur_, p, len);
+        memcpy(cur_, p, len);
         cur_ += len;
     }
+#if SPARGEL_IS_POSIX
     void Console::output(char const* p, usize len) {
         // TODO: check EINTR or EAGAIN
         auto ret = ::write(1, p, len);
         spargel_check(ret != -1 && checkedConvert<usize>(ret) == len);
     }
+#elif SPARGEL_IS_WINDOWS
+    void Console::output(char const* p, usize len) {
+        // TODO:
+        spargel_panic_here();
+    }
+#endif
 }  // namespace spargel::base

@@ -7,26 +7,44 @@ config("basics") {
     cflags_objcc = []
     ldflags = []
     include_dirs = []
+    libs = []
 
-    cflags += [ "-fcolor-diagnostics" ]
-    #ldflags += [
-    #    "-fuse-ld=lld",
-    #    "-Wl,--color-diagnostics",
-    #]
+    if (is_msvc) {
+
+    } else {
+        cflags += [ "-fcolor-diagnostics" ]
+        #ldflags += [
+        #    "-fuse-ld=lld",
+        #    "-Wl,--color-diagnostics",
+        #]
+    }
 
     include_dirs = [
         "//source",
         "$root_gen_dir/source",
     ]
 
-    cflags += [ "-O0" ]
+    if (is_msvc) {
+        include_dirs += [
+            "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt"
+        ]
+        libs += [
+            "user32.lib",
+        ]
+    }
 
-    cflags += [ "-std=c11" ]
-    cflags_cc += [ "-std=c++20" ]
-    cflags_objcc += [ "-std=c++20" ]
+    if (is_msvc) {
+        cflags_cc += [ "/std:c++20" ]
+    } else {
+        cflags += [ "-O0" ]
 
-    cflags_cc += [ "-fno-exceptions" ]
-    cflags_cc += [ "-fno-rtti" ]
+        cflags += [ "-std=c11" ]
+        cflags_cc += [ "-std=c++20" ]
+        cflags_objcc += [ "-std=c++20" ]
+
+        cflags_cc += [ "-fno-exceptions" ]
+        cflags_cc += [ "-fno-rtti" ]
+    }
 
     if (is_macos) {
         sysroot_flags = [
@@ -39,21 +57,29 @@ config("basics") {
 }
 
 config("warnings") {
-    cflags = [
-        "-pedantic-errors",
-        "-Wall",
-        "-Wextra",
-        "-Wconversion",
-        "-Werror",
-    ]
+    if (is_msvc) {
+
+    } else {
+        cflags = [
+            "-pedantic-errors",
+            "-Wall",
+            "-Wextra",
+            "-Wconversion",
+            "-Werror",
+        ]
+    }
 }
 
 config("default_optimize") {
     cflags = []
     if (!is_debug) {
-        cflags += [
-            "-O2",
-        ]
+        if (is_msvc) {
+
+        } else {
+            cflags += [
+                "-O2",
+            ]
+        }
     }
 }
 
@@ -62,6 +88,8 @@ config("default_coverage") {
     ldflags = []
 
     if (enable_clang_coverage) {
+        # TODO:
+        assert(!is_msvc)
         cflags += [
             "-fprofile-instr-generate",
             "-fcoverage-mapping",

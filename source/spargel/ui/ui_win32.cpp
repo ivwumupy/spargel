@@ -95,8 +95,8 @@ namespace spargel::ui {
 
     WindowHandle WindowWin32::getHandle() {
         WindowHandle handle{};
-        handle.win32.hinstance = _platform->_hInstance;
-        handle.win32.hwnd = _hwnd;
+        handle.value.win32.hinstance = _platform->_hInstance;
+        handle.value.win32.hwnd = _hwnd;
         return handle;
     }
 

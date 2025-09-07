@@ -1,4 +1,5 @@
 import("//gn/config/clang.gni")
+import("//gn/config/msvc.gni")
 
 toolchain("macos_clang") {
     prefix = rebase_path("$clang_root/bin/", root_build_dir)
@@ -75,5 +76,41 @@ toolchain("macos_clang") {
         outputs = [ outfile ]
         command = "$ld {{ldflags}} -o $outfile @$rspfile"
         description = "LINK $outfile"
+    }
+}
+
+toolchain("windows_msvc") {
+    prefix = rebase_path("$msvc_bin_path\\", root_build_dir)
+    cl = "${prefix}cl"
+    link = "${prefix}link"
+
+    object_subdir = "{{target_out_dir}}/{{label_name}}"
+
+    lib_switch = ""
+    lib_dir_switch = "/LIBPATH:"
+
+    tool("cc") {
+        depsformat = "msvc"
+        outputs = [
+            "$object_subdir/{{source_name_part}}.o"
+        ]
+        command = "$cl /nologo /showIncludes {{defines}} {{include_dirs}} {{cflags}} {{cflags_c}} /c {{source}} /Fo{{output}}"
+        description = "CC {{output}}"
+    }
+    tool("cxx") {
+        depsformat = "msvc"
+        outputs = [
+            "$object_subdir/{{source_name_part}}.o"
+        ]
+        command = "$cl /nologo /showIncludes {{defines}} {{include_dirs}} {{cflags}} {{cflags_cc}} /c {{source}} /Fo{{output}}"
+        description = "CXX {{output}}"
+    }
+    tool("link") {
+        outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+        pdbfile = "{{output_dir}}/{{target_output_name}}.pdb"
+        default_output_dir = "{{root_out_dir}}"
+        default_output_extension = ".exe"
+        outputs = [ outfile ]
+        command = "$link /nologo {{ldflags}} /out:$outfile /pdb:$pdbfile {{inputs}} {{libs}}"
     }
 }

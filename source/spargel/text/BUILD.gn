@@ -25,4 +25,10 @@ source_set("text") {
             "CoreText.framework",
         ]
     }
+    if (is_windows) {
+        sources += [
+            "font_manager_win.cpp",
+            "text_shaper_win.cpp",
+        ]
+    }
 }
