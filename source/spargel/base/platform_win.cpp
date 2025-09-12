@@ -1,10 +1,10 @@
 #include "spargel/base/platform.h"
 
-/* libc */
+//
 #include <stdio.h>
 
-/* Windows */
-#include <windows.h>
+//
+#include <Windows.h>
 
 namespace spargel::base {
 
@@ -24,6 +24,13 @@ namespace spargel::base {
         return GetModuleFileNameA(NULL, buf, buf_size);
     }
 
-    void PrintBacktrace() { printf("<unknown backtrace>\n"); }
+    // TODO: Symbolize the traces.
+    void PrintBacktrace() { 
+        void* entries[64];
+        auto count = CaptureStackBackTrace(0, 64, entries, nullptr);
+        for (int i = 0; i < count; i++) {
+            printf("  # 0x%p <unknown>\n", entries[i]);
+        }
+    }
 
 }  // namespace spargel::base
