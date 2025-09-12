@@ -4,7 +4,7 @@
 
 using namespace spargel;
 
-class delegate final : public ui::WindowDelegate {
+class Delegate final : public ui::WindowDelegate {
 public:
     void onKeyboard(ui::KeyboardEvent& e) override {
         switch (e.action) {
@@ -25,7 +25,8 @@ int main() {
     auto platform = ui::makePlatform();
     auto window = platform->makeWindow(500, 500);
     window->setTitle("Spargel Demo - Window");
-    delegate d;
+    window->setAnimating(false);
+    Delegate d;
     window->setDelegate(&d);
     platform->startLoop();
     return 0;

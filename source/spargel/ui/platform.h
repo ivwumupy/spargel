@@ -20,17 +20,17 @@ namespace spargel::ui {
     public:
         virtual ~Platform() = default;
 
-        PlatformKind getKind() const { return _kind; }
+        PlatformKind getKind() const { return kind_; }
 
         virtual void startLoop() = 0;
 
         virtual base::unique_ptr<Window> makeWindow(u32 width, u32 height) = 0;
 
     protected:
-        explicit Platform(PlatformKind kind) : _kind{kind} {}
+        explicit Platform(PlatformKind kind) : kind_{kind} {}
 
     private:
-        PlatformKind _kind;
+        PlatformKind kind_;
     };
 
     base::unique_ptr<Platform> makePlatform();

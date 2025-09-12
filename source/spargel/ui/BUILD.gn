@@ -31,7 +31,8 @@ source_set("ui") {
     }
     if (is_windows) {
         sources += [
-            "ui_win32.cpp",
+            "window_win32.cpp",
+            "platform_win32.cpp",
         ]
     }
 }
@@ -46,5 +47,14 @@ executable("demo_ui") {
         "//source/spargel/gpu",
         "//source/spargel/render",
         "//source/spargel/text",
+    ]
+}
+
+executable("demo_window") {
+    sources = [
+        "window_demo.cpp",
+    ]
+    deps = [
+        ":ui",
     ]
 }
