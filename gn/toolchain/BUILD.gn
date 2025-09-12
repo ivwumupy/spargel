@@ -80,7 +80,7 @@ toolchain("macos_clang") {
 }
 
 toolchain("windows_msvc") {
-    prefix = rebase_path("$msvc_bin_path\\", root_build_dir)
+    prefix = rebase_path("$msvc_base_path\\bin\\HostX64\\x64\\", root_build_dir)
     cl = "${prefix}cl"
     link = "${prefix}link"
 

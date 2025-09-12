@@ -1,5 +1,7 @@
 import("//gn/config/sysroot.gni")
 import("//gn/config/coverage.gni")
+import("//gn/config/win_sdk.gni")
+import("//gn/config/msvc.gni")
 
 config("basics") {
     cflags = []
@@ -8,6 +10,7 @@ config("basics") {
     ldflags = []
     include_dirs = []
     libs = []
+    lib_dirs = []
 
     if (is_msvc) {
 
@@ -25,8 +28,19 @@ config("basics") {
     ]
 
     if (is_msvc) {
+        wininc = "$win_sdk_base_path\\Include\\$win_sdk_version"
+        winlib = "$win_sdk_base_path\\Lib\\$win_sdk_version"
+
         include_dirs += [
-            "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt"
+            "$msvc_base_path\\include",
+            "$wininc\\ucrt",
+            "$wininc\\um",
+            "$wininc\\shared",
+        ]
+        lib_dirs += [
+            "$msvc_base_path\\lib\\x64",
+            "$winlib\\um\\x64",
+            "$winlib\\ucrt\\x64",
         ]
         libs += [
             "user32.lib",
