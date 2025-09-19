@@ -119,6 +119,12 @@ namespace spargel::gpu {
             return AllocatedMemory{block};
         }
 
+        void deallocate(AllocatedMemory memory) {
+            auto block = memory.block;
+            block->is_free = true;
+            insertFreeBlock(block);
+        }
+
         // Find the smallest (sub)bin larger than the given size.
         //
         // Implementation detail:
