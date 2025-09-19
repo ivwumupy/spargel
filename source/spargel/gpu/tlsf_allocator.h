@@ -1,8 +1,10 @@
 #pragma once
 
+#include "spargel/base/block_pool.h"
 #include "spargel/base/inline_array.h"
 #include "spargel/base/result.h"
 #include "spargel/base/types.h"
+#include "spargel/base/vector.h"
 
 namespace spargel::gpu {
     namespace detail {
@@ -75,12 +77,6 @@ namespace spargel::gpu {
         // the minimal alignment is 8
         static constexpr usize min_align = 1 << (linear_bits - subbin_bits);
 
-        struct BinResult {
-            u8 bin_id;
-            u8 subbin_id;
-            usize index() const { return bin_id * subbin_count + subbin_id; }
-        };
-
         struct MemoryBlock {
             u64 offset = 0;
             u64 size = 0;
@@ -137,6 +133,71 @@ namespace spargel::gpu {
             block->is_free = true;
             insertFreeBlock(block);
         }
+
+    private:
+        struct BinResult {
+            u8 bin_id;
+            u8 subbin_id;
+            usize index() const { return bin_id * subbin_count + subbin_id; }
+        };
+
+        // a helper class to manage `N` lists of free blocks
+        template <usize N>
+        class BlockManager {
+        public:
+            // insert a block to the `i`-th list
+            void insert(usize i, MemoryBlock* block) {
+                spargel_check(i < N);
+                spargel_check(block != nullptr);
+                auto* head = free_lists_[i];
+                free_lists_[i] = block;
+                block->next_free = head;
+                block->prev_free = nullptr;
+                if (head != nullptr) {
+                    head->prev_free = block;
+                }
+            }
+
+            // get a block from the `i`-th list
+            MemoryBlock* consume(usize i) {
+                spargel_check(i < N);
+                auto* block = free_lists_[i];
+                if (block == nullptr) {
+                    return nullptr;
+                }
+                auto* next = block->next_free;
+                if (next != nullptr) {
+                    next->prev_free = nullptr;
+                }
+                block->next_free = nullptr;
+                spargel_check(block->prev_free == nullptr);
+                free_lists_[i] = next;
+                return block;
+            }
+
+            bool empty(usize i) const {
+                spargel_check(i < N);
+                return free_lists_[i] == nullptr;
+            }
+
+            MemoryBlock* split(MemoryBlock* block, usize offset) {
+                spargel_check(!block->is_free);
+                auto* new_block = pool_.allocate();
+                new_block->offset = block->size + offset;
+                new_block->size = block->size - offset;
+                block->size -= offset;
+                new_block->prev_phys = block;
+                new_block->next_phys = block->next_phys;
+                block->next_phys = new_block;
+                spargel_check(!new_block->is_free);
+                return new_block;
+            }
+
+        private:
+            // memory pool ensures pointer stability
+            base::BlockPool<MemoryBlock> pool_;
+            base::InlineArray<MemoryBlock*, N> free_lists_ = {};
+        };
 
         // Find the smallest (sub)bin larger than the given size.
         //
@@ -206,8 +267,8 @@ namespace spargel::gpu {
             return BinResult{bin_id, subbin_id};
         }
 
-    private:
         AllocatedMemory allocateInBlock(MemoryBlock* block, usize size, usize align) {
+            block->is_free = false;
             auto adjusted_offset = detail::alignForward(block->offset, align);
             auto padding = adjusted_offset - block->offset;
             auto size_with_align = size + padding;
@@ -216,18 +277,7 @@ namespace spargel::gpu {
             // ^ offset of block
             // TODO: do we need to add min_subbin_size
             if (block->size >= size_with_align + min_align) {
-                auto new_block = new MemoryBlock;
-                new_block->offset = block->offset + size_with_align;
-                new_block->size = block->size - size_with_align;
-
-                if (block->next_phys != nullptr) {
-                    auto next = block->next_phys;
-                    spargel_check(next->prev_phys == block);
-                    new_block->next_phys = next;
-                    next->prev_phys = new_block;
-                }
-                block->next_phys = new_block;
-                new_block->prev_phys = block;
+                auto* new_block = manager_.split(block, size_with_align);
                 insertFreeBlock(new_block);
             }
             return AllocatedMemory{.block = block, .offset = adjusted_offset, .align = align};
@@ -236,15 +286,9 @@ namespace spargel::gpu {
         // it is expected that the given bin is non-empty
         MemoryBlock* retrieveFreeBlock(BinResult bin) {
             auto index = bin.index();
-            auto block = free_blocks_[index];
+            auto* block = manager_.consume(index);
             spargel_check(block != nullptr);
-            spargel_check(block->is_free);
-            spargel_check(block->prev_free == nullptr);
-            auto next = block->next_free;
-            if (next != nullptr) {
-                free_blocks_[index] = next;
-                next->prev_free = nullptr;
-            } else {
+            if (manager_.empty(index)) {
                 // this subbin is now empty
                 subbin_bitmaps_[bin.bin_id] &= ~(u32(1) << bin.subbin_id);
                 if (subbin_bitmaps_[bin.bin_id] == 0) {
@@ -256,24 +300,14 @@ namespace spargel::gpu {
         }
 
         void insertFreeBlock(MemoryBlock* block) {
+            spargel_check(block != nullptr);
+
             auto bin = binDown(block->size);
             usize list_id = bin.bin_id * subbin_count + bin.subbin_id;
-            addBlockToList(list_id, block);
+            manager_.insert(list_id, block);
             bin_bitmap_ |= u32(1) << bin.bin_id;
             subbin_bitmaps_[bin.bin_id] |= u32(1) << bin.subbin_id;
             block->is_free = true;
-        }
-
-        void addBlockToList(usize list_id, [[maybe_unused]] MemoryBlock* block) {
-            spargel_check(block != nullptr);
-            spargel_check(list_id < bin_count * subbin_count);
-            auto head = free_blocks_[list_id];
-            if (head != nullptr) {
-                spargel_check(head->prev_free == nullptr);
-                head->prev_free = block;
-            }
-            block->next_free = head;
-            free_blocks_[list_id] = block;
         }
 
         // NOTE: We support up to 64 bins.
@@ -282,19 +316,7 @@ namespace spargel::gpu {
         // NOTE: `subbin_count` is 32.
         static_assert(subbin_count <= 32);
         base::InlineArray<u32, bin_count> subbin_bitmaps_ = {};
-        base::InlineArray<MemoryBlock*, bin_count * subbin_count> free_blocks_ = {};
+        BlockManager<bin_count * subbin_count> manager_;
     };
 
 }  // namespace spargel::gpu
-
-// This is the allocator for device memory.
-//
-// The maximal memory allocation count (maxMemoryAllocationCount) returned by Vulkan drivers is
-// still 4096 on half of the devices. So we should have few allocations of large device memory
-// blocks, and then suballocate from these blocks. It's then our task to handle memory
-// fragmentation.
-//
-// Two algorithms:
-// - Bump allocator.
-// - TLSF (two-level seggregated fit) allocator.
-//
