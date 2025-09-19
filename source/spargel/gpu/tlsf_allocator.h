@@ -18,6 +18,10 @@ namespace spargel::gpu {
             spargel_check(x != 0);
             return static_cast<u8>(__builtin_ctz(x));
         }
+        // `align` must be a power of two
+        inline usize alignForward(usize addr, usize align) {
+            return (addr + (align - 1)) & ~(align - 1);
+        }
     }  // namespace detail
     // The TLSF Allocator
     //
@@ -78,19 +82,21 @@ namespace spargel::gpu {
         };
 
         struct MemoryBlock {
-            u64 offset;
-            u64 size;
+            u64 offset = 0;
+            u64 size = 0;
             // The previous block in the free list.
-            MemoryBlock* prev_free;
-            MemoryBlock* next_free;
+            MemoryBlock* prev_free = nullptr;
+            MemoryBlock* next_free = nullptr;
             // The previous block that is physically adjacent.
-            MemoryBlock* prev_phys;
-            MemoryBlock* next_phys;
-            bool is_free;
+            MemoryBlock* prev_phys = nullptr;
+            MemoryBlock* next_phys = nullptr;
+            bool is_free = false;
         };
 
         struct AllocatedMemory {
-            MemoryBlock* block;
+            MemoryBlock* block = nullptr;
+            usize offset = 0;
+            usize align = 0;
         };
 
         enum class AllocationError {
@@ -102,6 +108,13 @@ namespace spargel::gpu {
             out_of_block,
             unknown,
         };
+
+        explicit TlsfAllocator(usize total_size) {
+            auto block = new MemoryBlock;
+            block->offset = 0;
+            block->size = total_size;
+            insertFreeBlock(block);
+        }
 
         base::Result<AllocatedMemory, AllocationError> allocate(usize size, usize align) {
             if (size < min_align) {
@@ -116,7 +129,7 @@ namespace spargel::gpu {
             }
             auto block = retrieveFreeBlock(bin.value());
             // TODO: try to split block
-            return AllocatedMemory{block};
+            return allocateInBlock(block, size, align);
         }
 
         void deallocate(AllocatedMemory memory) {
@@ -177,16 +190,16 @@ namespace spargel::gpu {
         base::Result<BinResult, AllocationError> findBinWithFreeBlock(usize size) const {
             auto [bin_id, subbin_id] = binUp(size);
             // Filter out subbins with enough space.
-            auto avail_subbin = subbin_bitmaps_[bin_id] & (0xFFFFFFFF << subbin_id);
+            auto avail_subbin = subbin_bitmaps_[bin_id] & (~u32(0) << subbin_id);
             if (avail_subbin == 0) {
                 // In this case, no subbin in this bin contains a free block.
                 // Then we should find the next free bin.
-                auto avail_bin = bin_bitmap_ & (0xFFFFFFFF << (bin_id + 1));
+                auto avail_bin = bin_bitmap_ & (~u64(0) << (bin_id + 1));
                 if (avail_bin == 0) {
                     return base::Error{AllocationError::out_of_block};
                 }
                 bin_id = detail::countTrailingZero(avail_bin);
-                avail_bin = subbin_bitmaps_[bin_id];
+                avail_subbin = subbin_bitmaps_[bin_id];
                 spargel_check(avail_subbin != 0);
             }
             subbin_id = detail::countTrailingZero(avail_subbin);
@@ -194,6 +207,32 @@ namespace spargel::gpu {
         }
 
     private:
+        AllocatedMemory allocateInBlock(MemoryBlock* block, usize size, usize align) {
+            auto adjusted_offset = detail::alignForward(block->offset, align);
+            auto padding = adjusted_offset - block->offset;
+            auto size_with_align = size + padding;
+            //    align padding
+            // |........|----------allocated memory----------|...new block...|
+            // ^ offset of block
+            // TODO: do we need to add min_subbin_size
+            if (block->size >= size_with_align + min_align) {
+                auto new_block = new MemoryBlock;
+                new_block->offset = block->offset + size_with_align;
+                new_block->size = block->size - size_with_align;
+
+                if (block->next_phys != nullptr) {
+                    auto next = block->next_phys;
+                    spargel_check(next->prev_phys == block);
+                    new_block->next_phys = next;
+                    next->prev_phys = new_block;
+                }
+                block->next_phys = new_block;
+                new_block->prev_phys = block;
+                insertFreeBlock(new_block);
+            }
+            return AllocatedMemory{.block = block, .offset = adjusted_offset, .align = align};
+        }
+
         // it is expected that the given bin is non-empty
         MemoryBlock* retrieveFreeBlock(BinResult bin) {
             auto index = bin.index();
@@ -222,25 +261,28 @@ namespace spargel::gpu {
             addBlockToList(list_id, block);
             bin_bitmap_ |= u32(1) << bin.bin_id;
             subbin_bitmaps_[bin.bin_id] |= u32(1) << bin.subbin_id;
+            block->is_free = true;
         }
 
         void addBlockToList(usize list_id, [[maybe_unused]] MemoryBlock* block) {
             spargel_check(block != nullptr);
             spargel_check(list_id < bin_count * subbin_count);
             auto head = free_blocks_[list_id];
-            spargel_check(head->prev_free == nullptr);
+            if (head != nullptr) {
+                spargel_check(head->prev_free == nullptr);
+                head->prev_free = block;
+            }
             block->next_free = head;
-            head->prev_free = block;
             free_blocks_[list_id] = block;
         }
 
         // NOTE: We support up to 64 bins.
         static_assert(bin_count <= 64);
-        u64 bin_bitmap_;
+        u64 bin_bitmap_ = 0;
         // NOTE: `subbin_count` is 32.
         static_assert(subbin_count <= 32);
-        base::InlineArray<u32, bin_count> subbin_bitmaps_;
-        base::InlineArray<MemoryBlock*, bin_count * subbin_count> free_blocks_;
+        base::InlineArray<u32, bin_count> subbin_bitmaps_ = {};
+        base::InlineArray<MemoryBlock*, bin_count * subbin_count> free_blocks_ = {};
     };
 
 }  // namespace spargel::gpu

@@ -63,5 +63,12 @@ namespace spargel::gpu {
             checkBinDown(255, 0, 31);
             checkBinDown(256, 1, 0);
         }
+        TEST(TlsfAllocator_Alloc_Dealloc) {
+            TlsfAllocator alloc{1024};
+            auto mem = alloc.allocate(10, 8);
+            // spargel_log_info("ret: %d", (int)base::move(mem).error().error());
+            spargel_check(!mem.is_error());
+            alloc.deallocate(mem.value());
+        }
     }  // namespace
 }  // namespace spargel::gpu
