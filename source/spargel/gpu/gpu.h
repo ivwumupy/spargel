@@ -1,6 +1,7 @@
 #pragma once
 
 #include "spargel/base/functional.h"
+#include "spargel/base/hash_map.h"
 #include "spargel/base/span.h"
 #include "spargel/base/types.h"
 #include "spargel/base/unique_ptr.h"
@@ -22,6 +23,7 @@ namespace spargel::gpu {
     class RenderPipeline;
     class RenderPipeline2;
     class ShaderLibrary;
+    class ShaderFunction;
     // class Surface;
     class Texture;
 }  // namespace spargel::gpu
@@ -236,10 +238,10 @@ namespace spargel::gpu {
         u32 z;
     };
 
-    struct ShaderFunction {
-        ShaderLibrary* library;
-        char const* entry;
-    };
+    // struct ShaderFunction {
+    //     ShaderLibrary* library;
+    //     char const* entry;
+    // };
 
     // One entry of a bind group.
     struct BindEntry {
@@ -322,7 +324,7 @@ namespace spargel::gpu {
     // Most information should be automatically generated using reflection.
     //
     struct ComputePipelineDescriptor {
-        ShaderFunction shader;
+        ShaderFunction* shader;
     };
 
     struct RenderPassDescriptor {
@@ -341,7 +343,7 @@ namespace spargel::gpu {
         CullMode cull = CullMode::none;
 
         // @brief the vertex function
-        ShaderFunction vertex_shader;
+        ShaderFunction* vertex_shader;
 
         // @brief the vertex buffers used in this pipeline
         base::span<VertexBufferDescriptor> vertex_buffers;
@@ -350,7 +352,7 @@ namespace spargel::gpu {
         base::span<VertexAttributeDescriptor> vertex_attributes;
 
         // @brief the fragment function
-        ShaderFunction fragment_shader;
+        ShaderFunction* fragment_shader;
 
         base::span<ColorAttachmentDescriptor> color_attachments;
     };
@@ -367,13 +369,13 @@ namespace spargel::gpu {
         char const* name = nullptr;
     };
     struct PipelineStage {
-        ShaderFunction shader;
+        ShaderFunction* shader;
         base::Span<PipelineArgumentGroup> groups;
     };
 
     struct PipelinePart {
         ShaderStage stage;
-        ShaderFunction func;
+        ShaderFunction* func;
     };
 
     struct ComputePipeline2Descriptor {
@@ -392,7 +394,7 @@ namespace spargel::gpu {
         CullMode cull = CullMode::none;
 
         // @brief the vertex function
-        ShaderFunction vertex_shader;
+        ShaderFunction* vertex_shader;
 
         // @brief the vertex buffers used in this pipeline
         base::span<VertexBufferDescriptor> vertex_buffers;
@@ -401,7 +403,7 @@ namespace spargel::gpu {
         base::span<VertexAttributeDescriptor> vertex_attributes;
 
         // @brief the fragment function
-        ShaderFunction fragment_shader;
+        ShaderFunction* fragment_shader;
 
         base::span<ColorAttachmentDescriptor> color_attachments;
 
@@ -445,10 +447,10 @@ namespace spargel::gpu {
 
         static constexpr auto CODEC = codec::makeRecordCodec<BindTableEntry>(
             base::Constructor<BindTableEntry>{},
-            codec::makeNormalField<BindTableEntry>("id", codec::U32Codec{},
-                                                   &BindTableEntry::id),
-            codec::makeNormalField<BindTableEntry>("kind", BindEntryKindCodec{},
-                                                   &BindTableEntry::kind));
+            codec::makeNormalField("id", codec::U32Codec{},
+                                   &BindTableEntry::id),
+            codec::makeNormalField("kind", BindEntryKindCodec{},
+                                   &BindTableEntry::kind));
     };
 
     // Interfaces
@@ -509,7 +511,9 @@ namespace spargel::gpu {
         //
         // Shaders are created using their IDs, instead of passing bytes. Each
         // backend querys `ShaderManager` for specific data.
-        virtual void createShader(base::StringView shader_id) = 0;
+        virtual ShaderFunction* createShaderFunction(
+            base::StringView shader_id) = 0;
+        virtual void destroyShaderFunction(ShaderFunction* shader) = 0;
 
         // Pipeline objects
         // ----------------
@@ -575,6 +579,10 @@ namespace spargel::gpu {
 
     // A group of shader arguments that are updated together.
     //
+    // A `BindGroup` is a top-level argument of a pipeline. Therefore one
+    // creates a `BindGroup` by specifying a pipeline and the name/id of the
+    // group.
+    //
     // NOTE:
     // - BindGroup of WebGPU
     // - DescriptorSet of Vulkan
@@ -583,8 +591,10 @@ namespace spargel::gpu {
     class BindGroup {
     public:
         virtual ~BindGroup() = default;
-        // Set the `i`-th item in the bind group to be the buffer.
+        // set bind entry by id
         virtual void setBuffer(u32 id, Buffer* buffer) = 0;
+        // set bind entry by name
+        virtual void setBuffer(base::StringView name, Buffer* buffer) = 0;
     };
 
     // Layout of a BindGroup.
@@ -606,13 +616,6 @@ namespace spargel::gpu {
     public:
         virtual ~RenderPipeline() = default;
     };
-
-    // PipelineLayout describes the signature of a pipeline.
-    //
-    // A pipeline can be viewed abstractly as a function. Then pipeline layout
-    // is the description of its arguments.
-    //
-    // TODO: This is superseded by ??
 
     class ComputePipeline2 {
     public:
@@ -645,6 +648,7 @@ namespace spargel::gpu {
         virtual ~CommandQueue() = default;
         virtual CommandBuffer* createCommandBuffer() = 0;
         virtual void destroyCommandBuffer(CommandBuffer*) = 0;
+        virtual void submit(CommandBuffer*) = 0;
     };
 
     class CommandBuffer {
@@ -697,6 +701,13 @@ namespace spargel::gpu {
         virtual ~ShaderLibrary() = default;
     };
 
+    class ShaderFunction {
+    public:
+        virtual ~ShaderFunction() = default;
+        virtual ShaderLibrary* library() = 0;
+        virtual char const* entry() = 0;
+    };
+
     // class Surface {
     // public:
     //     virtual ~Surface() = default;
@@ -709,6 +720,74 @@ namespace spargel::gpu {
     base::unique_ptr<Device> makeDevice(DeviceKind kind);
 
     // Helpers
+
+    class ShaderBlob {
+    public:
+        virtual ~ShaderBlob() = default;
+    };
+
+    enum class ShaderKind {
+        // a metal library contains multiple entry points
+        metal_library,
+        // a spirv module may contain multiple entry point, but usually one
+        spirv_module,
+        // source
+        glsl,
+        // source
+        hlsl,
+        // metal source code
+        metal_source,
+    };
+
+    inline void tag_invoke(base::tag<base::hash>, base::HashRun& run,
+                           ShaderKind k) {
+        run.combine(static_cast<int>(k));
+    }
+
+    struct MetalFunctionMeta {
+        base::String shader_id;
+        base::String entry_name;
+        // TODO: argument info
+
+        static constexpr auto CODEC = codec::makeRecordCodec<MetalFunctionMeta>(
+            base::Constructor<MetalFunctionMeta>{},
+            codec::makeNormalField("shader_id", codec::StringCodec{},
+                                   &MetalFunctionMeta::shader_id),
+            codec::makeNormalField("entry_name", codec::StringCodec{},
+                                   &MetalFunctionMeta::entry_name));
+    };
+
+    struct MetalLibraryMeta {
+        base::Vector<MetalFunctionMeta> functions;
+        static constexpr auto CODEC = codec::makeRecordCodec<MetalLibraryMeta>(
+            base::Constructor<MetalLibraryMeta>{},
+            codec::makeNormalField(
+                "functions", codec::makeVectorCodec(MetalFunctionMeta::CODEC),
+                &MetalLibraryMeta::functions));
+    };
+
+    class ShaderManager {
+    public:
+        static ShaderManager& instance();
+
+        void registerMetalLibrary(MetalLibraryMeta const& meta);
+
+    private:
+        struct ShaderKey {
+            base::StringView shader_id;
+            ShaderKind kind;
+
+            friend bool operator==(ShaderKey const& lhs, ShaderKey const& rhs) {
+                return lhs.shader_id == rhs.shader_id && lhs.kind == rhs.kind;
+            }
+            friend void tag_invoke(base::tag<base::hash>, base::HashRun& run,
+                                   ShaderKey const& key) {
+                run.combine(key.shader_id);
+                run.combine(key.kind);
+            }
+        };
+        base::HashMap<ShaderKey, ShaderBlob*> blobs_;
+    };
 
     // class BindGroupLayoutBuilder {
     // public:

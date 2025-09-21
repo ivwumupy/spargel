@@ -7,16 +7,28 @@ namespace spargel::gpu {
         void demoMain() {
             auto json = json::parseJson(R"(
                 {
-                    "id": 0,
-                    "kind": 123
+                    "functions": [
+                        {
+                            "shader_id": "/shaders/ui_render/binning.comp",
+                            "entry_name": "ui_binning"
+                        },
+                        {
+                            "shader_id": "/shaders/ui_render/dummy.vert",
+                            "entry_name": "ui_vert"
+                        },
+                        {
+                            "shader_id": "/shaders/ui_render/list_raster.frag",
+                            "entry_name": "ui_frag"
+                        }
+                    ]
                 }
             )");
             codec::JsonDecodeBackend backend;
-            auto entry =
-                BindTableEntry::CODEC.decode(backend, base::move(json.left()));
+            auto entry = MetalLibraryMeta::CODEC.decode(
+                backend, base::move(json.left()));
 
-            spargel_check(entry.isRight());
-            entry.right().dump();
+            spargel_check(entry.isLeft());
+            // entry.right().dump();
 
             // auto device = Device::create();
             // auto shader_library = device->createShaderLibrary({});

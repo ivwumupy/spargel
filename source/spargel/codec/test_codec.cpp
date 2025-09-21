@@ -185,17 +185,16 @@ namespace {
                 makeDefaultField<Student>("type"_sv, StringCodec{},
                                           base::String("normal"),
                                           [](auto& o) { return o.type; }),
-                makeNormalField<Student>("name"_sv, StringCodec{},
-                                         [](auto& o) { return o.name; }),
+                makeNormalField("name"_sv, StringCodec{},
+                                [](auto& o) { return o.name; }),
                 makeOptionalField<Student>("nickname"_sv, StringCodec{},
                                            [](auto& o) { return o.nickname; }),
-                makeNormalField<Student>("age"_sv, U32Codec{},
-                                         [](auto& o) { return o.age; }),
-                makeNormalField<Student>("happy"_sv, BooleanCodec{},
-                                         [](auto& o) { return o.happy; }),
-                makeNormalField<Student>("scores"_sv,
-                                         makeVectorCodec(F32Codec{}),
-                                         [](auto& o) { return o.scores; }));
+                makeNormalField("age"_sv, U32Codec{},
+                                [](auto& o) { return o.age; }),
+                makeNormalField("happy"_sv, BooleanCodec{},
+                                [](auto& o) { return o.happy; }),
+                makeNormalField("scores"_sv, makeVectorCodec(F32Codec{}),
+                                [](auto& o) { return o.scores; }));
         }
     };
 

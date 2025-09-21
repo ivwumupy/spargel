@@ -293,8 +293,8 @@ namespace spargel::render {
 
         [encoder setComputePipelineState:sdf_comp_v2_pipeline_];
         //[encoder setBytes:&uniform_data length:sizeof(uniform_data)
-        //atIndex:0]; [encoder setBuffer:scene_commands_buffer_.object offset:0
-        //atIndex:1];
+        // atIndex:0]; [encoder setBuffer:scene_commands_buffer_.object offset:0
+        // atIndex:1];
         [encoder setTexture:target atIndex:0];
         [encoder setTexture:texture_ atIndex:1];
 

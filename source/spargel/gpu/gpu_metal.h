@@ -24,19 +24,6 @@ namespace spargel::gpu {
         id<MTLLibrary> _library;
     };
 
-    class RenderPipelineMetal final : public RenderPipeline {
-    public:
-        explicit RenderPipelineMetal(id<MTLFunction> vertex_function,
-                                     id<MTLRenderPipelineState> pipeline);
-        ~RenderPipelineMetal();
-
-        auto pipeline() { return _pipeline; }
-
-    private:
-        id<MTLFunction> _vertex;
-        id<MTLRenderPipelineState> _pipeline;
-    };
-
     class BufferMetal final : public Buffer {
     public:
         explicit BufferMetal(id<MTLBuffer> b);
@@ -99,6 +86,8 @@ namespace spargel::gpu {
         CommandBuffer* createCommandBuffer() override;
         void destroyCommandBuffer(CommandBuffer*) override;
 
+        void submit(CommandBuffer*) override {}
+
     private:
         id<MTLCommandQueue> _queue;
     };
@@ -153,37 +142,12 @@ namespace spargel::gpu {
         id<MTLRenderCommandEncoder> _encoder;
     };
 
-    class ComputePipelineMetal final : public ComputePipeline {
-    public:
-        explicit ComputePipelineMetal(id<MTLFunction> func,
-                                      id<MTLComputePipelineState> pipeline)
-            : _func{func}, _pipeline{pipeline} {}
-        ~ComputePipelineMetal() {
-            [_func release];
-            [_pipeline release];
-        }
-
-        // u32 maxGroupSize() override { return
-        // _pipeline.maxTotalThreadsPerThreadgroup; }
-
-        auto pipeline() const { return _pipeline; }
-
-    private:
-        id<MTLFunction> _func;
-        id<MTLComputePipelineState> _pipeline;
-    };
-
     class ComputePassEncoderMetal final : public ComputePassEncoder {
     public:
         explicit ComputePassEncoderMetal(id<MTLComputeCommandEncoder> encoder)
             : _encoder{encoder} {}
 
-        void setComputePipeline(ComputePipeline* pipeline) override {
-            [_encoder
-                setComputePipelineState:static_cast<ComputePipelineMetal*>(
-                                            pipeline)
-                                            ->pipeline()];
-        }
+        void setComputePipeline(ComputePipeline* pipeline) override;
         void setComputePipeline2(ComputePipeline2* pipeline) override;
         // `index` is the index in the `PipelineProgram`.
         void setBindGroup(u32 index, BindGroup* group) override;
@@ -229,6 +193,26 @@ namespace spargel::gpu {
         u32 buffer_id;
     };
 
+    class ComputePipelineMetal final : public ComputePipeline {
+    public:
+        explicit ComputePipelineMetal(id<MTLFunction> func,
+                                      id<MTLComputePipelineState> pipeline)
+            : _func{func}, _pipeline{pipeline} {}
+        ~ComputePipelineMetal() {
+            [_func release];
+            [_pipeline release];
+        }
+
+        // u32 maxGroupSize() override { return
+        // _pipeline.maxTotalThreadsPerThreadgroup; }
+
+        auto pipeline() const { return _pipeline; }
+
+    private:
+        id<MTLFunction> _func;
+        id<MTLComputePipelineState> _pipeline;
+    };
+
     class ComputePipeline2Metal final : public ComputePipeline2 {
     public:
         ComputePipeline2Metal(id<MTLFunction> func,
@@ -246,15 +230,7 @@ namespace spargel::gpu {
         }
 
         // Get the MTLFunction which contains the `id`-th argument group.
-        id<MTLFunction> getFunction([[maybe_unused]] u32 id) {
-            return _func;
-            // for (auto const& group : _compute_groups) {
-            //     if (group.id == id) {
-            //         return _func;
-            //     }
-            // }
-            // return nullptr;
-        }
+        id<MTLFunction> getFunction([[maybe_unused]] u32 id) { return _func; }
 
         // Get the buffer id of the argument group of index `id`.
         u32 getBufferId(u32 id) {
@@ -274,6 +250,19 @@ namespace spargel::gpu {
         id<MTLComputePipelineState> _pipeline;
         base::vector<ArgumentGroupInfoMetal> _compute_groups;
         base::vector<ArgumentInfoMetal> _compute_args;
+    };
+
+    class RenderPipelineMetal final : public RenderPipeline {
+    public:
+        explicit RenderPipelineMetal(id<MTLFunction> vertex_function,
+                                     id<MTLRenderPipelineState> pipeline);
+        ~RenderPipelineMetal();
+
+        auto pipeline() { return _pipeline; }
+
+    private:
+        id<MTLFunction> _vertex;
+        id<MTLRenderPipelineState> _pipeline;
     };
 
     class RenderPipeline2Metal final : public RenderPipeline2 {
@@ -353,6 +342,7 @@ namespace spargel::gpu {
                          offset:0
                         atIndex:id];
         }
+        void setBuffer(base::StringView, Buffer*) override {}
 
         auto buffer() const { return _buffer; }
         auto program() const { return _program; }
@@ -377,9 +367,11 @@ namespace spargel::gpu {
 
         ShaderLibrary* createShaderLibrary(base::span<u8> bytes) override;
         void destroyShaderLibrary(ShaderLibrary* library) override;
-
-        void createShader(
-            [[maybe_unused]] base::StringView shader_id) override {}
+        ShaderFunction* createShaderFunction(
+            base::StringView /*shader_id*/) override {
+            return nullptr;
+        }
+        void destroyShaderFunction(ShaderFunction* /*shader*/) override {}
 
         RenderPipeline* createRenderPipeline(
             RenderPipelineDescriptor const& descriptor) override;
@@ -427,10 +419,12 @@ namespace spargel::gpu {
 
         [[deprecated]]
         ComputePipeline* createComputePipeline(
-            ShaderFunction f, base::span<BindGroupLayout*> /*layouts*/) {
+            ShaderFunction* f, base::span<BindGroupLayout*> /*layouts*/) {
             NSError* err;
-            auto func = [static_cast<ShaderLibraryMetal*>(f.library)->library()
-                newFunctionWithName:[NSString stringWithUTF8String:f.entry]];
+            auto func =
+                [static_cast<ShaderLibraryMetal*>(f->library())->library()
+                    newFunctionWithName:[NSString
+                                            stringWithUTF8String:f->entry()]];
             spargel_assert(func != nullptr);
             return new ComputePipelineMetal(
                 func, [_device newComputePipelineStateWithFunction:func
@@ -439,12 +433,12 @@ namespace spargel::gpu {
         ComputePipeline2* createComputePipeline2(
             ComputePipeline2Descriptor const& desc) override {
             auto lib = static_cast<ShaderLibraryMetal*>(
-                desc.compute_stage.shader.library);
+                desc.compute_stage.shader->library());
             auto func = [lib->library()
                 newFunctionWithName:[NSString
                                         stringWithUTF8String:desc.compute_stage
                                                                  .shader
-                                                                 .entry]];
+                                                                 ->entry()]];
             spargel_assert(func != nullptr);
             NSError* err;
             auto pipeline = [_device newComputePipelineStateWithFunction:func

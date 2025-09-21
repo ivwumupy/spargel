@@ -143,9 +143,9 @@ namespace spargel::gpu {
         RenderPipelineDescriptor const& descriptor) {
         auto desc = [[MTLRenderPipelineDescriptor alloc] init];
 
-        auto vertex_library =
-            static_cast<ShaderLibraryMetal*>(descriptor.vertex_shader.library);
-        auto vertex_entry = descriptor.vertex_shader.entry;
+        auto vertex_library = static_cast<ShaderLibraryMetal*>(
+            descriptor.vertex_shader->library());
+        auto vertex_entry = descriptor.vertex_shader->entry();
 
         auto vertex_function = [vertex_library->library()
             newFunctionWithName:[NSString stringWithUTF8String:vertex_entry]];
@@ -192,8 +192,8 @@ namespace spargel::gpu {
             translatePrimitiveType(descriptor.primitive);
 
         auto frag_library = static_cast<ShaderLibraryMetal*>(
-            descriptor.fragment_shader.library);
-        auto frag_entry = descriptor.fragment_shader.entry;
+            descriptor.fragment_shader->library());
+        auto frag_entry = descriptor.fragment_shader->entry();
 
         auto frag_function = [frag_library->library()
             newFunctionWithName:[NSString stringWithUTF8String:frag_entry]];
@@ -424,9 +424,9 @@ namespace spargel::gpu {
         RenderPipeline2Descriptor const& descriptor) {
         auto desc = [[MTLRenderPipelineDescriptor alloc] init];
 
-        auto vertex_library =
-            static_cast<ShaderLibraryMetal*>(descriptor.vertex_shader.library);
-        auto vertex_entry = descriptor.vertex_shader.entry;
+        auto vertex_library = static_cast<ShaderLibraryMetal*>(
+            descriptor.vertex_shader->library());
+        auto vertex_entry = descriptor.vertex_shader->entry();
 
         auto vertex_function = [vertex_library->library()
             newFunctionWithName:[NSString stringWithUTF8String:vertex_entry]];
@@ -473,8 +473,8 @@ namespace spargel::gpu {
             translatePrimitiveType(descriptor.primitive);
 
         auto frag_library = static_cast<ShaderLibraryMetal*>(
-            descriptor.fragment_shader.library);
-        auto frag_entry = descriptor.fragment_shader.entry;
+            descriptor.fragment_shader->library());
+        auto frag_entry = descriptor.fragment_shader->entry();
 
         auto frag_function = [frag_library->library()
             newFunctionWithName:[NSString stringWithUTF8String:frag_entry]];
@@ -496,4 +496,10 @@ namespace spargel::gpu {
                                         descriptor.groups);
     }
 
+    void ComputePassEncoderMetal::setComputePipeline(
+        ComputePipeline* pipeline) {
+        [_encoder
+            setComputePipelineState:static_cast<ComputePipelineMetal*>(pipeline)
+                                        ->pipeline()];
+    }
 }  // namespace spargel::gpu

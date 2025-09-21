@@ -296,7 +296,7 @@ namespace spargel::codec {
     concept Encoder =
         requires { typename C::TargetType; } &&
         requires(C& codec, DummyEncodeBackend& backend,
-                 const C::TargetType& object) {
+                 const TargetType<C>& object) {
             {
                 codec.encode(backend, object)
             } -> base::SameAs<base::Either<DummyType, CodecError>>;
@@ -308,7 +308,7 @@ namespace spargel::codec {
         requires(C& codec, DummyDecodeBackend& backend, const DummyType& data) {
             {
                 codec.decode(backend, data)
-            } -> base::SameAs<base::Either<typename C::TargetType, CodecError>>;
+            } -> base::SameAs<base::Either<TargetType<C>, CodecError>>;
         };
 
     template <typename C>
@@ -570,17 +570,17 @@ namespace spargel::codec {
 
     template <Codec C>
     class VectorCodec {
-        using T = typename C::TargetType;
+        using T = TargetType<C>;
 
     public:
         using TargetType = base::Vector<T>;
 
         template <typename C2>
-        VectorCodec(C2&& codec) : _codec(base::forward<C2>(codec)) {}
+        constexpr VectorCodec(C2&& codec) : _codec(base::forward<C2>(codec)) {}
 
         template <EncodeBackend EB>
         base::Either<DataType<EB>, ErrorType<EB>> encode(
-            EB& backend, const base::Vector<T>& v) {
+            EB& backend, const base::Vector<T>& v) const {
             return _vector::encodeVector(_codec, backend, v);
         }
 
@@ -595,7 +595,7 @@ namespace spargel::codec {
     };
 
     template <typename C>
-    auto makeVectorCodec(C&& codec) {
+    constexpr auto makeVectorCodec(C&& codec) {
         return VectorCodec<base::remove_reference<C>>(base::forward<C>(codec));
     }
 
@@ -1021,7 +1021,7 @@ namespace spargel::codec {
                 name, base::forward<D>(decoder))};
     }
 
-    template <typename S, typename C, typename F /* S -> C::TargetType */>
+    template <typename C, typename F /* S -> C::TargetType */>
     constexpr auto makeNormalField(base::StringView name, C&& codec,
                                    F&& getter) {
         return RecordCodecBuilder<NormalFieldCodec<base::remove_reference<C>>,
@@ -1086,18 +1086,18 @@ namespace spargel::codec {
 
         template <FieldEncoder FE, typename F>
         struct EncoderFrom<RecordEncoderBuilder<FE, F>> {
-            EncoderFrom(RecordEncoderBuilder<FE, F>& builder)
+            constexpr EncoderFrom(RecordEncoderBuilder<FE, F> const& builder)
                 : encoder(builder.field_encoder) {}
 
-            FE& encoder;
+            FE encoder;
         };
 
         template <FieldCodec FC, typename F>
         struct EncoderFrom<RecordCodecBuilder<FC, F>> {
-            EncoderFrom(RecordCodecBuilder<FC, F>& builder)
+            constexpr EncoderFrom(RecordCodecBuilder<FC, F> const& builder)
                 : encoder(builder.field_codec) {}
 
-            FC& encoder;
+            FC encoder;
         };
 
         template <typename T /* RecordDecoderBuilder || RecordCodecBuilder */>
@@ -1105,7 +1105,7 @@ namespace spargel::codec {
 
         template <FieldDecoder FD>
         struct DecoderFrom<RecordDecoderBuilder<FD>> {
-            DecoderFrom(RecordDecoderBuilder<FD> const& builder)
+            constexpr DecoderFrom(RecordDecoderBuilder<FD> const& builder)
                 : decoder(builder.field_decoder) {}
 
             FD decoder;
@@ -1113,7 +1113,7 @@ namespace spargel::codec {
 
         template <FieldCodec FC, typename F>
         struct DecoderFrom<RecordCodecBuilder<FC, F>> {
-            DecoderFrom(RecordCodecBuilder<FC, F> const& builder)
+            constexpr DecoderFrom(RecordCodecBuilder<FC, F> const& builder)
                 : decoder(builder.field_codec) {}
 
             FC decoder;
@@ -1122,12 +1122,12 @@ namespace spargel::codec {
         template <EncodeBackend EB, typename S,
                   typename... Builders /* RecordEncoderBuilder || RecordCodecBuilder */>
         base::Either<DataType<EB>, ErrorType<EB>> encodeRecord(EB& backend, const S& object,
-                                                               base::tuple<Builders...>& builders) {
+                                                               base::tuple<Builders...> const& builders) {
             using DataType = EB::DataType;
             using ErrorType = EB::ErrorType;
 
             return base::apply(
-                [&](Builders&... builders)
+                [&](Builders const&... builders)
                     -> base::Either<DataType, ErrorType> {
                     RecordBuilderImpl<EB> record_builder;
                     base::Optional<ErrorType> error;
@@ -1136,8 +1136,7 @@ namespace spargel::codec {
                     bool success = ([&]() {
                         auto& builder = builders;
                         auto result =
-                            EncoderFrom<
-                                base::remove_reference<decltype(builder)>>(
+                            EncoderFrom<base::RemoveCVRef<decltype(builder)>>(
                                 builder)
                                 .encoder.encode(backend, record_builder,
                                                 builder.getter(object));
@@ -1260,7 +1259,7 @@ namespace spargel::codec {
 
         template <DecodeBackend DB>
         base::Either<S, ErrorType<DB>> decode(DB& backend,
-                                              const DataType<DB>& data) {
+                                              const DataType<DB>& data) const {
             return _record::decodeRecord<DB, S, F, Builders...>(
                 backend, data, _func, _decoders);
         }
@@ -1289,8 +1288,8 @@ namespace spargel::codec {
               _builders(base::forward<Builders2>(builders)...) {}
 
         template <EncodeBackend EB>
-        base::Either<DataType<EB>, ErrorType<EB>> encode(EB& backend,
-                                                         const S& object) {
+        base::Either<DataType<EB>, ErrorType<EB>> encode(
+            EB& backend, const S& object) const {
             return _record::encodeRecord<EB, S, Builders...>(backend, object,
                                                              _builders);
         }
