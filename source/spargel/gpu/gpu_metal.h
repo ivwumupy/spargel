@@ -341,29 +341,61 @@ namespace spargel::gpu {
         DeviceMetal();
         ~DeviceMetal() override;
 
+        CommandQueue* createCommandQueue() override;
+        void destroyCommandQueue(CommandQueue* q) override;
+
         CommandBuffer* createCommandBuffer() override { return nullptr; }
         void destroyCommandBuffer(CommandBuffer*) override {}
 
         ShaderLibrary* createShaderLibrary(base::span<u8> bytes) override;
+        void destroyShaderLibrary(ShaderLibrary* library) override;
+
+        void createShader([[maybe_unused]] base::StringView shader_id) override {}
+
         RenderPipeline* createRenderPipeline(RenderPipelineDescriptor const& descriptor) override;
+        void destroyRenderPipeline(RenderPipeline* pipeline) override;
+
         Buffer* createBuffer(BufferUsage usage, base::span<u8> bytes) override;
         Buffer* createBuffer(BufferUsage usage, u32 size) override;
-        // Surface* createSurface(ui::Window* w) override;
+        void destroyBuffer(Buffer* b) override;
 
         Texture* createTexture(u32 width, u32 height) override;
         Texture* createMonochromeTexture(u32 width, u32 height) override;
         void destroyTexture(Texture* texture) override;
 
-        void destroyShaderLibrary(ShaderLibrary* library) override;
-        void destroyRenderPipeline(RenderPipeline* pipeline) override;
-        void destroyBuffer(Buffer* b) override;
 
-        CommandQueue* createCommandQueue() override;
-        void destroyCommandQueue(CommandQueue* q) override;
+        [[deprecated]]
+        BindGroupLayout* createBindGroupLayout(
+            [[maybe_unused]] ShaderStage stage,
+            [[maybe_unused]] base::span<BindEntry> entries) override {
+            return new BindGroupLayoutMetal;
+        }
+        [[deprecated]]
+        BindGroup* createBindGroup([[maybe_unused]] BindGroupLayout* layout) override {
+            return nullptr;
+        }
+
+        // `id` is the index of the argument group in the program.
+        BindGroup* createBindGroup(ComputePipeline2* p, u32 id) override {
+            auto pipeline = static_cast<ComputePipeline2Metal*>(p);
+            auto func = pipeline->getFunction(id);
+            auto encoder = [func newArgumentEncoderWithBufferIndex:pipeline->getBufferId(id)];
+            spargel_assert(encoder != nullptr);
+            auto buffer = [_device newBufferWithLength:encoder.encodedLength
+                                               options:MTLResourceStorageModeShared];
+            spargel_assert(buffer != nullptr);
+            [encoder setArgumentBuffer:buffer offset:0];
+            return new BindGroupMetal(buffer, encoder, pipeline);
+        }
+
+        BindGroup* createBindGroup([[maybe_unused]] RenderPipeline2* p,
+                                   [[maybe_unused]] u32 id) override {
+            return nullptr;
+        }
 
         [[deprecated]]
         ComputePipeline* createComputePipeline(
-            ShaderFunction f, [[maybe_unused]] base::span<BindGroupLayout*> layouts) {
+            ShaderFunction f, base::span<BindGroupLayout*> /*layouts*/) {
             NSError* err;
             auto func = [static_cast<ShaderLibraryMetal*>(f.library)->library()
                 newFunctionWithName:[NSString stringWithUTF8String:f.entry]];
@@ -371,16 +403,6 @@ namespace spargel::gpu {
             return new ComputePipelineMetal(
                 func, [_device newComputePipelineStateWithFunction:func error:&err]);
         }
-
-        BindGroupLayout* createBindGroupLayout(
-            [[maybe_unused]] ShaderStage stage,
-            [[maybe_unused]] base::span<BindEntry> entries) override {
-            return new BindGroupLayoutMetal;
-        }
-        BindGroup* createBindGroup([[maybe_unused]] BindGroupLayout* layout) override {
-            return nullptr;
-        }
-
         ComputePipeline2* createComputePipeline2(ComputePipeline2Descriptor const& desc) override {
             auto lib = static_cast<ShaderLibraryMetal*>(desc.compute_stage.shader.library);
             auto func = [lib->library()
@@ -394,24 +416,6 @@ namespace spargel::gpu {
         }
 
         RenderPipeline2* createRenderPipeline2(RenderPipeline2Descriptor const& desc) override;
-
-        // `id` is the index of the argument group in the program.
-        BindGroup* createBindGroup2(ComputePipeline2* p, u32 id) override {
-            auto pipeline = static_cast<ComputePipeline2Metal*>(p);
-            auto func = pipeline->getFunction(id);
-            auto encoder = [func newArgumentEncoderWithBufferIndex:pipeline->getBufferId(id)];
-            spargel_assert(encoder != nullptr);
-            auto buffer = [_device newBufferWithLength:encoder.encodedLength
-                                               options:MTLResourceStorageModeShared];
-            spargel_assert(buffer != nullptr);
-            [encoder setArgumentBuffer:buffer offset:0];
-            return new BindGroupMetal(buffer, encoder, pipeline);
-        }
-
-        BindGroup* createBindGroup2([[maybe_unused]] RenderPipeline2* p,
-                                    [[maybe_unused]] u32 id) override {
-            return nullptr;
-        }
 
         auto device() { return _device; }
 

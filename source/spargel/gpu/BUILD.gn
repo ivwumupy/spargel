@@ -30,6 +30,7 @@ executable("demo_gpu") {
     deps = [
         ":gpu",
         "//source/spargel/codec",
+        "//source/spargel/json",
     ]
 }
 
@@ -37,6 +38,7 @@ executable("gpu_tests") {
     sources = [ "tlsf_allocator_tests.cpp" ]
     deps = [
         ":gpu",
+        "//source/spargel/base",
         "//source/spargel/base:test_main",
     ]
 }

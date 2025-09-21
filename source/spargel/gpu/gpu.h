@@ -488,6 +488,11 @@ namespace spargel::gpu {
         // Destroy the shader library.
         virtual void destroyShaderLibrary(ShaderLibrary* library) = 0;
 
+        // The new design.
+        //
+        // Shaders are created using their IDs, instead of passing bytes. Each backend querys `ShaderManager` for specific data.
+        virtual void createShader(base::StringView shader_id) = 0;
+
         // Pipeline objects
         // ----------------
 
@@ -513,6 +518,7 @@ namespace spargel::gpu {
         // ----------------
 
         // Create a bind group layout object.
+        [[deprecated]]
         virtual BindGroupLayout* createBindGroupLayout(ShaderStage stage,
                                                        base::Span<BindEntry> entries) = 0;
 
@@ -520,8 +526,8 @@ namespace spargel::gpu {
         [[deprecated]]
         virtual BindGroup* createBindGroup(BindGroupLayout* layout) = 0;
         // Create a bind group for the `id`-th argument group of the pipeline.
-        virtual BindGroup* createBindGroup2(ComputePipeline2* pipeline, u32 id) = 0;
-        virtual BindGroup* createBindGroup2(RenderPipeline2* pipeline, u32 id) = 0;
+        virtual BindGroup* createBindGroup(ComputePipeline2* pipeline, u32 id) = 0;
+        virtual BindGroup* createBindGroup(RenderPipeline2* pipeline, u32 id) = 0;
 
         // Resources
         // ---------
@@ -569,50 +575,14 @@ namespace spargel::gpu {
         virtual ~BindGroupLayout() = default;
     };
 
-    // A buffer.
-    class Buffer {
-    public:
-        virtual ~Buffer() = default;
-        // Get the mapped address.
-        virtual void* mapAddr() = 0;
-    };
-
-    class CommandBuffer {
-    public:
-        virtual ~CommandBuffer() = default;
-        virtual RenderPassEncoder* beginRenderPass(RenderPassDescriptor const& descriptor) = 0;
-        virtual void endRenderPass(RenderPassEncoder* encoder) = 0;
-        virtual ComputePassEncoder* beginComputePass() = 0;
-        virtual void endComputePass(ComputePassEncoder* encoder) = 0;
-        // virtual void present(Surface* surface) = 0;
-        virtual void submit() = 0;
-        virtual void wait() = 0;
-    };
-
-    class CommandQueue {
-    public:
-        virtual ~CommandQueue() = default;
-        virtual CommandBuffer* createCommandBuffer() = 0;
-        virtual void destroyCommandBuffer(CommandBuffer*) = 0;
-    };
-
-    class ComputePassEncoder {
-    public:
-        virtual ~ComputePassEncoder() = default;
-        virtual void setComputePipeline(ComputePipeline* pipeline) = 0;
-        virtual void setComputePipeline2(ComputePipeline2* pipeline) = 0;
-        virtual void setBindGroup(u32 index, BindGroup* group) = 0;
-        virtual void setBuffer(Buffer* buffer, VertexBufferLocation const& loc) = 0;
-        // grid_size is the number of thread groups of the grid
-        // group_size is the number of threads of a thread group
-        virtual void dispatch(DispatchSize grid_size, DispatchSize group_size) = 0;
-
-        virtual void useBuffer(Buffer* buffer, BufferAccess access) = 0;
-    };
-
     class ComputePipeline {
     public:
         virtual ~ComputePipeline() = default;
+    };
+
+    class RenderPipeline {
+    public:
+        virtual ~RenderPipeline() = default;
     };
 
     // PipelineLayout describes the signature of a pipeline.
@@ -632,6 +602,54 @@ namespace spargel::gpu {
         virtual ~RenderPipeline2() = default;
     };
 
+    // A buffer.
+    class Buffer {
+    public:
+        virtual ~Buffer() = default;
+        // Get the mapped address.
+        virtual void* mapAddr() = 0;
+    };
+
+    class Texture {
+    public:
+        virtual ~Texture() = default;
+        virtual void updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
+                                  base::span<base::Byte> bytes) = 0;
+    };
+
+    class CommandQueue {
+    public:
+        virtual ~CommandQueue() = default;
+        virtual CommandBuffer* createCommandBuffer() = 0;
+        virtual void destroyCommandBuffer(CommandBuffer*) = 0;
+    };
+
+    class CommandBuffer {
+    public:
+        virtual ~CommandBuffer() = default;
+        virtual RenderPassEncoder* beginRenderPass(RenderPassDescriptor const& descriptor) = 0;
+        virtual void endRenderPass(RenderPassEncoder* encoder) = 0;
+        virtual ComputePassEncoder* beginComputePass() = 0;
+        virtual void endComputePass(ComputePassEncoder* encoder) = 0;
+        // virtual void present(Surface* surface) = 0;
+        virtual void submit() = 0;
+        virtual void wait() = 0;
+    };
+
+    class ComputePassEncoder {
+    public:
+        virtual ~ComputePassEncoder() = default;
+        virtual void setComputePipeline(ComputePipeline* pipeline) = 0;
+        virtual void setComputePipeline2(ComputePipeline2* pipeline) = 0;
+        virtual void setBindGroup(u32 index, BindGroup* group) = 0;
+        virtual void setBuffer(Buffer* buffer, VertexBufferLocation const& loc) = 0;
+        // grid_size is the number of thread groups of the grid
+        // group_size is the number of threads of a thread group
+        virtual void dispatch(DispatchSize grid_size, DispatchSize group_size) = 0;
+
+        virtual void useBuffer(Buffer* buffer, BufferAccess access) = 0;
+    };
+
     class RenderPassEncoder {
     public:
         virtual ~RenderPassEncoder() = default;
@@ -644,11 +662,6 @@ namespace spargel::gpu {
         virtual void draw(int vertex_start, int vertex_count) = 0;
         virtual void draw(int vertex_start, int vertex_count, int instance_start,
                           int instance_count) = 0;
-    };
-
-    class RenderPipeline {
-    public:
-        virtual ~RenderPipeline() = default;
     };
 
     class ShaderLibrary {
@@ -664,69 +677,63 @@ namespace spargel::gpu {
     //     virtual float height() = 0;
     // };
 
-    class Texture {
-    public:
-        virtual ~Texture() = default;
-        virtual void updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
-                                  base::span<base::Byte> bytes) = 0;
-    };
-
+    [[deprecated]]
     base::unique_ptr<Device> makeDevice(DeviceKind kind);
 
     // Helpers
 
-    class BindGroupLayoutBuilder {
-    public:
-        void setStage(ShaderStage stage) { _stage = stage; }
-        void addEntry(u32 binding, BindEntryKind kind) { _entries.emplace(binding, kind); }
+    //class BindGroupLayoutBuilder {
+    //public:
+    //    void setStage(ShaderStage stage) { _stage = stage; }
+    //    void addEntry(u32 binding, BindEntryKind kind) { _entries.emplace(binding, kind); }
 
-        BindGroupLayout* build(Device* _device) {
-            return _device->createBindGroupLayout(_stage, _entries.toSpan());
-        }
+    //    BindGroupLayout* build(Device* _device) {
+    //        return _device->createBindGroupLayout(_stage, _entries.toSpan());
+    //    }
 
-    private:
-        ShaderStage _stage;
-        base::vector<BindEntry> _entries;
-    };
+    //private:
+    //    ShaderStage _stage;
+    //    base::vector<BindEntry> _entries;
+    //};
 
-    class RenderPipelineBuilder {
-    public:
-        void setPrimitive(PrimitiveKind primitive) { _desc.primitive = primitive; }
-        void setVertexShader(ShaderLibrary* library, char const* entry) {
-            _desc.vertex_shader.library = library;
-            _desc.vertex_shader.entry = entry;
-        }
-        void setFragmentShader(ShaderLibrary* library, char const* entry) {
-            _desc.fragment_shader.library = library;
-            _desc.fragment_shader.entry = entry;
-        }
-        void addVertexBuffer(usize stride) {
-            _vertex_buffers.emplace(stride, VertexStepMode::vertex);
-        }
-        void addVertexBuffer(usize stride, VertexStepMode step_mode) {
-            _vertex_buffers.emplace(stride, step_mode);
-        }
-        void addVertexAttribute(VertexAttributeFormat format, u32 location, u32 buffer,
-                                u32 offset) {
-            _vertex_attributes.emplace(buffer, location, format, offset);
-        }
-        void addColorAttachment(TextureFormat format, bool enable_blend) {
-            _color_attachments.emplace(format, enable_blend);
-        }
+    //class RenderPipelineBuilder {
+    //public:
+    //    void setPrimitive(PrimitiveKind primitive) { _desc.primitive = primitive; }
+    //    void setVertexShader(ShaderLibrary* library, char const* entry) {
+    //        _desc.vertex_shader.library = library;
+    //        _desc.vertex_shader.entry = entry;
+    //    }
+    //    void setFragmentShader(ShaderLibrary* library, char const* entry) {
+    //        _desc.fragment_shader.library = library;
+    //        _desc.fragment_shader.entry = entry;
+    //    }
+    //    void addVertexBuffer(usize stride) {
+    //        _vertex_buffers.emplace(stride, VertexStepMode::vertex);
+    //    }
+    //    void addVertexBuffer(usize stride, VertexStepMode step_mode) {
+    //        _vertex_buffers.emplace(stride, step_mode);
+    //    }
+    //    void addVertexAttribute(VertexAttributeFormat format, u32 location, u32 buffer,
+    //                            u32 offset) {
+    //        _vertex_attributes.emplace(buffer, location, format, offset);
+    //    }
+    //    void addColorAttachment(TextureFormat format, bool enable_blend) {
+    //        _color_attachments.emplace(format, enable_blend);
+    //    }
 
-        RenderPipeline* build(Device* device) {
-            _desc.vertex_buffers = _vertex_buffers.toSpan();
-            _desc.vertex_attributes = _vertex_attributes.toSpan();
-            _desc.color_attachments = _color_attachments.toSpan();
-            return device->createRenderPipeline(_desc);
-        }
+    //    RenderPipeline* build(Device* device) {
+    //        _desc.vertex_buffers = _vertex_buffers.toSpan();
+    //        _desc.vertex_attributes = _vertex_attributes.toSpan();
+    //        _desc.color_attachments = _color_attachments.toSpan();
+    //        return device->createRenderPipeline(_desc);
+    //    }
 
-    private:
-        RenderPipelineDescriptor _desc;
-        base::vector<VertexBufferDescriptor> _vertex_buffers;
-        base::vector<VertexAttributeDescriptor> _vertex_attributes;
-        base::vector<ColorAttachmentDescriptor> _color_attachments;
-    };
+    //private:
+    //    RenderPipelineDescriptor _desc;
+    //    base::vector<VertexBufferDescriptor> _vertex_buffers;
+    //    base::vector<VertexAttributeDescriptor> _vertex_attributes;
+    //    base::vector<ColorAttachmentDescriptor> _color_attachments;
+    //};
 
 }  // namespace spargel::gpu
 

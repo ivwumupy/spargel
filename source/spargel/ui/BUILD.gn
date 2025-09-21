@@ -24,7 +24,7 @@ source_set("ui") {
         ]
         frameworks = [
             "AppKit.framework",
-            # TODO: Move.
+            # TODO: We should move `GameController` to `spargel/input`
             "GameController.framework",
             "QuartzCore.framework",
         ]
@@ -56,5 +56,6 @@ executable("demo_window") {
     ]
     deps = [
         ":ui",
+        "//source/spargel/base",
     ]
 }
