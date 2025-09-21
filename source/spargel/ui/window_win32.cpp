@@ -4,13 +4,11 @@
 #include "spargel/ui/platform_win32.h"
 
 namespace spargel::ui {
-    
-    WindowWin32::WindowWin32(PlatformWin32* platform, HWND hwnd)
-        : platform_{platform}, hwnd_{hwnd} { }
 
-    WindowWin32::~WindowWin32() {
-        DestroyWindow(hwnd_);
-    }
+    WindowWin32::WindowWin32(PlatformWin32* platform, HWND hwnd)
+        : platform_{platform}, hwnd_{hwnd} {}
+
+    WindowWin32::~WindowWin32() { DestroyWindow(hwnd_); }
 
     void WindowWin32::setTitle(char const* title) {
         SetWindowTextA(hwnd_, title);
@@ -35,4 +33,4 @@ namespace spargel::ui {
         return rect.bottom - rect.top;
     }
 
-}
+}  // namespace spargel::ui

@@ -17,7 +17,11 @@ namespace spargel::render {
     class AtlasPacker {
     public:
         AtlasPacker(u16 width, u16 height)
-            : width_{width}, height_{height}, current_row_{}, current_column_{}, next_row_{} {}
+            : width_{width},
+              height_{height},
+              current_row_{},
+              current_column_{},
+              next_row_{} {}
 
         u16 width() const { return width_; }
         u16 height() const { return height_; }

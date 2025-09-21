@@ -12,8 +12,10 @@ namespace spargel::base {
     public:
         constexpr Span() = default;
 
-        explicit constexpr Span(T const* begin, T const* end) : _begin{begin}, _end{end} {}
-        constexpr Span(initializer_list<T> l) : _begin{l.begin()}, _end{l.end()} {}
+        explicit constexpr Span(T const* begin, T const* end)
+            : _begin{begin}, _end{end} {}
+        constexpr Span(initializer_list<T> l)
+            : _begin{l.begin()}, _end{l.end()} {}
 
         constexpr T const& operator[](usize i) const { return _begin[i]; }
 

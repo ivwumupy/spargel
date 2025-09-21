@@ -36,7 +36,8 @@ namespace spargel::base {
             char proc_name[1024];
             unw_get_reg(&cursor, UNW_REG_IP, &pc);
 
-            if (unw_get_proc_name(&cursor, proc_name, sizeof(proc_name), &offset) == 0) {
+            if (unw_get_proc_name(&cursor, proc_name, sizeof(proc_name),
+                                  &offset) == 0) {
                 printf("  %p: %s + %p\n", (void*)pc, proc_name, (void*)offset);
             } else {
                 printf("  %p\n", (void*)pc);

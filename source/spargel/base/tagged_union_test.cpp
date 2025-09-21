@@ -18,7 +18,8 @@ struct Baz {
     C1 y;
 };
 
-using Foo = spargel::base::TaggedUnion<Case<FooKind::Bar, Bar>, Case<FooKind::Baz, Baz>>;
+using Foo = spargel::base::TaggedUnion<Case<FooKind::Bar, Bar>,
+                                       Case<FooKind::Baz, Baz>>;
 
 TEST(TaggedUnion_Basic) {
     Foo x = Foo::make<FooKind::Bar>(123);

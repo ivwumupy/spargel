@@ -28,7 +28,8 @@ namespace spargel::gpu {
     namespace {
 
         VKAPI_ATTR VkBool32 VKAPI_CALL onDebugUtilsMessage(
-            VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
+            VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+            VkDebugUtilsMessageTypeFlagsEXT type,
             VkDebugUtilsMessengerCallbackDataEXT const* data, void* user_data) {
             fprintf(stderr, "validator: %s\n", data->pMessage);
             if (severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
@@ -105,50 +106,62 @@ namespace spargel::gpu {
 
     }  // namespace
 
-    base::unique_ptr<Device> make_device_vulkan() { return base::make_unique<DeviceVulkan>(); }
+    base::unique_ptr<Device> make_device_vulkan() {
+        return base::make_unique<DeviceVulkan>();
+    }
 
-    void VulkanProcTable::loadGeneralProcs(base::dynamic_library_handle* library) {
+    void VulkanProcTable::loadGeneralProcs(
+        base::dynamic_library_handle* library) {
         // Use `this->` to avoid accidental collision with <vulkan/vulkan.h>.
-        this->vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(
-            base::get_proc_address(library, "vkGetInstanceProcAddr"));
-#define VULKAN_GENERAL_PROC(name) \
-    this->name = reinterpret_cast<PFN_##name>(this->vkGetInstanceProcAddr(nullptr, #name));
+        this->vkGetInstanceProcAddr =
+            reinterpret_cast<PFN_vkGetInstanceProcAddr>(
+                base::get_proc_address(library, "vkGetInstanceProcAddr"));
+#define VULKAN_GENERAL_PROC(name)              \
+    this->name = reinterpret_cast<PFN_##name>( \
+        this->vkGetInstanceProcAddr(nullptr, #name));
 #include "spargel/gpu/vulkan_procs.inc"
 #undef VULKAN_GENERAL_PROC
     }
 
     void VulkanProcTable::loadInstanceProcs(VkInstance instance) {
-#define VULKAN_INSTANCE_PROC(name) \
-    this->name = reinterpret_cast<PFN_##name>(this->vkGetInstanceProcAddr(instance, #name));
+#define VULKAN_INSTANCE_PROC(name)             \
+    this->name = reinterpret_cast<PFN_##name>( \
+        this->vkGetInstanceProcAddr(instance, #name));
 #include "spargel/gpu/vulkan_procs.inc"
 #undef VULKAN_INSTANCE_PROC
     }
 
     void VulkanProcTable::loadDeviceProcs(VkDevice device) {
-#define VULKAN_DEVICE_PROC(name) \
-    this->name = reinterpret_cast<PFN_##name>(this->vkGetDeviceProcAddr(device, #name));
+#define VULKAN_DEVICE_PROC(name)               \
+    this->name = reinterpret_cast<PFN_##name>( \
+        this->vkGetDeviceProcAddr(device, #name));
 #include "spargel/gpu/vulkan_procs.inc"
 #undef VULKAN_DEVICE_PROC
     }
 
     class InstanceBuilder {
     public:
-        InstanceBuilder(DeviceVulkan* ctx) : _ctx{ctx}, _procs{ctx->getProcTable()} {
+        InstanceBuilder(DeviceVulkan* ctx)
+            : _ctx{ctx}, _procs{ctx->getProcTable()} {
             // VK_KHR_portability_enumeration
             //
-            // This extension allows applications to control whether devices that expose the
-            // VK_KHR_portability_subset extension are included in the results of physical device
-            // enumeration. Since devices which support the VK_KHR_portability_subset extension are
-            // not fully conformant Vulkan implementations, the Vulkan loader does not report those
-            // devices unless the application explicitly asks for them. This prevents applications
-            // which may not be aware of non-conformant devices from accidentally using them, as any
-            // device which supports the VK_KHR_portability_subset extension mandates that the
-            // extension must be enabled if that device is used.
+            // This extension allows applications to control whether devices
+            // that expose the VK_KHR_portability_subset extension are included
+            // in the results of physical device enumeration. Since devices
+            // which support the VK_KHR_portability_subset extension are not
+            // fully conformant Vulkan implementations, the Vulkan loader does
+            // not report those devices unless the application explicitly asks
+            // for them. This prevents applications which may not be aware of
+            // non-conformant devices from accidentally using them, as any
+            // device which supports the VK_KHR_portability_subset extension
+            // mandates that the extension must be enabled if that device is
+            // used.
             //
 
             // FIXME
 #if SPARGEL_IS_MACOS
-            addExtension("VK_KHR_portability_enumeration", false, &_has_portability_enumeration);
+            addExtension("VK_KHR_portability_enumeration", false,
+                         &_has_portability_enumeration);
 #endif
         }
 
@@ -156,7 +169,8 @@ namespace spargel::gpu {
             _want_layers.emplace(name, true, nullptr);
             return *this;
         }
-        InstanceBuilder& addLayer(char const* name, bool required, bool* enabled) {
+        InstanceBuilder& addLayer(char const* name, bool required,
+                                  bool* enabled) {
             _want_layers.emplace(name, required, enabled);
             return *this;
         }
@@ -164,7 +178,8 @@ namespace spargel::gpu {
             _want_exts.emplace(name, false, nullptr);
             return *this;
         }
-        InstanceBuilder& addExtension(char const* name, bool required, bool* enabled) {
+        InstanceBuilder& addExtension(char const* name, bool required,
+                                      bool* enabled) {
             _want_exts.emplace(name, required, enabled);
             return *this;
         }
@@ -177,7 +192,8 @@ namespace spargel::gpu {
             createInstance();
 
             _ctx->_instance = _instance;
-            _ctx->_instance_extensions.portability_enumeration = _has_portability_enumeration;
+            _ctx->_instance_extensions.portability_enumeration =
+                _has_portability_enumeration;
         }
 
     private:
@@ -194,16 +210,19 @@ namespace spargel::gpu {
 
         void enumerateLayers() {
             u32 count;
-            CHECK_VK_RESULT(_procs->vkEnumerateInstanceLayerProperties(&count, nullptr));
+            CHECK_VK_RESULT(
+                _procs->vkEnumerateInstanceLayerProperties(&count, nullptr));
             _layers.reserve(count);
-            CHECK_VK_RESULT(_procs->vkEnumerateInstanceLayerProperties(&count, _layers.data()));
+            CHECK_VK_RESULT(_procs->vkEnumerateInstanceLayerProperties(
+                &count, _layers.data()));
             _layers.set_count(count);
         }
 
         void enumerateExtensions() {
-            // When pLayerName parameter is NULL, only extensions provided by the Vulkan
-            // implementation or by implicitly enabled layers are returned. When pLayerName is the
-            // name of a layer, the instance extensions provided by that layer are returned.
+            // When pLayerName parameter is NULL, only extensions provided by
+            // the Vulkan implementation or by implicitly enabled layers are
+            // returned. When pLayerName is the name of a layer, the instance
+            // extensions provided by that layer are returned.
 
             u32 count;
             CHECK_VK_RESULT(_procs->vkEnumerateInstanceExtensionProperties(
@@ -228,7 +247,8 @@ namespace spargel::gpu {
                     _use_layers.emplace(req.name);
                     spargel_log_info("using layer %s", req.name);
                 } else if (req.required) {
-                    spargel_log_fatal("layer %s is required but cannot be found", req.name);
+                    spargel_log_fatal(
+                        "layer %s is required but cannot be found", req.name);
                     spargel_panic_here();
                 }
                 if (req.enabled != nullptr) {
@@ -251,7 +271,9 @@ namespace spargel::gpu {
                     _use_exts.emplace(req.name);
                     spargel_log_info("using extension %s", req.name);
                 } else if (req.required) {
-                    spargel_log_fatal("extension %s is required but cannot be found", req.name);
+                    spargel_log_fatal(
+                        "extension %s is required but cannot be found",
+                        req.name);
                     spargel_panic_here();
                 }
                 if (req.enabled != nullptr) {
@@ -268,7 +290,8 @@ namespace spargel::gpu {
             app_info.applicationVersion = 0;
             app_info.pEngineName = "Spargel Engine";
             app_info.engineVersion = 0;
-            // We need at least Vulkan 1.1, as subgroups are available only from Vulkan 1.1.
+            // We need at least Vulkan 1.1, as subgroups are available only from
+            // Vulkan 1.1.
             app_info.apiVersion = VK_API_VERSION_1_2;
 
             VkInstanceCreateInfo info;
@@ -281,15 +304,18 @@ namespace spargel::gpu {
             info.enabledExtensionCount = (u32)_use_exts.count();
             info.ppEnabledExtensionNames = _use_exts.data();
 
-            // VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR specifies that the instance will
-            // enumerate available Vulkan Portability-compliant physical devices and groups in
-            // addition to the Vulkan physical devices and groups that are enumerated by default.
+            // VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR specifies that
+            // the instance will enumerate available Vulkan
+            // Portability-compliant physical devices and groups in addition to
+            // the Vulkan physical devices and groups that are enumerated by
+            // default.
             //
             if (_has_portability_enumeration) {
                 info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
             }
 
-            CHECK_VK_RESULT(_procs->vkCreateInstance(&info, nullptr, &_instance));
+            CHECK_VK_RESULT(
+                _procs->vkCreateInstance(&info, nullptr, &_instance));
         }
 
         DeviceVulkan* _ctx;
@@ -307,7 +333,9 @@ namespace spargel::gpu {
     class PhysicalDeviceBuilder {
     public:
         PhysicalDeviceBuilder(DeviceVulkan* ctx)
-            : _ctx{ctx}, _procs{ctx->getProcTable()}, _instance{ctx->getVkInstance()} {}
+            : _ctx{ctx},
+              _procs{ctx->getProcTable()},
+              _instance{ctx->getVkInstance()} {}
 
         void build() {
             enumeratePhysicalDevices();
@@ -322,10 +350,11 @@ namespace spargel::gpu {
     private:
         void enumeratePhysicalDevices() {
             u32 count;
-            CHECK_VK_RESULT(_procs->vkEnumeratePhysicalDevices(_instance, &count, nullptr));
-            _physical_devices.reserve(count);
             CHECK_VK_RESULT(
-                _procs->vkEnumeratePhysicalDevices(_instance, &count, _physical_devices.data()));
+                _procs->vkEnumeratePhysicalDevices(_instance, &count, nullptr));
+            _physical_devices.reserve(count);
+            CHECK_VK_RESULT(_procs->vkEnumeratePhysicalDevices(
+                _instance, &count, _physical_devices.data()));
             _physical_devices.set_count(count);
             _count = count;
         }
@@ -334,8 +363,8 @@ namespace spargel::gpu {
             _physical_device_properties.reserve(_count);
             _physical_device_properties.set_count(_count);
             for (usize i = 0; i < _count; i++) {
-                _procs->vkGetPhysicalDeviceProperties(_physical_devices[i],
-                                                      &_physical_device_properties[i]);
+                _procs->vkGetPhysicalDeviceProperties(
+                    _physical_devices[i], &_physical_device_properties[i]);
             }
         }
 
@@ -343,8 +372,8 @@ namespace spargel::gpu {
             _physical_device_features.reserve(_count);
             _physical_device_features.set_count(_count);
             for (usize i = 0; i < _count; i++) {
-                _procs->vkGetPhysicalDeviceFeatures(_physical_devices[i],
-                                                    &_physical_device_features[i]);
+                _procs->vkGetPhysicalDeviceFeatures(
+                    _physical_devices[i], &_physical_device_features[i]);
             }
         }
 
@@ -378,7 +407,8 @@ namespace spargel::gpu {
         void fillInfo() {
             _ctx->_physical_device = _physical_devices[_index];
             _ctx->_physical_device_info.max_memory_allocation_count =
-                _physical_device_properties[_index].limits.maxMemoryAllocationCount;
+                _physical_device_properties[_index]
+                    .limits.maxMemoryAllocationCount;
         }
 
         DeviceVulkan* _ctx;
@@ -414,7 +444,8 @@ namespace spargel::gpu {
             _want_exts.emplace(name, false, nullptr);
             return *this;
         }
-        DeviceBuilder& addExtension(char const* name, bool required, bool* enabled) {
+        DeviceBuilder& addExtension(char const* name, bool required,
+                                    bool* enabled) {
             _want_exts.emplace(name, required, enabled);
             return *this;
         }
@@ -428,11 +459,11 @@ namespace spargel::gpu {
 
         void enumerateExtensions() {
             u32 count;
-            CHECK_VK_RESULT(_procs->vkEnumerateDeviceExtensionProperties(_physical_device, nullptr,
-                                                                         &count, nullptr));
+            CHECK_VK_RESULT(_procs->vkEnumerateDeviceExtensionProperties(
+                _physical_device, nullptr, &count, nullptr));
             _exts.reserve(count);
-            CHECK_VK_RESULT(_procs->vkEnumerateDeviceExtensionProperties(_physical_device, nullptr,
-                                                                         &count, _exts.data()));
+            CHECK_VK_RESULT(_procs->vkEnumerateDeviceExtensionProperties(
+                _physical_device, nullptr, &count, _exts.data()));
             _exts.set_count(count);
         }
 
@@ -450,7 +481,9 @@ namespace spargel::gpu {
                     _use_exts.emplace(req.name);
                     spargel_log_info("using extension %s", req.name);
                 } else if (req.required) {
-                    spargel_log_fatal("extension %s is required but cannot be found", req.name);
+                    spargel_log_fatal(
+                        "extension %s is required but cannot be found",
+                        req.name);
                     spargel_panic_here();
                 }
                 if (req.enabled != nullptr) {
@@ -461,10 +494,11 @@ namespace spargel::gpu {
 
         void queryQueueFamilyProperties() {
             u32 count;
-            _procs->vkGetPhysicalDeviceQueueFamilyProperties(_physical_device, &count, nullptr);
+            _procs->vkGetPhysicalDeviceQueueFamilyProperties(_physical_device,
+                                                             &count, nullptr);
             _queue_families.reserve(count);
-            _procs->vkGetPhysicalDeviceQueueFamilyProperties(_physical_device, &count,
-                                                             _queue_families.data());
+            _procs->vkGetPhysicalDeviceQueueFamilyProperties(
+                _physical_device, &count, _queue_families.data());
             _queue_families.set_count(count);
         }
 
@@ -472,32 +506,34 @@ namespace spargel::gpu {
         //
         // Spec:
         //
-        // The general expectation is that a physical device groups all queues of matching
-        // capabilities into a single family. However, while implementations should do this, it
-        // is possible that a physical device may return two separate queue families with the
-        // same capabilities.
+        // The general expectation is that a physical device groups all queues
+        // of matching capabilities into a single family. However, while
+        // implementations should do this, it is possible that a physical device
+        // may return two separate queue families with the same capabilities.
         //
         //
-        // If an implementation exposes any queue family that supports graphics operations, at
-        // least one queue family of at least one physical device exposed by the implementation
-        // must support both graphics and compute operations.
+        // If an implementation exposes any queue family that supports graphics
+        // operations, at least one queue family of at least one physical device
+        // exposed by the implementation must support both graphics and compute
+        // operations.
         //
         //
-        // All commands that are allowed on a queue that supports transfer operations are also
-        // allowed on a queue that supports either graphics or compute operations. Thus, if the
-        // capabilities of a queue family include VK_QUEUE_GRAPHICS_BIT or VK_QUEUE_COMPUTE_BIT,
-        // then reporting the VK_QUEUE_TRANSFER_BIT capability separately for that queue family
+        // All commands that are allowed on a queue that supports transfer
+        // operations are also allowed on a queue that supports either graphics
+        // or compute operations. Thus, if the capabilities of a queue family
+        // include VK_QUEUE_GRAPHICS_BIT or VK_QUEUE_COMPUTE_BIT, then reporting
+        // the VK_QUEUE_TRANSFER_BIT capability separately for that queue family
         // is optional.
         //
         //
-        // Not all physical devices will include WSI support. Within a physical device, not all
-        // queue families will support presentation.
+        // Not all physical devices will include WSI support. Within a physical
+        // device, not all queue families will support presentation.
         //
         //
         // Discussion:
         //
-        // We need one graphics queue. So we can choose the family that supports both graphics and
-        // compute.
+        // We need one graphics queue. So we can choose the family that supports
+        // both graphics and compute.
         //
         // For simplicity, we require that the queue also supports presentation.
         //
@@ -549,7 +585,8 @@ namespace spargel::gpu {
             info.ppEnabledExtensionNames = _use_exts.data();
             info.pEnabledFeatures = 0;
 
-            CHECK_VK_RESULT(_procs->vkCreateDevice(_physical_device, &info, nullptr, &_device));
+            CHECK_VK_RESULT(_procs->vkCreateDevice(_physical_device, &info,
+                                                   nullptr, &_device));
         }
 
         DeviceVulkan* _ctx;
@@ -602,7 +639,8 @@ namespace spargel::gpu {
         InstanceBuilder(this)
             .addLayer("VK_LAYER_KHRONOS_validation")
             .addExtension("VK_KHR_surface", true, nullptr)
-            .addExtension("VK_EXT_debug_utils", false, &_instance_extensions.debug_utils)
+            .addExtension("VK_EXT_debug_utils", false,
+                          &_instance_extensions.debug_utils)
 #if SPARGEL_IS_ANDROID
             .addExtension("VK_KHR_android_surface", true, nullptr)
 #endif
@@ -635,11 +673,13 @@ namespace spargel::gpu {
         info.pfnUserCallback = onDebugUtilsMessage;
         info.pUserData = nullptr;
 
-        CHECK_VK_RESULT(
-            _procs.vkCreateDebugUtilsMessengerEXT(_instance, &info, nullptr, &_debug_messenger));
+        CHECK_VK_RESULT(_procs.vkCreateDebugUtilsMessengerEXT(
+            _instance, &info, nullptr, &_debug_messenger));
     }
 
-    void DeviceVulkan::selectPhysicalDevice() { PhysicalDeviceBuilder(this).build(); }
+    void DeviceVulkan::selectPhysicalDevice() {
+        PhysicalDeviceBuilder(this).build();
+    }
 
     void DeviceVulkan::createDevice() {
         auto builder = DeviceBuilder(this);
@@ -655,16 +695,17 @@ namespace spargel::gpu {
     }
 
     void DeviceVulkan::queryMemoryInfo() {
-        _procs.vkGetPhysicalDeviceMemoryProperties(_physical_device, &_memory_props);
+        _procs.vkGetPhysicalDeviceMemoryProperties(_physical_device,
+                                                   &_memory_props);
         for (u32 i = 0; i < _memory_props.memoryHeapCount; i++) {
             [[maybe_unused]] auto const& heap = _memory_props.memoryHeaps[i];
-            // spargel_log_info("memory heap [%u] : flags = %u, size = %lu", i, heap.flags,
-            // heap.size);
+            // spargel_log_info("memory heap [%u] : flags = %u, size = %lu", i,
+            // heap.flags, heap.size);
         }
         for (u32 i = 0; i < _memory_props.memoryTypeCount; i++) {
             auto const& type = _memory_props.memoryTypes[i];
-            spargel_log_info("memory type [%u] : flags = %u, heap = %u", i, type.propertyFlags,
-                             type.heapIndex);
+            spargel_log_info("memory type [%u] : flags = %u, heap = %u", i,
+                             type.propertyFlags, type.heapIndex);
         }
 
         bool found = false;
@@ -688,19 +729,22 @@ namespace spargel::gpu {
         // General situation:
         //
         // Case 1: unified
-        //   One device local heap. All memory types are device local and host visible.
+        //   One device local heap. All memory types are device local and host
+        //   visible.
         //
         // Case 2: separated
-        //   One device local heap, the memory types of which are not host visible.
-        //   Another heap for host visible memory.
+        //   One device local heap, the memory types of which are not host
+        //   visible. Another heap for host visible memory.
         //
-        //   It is possible (and more common) that there is another device local heap that
-        //   exposes host visible memory. The size is 256MB (AMD). Larger values require
-        //   hardware configuration (resizable bar), which is not popular.
+        //   It is possible (and more common) that there is another device local
+        //   heap that exposes host visible memory. The size is 256MB (AMD).
+        //   Larger values require hardware configuration (resizable bar), which
+        //   is not popular.
         //
         // Case 3: weird (AMD integrated, old) (new hardware belongs to case 2)
         //   One heap for host visible memory.
-        //   Another device local heap (256MB) with both host visible and non host visible.
+        //   Another device local heap (256MB) with both host visible and non
+        //   host visible.
         //
         // Examples:
         //
@@ -756,7 +800,8 @@ namespace spargel::gpu {
         info.pCode = (u32 const*)bytes.data();
 
         VkShaderModule shader;
-        CHECK_VK_RESULT(_procs.vkCreateShaderModule(_device, &info, nullptr, &shader));
+        CHECK_VK_RESULT(
+            _procs.vkCreateShaderModule(_device, &info, nullptr, &shader));
         return make_object<ShaderLibraryVulkan>(shader);
     }
 
@@ -772,13 +817,16 @@ namespace spargel::gpu {
         info.allocationSize = pool_size;
         info.memoryTypeIndex = _memory_type;
 
-        CHECK_VK_RESULT(_procs.vkAllocateMemory(_device, &info, nullptr, &_memory_pool));
-        CHECK_VK_RESULT(_procs.vkMapMemory(_device, _memory_pool, 0, pool_size, 0, &_pool_addr));
+        CHECK_VK_RESULT(
+            _procs.vkAllocateMemory(_device, &info, nullptr, &_memory_pool));
+        CHECK_VK_RESULT(_procs.vkMapMemory(_device, _memory_pool, 0, pool_size,
+                                           0, &_pool_addr));
     }
 
     usize DeviceVulkan::allocateMemory(usize size, usize align) {
-        spargel_log_info("current offset = %zu, request size = %zu, request align = %zu",
-                         _pool_offset, size, align);
+        spargel_log_info(
+            "current offset = %zu, request size = %zu, request align = %zu",
+            _pool_offset, size, align);
         usize addr = (_pool_offset + align - 1) & (-align);
         spargel_log_info("adjusted offset = %zu", addr);
         spargel_assert(addr + size < pool_size);
@@ -788,12 +836,14 @@ namespace spargel::gpu {
 
     // VulkanMemoryAllocator:
     // - BlockVector indexed by memoryType
-    // - A BlockVector is a sequence of MemoryBlock. It represents memory blocks allocated for a
+    // - A BlockVector is a sequence of MemoryBlock. It represents memory blocks
+    // allocated for a
     //   specific memory type.
-    // - A MemoryBlock is simply a VkDeviceMemory, i.e. an allocation. So we should have at most
-    // 4096 blocks.
+    // - A MemoryBlock is simply a VkDeviceMemory, i.e. an allocation. So we
+    // should have at most 4096 blocks.
 
-    Buffer* DeviceVulkan::createBuffer(BufferUsage usage, base::span<u8> bytes) {
+    Buffer* DeviceVulkan::createBuffer(BufferUsage usage,
+                                       base::span<u8> bytes) {
         auto b = createBuffer(usage, bytes.count());
         auto addr = b->mapAddr();
         memcpy(addr, bytes.data(), bytes.count());
@@ -815,14 +865,16 @@ namespace spargel::gpu {
         buffer_info.pQueueFamilyIndices = nullptr;
 
         VkBuffer buffer;
-        CHECK_VK_RESULT(_procs.vkCreateBuffer(_device, &buffer_info, nullptr, &buffer));
+        CHECK_VK_RESULT(
+            _procs.vkCreateBuffer(_device, &buffer_info, nullptr, &buffer));
 
         // Step 2. Memory requirements
 
         VkMemoryRequirements reqs;
         _procs.vkGetBufferMemoryRequirements(_device, buffer, &reqs);
 
-        spargel_log_info("allowed memory types for buffer: %u", reqs.memoryTypeBits);
+        spargel_log_info("allowed memory types for buffer: %u",
+                         reqs.memoryTypeBits);
 
         spargel_assert(reqs.memoryTypeBits & _memory_type);
 
@@ -835,7 +887,9 @@ namespace spargel::gpu {
 
     Surface* DeviceVulkan::createSurface(ui::Window* w) { return nullptr; }
 
-    Texture* DeviceVulkan::createTexture(u32 width, u32 height) { return nullptr; }
+    Texture* DeviceVulkan::createTexture(u32 width, u32 height) {
+        return nullptr;
+    }
 
     void DeviceVulkan::destroyTexture(Texture* texture) {}
 
@@ -870,7 +924,8 @@ namespace spargel::gpu {
         layout_info.pPushConstantRanges = nullptr;
 
         VkPipelineLayout layout;
-        CHECK_VK_RESULT(_procs.vkCreatePipelineLayout(_device, &layout_info, nullptr, &layout));
+        CHECK_VK_RESULT(_procs.vkCreatePipelineLayout(_device, &layout_info,
+                                                      nullptr, &layout));
 
         VkComputePipelineCreateInfo info;
         info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
@@ -888,13 +943,14 @@ namespace spargel::gpu {
         info.basePipelineIndex = 0;
 
         VkPipeline pipeline;
-        CHECK_VK_RESULT(_procs.vkCreateComputePipelines(_device, /* cache = */ VK_NULL_HANDLE, 1,
-                                                        &info, nullptr, &pipeline));
+        CHECK_VK_RESULT(_procs.vkCreateComputePipelines(
+            _device, /* cache = */ VK_NULL_HANDLE, 1, &info, nullptr,
+            &pipeline));
         return make_object<ComputePipelineVulkan>(pipeline, layout);
     }
 
-    BindGroupLayout* DeviceVulkan::createBindGroupLayout(ShaderStage stage,
-                                                                   base::span<BindEntry> entries) {
+    BindGroupLayout* DeviceVulkan::createBindGroupLayout(
+        ShaderStage stage, base::span<BindEntry> entries) {
         auto stage_flag = translateShaderStage(stage);
         base::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.reserve(entries.count());
@@ -917,7 +973,8 @@ namespace spargel::gpu {
         info.pBindings = bindings.data();
 
         VkDescriptorSetLayout layout;
-        CHECK_VK_RESULT(_procs.vkCreateDescriptorSetLayout(_device, &info, nullptr, &layout));
+        CHECK_VK_RESULT(_procs.vkCreateDescriptorSetLayout(_device, &info,
+                                                           nullptr, &layout));
 
         return make_object<BindGroupLayoutVulkan>(layout);
     }
@@ -942,7 +999,8 @@ namespace spargel::gpu {
         info.poolSizeCount = 4;
         info.pPoolSizes = sizes;
 
-        CHECK_VK_RESULT(_procs.vkCreateDescriptorPool(_device, &info, nullptr, &_dpool));
+        CHECK_VK_RESULT(
+            _procs.vkCreateDescriptorPool(_device, &info, nullptr, &_dpool));
     }
 
     CommandQueueVulkan::CommandQueueVulkan(VkQueue queue, DeviceVulkan* device)
@@ -959,7 +1017,8 @@ namespace spargel::gpu {
         info.commandBufferCount = 1;
 
         VkCommandBuffer buffer;
-        CHECK_VK_RESULT(_procs->vkAllocateCommandBuffers(_device->device(), &info, &buffer));
+        CHECK_VK_RESULT(_procs->vkAllocateCommandBuffers(_device->device(),
+                                                         &info, &buffer));
         return make_object<CommandBufferVulkan>(_device, this, buffer);
     }
 
@@ -972,12 +1031,17 @@ namespace spargel::gpu {
         info.flags = 0;
         info.queueFamilyIndex = _device->getQueueFamilyIndex();
 
-        CHECK_VK_RESULT(_procs->vkCreateCommandPool(_device->device(), &info, nullptr, &_pool));
+        CHECK_VK_RESULT(_procs->vkCreateCommandPool(_device->device(), &info,
+                                                    nullptr, &_pool));
     }
 
-    CommandBufferVulkan::CommandBufferVulkan(DeviceVulkan* device, CommandQueueVulkan* queue,
+    CommandBufferVulkan::CommandBufferVulkan(DeviceVulkan* device,
+                                             CommandQueueVulkan* queue,
                                              VkCommandBuffer cmdbuf)
-        : _device{device}, _queue{queue}, _procs{device->getProcTable()}, _cmdbuf{cmdbuf} {
+        : _device{device},
+          _queue{queue},
+          _procs{device->getProcTable()},
+          _cmdbuf{cmdbuf} {
         createFence();
         beginCommandBuffer();
     }
@@ -1011,12 +1075,13 @@ namespace spargel::gpu {
         info.pCommandBuffers = &_cmdbuf;
         info.signalSemaphoreCount = 0;
         info.pSignalSemaphores = nullptr;
-        CHECK_VK_RESULT(_procs->vkQueueSubmit(_queue->commandQueue(), 1, &info, _fence));
+        CHECK_VK_RESULT(
+            _procs->vkQueueSubmit(_queue->commandQueue(), 1, &info, _fence));
     }
 
     void CommandBufferVulkan::wait() {
-        CHECK_VK_RESULT(
-            _procs->vkWaitForFences(_device->device(), 1, &_fence, VK_TRUE, UINT64_MAX));
+        CHECK_VK_RESULT(_procs->vkWaitForFences(_device->device(), 1, &_fence,
+                                                VK_TRUE, UINT64_MAX));
         // _procs->vkDeviceWaitIdle(_device->device());
     }
 
@@ -1038,21 +1103,26 @@ namespace spargel::gpu {
         info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         info.pNext = 0;
         info.flags = 0;
-        CHECK_VK_RESULT(_procs->vkCreateFence(_device->device(), &info, 0, &_fence));
+        CHECK_VK_RESULT(
+            _procs->vkCreateFence(_device->device(), &info, 0, &_fence));
     }
 
-    ComputePassEncoderVulkan::ComputePassEncoderVulkan(DeviceVulkan* device, VkCommandBuffer cmdbuf)
+    ComputePassEncoderVulkan::ComputePassEncoderVulkan(DeviceVulkan* device,
+                                                       VkCommandBuffer cmdbuf)
         : /* _device{device}, */
           _procs{device->getProcTable()},
           _cmdbuf{cmdbuf} {}
 
-    void ComputePassEncoderVulkan::setComputePipeline(ComputePipeline* pipeline) {
-        _procs->vkCmdBindPipeline(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE,
-                                  pipeline.cast<ComputePipelineVulkan>()->pipeline());
+    void ComputePassEncoderVulkan::setComputePipeline(
+        ComputePipeline* pipeline) {
+        _procs->vkCmdBindPipeline(
+            _cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE,
+            pipeline.cast<ComputePipelineVulkan>()->pipeline());
     }
 
-    ComputePipeline2Vulkan::ComputePipeline2Vulkan(DeviceVulkan* device, ShaderFunction compute,
-                                                   base::span<PipelineArgumentGroup> groups)
+    ComputePipeline2Vulkan::ComputePipeline2Vulkan(
+        DeviceVulkan* device, ShaderFunction compute,
+        base::span<PipelineArgumentGroup> groups)
         : _device{device}, _procs{device->getProcTable()} {
         createDescriptorSetLayouts(groups);
         createPipelineLayout();
@@ -1096,11 +1166,12 @@ namespace spargel::gpu {
             bindings.clear();
             for (usize j = 0; j < group.arguments.count(); j++) {
                 auto const& arg = group.arguments[j];
-                bindings.emplace(/* binding = */ arg.id,
-                                 /* descriptorType = */ translateBindEntryKind(arg.kind),
-                                 /* descriptorCount = */ 1,
-                                 /* stageFlags = */ VK_SHADER_STAGE_COMPUTE_BIT,
-                                 /* pImmutableSamplers = */ nullptr);
+                bindings.emplace(
+                    /* binding = */ arg.id,
+                    /* descriptorType = */ translateBindEntryKind(arg.kind),
+                    /* descriptorCount = */ 1,
+                    /* stageFlags = */ VK_SHADER_STAGE_COMPUTE_BIT,
+                    /* pImmutableSamplers = */ nullptr);
                 _args.emplace(i, arg.id, arg.kind);
             }
 
@@ -1108,8 +1179,8 @@ namespace spargel::gpu {
             info.pBindings = bindings.data();
 
             VkDescriptorSetLayout layout;
-            CHECK_VK_RESULT(
-                _procs->vkCreateDescriptorSetLayout(_device->device(), &info, nullptr, &layout));
+            CHECK_VK_RESULT(_procs->vkCreateDescriptorSetLayout(
+                _device->device(), &info, nullptr, &layout));
             _dset_layouts[group.location.vulkan.set_id] = layout;
         }
     }
@@ -1124,8 +1195,8 @@ namespace spargel::gpu {
         layout_info.pushConstantRangeCount = 0;
         layout_info.pPushConstantRanges = nullptr;
 
-        CHECK_VK_RESULT(
-            _procs->vkCreatePipelineLayout(_device->device(), &layout_info, nullptr, &_layout));
+        CHECK_VK_RESULT(_procs->vkCreatePipelineLayout(
+            _device->device(), &layout_info, nullptr, &_layout));
         spargel_log_info("pipeline layout created");
     }
 
@@ -1138,7 +1209,8 @@ namespace spargel::gpu {
         info.stage.pNext = nullptr;
         info.stage.flags = 0;
         info.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-        info.stage.module = compute.library.cast<ShaderLibraryVulkan>()->library();
+        info.stage.module =
+            compute.library.cast<ShaderLibraryVulkan>()->library();
         info.stage.pName = compute.entry;
         info.stage.pSpecializationInfo = nullptr;
         info.layout = _layout;
@@ -1166,12 +1238,14 @@ namespace spargel::gpu {
         alloc_info.pSetLayouts = &set_layout;
 
         VkDescriptorSet dset;
-        CHECK_VK_RESULT(_procs->vkAllocateDescriptorSets(_device->device(), &alloc_info, &dset));
+        CHECK_VK_RESULT(_procs->vkAllocateDescriptorSets(_device->device(),
+                                                         &alloc_info, &dset));
 
         return make_object<BindGroupVulkan>(dset, _device, this, id);
     }
 
-    VkDescriptorType ComputePipeline2Vulkan::getDescriptorType(u32 id, u32 binding) {
+    VkDescriptorType ComputePipeline2Vulkan::getDescriptorType(u32 id,
+                                                               u32 binding) {
         for (usize i = 0; i < _args.count(); i++) {
             if (_args[i].id == id && _args[i].binding == binding) {
                 return translateBindEntryKind(_args[i].kind);
@@ -1182,38 +1256,45 @@ namespace spargel::gpu {
 
     // Spec:
     //
-    // Each of the pDescriptorSets must be compatible with the pipeline layout specified by
-    // layout. The layout used to program the bindings must also be compatible with the pipeline
-    // used in subsequent bound pipeline commands with that pipeline type, as defined in the
-    // Pipeline Layout Compatibility section.
+    // Each of the pDescriptorSets must be compatible with the pipeline layout
+    // specified by layout. The layout used to program the bindings must also be
+    // compatible with the pipeline used in subsequent bound pipeline commands
+    // with that pipeline type, as defined in the Pipeline Layout Compatibility
+    // section.
     //
     void ComputePassEncoderVulkan::setBindGroup(u32 index, BindGroup* g) {
         auto group = g.cast<BindGroupVulkan>();
         VkDescriptorSet sets[1] = {group->getDescriptorSet()};
         // TODO: where to get pipeline layout
         _procs->vkCmdBindDescriptorSets(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE,
-                                        group->pipeline()->layout(), index, 1, sets, 0, nullptr);
+                                        group->pipeline()->layout(), index, 1,
+                                        sets, 0, nullptr);
     }
 
     void ComputePassEncoderVulkan::setBuffer(Buffer* buffer,
                                              VertexBufferLocation const& loc) {}
 
-    void ComputePassEncoderVulkan::setComputePipeline2(ComputePipeline2* pipeline) {
-        _procs->vkCmdBindPipeline(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE,
-                                  pipeline.cast<ComputePipeline2Vulkan>()->pipeline());
+    void ComputePassEncoderVulkan::setComputePipeline2(
+        ComputePipeline2* pipeline) {
+        _procs->vkCmdBindPipeline(
+            _cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE,
+            pipeline.cast<ComputePipeline2Vulkan>()->pipeline());
     }
 
-    void ComputePassEncoderVulkan::dispatch(DispatchSize grid_size, DispatchSize group_size) {
+    void ComputePassEncoderVulkan::dispatch(DispatchSize grid_size,
+                                            DispatchSize group_size) {
         _procs->vkCmdDispatch(_cmdbuf, grid_size.x, grid_size.y, grid_size.z);
     }
 
-    BufferVulkan::BufferVulkan(DeviceVulkan* device, VkBuffer buffer, usize offset, usize size)
+    BufferVulkan::BufferVulkan(DeviceVulkan* device, VkBuffer buffer,
+                               usize offset, usize size)
         : _device{device},
           _procs{device->getProcTable()},
           _buffer{buffer},
           _offset{offset},
           _size{size} {
-        _addr = static_cast<void*>(static_cast<base::Byte*>(device->getPoolAddr()) + offset);
+        _addr = static_cast<void*>(
+            static_cast<base::Byte*>(device->getPoolAddr()) + offset);
     }
 
     void* BufferVulkan::mapAddr() { return _addr; }
@@ -1243,19 +1324,22 @@ namespace spargel::gpu {
         write.pImageInfo = nullptr;
         write.pBufferInfo = &info;
         write.pTexelBufferView = nullptr;
-        _procs->vkUpdateDescriptorSets(_device->device(), 1, &write, 0, nullptr);
+        _procs->vkUpdateDescriptorSets(_device->device(), 1, &write, 0,
+                                       nullptr);
     }
 
     DescriptorAllocator::DescriptorAllocator(DeviceVulkan* device)
         : _device{device}, _procs{device->getProcTable()} {}
 
-    VkDescriptorSet DescriptorAllocator::allocate(DescriptorSetShape const& shape) {
-        [[maybe_unused]] auto& suballoc = _suballocs.getOrConstruct(shape, _device, shape);
+    VkDescriptorSet DescriptorAllocator::allocate(
+        DescriptorSetShape const& shape) {
+        [[maybe_unused]] auto& suballoc =
+            _suballocs.getOrConstruct(shape, _device, shape);
         return VK_NULL_HANDLE;
     }
 
-    ShapedDescriptorAllocator::ShapedDescriptorAllocator(DeviceVulkan* device,
-                                                         DescriptorSetShape const& shape)
+    ShapedDescriptorAllocator::ShapedDescriptorAllocator(
+        DeviceVulkan* device, DescriptorSetShape const& shape)
         : _device{device}, _procs{device->getProcTable()} {
         createLayout();
     }
@@ -1276,7 +1360,8 @@ namespace spargel::gpu {
     //             info.pNext = 0;
     //             info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     //             info.queueFamilyIndex = queue_family_index;
-    //             CHECK_VK_RESULT(procs->vkCreateCommandPool(dev, &info, 0, &cmd_pool));
+    //             CHECK_VK_RESULT(procs->vkCreateCommandPool(dev, &info, 0,
+    //             &cmd_pool));
     //         }
     //         d->cmd_pool = cmd_pool;
 
@@ -1290,7 +1375,8 @@ namespace spargel::gpu {
 
     //         procs->vkDestroyDevice(d->device, 0);
     //         if (d->debug_messenger)
-    //             procs->vkDestroyDebugUtilsMessengerEXT(d->instance, d->debug_messenger, 0);
+    //             procs->vkDestroyDebugUtilsMessengerEXT(d->instance,
+    //             d->debug_messenger, 0);
     //         procs->vkDestroyInstance(d->instance, 0);
 
     //         base::close_dynamic_library(d->library);
@@ -1298,17 +1384,21 @@ namespace spargel::gpu {
     //         dealloc_object(vulkan_device, d);
     //     }
 
-    //     int vulkan_create_command_queue(device_id device, command_queue_id* queue) {
+    //     int vulkan_create_command_queue(device_id device, command_queue_id*
+    //     queue) {
     //         cast_object(vulkan_device, d, device);
     //         *queue = (command_queue_id)&d->queue;
     //         return RESULT_SUCCESS;
     //     }
 
-    //     void vulkan_destroy_command_queue(device_id device, command_queue_id queue) {}
+    //     void vulkan_destroy_command_queue(device_id device, command_queue_id
+    //     queue) {}
 
     //     int vulkan_create_shader_function(device_id device,
-    //                                       struct vulkan_shader_function_descriptor const*
-    //                                       descriptor, shader_function_id* func) {
+    //                                       struct
+    //                                       vulkan_shader_function_descriptor
+    //                                       const* descriptor,
+    //                                       shader_function_id* func) {
     //         cast_object(vulkan_device, d, device);
     //         alloc_object(vulkan_shader_function, f);
 
@@ -1320,15 +1410,15 @@ namespace spargel::gpu {
     //         info.pCode = (u32*)descriptor->code;
 
     //         VkShaderModule mod;
-    //         CHECK_VK_RESULT(d->procs.vkCreateShaderModule(d->device, &info, 0, &mod));
-    //         f->shader = mod;
-    //         f->device = d;
+    //         CHECK_VK_RESULT(d->procs.vkCreateShaderModule(d->device, &info,
+    //         0, &mod)); f->shader = mod; f->device = d;
 
     //         *func = (shader_function_id)f;
     //         return RESULT_SUCCESS;
     //     }
 
-    //     void vulkan_destroy_shader_function(device_id device, shader_function_id func) {
+    //     void vulkan_destroy_shader_function(device_id device,
+    //     shader_function_id func) {
     //         cast_object(vulkan_shader_function, f, func);
     //         struct vulkan_device* d = f->device;
     //         d->procs.vkDestroyShaderModule(d->device, f->shader, 0);
@@ -1336,12 +1426,14 @@ namespace spargel::gpu {
     //     }
 
     //     int vulkan_create_render_pipeline(device_id device,
-    //                                       struct RenderPipelineDescriptor const* descriptor,
+    //                                       struct RenderPipelineDescriptor
+    //                                       const* descriptor,
     //                                       render_pipeline_id* pipeline) {
     //         alloc_object(vulkan_render_pipeline, p);
 
     //         VkGraphicsPipelineCreateInfo pipeline_info;
-    //         pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    //         pipeline_info.sType =
+    //         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     //         pipeline_info.pNext = 0;
     //         pipeline_info.flags = 0;
     //         pipeline_info.stageCount = 2;
@@ -1350,13 +1442,15 @@ namespace spargel::gpu {
     //         return RESULT_SUCCESS;
     //     }
 
-    //     void vulkan_destroy_render_pipeline(device_id device, render_pipeline_id pipeline) {
+    //     void vulkan_destroy_render_pipeline(device_id device,
+    //     render_pipeline_id pipeline) {
     //         cast_object(vulkan_render_pipeline, p, pipeline);
     //         dealloc_object(vulkan_render_pipeline, p);
     //     }
 
     //     int vulkan_create_command_buffer(device_id device,
-    //                                      struct command_buffer_descriptor const* descriptor,
+    //                                      struct command_buffer_descriptor
+    //                                      const* descriptor,
     //                                      command_buffer_id* command_buffer) {
     //         cast_object(vulkan_device, d, device);
     //         cast_object(vulkan_command_queue, q, descriptor->queue);
@@ -1378,21 +1472,23 @@ namespace spargel::gpu {
     //         return RESULT_SUCCESS;
     //     }
 
-    //     void vulkan_destroy_command_buffer(device_id device, command_buffer_id
-    //     command_buffer) {
+    //     void vulkan_destroy_command_buffer(device_id device,
+    //     command_buffer_id command_buffer) {
     //         cast_object(vulkan_command_buffer, c, command_buffer);
     //         dealloc_object(vulkan_command_buffer, c);
     //     }
 
-    //     void vulkan_reset_command_buffer(device_id device, command_buffer_id command_buffer)
+    //     void vulkan_reset_command_buffer(device_id device, command_buffer_id
+    //     command_buffer)
     //     {
     //         cast_object(vulkan_device, d, device);
     //         cast_object(vulkan_command_buffer, c, command_buffer);
-    //         CHECK_VK_RESULT(d->procs.vkResetCommandBuffer(c->command_buffer, 0));
+    //         CHECK_VK_RESULT(d->procs.vkResetCommandBuffer(c->command_buffer,
+    //         0));
     //     }
 
-    //     int vulkan_create_surface(device_id device, struct surface_descriptor const*
-    //     descriptor,
+    //     int vulkan_create_surface(device_id device, struct surface_descriptor
+    //     const* descriptor,
     //                               surface_id* surface) {
     //         cast_object(vulkan_device, d, device);
     //         alloc_object(vulkan_surface, s);
@@ -1405,8 +1501,8 @@ namespace spargel::gpu {
     //         info.pNext = 0;
     //         info.flags = 0;
     //         info.window = (ANativeWindow*)wh.android.window;
-    //         CHECK_VK_RESULT(d->procs.vkCreateAndroidSurfaceKHR(d->instance, &info, 0,
-    //         &surf));
+    //         CHECK_VK_RESULT(d->procs.vkCreateAndroidSurfaceKHR(d->instance,
+    //         &info, 0, &surf));
     // #endif
     // #if SPARGEL_IS_LINUX /* todo: wayland */
     //         VkXcbSurfaceCreateInfoKHR info;
@@ -1415,7 +1511,8 @@ namespace spargel::gpu {
     //         info.flags = 0;
     //         info.connection = (xcb_connection_t*)wh.xcb.connection;
     //         info.window = (xcb_window_t)wh.xcb.window;
-    //         CHECK_VK_RESULT(d->procs.vkCreateXcbSurfaceKHR(d->instance, &info, 0, &surf));
+    //         CHECK_VK_RESULT(d->procs.vkCreateXcbSurfaceKHR(d->instance,
+    //         &info, 0, &surf));
     // #endif
     // #if SPARGEL_IS_MACOS
     //         VkMetalSurfaceCreateInfoEXT info;
@@ -1423,7 +1520,8 @@ namespace spargel::gpu {
     //         info.pNext = 0;
     //         info.flags = 0;
     //         info.pLayer = wh.apple.layer;
-    //         CHECK_VK_RESULT(d->procs.vkCreateMetalSurfaceEXT(d->instance, &info, 0, &surf));
+    //         CHECK_VK_RESULT(d->procs.vkCreateMetalSurfaceEXT(d->instance,
+    //         &info, 0, &surf));
     // #endif
     // #if SPARGEL_IS_WINDOWS
     //         VkWin32SurfaceCreateInfoKHR info;
@@ -1432,7 +1530,8 @@ namespace spargel::gpu {
     //         info.flags = 0;
     //         info.hinstance = (HINSTANCE)wh.win32.hinstance;
     //         info.hwnd = (HWND)wh.win32.hwnd;
-    //         CHECK_VK_RESULT(d->procs.vkCreateWin32SurfaceKHR(d->instance, &info, 0, &surf));
+    //         CHECK_VK_RESULT(d->procs.vkCreateWin32SurfaceKHR(d->instance,
+    //         &info, 0, &surf));
     // #endif
 
     //         s->surface = surf;
@@ -1449,8 +1548,8 @@ namespace spargel::gpu {
     //         dealloc_object(vulkan_surface, s);
     //     }
 
-    //     int vulkan_create_swapchain(device_id device, struct swapchain_descriptor const*
-    //     descriptor,
+    //     int vulkan_create_swapchain(device_id device, struct
+    //     swapchain_descriptor const* descriptor,
     //                                 swapchain_id* swapchain) {
     //         cast_object(vulkan_device, d, device);
     //         cast_object(vulkan_surface, sf, descriptor->surface);
@@ -1464,7 +1563,8 @@ namespace spargel::gpu {
     //                                                                          &surf_caps));
 
     //         u32 min_images = surf_caps.minImageCount + 1;
-    //         if (surf_caps.maxImageCount > 0 && min_images > surf_caps.maxImageCount) {
+    //         if (surf_caps.maxImageCount > 0 && min_images >
+    //         surf_caps.maxImageCount) {
     //             min_images = surf_caps.maxImageCount;
     //         }
 
@@ -1476,7 +1576,8 @@ namespace spargel::gpu {
     //                                                                         &count, 0));
     //             formats.reserve(count);
     //             CHECK_VK_RESULT(procs->vkGetPhysicalDeviceSurfaceFormatsKHR(
-    //                 d->physical_device, sf->surface, &count, formats.data()));
+    //                 d->physical_device, sf->surface, &count,
+    //                 formats.data()));
     //             formats.set_count(count);
     //         }
 
@@ -1516,11 +1617,12 @@ namespace spargel::gpu {
 
     //         {
     //             u32 count;
-    //             CHECK_VK_RESULT(procs->vkGetSwapchainImagesKHR(d->device, sw->swapchain,
-    //             &count, 0)); sw->images.reserve(count); sw->image_views.reserve(count);
+    //             CHECK_VK_RESULT(procs->vkGetSwapchainImagesKHR(d->device,
+    //             sw->swapchain, &count, 0)); sw->images.reserve(count);
+    //             sw->image_views.reserve(count);
     //             sw->framebuffers.reserve(count);
-    //             CHECK_VK_RESULT(procs->vkGetSwapchainImagesKHR(d->device, sw->swapchain,
-    //             &count,
+    //             CHECK_VK_RESULT(procs->vkGetSwapchainImagesKHR(d->device,
+    //             sw->swapchain, &count,
     //                                                            sw->images.data()));
     //             sw->images.set_count(count);
     //             sw->image_views.set_count(count);
@@ -1547,8 +1649,8 @@ namespace spargel::gpu {
     //             info.subresourceRange.layerCount = 1;
     //             for (usize i = 0; i < image_count; i++) {
     //                 info.image = sw->images[i];
-    //                 CHECK_VK_RESULT(procs->vkCreateImageView(d->device, &info, 0,
-    //                 &sw->image_views[i]));
+    //                 CHECK_VK_RESULT(procs->vkCreateImageView(d->device,
+    //                 &info, 0, &sw->image_views[i]));
     //             }
     //         }
 
@@ -1586,10 +1688,13 @@ namespace spargel::gpu {
     //             VkSubpassDependency dependency;
     //             dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     //             dependency.dstSubpass = 0;
-    //             dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    //             dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    //             dependency.srcStageMask =
+    //             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    //             dependency.dstStageMask =
+    //             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     //             dependency.srcAccessMask = 0;
-    //             dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    //             dependency.dstAccessMask =
+    //             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     //             dependency.dependencyFlags = 0;
 
     //             VkRenderPassCreateInfo info;
@@ -1602,7 +1707,8 @@ namespace spargel::gpu {
     //             info.pSubpasses = &subpass;
     //             info.dependencyCount = 1;
     //             info.pDependencies = &dependency;
-    //             CHECK_VK_RESULT(procs->vkCreateRenderPass(d->device, &info, 0, &rp));
+    //             CHECK_VK_RESULT(procs->vkCreateRenderPass(d->device, &info,
+    //             0, &rp));
     //         }
     //         sw->render_pass = rp;
 
@@ -1632,7 +1738,8 @@ namespace spargel::gpu {
     //             info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     //             info.pNext = 0;
     //             info.flags = 0;
-    //             CHECK_VK_RESULT(procs->vkCreateFence(d->device, &info, 0, &sw->submit_done));
+    //             CHECK_VK_RESULT(procs->vkCreateFence(d->device, &info, 0,
+    //             &sw->submit_done));
     //         }
     //         {
     //             VkFenceCreateInfo info;
@@ -1655,7 +1762,8 @@ namespace spargel::gpu {
     //         return RESULT_SUCCESS;
     //     }
 
-    //     void vulkan_destroy_swapchain(device_id device, swapchain_id swapchain) {
+    //     void vulkan_destroy_swapchain(device_id device, swapchain_id
+    //     swapchain) {
     //         cast_object(vulkan_device, d, device);
     //         cast_object(vulkan_swapchain, s, swapchain);
 
@@ -1672,8 +1780,8 @@ namespace spargel::gpu {
     //         dealloc_object(vulkan_swapchain, s);
     //     }
 
-    //     int vulkan_acquire_image(device_id device, struct acquire_descriptor const*
-    //     descriptor,
+    //     int vulkan_acquire_image(device_id device, struct acquire_descriptor
+    //     const* descriptor,
     //                              presentable_id* presentable) {
     //         cast_object(vulkan_device, d, device);
     //         cast_object(vulkan_swapchain, s, descriptor->swapchain);
@@ -1681,21 +1789,21 @@ namespace spargel::gpu {
     //         /**
     //          * Spec:
     //          *
-    //          * After acquiring a presentable image and before modifying it, the application
-    //          must use a
-    //          * synchronization primitive to ensure that the presentation engine has finished
-    //          reading
+    //          * After acquiring a presentable image and before modifying it,
+    //          the application must use a
+    //          * synchronization primitive to ensure that the presentation
+    //          engine has finished reading
     //          * from the image.
     //          *
-    //          * The presentation engine may not have finished reading from the image at the
-    //          time it is
-    //          * acquired, so the application must use semaphore and/or fence to ensure that
-    //          the image
-    //          * layout and contents are not modified until the presentation engine reads have
-    //          completed.
+    //          * The presentation engine may not have finished reading from the
+    //          image at the time it is
+    //          * acquired, so the application must use semaphore and/or fence
+    //          to ensure that the image
+    //          * layout and contents are not modified until the presentation
+    //          engine reads have completed.
     //          */
-    //         int result = d->procs.vkAcquireNextImageKHR(d->device, s->swapchain, UINT64_MAX,
-    //         0,
+    //         int result = d->procs.vkAcquireNextImageKHR(d->device,
+    //         s->swapchain, UINT64_MAX, 0,
     //                                                     s->image_available,
     //                                                     &s->presentable.index);
     //         if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
@@ -1704,9 +1812,10 @@ namespace spargel::gpu {
     //         }
 
     //         CHECK_VK_RESULT(
-    //             d->procs.vkWaitForFences(d->device, 1, &s->image_available, VK_TRUE,
-    //             UINT64_MAX));
-    //         CHECK_VK_RESULT(d->procs.vkResetFences(d->device, 1, &s->image_available));
+    //             d->procs.vkWaitForFences(d->device, 1, &s->image_available,
+    //             VK_TRUE, UINT64_MAX));
+    //         CHECK_VK_RESULT(d->procs.vkResetFences(d->device, 1,
+    //         &s->image_available));
 
     //         s->presentable.swapchain = s;
 
@@ -1714,13 +1823,14 @@ namespace spargel::gpu {
     //         return RESULT_SUCCESS;
     //     }
 
-    //     void vulkan_begin_render_pass(device_id device, struct render_pass_descriptor const*
-    //     descriptor,
+    //     void vulkan_begin_render_pass(device_id device, struct
+    //     render_pass_descriptor const* descriptor,
     //                                   render_pass_encoder_id* encoder) {
     //         cast_object(vulkan_device, d, device);
-    //         cast_object(vulkan_command_buffer, cmdbuf, descriptor->command_buffer);
-    //         cast_object(vulkan_swapchain, sw, descriptor->swapchain);
-    //         alloc_object(vulkan_render_pass_encoder, e);
+    //         cast_object(vulkan_command_buffer, cmdbuf,
+    //         descriptor->command_buffer); cast_object(vulkan_swapchain, sw,
+    //         descriptor->swapchain); alloc_object(vulkan_render_pass_encoder,
+    //         e);
 
     //     {
     //         VkCommandBufferBeginInfo info;
@@ -1728,7 +1838,8 @@ namespace spargel::gpu {
     //         info.pNext = 0;
     //         info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     //         info.pInheritanceInfo = 0;
-    //         CHECK_VK_RESULT(d->procs.vkBeginCommandBuffer(cmdbuf->command_buffer, &info));
+    //         CHECK_VK_RESULT(d->procs.vkBeginCommandBuffer(cmdbuf->command_buffer,
+    //         &info));
     //     }
     //     {
     //         VkClearValue clear;
@@ -1761,7 +1872,8 @@ namespace spargel::gpu {
     //     *encoder = (render_pass_encoder_id)e;
     // }
 
-    // void vulkan_end_render_pass(device_id device, render_pass_encoder_id encoder) {
+    // void vulkan_end_render_pass(device_id device, render_pass_encoder_id
+    // encoder) {
     //     cast_object(vulkan_device, d, device);
     //     cast_object(vulkan_render_pass_encoder, e, encoder);
     //     d->procs.vkCmdEndRenderPass(e->command_buffer);
@@ -1769,7 +1881,8 @@ namespace spargel::gpu {
     //     dealloc_object(vulkan_render_pass_encoder, e);
     // }
 
-    // void vulkan_present(device_id device, struct present_descriptor const* descriptor) {
+    // void vulkan_present(device_id device, struct present_descriptor const*
+    // descriptor) {
     //     cast_object(vulkan_device, d, device);
     //     cast_object(vulkan_command_buffer, c, descriptor->command_buffer);
     //     cast_object(vulkan_presentable, p, descriptor->presentable);
@@ -1779,7 +1892,8 @@ namespace spargel::gpu {
     //         info.pNext = 0;
     //         info.waitSemaphoreCount = 0;
     //         info.pWaitSemaphores = 0;
-    //         VkPipelineStageFlags stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    //         VkPipelineStageFlags stage =
+    //         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     //         info.pWaitDstStageMask = &stage;
     //         info.commandBufferCount = 1;
     //         info.pCommandBuffers = &c->command_buffer;
@@ -1791,18 +1905,18 @@ namespace spargel::gpu {
     //     /**
     //      * Spec:
     //      *
-    //      * Calls to vkQueuePresentKHR may block, but must return in finite time. The
-    //      processing of
-    //      * the presentation happens in issue order with other queue operations, but
-    //      semaphores must
-    //      * be used to ensure that prior rendering and other commands in the specified queue
-    //      complete
-    //      * before the presentation begins. The presentation command itself does not delay
-    //      processing
-    //      * of subsequent commands on the queue. However, presentation requests sent to a
-    //      particular
-    //      * queue are always performed in order. Exact presentation timing is controlled by
-    //      the
+    //      * Calls to vkQueuePresentKHR may block, but must return in finite
+    //      time. The processing of
+    //      * the presentation happens in issue order with other queue
+    //      operations, but semaphores must
+    //      * be used to ensure that prior rendering and other commands in the
+    //      specified queue complete
+    //      * before the presentation begins. The presentation command itself
+    //      does not delay processing
+    //      * of subsequent commands on the queue. However, presentation
+    //      requests sent to a particular
+    //      * queue are always performed in order. Exact presentation timing is
+    //      controlled by the
     //      * semantics of the presentation engine and native platform in use.
     //      */
     //     {
@@ -1822,13 +1936,15 @@ namespace spargel::gpu {
     //         }
     //     }
     //     /* todo */
-    //     CHECK_VK_RESULT(d->procs.vkWaitForFences(d->device, 1, &p->swapchain->submit_done,
-    //     VK_TRUE,
+    //     CHECK_VK_RESULT(d->procs.vkWaitForFences(d->device, 1,
+    //     &p->swapchain->submit_done, VK_TRUE,
     //                                              UINT64_MAX));
-    //     CHECK_VK_RESULT(d->procs.vkResetFences(d->device, 1, &p->swapchain->submit_done));
+    //     CHECK_VK_RESULT(d->procs.vkResetFences(d->device, 1,
+    //     &p->swapchain->submit_done));
     // }
 
-    // void vulkan_presentable_texture(device_id device, presentable_id presentable,
+    // void vulkan_presentable_texture(device_id device, presentable_id
+    // presentable,
     //                                 texture_id* texture) {
     //     *texture = 0;
     // }

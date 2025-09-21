@@ -77,11 +77,13 @@ namespace spargel::base {
                 FindResult r = findSlot(key);
                 if (r.has_key) {
                     destruct_at(_values.getPtr(r.index));
-                    construct_at(_values.getPtr(r.index), forward<Args>(args)...);
+                    construct_at(_values.getPtr(r.index),
+                                 forward<Args>(args)...);
                 } else {
                     _status[r.index] = SlotStatus::used;
                     construct_at(_keys.getPtr(r.index), key);
-                    construct_at(_values.getPtr(r.index), forward<Args>(args)...);
+                    construct_at(_values.getPtr(r.index),
+                                 forward<Args>(args)...);
                 }
 
                 _count++;
@@ -93,7 +95,8 @@ namespace spargel::base {
                 if (!result.has_key) {
                     _status[result.index] = SlotStatus::used;
                     construct_at(_keys.getPtr(result.index), key);
-                    construct_at(_values.getPtr(result.index), forward<Args>(args)...);
+                    construct_at(_values.getPtr(result.index),
+                                 forward<Args>(args)...);
                 }
                 return *_values.getPtr(result.index);
             }
@@ -133,11 +136,14 @@ namespace spargel::base {
 
                 for (usize i = 0; i < _capacity; i++) {
                     if (_status[i] == SlotStatus::used) {
-                        usize new_i = findFreeSlot(_keys[i], new_cap, new_status);
+                        usize new_i =
+                            findFreeSlot(_keys[i], new_cap, new_status);
 
                         new_status[new_i] = SlotStatus::used;
-                        construct_at<K>(new_keys.getPtr(new_i), base::move(_keys[i]));
-                        construct_at<T>(new_values.getPtr(new_i), base::move(_values[i]));
+                        construct_at<K>(new_keys.getPtr(new_i),
+                                        base::move(_keys[i]));
+                        construct_at<T>(new_values.getPtr(new_i),
+                                        base::move(_values[i]));
                     }
                 }
 
@@ -149,7 +155,8 @@ namespace spargel::base {
                 swap(_values, new_values);
             }
 
-            usize findFreeSlot(K const& key, usize cap, vector<SlotStatus> const& status) {
+            usize findFreeSlot(K const& key, usize cap,
+                               vector<SlotStatus> const& status) {
                 spargel_assert(cap > 0);
 
                 u64 h = hash(key);
@@ -196,7 +203,9 @@ namespace spargel::base {
             }
 
             bool needToGrow() const { return (_capacity * 3 / 4) <= _count; }
-            usize nextCapacity() const { return _capacity == 0 ? 8 : _capacity * 2; }
+            usize nextCapacity() const {
+                return _capacity == 0 ? 8 : _capacity * 2;
+            }
             void ensureSpace() {
                 if (needToGrow()) grow();
             }

@@ -57,11 +57,13 @@ namespace spargel::ui {
         // virtual void onKeyDown([[maybe_unused]] PhysicalKey key) {}
 
         [[deprecated]]
-        virtual void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) {}
+        virtual void onMouseDown([[maybe_unused]] float x,
+                                 [[maybe_unused]] float y) {}
         virtual void onMouseDown([[maybe_unused]] MouseDownEvent const& e) {}
 
         // User has moved the mouse with left button pressed.
-        virtual void onMouseDragged([[maybe_unused]] float dx, [[maybe_unused]] float dy) {}
+        virtual void onMouseDragged([[maybe_unused]] float dx,
+                                    [[maybe_unused]] float dy) {}
 
         virtual void onMouseMoved([[maybe_unused]] const MouseMovedEvent& e) {}
     };
@@ -82,7 +84,8 @@ namespace spargel::ui {
         virtual void requestRedraw() = 0;
 
         // TODO: Improve.
-        // This is an abstraction leak. One should obtain the handle from the subclasses.
+        // This is an abstraction leak. One should obtain the handle from the
+        // subclasses.
         [[deprecated]]
         virtual WindowHandle getHandle() = 0;
 

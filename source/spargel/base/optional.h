@@ -119,7 +119,9 @@ namespace spargel::base {
             }
 
             T* getPtr() { return reinterpret_cast<T*>(_bytes); }
-            T const* getPtr() const { return reinterpret_cast<T const*>(_bytes); }
+            T const* getPtr() const {
+                return reinterpret_cast<T const*>(_bytes);
+            }
 
             void destroyObject() { destruct_at(getPtr()); }
 
@@ -133,7 +135,8 @@ namespace spargel::base {
 
         template <typename S, typename... Arg>
         Optional<S> makeOptional(Arg&&... args) {
-            return Optional<S>(typename Optional<S>::InPlaceTag{}, forward<Arg>(args)...);
+            return Optional<S>(typename Optional<S>::InPlaceTag{},
+                               forward<Arg>(args)...);
         }
 
     }  // namespace _optional

@@ -23,7 +23,8 @@ namespace spargel::base {
         template <typename T, typename... Ts>
         struct StorageSizeImpl<T, Ts...> {
             static constexpr usize _rest = StorageSizeImpl<Ts...>::value;
-            static constexpr usize value = sizeof(T) > _rest ? sizeof(T) : _rest;
+            static constexpr usize value = sizeof(T) > _rest ? sizeof(T)
+                                                             : _rest;
         };
 
         template <typename... Ts>
@@ -40,7 +41,8 @@ namespace spargel::base {
         template <typename T, typename... Ts>
         struct AlignmentImpl<T, Ts...> {
             static constexpr usize _rest = AlignmentImpl<Ts...>::value;
-            static constexpr usize value = alignof(T) > _rest ? alignof(T) : _rest;
+            static constexpr usize value = alignof(T) > _rest ? alignof(T)
+                                                              : _rest;
         };
 
         template <typename... Ts>
@@ -62,7 +64,8 @@ namespace spargel::base {
 
         /// SumpType cannot be empty.
         ///
-        /// Note: When swapping two `SumType`, a temporary object will be created.
+        /// Note: When swapping two `SumType`, a temporary object will be
+        /// created.
         ///
         template <typename... Ts>
         class SumType {
@@ -133,20 +136,26 @@ namespace spargel::base {
 
             friend void tag_invoke(tag<swap>, SumType& lhs, SumType& rhs) {
                 if (lhs.index_ == rhs.index_) {
-                    visitByIndex<TypeCount>(lhs.index_, [&]<usize i>(IndexWrapper<i>) {
-                        swap(lhs.getValue<i>(), rhs.getValue<i>());
-                    });
+                    visitByIndex<TypeCount>(
+                        lhs.index_, [&]<usize i>(IndexWrapper<i>) {
+                            swap(lhs.getValue<i>(), rhs.getValue<i>());
+                        });
                 } else {
                     alignas(Alignment<Ts...>) Byte tmp[StorageSize<Ts...>];
-                    visitByIndex<TypeCount>(lhs.index_, [&]<usize i>(IndexWrapper<i>) {
+                    visitByIndex<TypeCount>(lhs.index_, [&]<usize i>(
+                                                            IndexWrapper<i>) {
                         // MSVC requires `SumType::`.
-                        visitByIndex<SumType::TypeCount>(rhs.index_, [&]<usize j>(IndexWrapper<j>) {
-                            using T1 = Get<Types, i>;
-                            using T2 = Get<Types, j>;
-                            new (reinterpret_cast<T1*>(tmp)) T1(base::move(lhs.getValue<i>()));
-                            new (lhs.getPtr<T2>()) T2(base::move(rhs.getValue<j>()));
-                            new (rhs.getPtr<T1>()) T1(base::move(*reinterpret_cast<T1*>(tmp)));
-                        });
+                        visitByIndex<SumType::TypeCount>(
+                            rhs.index_, [&]<usize j>(IndexWrapper<j>) {
+                                using T1 = Get<Types, i>;
+                                using T2 = Get<Types, j>;
+                                new (reinterpret_cast<T1*>(tmp))
+                                    T1(base::move(lhs.getValue<i>()));
+                                new (lhs.getPtr<T2>())
+                                    T2(base::move(rhs.getValue<j>()));
+                                new (rhs.getPtr<T1>())
+                                    T1(base::move(*reinterpret_cast<T1*>(tmp)));
+                            });
                     });
                     swap(lhs.index_, rhs.index_);
                 }

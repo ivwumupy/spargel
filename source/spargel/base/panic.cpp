@@ -10,10 +10,13 @@
 
 namespace spargel::base {
 
-    /* there is no need to report allocation or check memory leaks if the program panics */
-    void panic_at(char const* msg, char const* file, char const* func, u32 line) {
+    /* there is no need to report allocation or check memory leaks if the
+     * program panics */
+    void panic_at(char const* msg, char const* file, char const* func,
+                  u32 line) {
         /* todo: rewrite fprintf */
-        fprintf(stderr, "======== PANIC [%s:%s:%u] ========\n", file, func, line);
+        fprintf(stderr, "======== PANIC [%s:%s:%u] ========\n", file, func,
+                line);
         fprintf(stderr, "%s\n", msg);
         PrintBacktrace();
 #if defined(SPARGEL_IS_CLANG) || defined(SPARGEL_IS_GCC)

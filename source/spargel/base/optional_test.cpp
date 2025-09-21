@@ -20,7 +20,8 @@ namespace spargel::base {
 
         TEST(Optional_Basic) {
             unique_ptr<Derived> pd = make_unique<Derived>();
-            Optional<unique_ptr<Derived>> od = makeOptional<unique_ptr<Derived>>(move(pd));
+            Optional<unique_ptr<Derived>> od =
+                makeOptional<unique_ptr<Derived>>(move(pd));
             Optional<unique_ptr<Base>> b = move(od);
             // makeOptional<unique_ptr<Base>>(move(pd));
 

@@ -13,7 +13,10 @@ namespace spargel::base {
     //
     class CommandLine {
     public:
-        explicit CommandLine(int argc, char* argv[]) : _args(argv + 1, argv + argc) { parse(); }
+        explicit CommandLine(int argc, char* argv[])
+            : _args(argv + 1, argv + argc) {
+            parse();
+        }
 
         bool hasSwitch(string_view name) {
             for (auto s : _switches) {

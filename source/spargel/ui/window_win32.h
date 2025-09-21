@@ -1,8 +1,8 @@
 #pragma once
 
-#include "spargel/ui/window.h"
-
 #include <Windows.h>
+
+#include "spargel/ui/window.h"
 
 namespace spargel::ui {
     class PlatformWin32;
@@ -35,4 +35,4 @@ namespace spargel::ui {
         HWND hwnd_;
         bool animating_ = false;
     };
-}
+}  // namespace spargel::ui

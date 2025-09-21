@@ -17,7 +17,8 @@ namespace spargel::json {
 
         const base::String& message() { return message_; }
 
-        friend JsonParseError operator+(const JsonParseError& error, const base::StringView& str) {
+        friend JsonParseError operator+(const JsonParseError& error,
+                                        const base::StringView& str) {
             return JsonParseError((error.message_ + str).view());
         }
 
@@ -43,20 +44,24 @@ namespace spargel::json {
         base::Either<JsonObject, JsonParseError> parseObject();
         base::Either<JsonArray, JsonParseError> parseArray();
         base::Either<JsonString, JsonParseError> parseString();
-        base::Optional<JsonParseError> parseInteger(JsonNumber& number, bool& minus);
+        base::Optional<JsonParseError> parseInteger(JsonNumber& number,
+                                                    bool& minus);
         base::Optional<JsonParseError> parseFraction(JsonNumber& number);
         base::Optional<JsonParseError> parseExponent(JsonNumber& number);
         base::Either<JsonNumber, JsonParseError> parseNumber();
         base::Either<JsonBoolean, JsonParseError> parseBoolean();
         base::Optional<JsonParseError> parseNull();
         base::Either<JsonObject, JsonParseError> parseMembers();
-        base::Optional<JsonParseError> parseMember(JsonString& key, JsonValue& value);
+        base::Optional<JsonParseError> parseMember(JsonString& key,
+                                                   JsonValue& value);
         base::Either<JsonArray, JsonParseError> parseElements();
         base::Either<JsonValue, JsonParseError> parseElement();
     };
 
-    base::Either<JsonValue, JsonParseError> parseJson(const char* str, usize length);
-    inline base::Either<JsonValue, JsonParseError> parseJson(base::StringView s) {
+    base::Either<JsonValue, JsonParseError> parseJson(const char* str,
+                                                      usize length);
+    inline base::Either<JsonValue, JsonParseError> parseJson(
+        base::StringView s) {
         return parseJson(s.data(), s.length());
     }
 }  // namespace spargel::json

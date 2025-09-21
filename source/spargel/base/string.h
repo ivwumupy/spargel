@@ -72,7 +72,8 @@ namespace spargel::base {
             char const* end() const { return _data + _length; }
             char* data() { return _data; }
             char const* data() const { return _data; }
-            string_view view() const { return string_view(_data, _data + _length); }
+            string_view view() const { return string_view(_data, _data +
+        _length); }
 
             friend bool operator==(string const& lhs, string const& rhs);
 
@@ -80,7 +81,8 @@ namespace spargel::base {
 
             friend string operator+(const string& s, char ch);
 
-            friend string operator+(const string& s, const char* s2) { return s + string(s2); }
+            friend string operator+(const string& s, const char* s2) { return s
+        + string(s2); }
 
             friend void tag_invoke(tag<swap>, string& lhs, string& rhs) {
                 swap(lhs._length, rhs._length);
@@ -108,7 +110,9 @@ namespace spargel::base {
         public:
             UnicodeScalar() = default;
 
-            UnicodeScalar(u32 value) : _value{value} { spargel_assert(isValid(_value)); }
+            UnicodeScalar(u32 value) : _value{value} {
+                spargel_assert(isValid(_value));
+            }
 
             UnicodeScalar(UnicodeScalar const& other) : _value{other._value} {}
             UnicodeScalar& operator=(UnicodeScalar const& other) {
@@ -120,7 +124,8 @@ namespace spargel::base {
 
         private:
             static bool isValid(u32 value) {
-                return (value <= 0x10ffff) && ((value <= 0xd7ff) || (value >= 0xe000));
+                return (value <= 0x10ffff) &&
+                       ((value <= 0xd7ff) || (value >= 0xe000));
             }
 
             u32 _value = 0;
@@ -221,12 +226,17 @@ namespace spargel::base {
                 result._bytes.reserve(len);
                 result._bytes.set_count(len);
                 memcpy(result._bytes.data(), lhs.data(), lhs.length());
-                memcpy(result._bytes.data() + lhs.length(), rhs.data(), rhs.length());
+                memcpy(result._bytes.data() + lhs.length(), rhs.data(),
+                       rhs.length());
                 return result;
             }
             // not efficient
-            friend String operator+(String const& s, char ch) { return s + String(ch); }
-            friend String operator+(String const& s, char const* s2) { return s + String(s2); }
+            friend String operator+(String const& s, char ch) {
+                return s + String(ch);
+            }
+            friend String operator+(String const& s, char const* s2) {
+                return s + String(s2);
+            }
 
             String& operator+=(StringView view) {
                 _bytes.reserve(length() + view.length());
@@ -240,7 +250,8 @@ namespace spargel::base {
                 result._bytes.reserve(len);
                 result._bytes.set_count(len);
                 memcpy(result._bytes.data(), lhs.data(), lhs.length());
-                memcpy(result._bytes.data() + lhs.length(), rhs.data(), rhs.length());
+                memcpy(result._bytes.data() + lhs.length(), rhs.data(),
+                       rhs.length());
                 return result;
             }
 
@@ -298,7 +309,8 @@ namespace spargel::base {
             CString(char const* beg, char const* end) {
                 spargel_check(beg <= end);
                 len_ = static_cast<usize>(end - beg);
-                data_ = reinterpret_cast<char*>(default_allocator()->allocate(len_ + 1));
+                data_ = reinterpret_cast<char*>(
+                    default_allocator()->allocate(len_ + 1));
                 ::memcpy(data_, beg, len_);
                 data_[len_] = 0;
             }
@@ -326,13 +338,14 @@ namespace spargel::base {
 //
 // ## Glossary
 //
-// - code point: any value in the unicode codespace, i.e. the range of integers from 0 to 10ffff
-// - unicode scalar value; any unicode code point except high-surrogate and low-surrogate code
-// points, i.e. [0, d7ff] cup [e000, 10ffff]
+// - code point: any value in the unicode codespace, i.e. the range of integers
+// from 0 to 10ffff
+// - unicode scalar value; any unicode code point except high-surrogate and
+// low-surrogate code points, i.e. [0, d7ff] cup [e000, 10ffff]
 //
-// - utf-8 encoding form: the unicode encoding form that assigns each unicode scalar value to an
-// unsigned byte sequence of one to four bytes in length.
+// - utf-8 encoding form: the unicode encoding form that assigns each unicode
+// scalar value to an unsigned byte sequence of one to four bytes in length.
 //
-// - extended grapheme cluster: the text between extended grapheme cluster boundaries as specified
-// by unicode standard annex #29
+// - extended grapheme cluster: the text between extended grapheme cluster
+// boundaries as specified by unicode standard annex #29
 //

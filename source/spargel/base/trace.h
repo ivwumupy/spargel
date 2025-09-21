@@ -33,7 +33,8 @@ namespace spargel::base {
 
         TraceEngine() {
             _file = fopen("trace.bin", "w");
-            _buffer = reinterpret_cast<u8*>(default_allocator()->allocate(4096));
+            _buffer =
+                reinterpret_cast<u8*>(default_allocator()->allocate(4096));
             _end = _buffer + 4096;
             _cur = _buffer;
         }
@@ -44,9 +45,13 @@ namespace spargel::base {
             default_allocator()->free(_buffer, 4096);
         }
 
-        void enterRegion(char const* name) { emit(name, EventKind::enter_region, getTimestamp()); }
+        void enterRegion(char const* name) {
+            emit(name, EventKind::enter_region, getTimestamp());
+        }
 
-        void leaveRegion(char const* name) { emit(name, EventKind::leave_region, getTimestamp()); }
+        void leaveRegion(char const* name) {
+            emit(name, EventKind::leave_region, getTimestamp());
+        }
 
         void emit(char const* name, EventKind k, u64 t) {
             // if (_cnt >= 1000) return;
@@ -93,7 +98,9 @@ namespace spargel::base {
     };
 
     struct RegionTrace {
-        RegionTrace(char const* n) : name{n} { TraceEngine::getInstance()->enterRegion(name); }
+        RegionTrace(char const* n) : name{n} {
+            TraceEngine::getInstance()->enterRegion(name);
+        }
 
         ~RegionTrace() { TraceEngine::getInstance()->leaveRegion(name); }
 
@@ -103,7 +110,8 @@ namespace spargel::base {
 }  // namespace spargel::base
 
 #if SPARGEL_ENABLE_TRACING
-#define spargel_trace_scope(name) ::spargel::base::RegionTrace _trace_scope_##__LINE__(name)
+#define spargel_trace_scope(name) \
+    ::spargel::base::RegionTrace _trace_scope_##__LINE__(name)
 #else
 #define spargel_trace_scope(name)
 #endif

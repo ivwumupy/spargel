@@ -33,12 +33,15 @@ namespace spargel::base {
                 : value_{}, has_value_{true} {}
 
             template <typename... Args>
-            constexpr Result(Args&&... args) : value_{forward<Args>(args)...}, has_value_{true} {}
+            constexpr Result(Args&&... args)
+                : value_{forward<Args>(args)...}, has_value_{true} {}
 
             template <typename U>
-            constexpr Result(Error<U> const& e) : error_{e.error()}, has_value_{false} {}
+            constexpr Result(Error<U> const& e)
+                : error_{e.error()}, has_value_{false} {}
             template <typename U>
-            constexpr Result(Error<U>&& e) : error_{move(e).error()}, has_value_{false} {}
+            constexpr Result(Error<U>&& e)
+                : error_{move(e).error()}, has_value_{false} {}
 
             constexpr ~Result() {
                 if (has_value_) {

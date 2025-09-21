@@ -18,7 +18,8 @@ namespace spargel::base {
             }
             // TODO: Remove hardcoded path.
             auto resource_manager = resource::ResourceManagerDirectory("."_sv);
-            auto resource = resource_manager.open(resource::ResourceId(args[0]));
+            auto resource =
+                resource_manager.open(resource::ResourceId(args[0]));
             if (!resource.hasValue()) {
                 return 1;
             }
@@ -26,7 +27,8 @@ namespace spargel::base {
             Vector<Byte> result;
             DeflateDecompressor decomp;
             decomp.decompress(data, result);
-            printf("%s\n", CString{(char*)result.begin(), (char*)result.end()}.data());
+            printf("%s\n",
+                   CString{(char*)result.begin(), (char*)result.end()}.data());
             return 0;
         }
     }  // namespace

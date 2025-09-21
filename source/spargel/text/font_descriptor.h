@@ -1,8 +1,8 @@
 #pragma once
 
 #include "spargel/base/optional.h"
-#include "spargel/base/string_view.h"
 #include "spargel/base/span.h"
+#include "spargel/base/string_view.h"
 
 namespace spargel::text {
 
@@ -25,9 +25,10 @@ namespace spargel::text {
         fangsong,
     };
 
-    // A font family list consists of a list of font families ordered by priority from the highest
-    // to the lowest. Font selection happens one character at a time. (TODO: what is a character)
-    // The list includes a (predefined) generic font family at the end.
+    // A font family list consists of a list of font families ordered by
+    // priority from the highest to the lowest. Font selection happens one
+    // character at a time. (TODO: what is a character) The list includes a
+    // (predefined) generic font family at the end.
     struct FontFamilyList {
         // The first family has the highest priority.
         base::Span<base::StringView> family_names;
@@ -38,9 +39,9 @@ namespace spargel::text {
     // Selecting a font with the specific style within a font family.
     //
     // NOTE:
-    // It seems that style is encoded as "Font Subfmaily" (also called "Style" in Apple's spec) in
-    // the `name` table of TrueType/OpenType fonts. However the subfamily is language-dependent
-    // text.
+    // It seems that style is encoded as "Font Subfmaily" (also called "Style"
+    // in Apple's spec) in the `name` table of TrueType/OpenType fonts. However
+    // the subfamily is language-dependent text.
     //
     // NOTE:
     // In the CSS model, oblique has an optional argument specifying the angle.
@@ -52,7 +53,8 @@ namespace spargel::text {
         // This value is not present in CSS, but in Pango.
         roman,
         // Oblique (also called slant) is sloped normal.
-        // Sometimes it can be simulated by applying an affine transformation to the normal style.
+        // Sometimes it can be simulated by applying an affine transformation to
+        // the normal style.
         //
         // If oblique is not available, fallback to italic.
         // If neither is available, synthesize.
@@ -79,7 +81,8 @@ namespace spargel::text {
     //
     // Pango's format:
     //
-    //   font-descriptor: family-list? style-options? size? variations? features?
+    //   font-descriptor: family-list? style-options? size? variations?
+    //   features?
     //
     //   family-list: family ("," family)* ","?
     //
@@ -89,8 +92,8 @@ namespace spargel::text {
     //
     //   style: "normal" | "roman" | "oblique" | "italic"
     //
-    //   variants: "small-caps" | "all-small-caps" | "petite-caps" | "all-petite-caps" | "unicase" |
-    //   "title-caps"
+    //   variants: "small-caps" | "all-small-caps" | "petite-caps" |
+    //   "all-petite-caps" | "unicase" | "title-caps"
     //
     //   weight: "thin" | ...
     //

@@ -51,7 +51,8 @@ void android_main(struct android_app* app) {
     entry_data.window = platform->generate_window_handle();
     entry_data.platform = base::move(platform);
     entry_data.resource_manager =
-        base::make_unique<resource::android_asset_resource_manager>(app->activity->assetManager);
+        base::make_unique<resource::android_asset_resource_manager>(
+            app->activity->assetManager);
 
     // FIXME: wait until surface is ready
     while (!app->destroyRequested) {

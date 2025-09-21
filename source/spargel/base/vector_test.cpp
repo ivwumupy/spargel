@@ -17,8 +17,10 @@ namespace spargel::base {
             spargel_check(v1[50] == 51);
             vector<int> v2(spargel::base::move(v1));
             spargel_check(v2.count() == 100);
-            spargel_check(v1.count() == 0);     // NOLINT(clang-analyzer-cplusplus.Move)
-            spargel_check(v1.capacity() == 0);  // NOLINT(clang-analyzer-cplusplus.Move)
+            spargel_check(v1.count() ==
+                          0);  // NOLINT(clang-analyzer-cplusplus.Move)
+            spargel_check(v1.capacity() ==
+                          0);  // NOLINT(clang-analyzer-cplusplus.Move)
             vector<int> v3 = v2;
             spargel_check(v2.count() == 100);
             spargel_check(v3.count() == 100);

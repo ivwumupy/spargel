@@ -7,10 +7,12 @@
 namespace spargel::text {
     class Font;
 
-    // StyledText is the input of the text rendering pipeline (and others as well).
+    // StyledText is the input of the text rendering pipeline (and others as
+    // well).
     //
-    // The basic model is text with attributes, which is the same as CoreText and Pango (TODO:
-    // others). Every attached attribute has a start and end index (Unicode codepoints).
+    // The basic model is text with attributes, which is the same as CoreText
+    // and Pango (TODO: others). Every attached attribute has a start and end
+    // index (Unicode codepoints).
     //
     // Example (taken from Pango):
     //
@@ -35,7 +37,8 @@ namespace spargel::text {
             return lhs.text_ == rhs.text_ && lhs.font_ == rhs.font_;
         }
 
-        friend void tag_invoke(base::tag<base::hash>, base::HashRun& run, StyledText const& self) {
+        friend void tag_invoke(base::tag<base::hash>, base::HashRun& run,
+                               StyledText const& self) {
             run.combine(self.text_);
             run.combine(base::bitCast<Font*, u64>(self.font_));
         }

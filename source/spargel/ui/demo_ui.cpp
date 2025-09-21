@@ -28,7 +28,8 @@ namespace spargel::ui {
                 if (!shape_result_) {
                     shape();
                 }
-                return {shape_result_->width, shape_result_->ascent - shape_result_->descent};
+                return {shape_result_->width,
+                        shape_result_->ascent - shape_result_->descent};
             }
             void onPaint(render::UIScene& scene) override {
                 scene.strokeRectangle(0, 0, width(), height(), 0xFFFF00FF);
@@ -37,13 +38,15 @@ namespace spargel::ui {
                     shape();
                 }
 
-                float x = width() / 2.0f - shape_result_->width / 2.0f - shape_result_->leading;
-                float y =
-                    height() / 2.0f + shape_result_->ascent / 2.0f + shape_result_->descent / 2.0f;
+                float x = width() / 2.0f - shape_result_->width / 2.0f -
+                          shape_result_->leading;
+                float y = height() / 2.0f + shape_result_->ascent / 2.0f +
+                          shape_result_->descent / 2.0f;
                 scene.fillText(text_, x, y, state_ ? 0xFFFFFFFF : 0xFF0000FF);
             }
 
-            void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) override {
+            void onMouseDown([[maybe_unused]] float x,
+                             [[maybe_unused]] float y) override {
                 state_ = !state_;
                 requestRepaint();
             }
@@ -52,7 +55,8 @@ namespace spargel::ui {
             void shape() {
                 auto shaper = host()->textShaper();
                 shape_result_ = shaper->shapeLine(text_);
-                spargel_log_info("shape done: width = %.3f", shape_result_->width);
+                spargel_log_info("shape done: width = %.3f",
+                                 shape_result_->width);
             }
 
             text::StyledText text_;
@@ -78,8 +82,10 @@ namespace spargel::ui {
                 child_ = child;
                 addChild(child_);
             }
-            // NOTE: This is the default implementation. So there is no need for this view.
-            math::RectangleSize getPreferredSize(math::RectangleSize proposal) override {
+            // NOTE: This is the default implementation. So there is no need for
+            // this view.
+            math::RectangleSize getPreferredSize(
+                math::RectangleSize proposal) override {
                 return proposal;
             }
             void placeChildren() override {
@@ -107,10 +113,12 @@ namespace spargel::ui {
             }
 
             void onPaint(render::UIScene& scene) override {
-                scene.strokeCircle(250, 250, 100, state_ ? 0xFF00FF00 : 0xFFFF0000);
+                scene.strokeCircle(250, 250, 100,
+                                   state_ ? 0xFF00FF00 : 0xFFFF0000);
             }
 
-            void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) override {
+            void onMouseDown([[maybe_unused]] float x,
+                             [[maybe_unused]] float y) override {
                 state_ = !state_;
                 requestRepaint();
             }
@@ -130,8 +138,10 @@ namespace spargel::ui {
                 gpu_context_ = gpu::makeContext(gpu::inferBackend());
                 font_manager_ = text::FontManager::create();
                 shaper_ = text::TextShaper::create(font_manager_.get());
-                renderer_ = render::makeUIRenderer(gpu_context_.get(), shaper_.get());
-                view_host_ = base::makeUnique<ui::ViewHost>(window_.get(), renderer_.get());
+                renderer_ =
+                    render::makeUIRenderer(gpu_context_.get(), shaper_.get());
+                view_host_ = base::makeUnique<ui::ViewHost>(window_.get(),
+                                                            renderer_.get());
                 root_view_ = base::makeUnique<DemoView>(font_manager_.get());
                 // root_view_ = base::makeUnique<BoxView>(0xFF0000FF);
                 view_host_->setRootView(root_view_.get());

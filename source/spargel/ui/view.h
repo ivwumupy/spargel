@@ -86,7 +86,8 @@ namespace spargel::ui {
         // The layout of the children is determined via a negotiation process.
 
         // How much space this view needs given the proposal.
-        virtual math::RectangleSize getPreferredSize(math::RectangleSize proposal) {
+        virtual math::RectangleSize getPreferredSize(
+            math::RectangleSize proposal) {
             return proposal;
         }
         // Put the children at correct places.
@@ -116,7 +117,8 @@ namespace spargel::ui {
         void handleMouseReleased();
         void handleMouseMoved(const MouseMovedEvent& e);
 
-        virtual void onMouseDown([[maybe_unused]] float x, [[maybe_unused]] float y) {}
+        virtual void onMouseDown([[maybe_unused]] float x,
+                                 [[maybe_unused]] float y) {}
         virtual void onMouseMoved([[maybe_unused]] const MouseMovedEvent& e) {}
 
         // Record painting commands to the scene.

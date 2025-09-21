@@ -17,7 +17,8 @@ namespace spargel::text {
         if (result) {
             return *result;
         }
-        spargel_log_info("allocated new font for CoreText font %p", (void*)font);
+        spargel_log_info("allocated new font for CoreText font %p",
+                         (void*)font);
         auto new_entry = new FontMac(font);
         fonts_.set(key, new_entry);
         return new_entry;
@@ -26,11 +27,13 @@ namespace spargel::text {
         if (default_font_) {
             return default_font_;
         }
-        auto font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, DEFAULT_FONT_SIZE, nullptr);
+        auto font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem,
+                                                  DEFAULT_FONT_SIZE, nullptr);
         default_font_ = translateFont(font);
         return default_font_;
     }
-    Font* FontManagerMac::matchDescriptor([[maybe_unused]] FontDescriptor const& descriptor) {
+    Font* FontManagerMac::matchDescriptor(
+        [[maybe_unused]] FontDescriptor const& descriptor) {
         // TODO
         return defaultFont();
     }

@@ -118,9 +118,9 @@ namespace spargel::gpu {
     };
 
     // NOTE:
-    // Resources (except render targets) are read-only on GPU before Shader Model 5.
-    // UAV (unordered access view) is introduced in Shader Model 5 for writing/reading
-    // from GPU threads (in an unordered way).
+    // Resources (except render targets) are read-only on GPU before Shader
+    // Model 5. UAV (unordered access view) is introduced in Shader Model 5 for
+    // writing/reading from GPU threads (in an unordered way).
     enum class BindEntryKind {
         uniform_buffer,
         storage_buffer,
@@ -151,7 +151,9 @@ namespace spargel::gpu {
         // draw indirect buffer
         static const BufferUsage indirect;
 
-        constexpr bool has(BufferUsage usage) const { return (value & usage.value) != 0; }
+        constexpr bool has(BufferUsage usage) const {
+            return (value & usage.value) != 0;
+        }
 
         constexpr BufferUsage operator|(BufferUsage other) const {
             return BufferUsage{value | other.value};
@@ -173,7 +175,9 @@ namespace spargel::gpu {
         static const ShaderStage vertex;
         static const ShaderStage fragment;
         static const ShaderStage compute;
-        constexpr bool has(ShaderStage usage) const { return (value & usage.value) != 0; }
+        constexpr bool has(ShaderStage usage) const {
+            return (value & usage.value) != 0;
+        }
         friend constexpr bool operator==(ShaderStage lhs, ShaderStage rhs) {
             return lhs.value == rhs.value;
         }
@@ -187,7 +191,9 @@ namespace spargel::gpu {
         static const BufferAccess read;
         static const BufferAccess write;
         static const BufferAccess read_write;
-        constexpr bool has(BufferAccess access) const { return (value & access.value) != 0; }
+        constexpr bool has(BufferAccess access) const {
+            return (value & access.value) != 0;
+        }
         friend constexpr bool operator==(BufferAccess lhs, BufferAccess rhs) {
             return lhs.value == rhs.value;
         }
@@ -257,7 +263,8 @@ namespace spargel::gpu {
 
     // Description of one vertex attribute.
     struct VertexAttributeDescriptor {
-        // @brief index of the vertex buffer where the data of the attribute is fetched
+        // @brief index of the vertex buffer where the data of the attribute is
+        // fetched
         u32 buffer;
 
         // @brief the location of the vertex attribute
@@ -270,9 +277,11 @@ namespace spargel::gpu {
         // - hlsl: this is specified via semantic name and semantic index.
         //
         // Note:
-        // - Both dawn and wgpu use dummy SemanticName, and use SemanticIndex for location.
+        // - Both dawn and wgpu use dummy SemanticName, and use SemanticIndex
+        // for location.
         // - Dawn chooses "TEXCOORD", and wgpu/naga uses "LOC".
-        // - SPIRV-Cross uses "TEXCOORD" by default, and provides the options for remapping.
+        // - SPIRV-Cross uses "TEXCOORD" by default, and provides the options
+        // for remapping.
         // - dxc relies on user declaration `[[vk::location(0)]]`.
         //
         u32 location;
@@ -280,7 +289,8 @@ namespace spargel::gpu {
         // @brief the format of the vertex attribute
         VertexAttributeFormat format;
 
-        // @brief the offset of the vertex attribute to the start of the vertex data
+        // @brief the offset of the vertex attribute to the start of the vertex
+        // data
         usize offset;
     };
 
@@ -414,12 +424,15 @@ namespace spargel::gpu {
             if (str == base::StringView{"uniform_buffer"}) {
                 return base::Left{BindEntryKind::uniform_buffer};
             }
-            return base::Right<codec::ErrorType<DB>>(base::StringView{"Unknown bind entry kind."});
+            return base::Right<codec::ErrorType<DB>>(
+                base::StringView{"Unknown bind entry kind."});
         }
 
         template <codec::EncodeBackend EB>
-        base::Either<codec::DataType<EB>, codec::ErrorType<EB>> encode(EB&, TargetType) const {
-            return base::Right<codec::ErrorType<EB>>(base::StringView{"<TODO>"});
+        base::Either<codec::DataType<EB>, codec::ErrorType<EB>> encode(
+            EB&, TargetType) const {
+            return base::Right<codec::ErrorType<EB>>(
+                base::StringView{"<TODO>"});
         }
     };
 
@@ -432,7 +445,8 @@ namespace spargel::gpu {
 
         static constexpr auto CODEC = codec::makeRecordCodec<BindTableEntry>(
             base::Constructor<BindTableEntry>{},
-            codec::makeNormalField<BindTableEntry>("id", codec::U32Codec{}, &BindTableEntry::id),
+            codec::makeNormalField<BindTableEntry>("id", codec::U32Codec{},
+                                                   &BindTableEntry::id),
             codec::makeNormalField<BindTableEntry>("kind", BindEntryKindCodec{},
                                                    &BindTableEntry::kind));
     };
@@ -474,23 +488,27 @@ namespace spargel::gpu {
 
         // TODO: Review the design of shader objects.
         //
-        // Metal shaders are linked together (but still they can be separated on the source level).
-        // Vulkan spec allows multiple entries in a spirv file. Note that SPIRV-link is not stable.
-        // Mesa supports using multiple entry points in one spirv file, see
+        // Metal shaders are linked together (but still they can be separated on
+        // the source level). Vulkan spec allows multiple entries in a spirv
+        // file. Note that SPIRV-link is not stable. Mesa supports using
+        // multiple entry points in one spirv file, see
         // <<@mesa//src/compiler/spirv/nir_spirv.h>>.
         // TODO: Investigate other implementations.
 
-        // Create a shader library (consisting of several shader functions) from the given shader
-        // data.
+        // Create a shader library (consisting of several shader functions) from
+        // the given shader data.
         //
-        // NOTE: The data is backend dependent (i.e. spirv, or metallib, or dxir).
-        virtual ShaderLibrary* createShaderLibrary(base::Span<base::Byte> bytes) = 0;
+        // NOTE: The data is backend dependent (i.e. spirv, or metallib, or
+        // dxir).
+        virtual ShaderLibrary* createShaderLibrary(
+            base::Span<base::Byte> bytes) = 0;
         // Destroy the shader library.
         virtual void destroyShaderLibrary(ShaderLibrary* library) = 0;
 
         // The new design.
         //
-        // Shaders are created using their IDs, instead of passing bytes. Each backend querys `ShaderManager` for specific data.
+        // Shaders are created using their IDs, instead of passing bytes. Each
+        // backend querys `ShaderManager` for specific data.
         virtual void createShader(base::StringView shader_id) = 0;
 
         // Pipeline objects
@@ -504,7 +522,8 @@ namespace spargel::gpu {
         // Create a render pipeline. Use BindGroup.
         //
         // TODO: Batch api.
-        virtual RenderPipeline2* createRenderPipeline2(RenderPipeline2Descriptor const& desc) = 0;
+        virtual RenderPipeline2* createRenderPipeline2(
+            RenderPipeline2Descriptor const& desc) = 0;
         // Destroy the render pipeline.
         virtual void destroyRenderPipeline(RenderPipeline* pipeline) = 0;
 
@@ -519,21 +538,24 @@ namespace spargel::gpu {
 
         // Create a bind group layout object.
         [[deprecated]]
-        virtual BindGroupLayout* createBindGroupLayout(ShaderStage stage,
-                                                       base::Span<BindEntry> entries) = 0;
+        virtual BindGroupLayout* createBindGroupLayout(
+            ShaderStage stage, base::Span<BindEntry> entries) = 0;
 
         // Create a bind group.
         [[deprecated]]
         virtual BindGroup* createBindGroup(BindGroupLayout* layout) = 0;
         // Create a bind group for the `id`-th argument group of the pipeline.
-        virtual BindGroup* createBindGroup(ComputePipeline2* pipeline, u32 id) = 0;
-        virtual BindGroup* createBindGroup(RenderPipeline2* pipeline, u32 id) = 0;
+        virtual BindGroup* createBindGroup(ComputePipeline2* pipeline,
+                                           u32 id) = 0;
+        virtual BindGroup* createBindGroup(RenderPipeline2* pipeline,
+                                           u32 id) = 0;
 
         // Resources
         // ---------
 
         // Create a buffer with given data.
-        virtual Buffer* createBuffer(BufferUsage usage, base::Span<base::Byte> bytes) = 0;
+        virtual Buffer* createBuffer(BufferUsage usage,
+                                     base::Span<base::Byte> bytes) = 0;
         // Create a buffer with size.
         virtual Buffer* createBuffer(BufferUsage usage, u32 size) = 0;
         // Destroy the buffer.
@@ -587,8 +609,8 @@ namespace spargel::gpu {
 
     // PipelineLayout describes the signature of a pipeline.
     //
-    // A pipeline can be viewed abstractly as a function. Then pipeline layout is the description
-    // of its arguments.
+    // A pipeline can be viewed abstractly as a function. Then pipeline layout
+    // is the description of its arguments.
     //
     // TODO: This is superseded by ??
 
@@ -613,7 +635,8 @@ namespace spargel::gpu {
     class Texture {
     public:
         virtual ~Texture() = default;
-        virtual void updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
+        virtual void updateRegion(u32 x, u32 y, u32 width, u32 height,
+                                  u32 bytes_per_row,
                                   base::span<base::Byte> bytes) = 0;
     };
 
@@ -627,7 +650,8 @@ namespace spargel::gpu {
     class CommandBuffer {
     public:
         virtual ~CommandBuffer() = default;
-        virtual RenderPassEncoder* beginRenderPass(RenderPassDescriptor const& descriptor) = 0;
+        virtual RenderPassEncoder* beginRenderPass(
+            RenderPassDescriptor const& descriptor) = 0;
         virtual void endRenderPass(RenderPassEncoder* encoder) = 0;
         virtual ComputePassEncoder* beginComputePass() = 0;
         virtual void endComputePass(ComputePassEncoder* encoder) = 0;
@@ -642,10 +666,12 @@ namespace spargel::gpu {
         virtual void setComputePipeline(ComputePipeline* pipeline) = 0;
         virtual void setComputePipeline2(ComputePipeline2* pipeline) = 0;
         virtual void setBindGroup(u32 index, BindGroup* group) = 0;
-        virtual void setBuffer(Buffer* buffer, VertexBufferLocation const& loc) = 0;
+        virtual void setBuffer(Buffer* buffer,
+                               VertexBufferLocation const& loc) = 0;
         // grid_size is the number of thread groups of the grid
         // group_size is the number of threads of a thread group
-        virtual void dispatch(DispatchSize grid_size, DispatchSize group_size) = 0;
+        virtual void dispatch(DispatchSize grid_size,
+                              DispatchSize group_size) = 0;
 
         virtual void useBuffer(Buffer* buffer, BufferAccess access) = 0;
     };
@@ -654,14 +680,16 @@ namespace spargel::gpu {
     public:
         virtual ~RenderPassEncoder() = default;
         virtual void setRenderPipeline(RenderPipeline* pipeline) = 0;
-        virtual void setVertexBuffer(Buffer* buffer, VertexBufferLocation const& loc) = 0;
-        virtual void setFragmentBuffer(Buffer* buffer, VertexBufferLocation const& loc) = 0;
+        virtual void setVertexBuffer(Buffer* buffer,
+                                     VertexBufferLocation const& loc) = 0;
+        virtual void setFragmentBuffer(Buffer* buffer,
+                                       VertexBufferLocation const& loc) = 0;
 
         virtual void setTexture(Texture* texture) = 0;
         virtual void setViewport(Viewport viewport) = 0;
         virtual void draw(int vertex_start, int vertex_count) = 0;
-        virtual void draw(int vertex_start, int vertex_count, int instance_start,
-                          int instance_count) = 0;
+        virtual void draw(int vertex_start, int vertex_count,
+                          int instance_start, int instance_count) = 0;
     };
 
     class ShaderLibrary {
@@ -682,44 +710,47 @@ namespace spargel::gpu {
 
     // Helpers
 
-    //class BindGroupLayoutBuilder {
-    //public:
-    //    void setStage(ShaderStage stage) { _stage = stage; }
-    //    void addEntry(u32 binding, BindEntryKind kind) { _entries.emplace(binding, kind); }
+    // class BindGroupLayoutBuilder {
+    // public:
+    //     void setStage(ShaderStage stage) { _stage = stage; }
+    //     void addEntry(u32 binding, BindEntryKind kind) {
+    //     _entries.emplace(binding, kind); }
 
     //    BindGroupLayout* build(Device* _device) {
     //        return _device->createBindGroupLayout(_stage, _entries.toSpan());
     //    }
 
-    //private:
-    //    ShaderStage _stage;
-    //    base::vector<BindEntry> _entries;
-    //};
+    // private:
+    //     ShaderStage _stage;
+    //     base::vector<BindEntry> _entries;
+    // };
 
-    //class RenderPipelineBuilder {
-    //public:
-    //    void setPrimitive(PrimitiveKind primitive) { _desc.primitive = primitive; }
-    //    void setVertexShader(ShaderLibrary* library, char const* entry) {
-    //        _desc.vertex_shader.library = library;
-    //        _desc.vertex_shader.entry = entry;
-    //    }
-    //    void setFragmentShader(ShaderLibrary* library, char const* entry) {
-    //        _desc.fragment_shader.library = library;
-    //        _desc.fragment_shader.entry = entry;
-    //    }
-    //    void addVertexBuffer(usize stride) {
-    //        _vertex_buffers.emplace(stride, VertexStepMode::vertex);
-    //    }
-    //    void addVertexBuffer(usize stride, VertexStepMode step_mode) {
-    //        _vertex_buffers.emplace(stride, step_mode);
-    //    }
-    //    void addVertexAttribute(VertexAttributeFormat format, u32 location, u32 buffer,
-    //                            u32 offset) {
-    //        _vertex_attributes.emplace(buffer, location, format, offset);
-    //    }
-    //    void addColorAttachment(TextureFormat format, bool enable_blend) {
-    //        _color_attachments.emplace(format, enable_blend);
-    //    }
+    // class RenderPipelineBuilder {
+    // public:
+    //     void setPrimitive(PrimitiveKind primitive) { _desc.primitive =
+    //     primitive; } void setVertexShader(ShaderLibrary* library, char const*
+    //     entry) {
+    //         _desc.vertex_shader.library = library;
+    //         _desc.vertex_shader.entry = entry;
+    //     }
+    //     void setFragmentShader(ShaderLibrary* library, char const* entry) {
+    //         _desc.fragment_shader.library = library;
+    //         _desc.fragment_shader.entry = entry;
+    //     }
+    //     void addVertexBuffer(usize stride) {
+    //         _vertex_buffers.emplace(stride, VertexStepMode::vertex);
+    //     }
+    //     void addVertexBuffer(usize stride, VertexStepMode step_mode) {
+    //         _vertex_buffers.emplace(stride, step_mode);
+    //     }
+    //     void addVertexAttribute(VertexAttributeFormat format, u32 location,
+    //     u32 buffer,
+    //                             u32 offset) {
+    //         _vertex_attributes.emplace(buffer, location, format, offset);
+    //     }
+    //     void addColorAttachment(TextureFormat format, bool enable_blend) {
+    //         _color_attachments.emplace(format, enable_blend);
+    //     }
 
     //    RenderPipeline* build(Device* device) {
     //        _desc.vertex_buffers = _vertex_buffers.toSpan();
@@ -728,12 +759,12 @@ namespace spargel::gpu {
     //        return device->createRenderPipeline(_desc);
     //    }
 
-    //private:
-    //    RenderPipelineDescriptor _desc;
-    //    base::vector<VertexBufferDescriptor> _vertex_buffers;
-    //    base::vector<VertexAttributeDescriptor> _vertex_attributes;
-    //    base::vector<ColorAttachmentDescriptor> _color_attachments;
-    //};
+    // private:
+    //     RenderPipelineDescriptor _desc;
+    //     base::vector<VertexBufferDescriptor> _vertex_buffers;
+    //     base::vector<VertexAttributeDescriptor> _vertex_attributes;
+    //     base::vector<ColorAttachmentDescriptor> _color_attachments;
+    // };
 
 }  // namespace spargel::gpu
 
@@ -741,22 +772,24 @@ namespace spargel::gpu {
 //
 // ### Vulkan
 //
-// Clip coordinates for a vertex result from shader execution, which yields a vertex coordinate
-// position.
+// Clip coordinates for a vertex result from shader execution, which yields a
+// vertex coordinate position.
 //
-// Perspective division on clip coordinates yields normalized device coordinates, followed by a
-// viewport transformation to convert these coordinates into framebuffer coordinates.
+// Perspective division on clip coordinates yields normalized device
+// coordinates, followed by a viewport transformation to convert these
+// coordinates into framebuffer coordinates.
 //
-// Rasterizing a primitive begins by determining which squares of an integer grid in framebuffer
-// coordinates are occupied by the primitive, and assigning one or more depth values to each such
-// square.
+// Rasterizing a primitive begins by determining which squares of an integer
+// grid in framebuffer coordinates are occupied by the primitive, and assigning
+// one or more depth values to each such square.
 //
 // ### Metal
 //
-// The render pipeline linearly maps vertex positions from normalized device coordinates to viewport
-// coordinates by applying a viewport during the rasterization stage. It applies the transform first
-// and then rasterizes the primitive while clipping any fragments outside the scissor rectangle or
-// the render target’s extents.
+// The render pipeline linearly maps vertex positions from normalized device
+// coordinates to viewport coordinates by applying a viewport during the
+// rasterization stage. It applies the transform first and then rasterizes the
+// primitive while clipping any fragments outside the scissor rectangle or the
+// render target’s extents.
 //
 
 // Notes:
@@ -764,8 +797,9 @@ namespace spargel::gpu {
 // msl = metal shading language specification
 //
 // [msl, v3.2, p84]
-// an address space attribute specifies the region of memory from where buffer memory objects
-// are allocated. these attributes describe disjoint address spaces:
+// an address space attribute specifies the region of memory from where buffer
+// memory objects are allocated. these attributes describe disjoint address
+// spaces:
 // - device
 // - constant
 // - thread
@@ -773,20 +807,22 @@ namespace spargel::gpu {
 // - threadgroup_imageblock
 // - ray_data
 // - object_data
-// all arguments to a graphics or kernel function that are a pointer or reference to a type
-// needs to be declared with an address space attribute.
+// all arguments to a graphics or kernel function that are a pointer or
+// reference to a type needs to be declared with an address space attribute.
 //
 // the address space for a variable at program scope needs to be `constant`.
 //
 // [msl, v3.2, p98]
 // arguments to graphics and kernel functions can be any of the following:
-// - device buffer: a pointer or reference to any data type in the device address space
-// - constant buffer: a pointer or reference to any data type in the constant address space
+// - device buffer: a pointer or reference to any data type in the device
+// address space
+// - constant buffer: a pointer or reference to any data type in the constant
+// address space
 // - ...
 //
 // [msl, v3.2, p99]
-// for each argument, an attribute can be optionally specified to identify the location of a
-// buffer, texture, or sampler to use for this argument type.
+// for each argument, an attribute can be optionally specified to identify the
+// location of a buffer, texture, or sampler to use for this argument type.
 // - device and constant buffers: `[[buffer(index)]]`
 // - textures (including texture buffers): `[[texture(index)]]`
 // - samplers: `[[sampler(index)]]`

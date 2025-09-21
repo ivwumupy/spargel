@@ -20,8 +20,9 @@ namespace spargel::entry {
             spargel_log_info("loading component <<%s>>", path);
 
             auto lib = dlopen(path, RTLD_NOW | RTLD_LOCAL);
-            auto maker = reinterpret_cast<entry::Component* (*)(entry::LaunchData*)>(
-                dlsym(lib, "_spargel_make_component"));
+            auto maker =
+                reinterpret_cast<entry::Component* (*)(entry::LaunchData*)>(
+                    dlsym(lib, "_spargel_make_component"));
 
             entry::LaunchData data;
             auto platform = ui::makePlatform();
@@ -39,4 +40,6 @@ namespace spargel::entry {
     }  // namespace
 }  // namespace spargel::entry
 
-int main(int argc, char* argv[]) { return spargel::entry::launcher_main(argc, argv); }
+int main(int argc, char* argv[]) {
+    return spargel::entry::launcher_main(argc, argv);
+}

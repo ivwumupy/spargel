@@ -36,20 +36,24 @@ static void grow_array(void** ptr, ssize* capacity, ssize stride, ssize need) {
     ssize cap2 = *capacity * 2;
     ssize new_cap = cap2 > need ? cap2 : need;
     if (new_cap < 8) new_cap = 8;
-    *ptr = base::default_allocator()->resize(*ptr, *capacity * stride, new_cap * stride);
+    *ptr = base::default_allocator()->resize(*ptr, *capacity * stride,
+                                             new_cap * stride);
     *capacity = new_cap;
 }
 
 static void delete_queue_push(struct delete_queue* queue, ecs::entity_id id) {
     if (queue->count + 1 > queue->capacity) {
-        grow_array((void**)&queue->ids, &queue->capacity, sizeof(ecs::entity_id), queue->count + 1);
+        grow_array((void**)&queue->ids, &queue->capacity,
+                   sizeof(ecs::entity_id), queue->count + 1);
     }
     queue->ids[queue->count] = id;
     queue->count++;
 }
 
 static void destroy_delete_queue(struct delete_queue* queue) {
-    if (queue->ids) base::default_allocator()->free(queue->ids, sizeof(ssize) * queue->capacity);
+    if (queue->ids)
+        base::default_allocator()->free(queue->ids,
+                                        sizeof(ssize) * queue->capacity);
 }
 
 int main() {
@@ -81,7 +85,8 @@ int main() {
             .entity_count = 10,
         };
         ecs::spawn_entities(world, &desc, &view);
-        printf("info: spawned 10 x [ position ] with archetype %lu\n", view.archetype_id);
+        printf("info: spawned 10 x [ position ] with archetype %lu\n",
+               view.archetype_id);
         struct position* pos = (struct position*)components[0];
         for (ssize i = 0; i < view.entity_count; i++) {
             pos[i].x = i;
@@ -95,7 +100,8 @@ int main() {
             .entity_count = 20,
         };
         ecs::spawn_entities(world, &desc, &view);
-        printf("info: spawned 20 x [ position, velocity ] with archetype %lu\n", view.archetype_id);
+        printf("info: spawned 20 x [ position, velocity ] with archetype %lu\n",
+               view.archetype_id);
         struct position* pos = (struct position*)components[0];
         struct velocity* vel = (struct velocity*)components[1];
         for (ssize i = 0; i < view.entity_count; i++) {
@@ -132,7 +138,8 @@ int main() {
             .entity_count = 5,
         };
         ecs::spawn_entities(world, &desc, &view);
-        printf("info: spawned 5 x [ velocity ] with archetype %lu\n", view.archetype_id);
+        printf("info: spawned 5 x [ velocity ] with archetype %lu\n",
+               view.archetype_id);
     }
 
     {
@@ -146,14 +153,16 @@ int main() {
             desc.start_archetype_id = archetype_id;
             int result = ecs::query(world, &desc, &view);
             if (result == ecs::RESULT_QUERY_END) break;
-            printf("info: query: get %ld entities with [ position ] in archetype %lu\n",
-                   view.entity_count, view.archetype_id);
+            printf(
+                "info: query: get %ld entities with [ position ] in archetype "
+                "%lu\n",
+                view.entity_count, view.archetype_id);
             archetype_id = view.archetype_id + 1;
 
             struct position* pos = (struct position*)components[0];
             for (ssize i = 0; i < view.entity_count; i++) {
-                printf("info: query:  - entity %lu [ position = %.2f ]\n", view.entities[i],
-                       pos[i].x);
+                printf("info: query:  - entity %lu [ position = %.2f ]\n",
+                       view.entities[i], pos[i].x);
             }
         }
     }
@@ -169,13 +178,16 @@ int main() {
             desc.start_archetype_id = archetype_id;
             int result = ecs::query(world, &desc, &view);
             if (result == ecs::RESULT_QUERY_END) break;
-            printf("info: query: get %ld entities with [ health ] in archetype %lu\n",
-                   view.entity_count, view.archetype_id);
+            printf(
+                "info: query: get %ld entities with [ health ] in archetype "
+                "%lu\n",
+                view.entity_count, view.archetype_id);
             archetype_id = view.archetype_id + 1;
 
             struct health* h = (struct health*)components[0];
             for (ssize i = 0; i < view.entity_count; i++) {
-                printf("info: query:  - entity %lu [ health = %.2f ]\n", view.entities[i], h[i].h);
+                printf("info: query:  - entity %lu [ health = %.2f ]\n",
+                       view.entities[i], h[i].h);
             }
         }
     }
@@ -188,8 +200,9 @@ int main() {
             .entity_count = 2000,
         };
         ecs::spawn_entities(world, &desc, &view);
-        printf("info: spawned 2000 x [ position, velocity ] with archetype %lu\n",
-               view.archetype_id);
+        printf(
+            "info: spawned 2000 x [ position, velocity ] with archetype %lu\n",
+            view.archetype_id);
         struct position* pos = (struct position*)components[0];
         struct velocity* vel = (struct velocity*)components[1];
         for (ssize i = 0; i < view.entity_count; i++) {
@@ -211,8 +224,10 @@ int main() {
             desc.start_archetype_id = archetype_id;
             int result = ecs::query(world, &desc, &view);
             if (result == ecs::RESULT_QUERY_END) break;
-            printf("info: query: get %ld entities with [ position ] in archetype %lu\n",
-                   view.entity_count, view.archetype_id);
+            printf(
+                "info: query: get %ld entities with [ position ] in archetype "
+                "%lu\n",
+                view.entity_count, view.archetype_id);
             archetype_id = view.archetype_id + 1;
 
             struct position* pos = (struct position*)components[0];
@@ -238,14 +253,16 @@ int main() {
             desc.start_archetype_id = archetype_id;
             int result = ecs::query(world, &desc, &view);
             if (result == ecs::RESULT_QUERY_END) break;
-            printf("info: query: get %ld entities with [ position ] in archetype %lu\n",
-                   view.entity_count, view.archetype_id);
+            printf(
+                "info: query: get %ld entities with [ position ] in archetype "
+                "%lu\n",
+                view.entity_count, view.archetype_id);
             archetype_id = view.archetype_id + 1;
 
             struct position* pos = (struct position*)components[0];
             for (ssize i = 0; i < view.entity_count; i++) {
-                printf("info: query:  - entity %lu [ position = %.2f ]\n", view.entities[i],
-                       pos[i].x);
+                printf("info: query:  - entity %lu [ position = %.2f ]\n",
+                       view.entities[i], pos[i].x);
             }
         }
     }

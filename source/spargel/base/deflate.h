@@ -10,7 +10,9 @@
 namespace spargel::base {
     class DeflateDecompressor {
     public:
-        static UniquePtr<DeflateDecompressor> make() { return makeUnique<DeflateDecompressor>(); }
+        static UniquePtr<DeflateDecompressor> make() {
+            return makeUnique<DeflateDecompressor>();
+        }
 
         void decompress(Span<Byte> input, Vector<Byte>& output);
 
@@ -25,14 +27,16 @@ namespace spargel::base {
         //                   10 dynamic Huffman
         // Note that a block may not start at byte boundary.
         //
-        // Code length must be in the range [0, 15], see [RFC1951, Section 3.2.7].
-        // A decode table with 2^15 (= 32768) entries is a bit too large (not cache friendly?).
-        // Thus we need (dynamically allocated) subtables.
+        // Code length must be in the range [0, 15], see [RFC1951,
+        // Section 3.2.7]. A decode table with 2^15 (= 32768) entries is a bit
+        // too large (not cache friendly?). Thus we need (dynamically allocated)
+        // subtables.
 
         class BitStream {
         public:
             BitStream() = default;
-            BitStream(u8 const* begin, u8 const* end) : begin_{begin}, next_{begin}, end_{end} {}
+            BitStream(u8 const* begin, u8 const* end)
+                : begin_{begin}, next_{begin}, end_{end} {}
 
             // Fill the bit buffer as much as possible.
             void refill();
@@ -86,7 +90,8 @@ namespace spargel::base {
             // equal to the number of bits of the buffer
             static constexpr u8 MAX_BITS_LEFT = 64;
             // How many bits that are consumable regardless of bits left.
-            // It's equal to MAX_BITS_LEFT - 7, otherwise a new byte can be filled.
+            // It's equal to MAX_BITS_LEFT - 7, otherwise a new byte can be
+            // filled.
             static constexpr u8 CONSUMABLE_BITS = MAX_BITS_LEFT - 7;
 
             // DEBUG

@@ -9,12 +9,15 @@
 @end
 
 namespace spargel::ui {
-    base::unique_ptr<Platform> makePlatformAppKit() { return base::make_unique<PlatformAppKit>(); }
+    base::unique_ptr<Platform> makePlatformAppKit() {
+        return base::make_unique<PlatformAppKit>();
+    }
     PlatformAppKit::PlatformAppKit() : Platform(PlatformKind::appkit) {
         _app = [NSApplication sharedApplication];
         [_app setActivationPolicy:NSApplicationActivationPolicyRegular];
 
-        SpargelApplicationDelegate* delegate = [[SpargelApplicationDelegate alloc] init];
+        SpargelApplicationDelegate* delegate =
+            [[SpargelApplicationDelegate alloc] init];
         // NSApp.delegate is a weak reference
         _app.delegate = delegate;
 
@@ -30,9 +33,15 @@ namespace spargel::ui {
         NSMenu* menu_bar = [[NSMenu alloc] init];
 
         NSMenu* app_menu = [[NSMenu alloc] initWithTitle:@"Spargel"];
-        [app_menu addItemWithTitle:@"About Spargel" action:nil keyEquivalent:@""];
-        [app_menu addItemWithTitle:@"Check for Updates" action:nil keyEquivalent:@""];
-        [app_menu addItemWithTitle:@"Quit Spargel" action:@selector(terminate:) keyEquivalent:@"q"];
+        [app_menu addItemWithTitle:@"About Spargel"
+                            action:nil
+                     keyEquivalent:@""];
+        [app_menu addItemWithTitle:@"Check for Updates"
+                            action:nil
+                     keyEquivalent:@""];
+        [app_menu addItemWithTitle:@"Quit Spargel"
+                            action:@selector(terminate:)
+                     keyEquivalent:@"q"];
 
         NSMenuItem* app_menu_item = [[NSMenuItem alloc] init];
         [app_menu_item setSubmenu:app_menu];

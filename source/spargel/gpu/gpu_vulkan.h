@@ -74,7 +74,8 @@ namespace spargel::gpu {
 
     class ShaderLibraryVulkan final : public ShaderLibrary {
     public:
-        explicit ShaderLibraryVulkan(VkShaderModule shader) : _library{shader} {}
+        explicit ShaderLibraryVulkan(VkShaderModule shader)
+            : _library{shader} {}
         ~ShaderLibraryVulkan() {}
 
         auto library() const { return _library; }
@@ -109,7 +110,8 @@ namespace spargel::gpu {
 
     class BufferVulkan final : public Buffer {
     public:
-        BufferVulkan(DeviceVulkan* device, VkBuffer buffer, usize offset, usize size);
+        BufferVulkan(DeviceVulkan* device, VkBuffer buffer, usize offset,
+                     usize size);
         ~BufferVulkan() {}
 
         auto buffer() const { return _buffer; }
@@ -132,7 +134,8 @@ namespace spargel::gpu {
 
         auto texture() const { return _texture; }
 
-        void updateRegion(u32 x, u32 y, u32 width, u32 height, u32 bytes_per_row,
+        void updateRegion(u32 x, u32 y, u32 width, u32 height,
+                          u32 bytes_per_row,
                           base::span<base::Byte> bytes) override;
 
     private:
@@ -209,9 +212,10 @@ namespace spargel::gpu {
         explicit RenderPassEncoderVulkan() {}
 
         void setRenderPipeline(RenderPipeline* pipeline) override;
-        void setVertexBuffer(Buffer* buffer, VertexBufferLocation const& loc) override;
-        void setFragmentBuffer(Buffer* buffer, VertexBufferLocation const& loc) override {
-        }
+        void setVertexBuffer(Buffer* buffer,
+                             VertexBufferLocation const& loc) override;
+        void setFragmentBuffer(Buffer* buffer,
+                               VertexBufferLocation const& loc) override {}
         void setTexture(Texture* texture) override;
         void setViewport(Viewport viewport) override;
         void draw(int vertex_start, int vertex_count) override;
@@ -228,7 +232,8 @@ namespace spargel::gpu {
         void setComputePipeline(ComputePipeline* pipeline) override;
         void setComputePipeline2(ComputePipeline2* pipeline) override;
         void setBindGroup(u32 index, BindGroup* group) override;
-        void setBuffer(Buffer* buffer, VertexBufferLocation const& loc) override;
+        void setBuffer(Buffer* buffer,
+                       VertexBufferLocation const& loc) override;
         void dispatch(DispatchSize grid_size, DispatchSize group_size) override;
         void useBuffer(Buffer* buffer, BufferAccess access) override {}
 
@@ -240,7 +245,8 @@ namespace spargel::gpu {
 
     class BindGroupLayoutVulkan final : public BindGroupLayout {
     public:
-        explicit BindGroupLayoutVulkan(VkDescriptorSetLayout layout) : _layout{layout} {}
+        explicit BindGroupLayoutVulkan(VkDescriptorSetLayout layout)
+            : _layout{layout} {}
 
         auto layout() const { return _layout; }
 
@@ -252,8 +258,8 @@ namespace spargel::gpu {
 
     class BindGroupVulkan final : public BindGroup {
     public:
-        BindGroupVulkan(VkDescriptorSet set, DeviceVulkan* device, ComputePipeline2Vulkan* pipeline,
-                        u32 id);
+        BindGroupVulkan(VkDescriptorSet set, DeviceVulkan* device,
+                        ComputePipeline2Vulkan* pipeline, u32 id);
 
         void setBuffer(u32 id, Buffer* buffer) override;
 
@@ -307,7 +313,8 @@ namespace spargel::gpu {
         VkDescriptorType getDescriptorType(u32 id, u32 binding);
 
     private:
-        void createDescriptorSetLayouts(base::span<PipelineArgumentGroup> groups);
+        void createDescriptorSetLayouts(
+            base::span<PipelineArgumentGroup> groups);
         void createPipelineLayout();
         void createPipeline(ShaderFunction compute);
 
@@ -325,17 +332,18 @@ namespace spargel::gpu {
         VkPipeline _pipeline;
     };
 
-    // // One DeviceMemoryBlock corresponds to one VkDeviceMemory, i.e. one allocation.
-    // class DeviceMemoryBlock {
-    // public:
-    //     explicit DeviceMemoryBlock(VkDeviceMemory memory) : _memory{memory} {}
+    // // One DeviceMemoryBlock corresponds to one VkDeviceMemory, i.e. one
+    // allocation. class DeviceMemoryBlock { public:
+    //     explicit DeviceMemoryBlock(VkDeviceMemory memory) : _memory{memory}
+    //     {}
 
     // private:
     //     VkDeviceMemory _memory;
     // };
     // class DeviceMemoryAllocatorVulkan {
     // public:
-    //     explicit DeviceMemoryAllocatorVulkan(DeviceVulkan* device) : _device{device} {}
+    //     explicit DeviceMemoryAllocatorVulkan(DeviceVulkan* device) :
+    //     _device{device} {}
 
     // private:
     //     DeviceVulkan* _device;
@@ -367,7 +375,8 @@ namespace spargel::gpu {
 
     class ShapedDescriptorAllocator {
     public:
-        ShapedDescriptorAllocator(DeviceVulkan* device, DescriptorSetShape const& shape);
+        ShapedDescriptorAllocator(DeviceVulkan* device,
+                                  DescriptorSetShape const& shape);
 
     private:
         void createLayout();
@@ -412,15 +421,16 @@ namespace spargel::gpu {
         ComputePipeline* createComputePipeline(
             ShaderFunction func, base::span<BindGroupLayout*> layouts) override;
 
-        BindGroupLayout* createBindGroupLayout(ShaderStage stage,
-                                                         base::span<BindEntry> entries) override;
+        BindGroupLayout* createBindGroupLayout(
+            ShaderStage stage, base::span<BindEntry> entries) override;
         BindGroup* createBindGroup(BindGroupLayout* layout) override {
             return nullptr;
         }
 
         ComputePipeline2* createComputePipeline2(
             ComputePipeline2Descriptor const& desc) override {
-            return make_object<ComputePipeline2Vulkan>(this, desc.compute, desc.groups);
+            return make_object<ComputePipeline2Vulkan>(this, desc.compute,
+                                                       desc.groups);
         }
 
         BindGroup* createBindGroup2(ComputePipeline2* p, u32 id) override;
@@ -439,7 +449,9 @@ namespace spargel::gpu {
         VulkanProcTable const* getProcTable() const { return &_procs; }
 
         VkInstance getVkInstance() const { return _instance; }
-        VkPhysicalDevice getVkPhysicalDevice() const { return _physical_device; }
+        VkPhysicalDevice getVkPhysicalDevice() const {
+            return _physical_device;
+        }
         VkDevice getVkDevice() const { return _device; }
 
         VkDescriptorPool getDescriptorPool() const { return _dpool; }

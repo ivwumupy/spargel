@@ -1,19 +1,20 @@
 #pragma once
 
-#include "spargel/base/vector.h"
-#include "spargel/base/unique_ptr.h"
-#include "spargel/base/types.h"
-#include "spargel/ui/platform.h"
-
 #include <Windows.h>
 
+#include "spargel/base/types.h"
+#include "spargel/base/unique_ptr.h"
+#include "spargel/base/vector.h"
+#include "spargel/ui/platform.h"
+
 namespace spargel::ui {
-    
+
     class WindowWin32;
 
     class PlatformWin32 : public Platform {
     public:
-        explicit PlatformWin32(HINSTANCE hInstance) : Platform(PlatformKind::win32), hInstance_{hInstance} {}
+        explicit PlatformWin32(HINSTANCE hInstance)
+            : Platform(PlatformKind::win32), hInstance_{hInstance} {}
 
         void startLoop() override;
 
@@ -24,9 +25,8 @@ namespace spargel::ui {
     private:
         HINSTANCE hInstance_;
         base::Vector<WindowWin32*> windows_;
-
     };
 
     base::UniquePtr<Platform> makePlatformWin32();
 
-}
+}  // namespace spargel::ui

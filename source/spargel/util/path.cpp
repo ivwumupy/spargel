@@ -42,7 +42,8 @@ namespace spargel::util {
     }
 
     ParsedPath parsePath(const base::String& path) {
-        if (path.length() == 0) return {.absolute = false, .directory = false, .components = {}};
+        if (path.length() == 0)
+            return {.absolute = false, .directory = false, .components = {}};
 
         const char* data = path.data();
         const char *cur = path.begin(), *s;
@@ -68,7 +69,9 @@ namespace spargel::util {
             components.emplace(base::string_from_range(s, cur));
         }
 
-        return {.absolute = absolute, .directory = directory, .components = components};
+        return {.absolute = absolute,
+                .directory = directory,
+                .components = components};
     }
 
 }  // namespace spargel::util

@@ -34,7 +34,8 @@ struct RenderResult {
 
 inline constexpr float FONT_SIZE = 0;
 
-void writeToFile(char const* filename, uint8_t const* data, size_t w, size_t h) {
+void writeToFile(char const* filename, uint8_t const* data, size_t w,
+                 size_t h) {
     auto file = fopen(filename, "w");
 
     fprintf(file, "P2\n%zu %zu\n255\n", w, h);
@@ -49,13 +50,17 @@ void writeToFile(char const* filename, uint8_t const* data, size_t w, size_t h) 
 }
 
 void buildGroundTruth(base::StringView text, GroundTruth& output) {
-    auto str = CFStringCreateWithCString(nullptr, text.data(), kCFStringEncodingUTF8);
-    auto font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, FONT_SIZE, nullptr);
+    auto str =
+        CFStringCreateWithCString(nullptr, text.data(), kCFStringEncodingUTF8);
+    auto font =
+        CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, FONT_SIZE, nullptr);
     void const* keys[] = {kCTFontAttributeName, kCTLigatureAttributeName};
     int val = 2;
-    auto number = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &val);
+    auto number =
+        CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &val);
     void const* values[] = {font, number};
-    auto dict = CFDictionaryCreate(kCFAllocatorDefault, keys, values, 1, NULL, NULL);
+    auto dict =
+        CFDictionaryCreate(kCFAllocatorDefault, keys, values, 1, NULL, NULL);
     auto attr_str = CFAttributedStringCreate(kCFAllocatorDefault, str, dict);
     auto line = CTLineCreateWithAttributedString(attr_str);
 
@@ -113,7 +118,8 @@ void buildGroundTruth(base::StringView text, GroundTruth& output) {
     CFRelease(str);
 }
 
-void buildSpargel(base::StringView text, GroundTruth const& truth, RenderResult& result) {
+void buildSpargel(base::StringView text, GroundTruth const& truth,
+                  RenderResult& result) {
     auto context = new gpu::MetalContext;
     auto manager = new text::FontManagerMac;
     auto shaper = new text::TextShaperMac(manager);
@@ -125,11 +131,13 @@ void buildSpargel(base::StringView text, GroundTruth const& truth, RenderResult&
     auto device = context->device();
 
     auto desc =
-        // [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB
-        [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
-                                                           width:truth.width
-                                                          height:truth.height
-                                                       mipmapped:false];
+        // [MTLTextureDescriptor
+        // texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB
+        [MTLTextureDescriptor
+            texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+                                         width:truth.width
+                                        height:truth.height
+                                     mipmapped:false];
     desc.storageMode = MTLStorageModeShared;
     if (render::UIRendererMetal::use_compute) {
         desc.usage = MTLTextureUsageShaderWrite;
@@ -139,8 +147,8 @@ void buildSpargel(base::StringView text, GroundTruth const& truth, RenderResult&
     auto texture = [device newTextureWithDescriptor:desc];
 
     scene.setClip(0, 0, (float)truth.width, (float)truth.height);
-    scene.fillText(text::StyledText{text, font}, 0, (float)truth.height - (float)truth.descent,
-                   0xFFFFFFFF);
+    scene.fillText(text::StyledText{text, font}, 0,
+                   (float)truth.height - (float)truth.descent, 0xFFFFFFFF);
 
     auto command_buffer = renderer->renderToTexture(scene, texture);
 
@@ -206,7 +214,8 @@ int main(int argc, char* argv[]) {
         s += (d / 255.0f) * (d / 255.0f);
     }
     writeToFile("diff.pgm", res.data, gt.width, gt.height);
-    printf("l2 distance: %.3f\n", sqrtf(s / ((float)gt.width * (float)gt.height)));
+    printf("l2 distance: %.3f\n",
+           sqrtf(s / ((float)gt.width * (float)gt.height)));
 
     free(gt.data);
     free(res.data);

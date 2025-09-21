@@ -17,7 +17,8 @@ namespace spargel::ui {
 
         while (!_app->destroyRequested) {
             android_poll_source* source;
-            auto result = ALooper_pollOnce(0, nullptr, nullptr, (void**)&source);
+            auto result =
+                ALooper_pollOnce(0, nullptr, nullptr, (void**)&source);
             if (result == ALOOPER_POLL_ERROR) {
                 spargel_log_error("ALooper_pollOnce returned an error");
                 spargel_panic_here();
@@ -33,11 +34,13 @@ namespace spargel::ui {
         }
     }
 
-    base::unique_ptr<window_android> platform_android::generate_window_handle() {
+    base::unique_ptr<window_android>
+    platform_android::generate_window_handle() {
         return base::make_unique<window_android>(*this);
     }
 
-    window_android::window_android(platform_android& platform) : _platform(platform) {
+    window_android::window_android(platform_android& platform)
+        : _platform(platform) {
         platform.window = this;
     }
 

@@ -20,7 +20,8 @@ namespace spargel::base {
 
             template <typename U>
                 requires(is_convertible<U*, T*>)
-            constexpr unique_ptr(unique_ptr<U>&& other) : _ptr{other.release()} {}
+            constexpr unique_ptr(unique_ptr<U>&& other)
+                : _ptr{other.release()} {}
 
             template <typename U>
                 requires(is_convertible<U*, T*>)
@@ -53,7 +54,8 @@ namespace spargel::base {
                 return p;
             }
 
-            friend void tag_invoke(tag<swap>, unique_ptr& lhs, unique_ptr& rhs) {
+            friend void tag_invoke(tag<swap>, unique_ptr& lhs,
+                                   unique_ptr& rhs) {
                 swap(lhs._ptr, rhs._ptr);
             }
 
@@ -69,7 +71,8 @@ namespace spargel::base {
 
     template <typename T, typename... Args>
     UniquePtr<T> makeUnique(Args&&... args) {
-        return unique_ptr<T>(default_allocator()->allocObject<T>(forward<Args>(args)...));
+        return unique_ptr<T>(
+            default_allocator()->allocObject<T>(forward<Args>(args)...));
     }
 
     template <typename T, typename... Args>

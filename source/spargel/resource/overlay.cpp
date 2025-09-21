@@ -9,7 +9,8 @@ namespace spargel::resource {
         return false;
     }
 
-    base::Optional<base::unique_ptr<Resource>> ResourceManagerOverlay::open(const ResourceId& id) {
+    base::Optional<base::unique_ptr<Resource>> ResourceManagerOverlay::open(
+        const ResourceId& id) {
         for (auto& manager : _sub_managers) {
             if (manager->has(id)) {
                 auto resource = manager->open(id);

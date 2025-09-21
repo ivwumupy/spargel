@@ -8,11 +8,13 @@ namespace spargel::resource {
 
     class ResourceManagerDirectory : public ResourceManager {
     public:
-        ResourceManagerDirectory(base::StringView root_path) : _root_path(root_path) {}
+        ResourceManagerDirectory(base::StringView root_path)
+            : _root_path(root_path) {}
 
         bool has(const ResourceId& id) override;
 
-        base::Optional<base::unique_ptr<Resource>> open(const ResourceId& id) override;
+        base::Optional<base::unique_ptr<Resource>> open(
+            const ResourceId& id) override;
 
     private:
         base::String _root_path;

@@ -13,7 +13,8 @@ namespace spargel::resource {
         explicit ResourceManagerAndroidAsset(AAssetManager* asset_manager)
             : _asset_manager(asset_manager) {}
 
-        base::Optional<base::unique_ptr<Resource>> open(const ResourceId& id) override;
+        base::Optional<base::unique_ptr<Resource>> open(
+            const ResourceId& id) override;
 
     private:
         AAssetManager* _asset_manager;

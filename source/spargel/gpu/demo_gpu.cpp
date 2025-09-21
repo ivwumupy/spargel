@@ -12,7 +12,8 @@ namespace spargel::gpu {
                 }
             )");
             codec::JsonDecodeBackend backend;
-            auto entry = BindTableEntry::CODEC.decode(backend, base::move(json.left()));
+            auto entry =
+                BindTableEntry::CODEC.decode(backend, base::move(json.left()));
 
             spargel_check(entry.isRight());
             entry.right().dump();
@@ -35,7 +36,8 @@ namespace spargel::gpu {
             //                             {
             //                                 BindGroupEntry{
             //                                     .id = 0,
-            //                                     .kind = BindEntryKind::uniform_buffer,
+            //                                     .kind =
+            //                                     BindEntryKind::uniform_buffer,
             //                                 },
             //                             },
             //                     },

@@ -10,17 +10,20 @@ namespace spargel::text {
         auto font = static_cast<FontMac*>(text.font());
 
         // Convert to CFString
-        auto cfstr =
-            CFStringCreateWithBytes(kCFAllocatorDefault, (u8 const*)text.text().data(),
-                                    (CFIndex)text.text().length(), kCFStringEncodingUTF8, false);
+        auto cfstr = CFStringCreateWithBytes(
+            kCFAllocatorDefault, (u8 const*)text.text().data(),
+            (CFIndex)text.text().length(), kCFStringEncodingUTF8, false);
 
         // Create CFAttributedString
         void const* keys[] = {kCTFontAttributeName, kCTLigatureAttributeName};
         int val = 2;
-        auto number = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &val);
+        auto number =
+            CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &val);
         void const* values[] = {font->object_, number};
-        auto dict = CFDictionaryCreate(kCFAllocatorDefault, keys, values, 1, NULL, NULL);
-        auto attr_str = CFAttributedStringCreate(kCFAllocatorDefault, cfstr, dict);
+        auto dict = CFDictionaryCreate(kCFAllocatorDefault, keys, values, 1,
+                                       NULL, NULL);
+        auto attr_str =
+            CFAttributedStringCreate(kCFAllocatorDefault, cfstr, dict);
 
         // Shape using Core Text.
         auto line = CTLineCreateWithAttributedString(attr_str);
@@ -38,7 +41,8 @@ namespace spargel::text {
             CGFloat ascent;
             CGFloat descent;
             CGFloat leading;
-            CGFloat width = CTLineGetTypographicBounds(line, &ascent, &descent, &leading);
+            CGFloat width =
+                CTLineGetTypographicBounds(line, &ascent, &descent, &leading);
 
             result.ascent = static_cast<float>(ascent);
             result.descent = -static_cast<float>(descent);
@@ -52,7 +56,8 @@ namespace spargel::text {
 
             auto attr = CTRunGetAttributes(run);
 
-            auto font = (CTFontRef)CFDictionaryGetValue(attr, kCTFontAttributeName);
+            auto font =
+                (CTFontRef)CFDictionaryGetValue(attr, kCTFontAttributeName);
             segment.font = font_manager_->translateFont(font);
 
             glyphs.reserve((usize)count);
@@ -75,8 +80,8 @@ namespace spargel::text {
                 segment.positions[(usize)j].y = (float)points[(usize)j].y;
             }
 
-            segment.width =
-                (float)CTRunGetTypographicBounds(run, CFRangeMake(0, count), NULL, NULL, NULL);
+            segment.width = (float)CTRunGetTypographicBounds(
+                run, CFRangeMake(0, count), NULL, NULL, NULL);
 
             result.segments.emplace(base::move(segment));
         }
@@ -90,6 +95,7 @@ namespace spargel::text {
         return result;
     }
     base::UniquePtr<TextShaper> TextShaper::create(FontManager* font_manager) {
-        return base::makeUnique<TextShaperMac>(static_cast<FontManagerMac*>(font_manager));
+        return base::makeUnique<TextShaperMac>(
+            static_cast<FontManagerMac*>(font_manager));
     }
 }  // namespace spargel::text

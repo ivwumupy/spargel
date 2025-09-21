@@ -5,8 +5,8 @@
 namespace spargel::base {
     // Buffered output to stdout.
     //
-    // Warning: The buffer is not flushed when panic. The implementation can panic, so we cannot
-    // flush the buffer in panic().
+    // Warning: The buffer is not flushed when panic. The implementation can
+    // panic, so we cannot flush the buffer in panic().
     class Console {
     public:
         static Console& instance();

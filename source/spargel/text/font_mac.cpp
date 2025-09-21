@@ -12,7 +12,9 @@
 
 namespace spargel::text {
     namespace {
-        CGGlyph toCGGlyph(GlyphId id) { return base::checkedConvert<CGGlyph>(id.value); }
+        CGGlyph toCGGlyph(GlyphId id) {
+            return base::checkedConvert<CGGlyph>(id.value);
+        }
     }  // namespace
     FontMac::FontMac(CTFontRef object) : object_{object} {
         CFRetain(object_);
@@ -20,15 +22,17 @@ namespace spargel::text {
         auto name = CTFontCopyFullName(object_);
         auto range = CFRangeMake(0, CFStringGetLength(name));
         CFIndex len;
-        spargel_check(
-            CFStringGetBytes(name, range, kCFStringEncodingUTF8, 0, false, nullptr, 0, &len) > 0);
+        spargel_check(CFStringGetBytes(name, range, kCFStringEncodingUTF8, 0,
+                                       false, nullptr, 0, &len) > 0);
         name_.resize(base::checkedConvert<usize>(len));
-        spargel_check(CFStringGetBytes(name, range, kCFStringEncodingUTF8, 0, false,
-                                       (u8*)name_.data(), (CFIndex)name_.length(), &len) == len);
+        spargel_check(CFStringGetBytes(name, range, kCFStringEncodingUTF8, 0,
+                                       false, (u8*)name_.data(),
+                                       (CFIndex)name_.length(), &len) == len);
         CFRelease(name);
     }
     FontMac::~FontMac() { CFRelease(object_); }
-    Bitmap FontMac::rasterizeGlyph(GlyphId id, float scale, math::Vector2f subpixel_position) {
+    Bitmap FontMac::rasterizeGlyph(GlyphId id, float scale,
+                                   math::Vector2f subpixel_position) {
         auto glyph_info = glyphInfo(id);
         auto rect = glyph_info.bounding_box;
 
@@ -50,8 +54,9 @@ namespace spargel::text {
         Bitmap bitmap;
         bitmap.width = width;
         bitmap.height = height;
-        bitmap.data.reserve(width *
-                            height);  // only alpha. 8 bits per channel and 1 bytes per pixel
+        bitmap.data.reserve(
+            width *
+            height);  // only alpha. 8 bits per channel and 1 bytes per pixel
         bitmap.data.set_count(width * height);
         memset(bitmap.data.data(), 0x00, width * height);
 
@@ -63,7 +68,8 @@ namespace spargel::text {
         // NOTE: Scale does not change the translate part.
         //
         // TODO: Read the docs. Why we have to translate before scale?
-        CGContextTranslateCTM(ctx, -rect.origin.x * scale, -rect.origin.y * scale);
+        CGContextTranslateCTM(ctx, -rect.origin.x * scale,
+                              -rect.origin.y * scale);
         CGContextScaleCTM(ctx, scale, scale);
 
         // TODO: It seems there's no need for this.
@@ -79,7 +85,8 @@ namespace spargel::text {
         // A consequence is that we need to do the subpixel shift here.
         //
         // Add 1 to make room for anti-aliasing. See the note in `ui_scene.cpp`.
-        CGPoint point = CGPointMake(1 + subpixel_position.x, 1 + subpixel_position.y);
+        CGPoint point =
+            CGPointMake(1 + subpixel_position.x, 1 + subpixel_position.y);
 
         CGGlyph glyph = base::checkedConvert<CGGlyph>(id.value);
         CTFontDrawGlyphs(object_, &glyph, &point, 1, ctx);
@@ -87,8 +94,8 @@ namespace spargel::text {
         CFRelease(color_space);
         CGContextRelease(ctx);
 
-        // spargel_log_info("%.3f %.3f", subpixel_position.x, subpixel_position.y);
-        // bitmap.dump();
+        // spargel_log_info("%.3f %.3f", subpixel_position.x,
+        // subpixel_position.y); bitmap.dump();
 
         return bitmap;
     }
@@ -103,10 +110,12 @@ namespace spargel::text {
         CGGlyph glyph = toCGGlyph(id);
 
         CGRect rect;
-        CTFontGetBoundingRectsForGlyphs(object_, kCTFontOrientationHorizontal, &glyph, &rect, 1);
+        CTFontGetBoundingRectsForGlyphs(object_, kCTFontOrientationHorizontal,
+                                        &glyph, &rect, 1);
 
         CGSize advance;
-        CTFontGetAdvancesForGlyphs(object_, kCTFontOrientationHorizontal, &glyph, &advance, 1);
+        CTFontGetAdvancesForGlyphs(object_, kCTFontOrientationHorizontal,
+                                   &glyph, &advance, 1);
 
         GlyphInfo info;
         info.bounding_box.origin.x = (float)rect.origin.x;

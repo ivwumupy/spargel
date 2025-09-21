@@ -32,18 +32,21 @@ namespace spargel::base {
             Either() = default;
 
             Either(Left<L> const& l) : Either(LeftTag<true>{}, l.value) {}
-            Either(Left<L>&& l) : Either(LeftTag<true>{}, base::move(l.value)) {}
+            Either(Left<L>&& l)
+                : Either(LeftTag<true>{}, base::move(l.value)) {}
 
             Either(Right<R> const& r) : Either(LeftTag<false>{}, r.value) {}
-            Either(Right<R>&& r) : Either(LeftTag<false>{}, base::move(r.value)) {}
+            Either(Right<R>&& r)
+                : Either(LeftTag<false>{}, base::move(r.value)) {}
 
             Either(const Either&) = default;
 
             template <typename L2, typename R2>
                 requires(is_convertible<L2, L> && is_convertible<R2, R>)
             Either(Either<L2, R2>&& other)
-                : _value(other.isLeft() ? Type::template make<0>(move(other.left()))
-                                        : Type::template make<1>(move(other.right()))) {}
+                : _value(other.isLeft()
+                             ? Type::template make<0>(move(other.left()))
+                             : Type::template make<1>(move(other.right()))) {}
 
             // Assignment operators
             Either& operator=(const Either&) = default;
@@ -88,8 +91,9 @@ namespace spargel::base {
 
         template <typename L, typename R, typename... Args>
         Either<L, R> makeRight(Args&&... args) {
-            return Either<L, R>(typename Either<L, R>::template LeftTag<false>{},
-                                forward<Args>(args)...);
+            return Either<L, R>(
+                typename Either<L, R>::template LeftTag<false>{},
+                forward<Args>(args)...);
         }
 
     }  // namespace _either

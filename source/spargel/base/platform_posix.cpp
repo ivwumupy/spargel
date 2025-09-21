@@ -11,7 +11,9 @@ namespace spargel::base {
         return (dynamic_library_handle*)dlopen(filename, RTLD_NOW | RTLD_LOCAL);
     }
 
-    void close_dynamic_library(dynamic_library_handle* handle) { dlclose((void*)handle); }
+    void close_dynamic_library(dynamic_library_handle* handle) {
+        dlclose((void*)handle);
+    }
 
     void* get_proc_address(dynamic_library_handle* handle, const char* name) {
         return dlsym((void*)handle, name);

@@ -11,7 +11,8 @@ namespace spargel::base {
         // TODO: Type-safe `FormatString`.
         class FormatString {
         public:
-            constexpr FormatString(char const* s) : begin_{s}, end_{s + __builtin_strlen(s)} {}
+            constexpr FormatString(char const* s)
+                : begin_{s}, end_{s + __builtin_strlen(s)} {}
 
             constexpr char const* begin() const { return begin_; }
             constexpr char const* end() const { return end_; }
@@ -31,12 +32,14 @@ namespace spargel::base {
         };
     }  // namespace format_
 
-    // `parseFormat` is a customization-point to handle the parsing of the format specification.
-    // It should return a formatter object that will be invoked to perform the format.
+    // `parseFormat` is a customization-point to handle the parsing of the
+    // format specification. It should return a formatter object that will be
+    // invoked to perform the format.
     inline constexpr format_::ParseFormatCPO parseFormat;
 
     template <FormatTarget Target, typename... Args>
-    constexpr void formatTo(Target& target, detail::FormatString fmt, Args&&... args) {
+    constexpr void formatTo(Target& target, detail::FormatString fmt,
+                            Args&&... args) {
         auto it = fmt.begin();
         auto fragment_begin = it;
         while (it < fmt.end()) {

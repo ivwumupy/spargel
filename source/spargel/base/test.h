@@ -39,15 +39,15 @@ namespace spargel::base {
 
 #define _TEST_CLASS_NAME(test_name) _SpargelTestClass_##test_name
 
-#define TEST(test_name)                                                                         \
-    class _TEST_CLASS_NAME(test_name) final : public ::spargel::base::Test {                    \
-    public:                                                                                     \
-        void run() override;                                                                    \
-                                                                                                \
-    private:                                                                                    \
-        static _TEST_CLASS_NAME(test_name) * _instance;                                         \
-    };                                                                                          \
-    _TEST_CLASS_NAME(test_name) * _TEST_CLASS_NAME(test_name)::_instance =                      \
-        ::spargel::base::TestManager::getInstance()->registerTest<_TEST_CLASS_NAME(test_name)>( \
-            #test_name);                                                                        \
+#define TEST(test_name)                                                      \
+    class _TEST_CLASS_NAME(test_name) final : public ::spargel::base::Test { \
+    public:                                                                  \
+        void run() override;                                                 \
+                                                                             \
+    private:                                                                 \
+        static _TEST_CLASS_NAME(test_name) * _instance;                      \
+    };                                                                       \
+    _TEST_CLASS_NAME(test_name) * _TEST_CLASS_NAME(test_name)::_instance =   \
+        ::spargel::base::TestManager::getInstance()                          \
+            ->registerTest<_TEST_CLASS_NAME(test_name)>(#test_name);         \
     void _TEST_CLASS_NAME(test_name)::run()

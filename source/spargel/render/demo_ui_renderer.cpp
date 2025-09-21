@@ -36,7 +36,8 @@ namespace spargel::render {
             void initRenderer() {
                 gpu_context_ = gpu::makeContext(gpu::inferBackend());
                 shaper_ = text::TextShaper::create(font_manager_.get());
-                renderer_ = render::makeUIRenderer(gpu_context_.get(), shaper_.get());
+                renderer_ =
+                    render::makeUIRenderer(gpu_context_.get(), shaper_.get());
             }
             void initWindow() {
                 platform_ = ui::makePlatform();
@@ -56,34 +57,46 @@ namespace spargel::render {
                 scene_.strokeLine(200, 200, 100, 200, 0xFFFF00FF);
                 scene_.strokeLine(100, 200, 100, 100, 0xFFFFFF00);
                 scene_.strokeCircle(150, 150, 50, 0xFF0000FF);
-                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_}, 20, 250,
-                                0xFF0000FF);
+                scene_.fillText(
+                    text::StyledText{"hello,world测试日本語"_sv, font_}, 20,
+                    250, 0xFF0000FF);
                 scene_.strokeLine(0, 250, 500, 250, 0xFFFFFFFF);
 
                 // move on a circle!
-                float x = 520.0f + 30.0f * math::cos((float)frame_count_ / 120.0f);
-                float y = 250.0f + 30.0f * math::sin((float)frame_count_ / 120.0f);
-                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_}, x, y,
-                                0xFF0000FF);
+                float x =
+                    520.0f + 30.0f * math::cos((float)frame_count_ / 120.0f);
+                float y =
+                    250.0f + 30.0f * math::sin((float)frame_count_ / 120.0f);
+                scene_.fillText(
+                    text::StyledText{"hello,world测试日本語"_sv, font_}, x, y,
+                    0xFF0000FF);
 
-                scene_.fillText(text::StyledText{"hello,world测试日本語"_sv, font_}, 720, 750,
-                                0xFF0000FF);
+                scene_.fillText(
+                    text::StyledText{"hello,world测试日本語"_sv, font_}, 720,
+                    750, 0xFF0000FF);
 
-                scene_.fillText(text::StyledText{"hello,worldकैसे हैं आप测试日本語"_sv, font_}, 20, 750,
-                                0xFF0000FF);
+                scene_.fillText(
+                    text::StyledText{"hello,worldकैसे हैं आप测试日本語"_sv, font_},
+                    20, 750, 0xFF0000FF);
 
-                scene_.fillRoundedRect(200 - 5, 400, 100 + 10, 50, 5, 0xFFFFFFFF);
-                scene_.fillText(text::StyledText{"click"_sv, font_}, 202, 442, 0xFF000000);
+                scene_.fillRoundedRect(200 - 5, 400, 100 + 10, 50, 5,
+                                       0xFFFFFFFF);
+                scene_.fillText(text::StyledText{"click"_sv, font_}, 202, 442,
+                                0xFF000000);
 
                 // slide (width = 120)
                 float p = (frame_count_ % 1200) / 6.0f;
                 p = 100.0f - math::abs(100.0f - p);
-                scene_.fillRoundedRect(400, 425, 120.0f * p / 100.0f, 10, 5, 0xFFFF0000);
+                scene_.fillRoundedRect(400, 425, 120.0f * p / 100.0f, 10, 5,
+                                       0xFFFF0000);
                 scene_.fillRoundedRect(400 + 120.0f * p / 100.0f, 425,
-                                       120.0f * (100.0f - p) / 100.0f, 10, 5, 0xFFCCCCCC);
-                scene_.fillCircle(400 + 120.0f * p / 100.0f, 425 + 5, 8, 0xFF0055FF);
+                                       120.0f * (100.0f - p) / 100.0f, 10, 5,
+                                       0xFFCCCCCC);
+                scene_.fillCircle(400 + 120.0f * p / 100.0f, 425 + 5, 8,
+                                  0xFF0055FF);
 
-                scene_.fillText(text::StyledText{"slide"_sv, font_}, 410, 410, 0xFF777777);
+                scene_.fillText(text::StyledText{"slide"_sv, font_}, 410, 410,
+                                0xFF777777);
 
                 scene_.strokeLine(50 + 6, 50, 50, 50 + 6, 0xFFFFFFFF);
                 scene_.strokeLine(50, 50, 50 + 6, 50 + 6, 0xFFFFFFFF);

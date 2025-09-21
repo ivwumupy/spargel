@@ -17,7 +17,8 @@ namespace spargel::text {
         hb_buffer_t* buf = hb_buffer_create();
 
         auto text_view = text.text();
-        hb_buffer_add_utf8(buf, text_view.data(), text_view.length(), 0, text_view.length());
+        hb_buffer_add_utf8(buf, text_view.data(), text_view.length(), 0,
+                           text_view.length());
 
         hb_buffer_set_direction(buf, HB_DIRECTION_LTR);
         hb_buffer_set_script(buf, HB_SCRIPT_LATIN);
@@ -26,8 +27,10 @@ namespace spargel::text {
         hb_shape(font->hb_font, buf, nullptr, 0);
 
         u32 glyph_count;
-        hb_glyph_info_t* glyph_info = hb_buffer_get_glyph_infos(buf, &glyph_count);
-        hb_glyph_position_t* glyph_pos = hb_buffer_get_glyph_positions(buf, &glyph_count);
+        hb_glyph_info_t* glyph_info =
+            hb_buffer_get_glyph_infos(buf, &glyph_count);
+        hb_glyph_position_t* glyph_pos =
+            hb_buffer_get_glyph_positions(buf, &glyph_count);
 
         segment.glyphs.reserve(glyph_count);
         segment.glyphs.set_count(glyph_count);

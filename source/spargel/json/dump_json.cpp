@@ -15,7 +15,9 @@ namespace {
 
     void dumpValue(const JsonValue& value);
 
-    void dumpObject([[maybe_unused]] const JsonObject& object) { printf("{TODO}"); }
+    void dumpObject([[maybe_unused]] const JsonObject& object) {
+        printf("{TODO}");
+    }
 
     void dumpArray(const JsonArray& array) {
         putchar('[');

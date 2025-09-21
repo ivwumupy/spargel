@@ -14,10 +14,12 @@ namespace spargel::base {
         // `ArrayStorage<T>` provides storage for an array of `T`.
         //
         // Note:
-        //     - It doesn't make sense to copy `ArrayStorage` unless `T` is trivially copyable.
+        //     - It doesn't make sense to copy `ArrayStorage` unless `T` is
+        //     trivially copyable.
         //       For simplicity, copy is banned unconditionally.
         //     - The status of the each slot is not tracked.
-        //       So there is no way to swap two `ArrayStorage` with different allocators.
+        //       So there is no way to swap two `ArrayStorage` with different
+        //       allocators.
         //
         // TODO:
         //     - Rewrite to `OptionalArray`.
@@ -34,7 +36,8 @@ namespace spargel::base {
             //
             ArrayStorage(usize count) : _count{count} {
                 if (count > 0)
-                    _data = static_cast<Byte*>(default_allocator()->allocate(count * sizeof(T)));
+                    _data = static_cast<Byte*>(
+                        default_allocator()->allocate(count * sizeof(T)));
             }
 
             // Copy constructor is removed.
@@ -42,7 +45,8 @@ namespace spargel::base {
             ArrayStorage& operator=(ArrayStorage const&) = delete;
 
             // Move is cheap.
-            ArrayStorage(ArrayStorage&& other) : _count{other._count}, _data{other._data} {
+            ArrayStorage(ArrayStorage&& other)
+                : _count{other._count}, _data{other._data} {
                 other._count = 0;
                 other._data = nullptr;
             }
@@ -93,7 +97,8 @@ namespace spargel::base {
             }
 
             // Exchange storage.
-            friend void tag_invoke(tag<swap>, ArrayStorage& lhs, ArrayStorage& rhs) {
+            friend void tag_invoke(tag<swap>, ArrayStorage& lhs,
+                                   ArrayStorage& rhs) {
                 swap(lhs._count, rhs._count);
                 swap(lhs._data, rhs._data);
             }

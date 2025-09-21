@@ -83,7 +83,8 @@ namespace spargel::base {
                 _end = _begin;
             }
 
-            // Ensure that the vector can hold `n` elements without reallocation.
+            // Ensure that the vector can hold `n` elements without
+            // reallocation.
             void reserve(usize n) {
                 if (_begin + n > _capacity) {
                     grow(n);
@@ -192,8 +193,8 @@ namespace spargel::base {
                 swap(lhs._end, rhs._end);
                 swap(lhs._capacity, rhs._capacity);
                 // } else [[unlikely]] {
-                //   spargel_log_fatal("unimplemented: swapping vectors with different allocators");
-                //   spargel_panic_here();
+                //   spargel_log_fatal("unimplemented: swapping vectors with
+                //   different allocators"); spargel_panic_here();
                 // }
             }
 
@@ -215,21 +216,24 @@ namespace spargel::base {
 #if spargel_has_builtin(__is_trivially_copyable)
                 if constexpr (__is_trivially_copyable(T)) {
                     if (_begin == nullptr) {
-                        new_begin = static_cast<T*>(
-                            default_allocator()->allocate(sizeof(T) * new_capacity));
+                        new_begin =
+                            static_cast<T*>(default_allocator()->allocate(
+                                sizeof(T) * new_capacity));
                     } else {
                         new_begin = static_cast<T*>(default_allocator()->resize(
-                            _begin, capacity() * sizeof(T), sizeof(T) * new_capacity));
+                            _begin, capacity() * sizeof(T),
+                            sizeof(T) * new_capacity));
                     }
                 } else
 #endif
                 {
 
-                    new_begin =
-                        static_cast<T*>(default_allocator()->allocate(sizeof(T) * new_capacity));
+                    new_begin = static_cast<T*>(default_allocator()->allocate(
+                        sizeof(T) * new_capacity));
                     if (_begin != nullptr) [[likely]] {
 #if spargel_has_builtin(__builtin_is_cpp_trivially_relocatable)
-                        if constexpr (__builtin_is_cpp_trivially_relocatable(T)) {
+                        if constexpr (__builtin_is_cpp_trivially_relocatable(
+                                          T)) {
                             memcpy(new_begin, _begin, old_count * sizeof(T));
                         } else
 // #elif spargel_has_builtin(__is_trivially_copyable)
@@ -262,12 +266,15 @@ namespace spargel::base {
             }
 
             void allocate(usize capacity) {
-                _begin = static_cast<T*>(default_allocator()->allocate(sizeof(T) * capacity));
+                _begin = static_cast<T*>(
+                    default_allocator()->allocate(sizeof(T) * capacity));
                 _end = _begin;
                 _capacity = _begin + capacity;
             }
 
-            void deallocate() { default_allocator()->free(_begin, sizeof(T) * capacity()); }
+            void deallocate() {
+                default_allocator()->free(_begin, sizeof(T) * capacity());
+            }
 
             void copyRange(T const* begin, T const* end) {
                 for (; begin < end; begin++, _end++) {

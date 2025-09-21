@@ -20,7 +20,8 @@ namespace spargel::base {
         };
         template <usize N>
         struct MakeSequence {
-            using Type = Append<typename MakeSequence<N - 1>::Type, N - 1>::Type;
+            using Type =
+                Append<typename MakeSequence<N - 1>::Type, N - 1>::Type;
         };
         template <>
         struct MakeSequence<0> {
@@ -42,7 +43,8 @@ namespace spargel::base {
             constexpr TupleStorage() {}
             template <typename... U>
                 requires(sizeof...(U) == sizeof...(Is))
-            constexpr TupleStorage(U&&... u) : TupleItem<Is, L>{forward<U>(u)}... {}
+            constexpr TupleStorage(U&&... u)
+                : TupleItem<Is, L>{forward<U>(u)}... {}
             template <usize i>
             auto& get() {
                 return TupleItem<i, L>::data;
@@ -74,7 +76,9 @@ namespace spargel::base {
             }
 
         private:
-            TupleStorage<TypeList<Ts...>, typename MakeSequence<sizeof...(Ts)>::Type> _storage;
+            TupleStorage<TypeList<Ts...>,
+                         typename MakeSequence<sizeof...(Ts)>::Type>
+                _storage;
         };
 
         template <typename T>
@@ -87,13 +91,15 @@ namespace spargel::base {
 
         template <typename F, typename T, usize... Is>
         decltype(auto) applyImpl(F&& func, T&& tuple, IntegerSequence<Is...>) {
-            return base::forward<F>(func)(base::forward<T>(tuple).template get<Is>()...);
+            return base::forward<F>(func)(
+                base::forward<T>(tuple).template get<Is>()...);
         }
 
         template <typename F, typename T>
         decltype(auto) apply(F&& func, T&& tuple) {
             return applyImpl(base::forward<F>(func), base::forward<T>(tuple),
-                             typename MakeSequence<TupleSize<base::decay<T>>::value>::Type{});
+                             typename MakeSequence<
+                                 TupleSize<base::decay<T>>::value>::Type{});
         }
 
     }  // namespace _tuple

@@ -24,6 +24,7 @@ private:
     base::unique_ptr<ui::Window> _window;
 };
 
-extern "C" DEMO_EXPORT entry::Component* _spargel_make_component(entry::LaunchData* l) {
+extern "C" DEMO_EXPORT entry::Component* _spargel_make_component(
+    entry::LaunchData* l) {
     return base::default_allocator()->allocObject<demo_component>(l);
 }

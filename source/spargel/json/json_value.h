@@ -30,8 +30,10 @@ namespace spargel::json {
 
         JsonObject() {}
 
-        JsonObject(const base::HashMap<JsonString, JsonValue>& members) : members(members) {}
-        JsonObject(base::HashMap<JsonString, JsonValue>&& members) : members(base::move(members)) {}
+        JsonObject(const base::HashMap<JsonString, JsonValue>& members)
+            : members(members) {}
+        JsonObject(base::HashMap<JsonString, JsonValue>&& members)
+            : members(base::move(members)) {}
     };
 
     struct JsonArray {
@@ -53,10 +55,14 @@ namespace spargel::json {
         JsonValue() : type(JsonValueType::null) {}
 
         JsonValue(JsonNull) : type(JsonValueType::null) {}
-        JsonValue(JsonObject&& object) : type(JsonValueType::object), object(base::move(object)) {}
-        JsonValue(JsonArray&& array) : type(JsonValueType::array), array(base::move(array)) {}
-        JsonValue(JsonString&& string) : type(JsonValueType::string), string(base::move(string)) {}
-        JsonValue(JsonNumber&& number) : type(JsonValueType::number), number(base::move(number)) {}
+        JsonValue(JsonObject&& object)
+            : type(JsonValueType::object), object(base::move(object)) {}
+        JsonValue(JsonArray&& array)
+            : type(JsonValueType::array), array(base::move(array)) {}
+        JsonValue(JsonString&& string)
+            : type(JsonValueType::string), string(base::move(string)) {}
+        JsonValue(JsonNumber&& number)
+            : type(JsonValueType::number), number(base::move(number)) {}
         JsonValue(JsonBoolean&& boolean)
             : type(JsonValueType::boolean), boolean(base::move(boolean)) {}
 
@@ -77,7 +83,8 @@ namespace spargel::json {
         void initByMove(JsonValue&& other);
     };
 
-    inline bool isMemberEqual(JsonObject& object, const JsonString& key, const JsonValue& v) {
+    inline bool isMemberEqual(JsonObject& object, const JsonString& key,
+                              const JsonValue& v) {
         auto* ptr = object.members.get(key);
         if (ptr == nullptr) return false;
         return *ptr == v;

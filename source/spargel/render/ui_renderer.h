@@ -19,7 +19,8 @@ namespace spargel::render {
         u8 x;
         u8 y;
 
-        friend bool operator==(SubpixelVariant const& lhs, SubpixelVariant const& rhs) {
+        friend bool operator==(SubpixelVariant const& lhs,
+                               SubpixelVariant const& rhs) {
             return lhs.x == rhs.x && lhs.y == rhs.y;
         }
         friend void tag_invoke(base::tag<base::hash>, base::HashRun& run,
@@ -49,7 +50,8 @@ namespace spargel::render {
         virtual void render(UIScene const& scene) = 0;
 
         TextureHandle prepareGlyph(text::GlyphId id, text::Font* font);
-        TextureHandle prepareGlyph(text::GlyphId id, text::Font* font, SubpixelVariant subpixel);
+        TextureHandle prepareGlyph(text::GlyphId id, text::Font* font,
+                                   SubpixelVariant subpixel);
         TextureHandle prepareGlyph(text::GlyphId id, text::Font* font,
                                    math::Vector2f subpixel_position);
 
@@ -57,10 +59,14 @@ namespace spargel::render {
         float scaleFactor() const { return scale_factor_; }
 
     protected:
-        explicit UIRenderer(gpu::GPUContext* context, text::TextShaper* text_shaper)
-            : context_{context}, text_shaper_{text_shaper}, packer_{ATLAS_SIZE, ATLAS_SIZE} {}
+        explicit UIRenderer(gpu::GPUContext* context,
+                            text::TextShaper* text_shaper)
+            : context_{context},
+              text_shaper_{text_shaper},
+              packer_{ATLAS_SIZE, ATLAS_SIZE} {}
 
-        virtual void uploadBitmap(TextureHandle handle, text::Bitmap const& bitmap) = 0;
+        virtual void uploadBitmap(TextureHandle handle,
+                                  text::Bitmap const& bitmap) = 0;
 
     private:
         struct GlyphCacheKey {
@@ -68,8 +74,10 @@ namespace spargel::render {
             text::Font* font;
             SubpixelVariant subpixel;
 
-            friend bool operator==(GlyphCacheKey const& lhs, GlyphCacheKey const& rhs) {
-                return lhs.id == rhs.id && lhs.font == rhs.font && lhs.subpixel == rhs.subpixel;
+            friend bool operator==(GlyphCacheKey const& lhs,
+                                   GlyphCacheKey const& rhs) {
+                return lhs.id == rhs.id && lhs.font == rhs.font &&
+                       lhs.subpixel == rhs.subpixel;
             }
             friend void tag_invoke(base::tag<base::hash>, base::HashRun& run,
                                    GlyphCacheKey const& self) {

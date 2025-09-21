@@ -27,17 +27,21 @@ TEST(SumType_Basic) {
 
     auto z = Type1::make<1>(1.2);
 
-    spargel_log_info("x.index = %zu, z.index = %zu", x.getIndex(), z.getIndex());
+    spargel_log_info("x.index = %zu, z.index = %zu", x.getIndex(),
+                     z.getIndex());
     spargel_log_info("x = %d, z = %.3f", x.getValue<2>(), z.getValue<1>());
     swap(x, z);
-    spargel_log_info("x.index = %zu, z.index = %zu", x.getIndex(), z.getIndex());
+    spargel_log_info("x.index = %zu, z.index = %zu", x.getIndex(),
+                     z.getIndex());
     spargel_log_info("x = %.3f, z = %d", x.getValue<1>(), z.getValue<2>());
 
     auto w = Type1::make<3>();
 
-    spargel_log_info("x.index = %zu, w.index = %zu", x.getIndex(), w.getIndex());
+    spargel_log_info("x.index = %zu, w.index = %zu", x.getIndex(),
+                     w.getIndex());
     swap(x, w);
-    spargel_log_info("x.index = %zu, w.index = %zu", x.getIndex(), w.getIndex());
+    spargel_log_info("x.index = %zu, w.index = %zu", x.getIndex(),
+                     w.getIndex());
 
     auto w2 = w;
 

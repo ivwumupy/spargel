@@ -29,16 +29,20 @@ namespace spargel::codec {
             static auto codec() {
                 return makeRecordCodec<Student>(
                     base::Constructor<Student>{},
-                    makeDefaultField<Student>("type"_sv, StringCodec{}, base::String("normal"),
+                    makeDefaultField<Student>("type"_sv, StringCodec{},
+                                              base::String("normal"),
                                               [](auto& o) { return o.type; }),
                     makeNormalField<Student>("name"_sv, StringCodec{},
                                              [](auto& o) { return o.name; }),
-                    makeOptionalField<Student>("nickname"_sv, StringCodec{},
-                                               [](auto& o) { return o.nickname; }),
-                    makeNormalField<Student>("age"_sv, U32Codec{}, [](auto& o) { return o.age; }),
+                    makeOptionalField<Student>(
+                        "nickname"_sv, StringCodec{},
+                        [](auto& o) { return o.nickname; }),
+                    makeNormalField<Student>("age"_sv, U32Codec{},
+                                             [](auto& o) { return o.age; }),
                     makeNormalField<Student>("happy"_sv, BooleanCodec{},
                                              [](auto& o) { return o.happy; }),
-                    makeNormalField<Student>("scores"_sv, makeVectorCodec(F32Codec{}),
+                    makeNormalField<Student>("scores"_sv,
+                                             makeVectorCodec(F32Codec{}),
                                              [](auto& o) { return o.scores; }));
             }
         };
@@ -52,8 +56,8 @@ namespace spargel::codec {
         auto studentCodec = Student::codec();
 
         TEST(JsonCodec_Encode_Error) {
-            auto result =
-                ErrorCodec<bool>("encode error"_sv, "decode_error"_sv).encode(encodeBackend, true);
+            auto result = ErrorCodec<bool>("encode error"_sv, "decode_error"_sv)
+                              .encode(encodeBackend, true);
             spargel_check(result.isRight());
         }
 
@@ -64,65 +68,84 @@ namespace spargel::codec {
         }
 
         TEST(JsonCodec_Encode_Primitive) {
-            base::Either<JsonValue, JsonEncodeError> result = base::Left(JsonValue());
+            base::Either<JsonValue, JsonEncodeError> result =
+                base::Left(JsonValue());
 
             result = NullCodec{}.encode(encodeBackend, nullptr);
             spargel_check(result.isLeft() && result.left() == JsonNull());
 
             result = BooleanCodec{}.encode(encodeBackend, true);
-            spargel_check(result.isLeft() && result.left() == JsonBoolean(true));
+            spargel_check(result.isLeft() &&
+                          result.left() == JsonBoolean(true));
 
             result = BooleanCodec{}.encode(encodeBackend, false);
-            spargel_check(result.isLeft() && result.left() == JsonBoolean(false));
+            spargel_check(result.isLeft() &&
+                          result.left() == JsonBoolean(false));
 
             result = U32Codec{}.encode(encodeBackend, 4294967295);
-            spargel_check(result.isLeft() && result.left() == JsonNumber(4294967295));
+            spargel_check(result.isLeft() &&
+                          result.left() == JsonNumber(4294967295));
 
             result = I32Codec{}.encode(encodeBackend, -2147483648);
-            spargel_check(result.isLeft() && result.left() == JsonNumber(-2147483648));
+            spargel_check(result.isLeft() &&
+                          result.left() == JsonNumber(-2147483648));
 
             result = F32Codec{}.encode(encodeBackend, 123.456f);
-            spargel_check(result.isLeft() && result.left() == JsonNumber(123.456f));
+            spargel_check(result.isLeft() &&
+                          result.left() == JsonNumber(123.456f));
 
             result = F64Codec{}.encode(encodeBackend, 789.012);
-            spargel_check(result.isLeft() && result.left() == JsonNumber(789.012));
+            spargel_check(result.isLeft() &&
+                          result.left() == JsonNumber(789.012));
 
             result = StringCodec{}.encode(encodeBackend, base::String("ABC"));
-            spargel_check(result.isLeft() && result.left() == JsonString("ABC"));
+            spargel_check(result.isLeft() &&
+                          result.left() == JsonString("ABC"));
         }
 
         TEST(JsonCodec_Decode_Primitive) {
             {
-                auto result = NullCodec{}.decode(decodeBackend, JsonValue(JsonNull()));
+                auto result =
+                    NullCodec{}.decode(decodeBackend, JsonValue(JsonNull()));
                 spargel_check(result.isLeft());
             }
             {
-                auto result = BooleanCodec{}.decode(decodeBackend, JsonValue(JsonBoolean(true)));
+                auto result = BooleanCodec{}.decode(
+                    decodeBackend, JsonValue(JsonBoolean(true)));
                 spargel_check(result.isLeft() && result.left() == true);
             }
             {
-                auto result = BooleanCodec{}.decode(decodeBackend, JsonValue(JsonBoolean(false)));
+                auto result = BooleanCodec{}.decode(
+                    decodeBackend, JsonValue(JsonBoolean(false)));
                 spargel_check(result.isLeft() && result.left() == false);
             }
             {
-                auto result = U32Codec{}.decode(decodeBackend, JsonValue(JsonNumber(4294967295)));
+                auto result = U32Codec{}.decode(
+                    decodeBackend, JsonValue(JsonNumber(4294967295)));
                 spargel_check(result.isLeft() && result.left() == 4294967295);
             }
             {
-                auto result = I32Codec{}.decode(decodeBackend, JsonValue(JsonNumber(-2147483648)));
+                auto result = I32Codec{}.decode(
+                    decodeBackend, JsonValue(JsonNumber(-2147483648)));
                 spargel_check(result.isLeft() && result.left() == -2147483648);
             }
             {
-                auto result = F32Codec{}.decode(decodeBackend, JsonValue(JsonNumber(123.456f)));
-                spargel_check(result.isLeft() && math::abs(result.left() - 123.456f) < 1e-6f);
+                auto result = F32Codec{}.decode(
+                    decodeBackend, JsonValue(JsonNumber(123.456f)));
+                spargel_check(result.isLeft() &&
+                              math::abs(result.left() - 123.456f) < 1e-6f);
             }
             {
-                auto result = F64Codec{}.decode(decodeBackend, JsonValue(JsonNumber(789.012)));
-                spargel_check(result.isLeft() && fabs(result.left() - 789.012) < 1e-6f);
+                auto result = F64Codec{}.decode(decodeBackend,
+                                                JsonValue(JsonNumber(789.012)));
+                spargel_check(result.isLeft() &&
+                              fabs(result.left() - 789.012) < 1e-6f);
             }
             {
-                auto result = StringCodec{}.decode(decodeBackend, JsonValue(JsonString("ABC")));
-                spargel_check(result.isLeft() && result.left() == base::String("ABC"));
+                auto result = StringCodec{}.decode(
+                    decodeBackend, JsonValue(JsonString("ABC")));
+                spargel_check(result.isLeft() &&
+                              result.left() == base::String("ABC"));
             }
         }
 
@@ -132,8 +155,10 @@ namespace spargel::codec {
                 v.emplace("ABC");
                 v.emplace("123");
                 v.emplace("!@#$");
-                auto result = makeVectorCodec(StringCodec{}).encode(encodeBackend, base::move(v));
-                spargel_check(result.isLeft() && result.left().type == JsonValueType::array);
+                auto result = makeVectorCodec(StringCodec{})
+                                  .encode(encodeBackend, base::move(v));
+                spargel_check(result.isLeft() &&
+                              result.left().type == JsonValueType::array);
 
                 auto& array = result.left().array.elements;
                 spargel_check(array.count() == 3);
@@ -153,7 +178,8 @@ namespace spargel::codec {
                 v.emplace(base::move(v2));
                 auto result = makeVectorCodec(makeVectorCodec(I32Codec{}))
                                   .encode(encodeBackend, base::move(v));
-                spargel_check(result.isLeft() && result.left().type == JsonValueType::array);
+                spargel_check(result.isLeft() &&
+                              result.left().type == JsonValueType::array);
 
                 auto& array = result.left().array.elements;
                 spargel_check(array.count() == 2);
@@ -173,8 +199,9 @@ namespace spargel::codec {
                 auto result_json = parseJson("[123, 456, 789]");
                 spargel_check(result_json.isLeft());
 
-                auto result = makeVectorCodec(U32Codec{})
-                                  .decode(decodeBackend, base::move(result_json.left()));
+                auto result =
+                    makeVectorCodec(U32Codec{})
+                        .decode(decodeBackend, base::move(result_json.left()));
                 spargel_check(result.isLeft());
 
                 auto& array = result.left();
@@ -184,11 +211,13 @@ namespace spargel::codec {
                 spargel_check(array[2] == 789);
             }
             {
-                auto result_json = parseJson("[[\"ABC\", \"123\"], [\"XYZ\", \"789\"]]");
+                auto result_json =
+                    parseJson("[[\"ABC\", \"123\"], [\"XYZ\", \"789\"]]");
                 spargel_check(result_json.isLeft());
 
-                auto result = makeVectorCodec(makeVectorCodec(StringCodec{}))
-                                  .decode(decodeBackend, base::move(result_json.left()));
+                auto result =
+                    makeVectorCodec(makeVectorCodec(StringCodec{}))
+                        .decode(decodeBackend, base::move(result_json.left()));
                 spargel_check(result.isLeft());
 
                 auto& array = result.left();
@@ -211,18 +240,24 @@ namespace spargel::codec {
                 scores.emplace(92.0f);
                 student.scores = base::move(scores);
 
-                auto result = studentCodec.encode(encodeBackend, base::move(student));
+                auto result =
+                    studentCodec.encode(encodeBackend, base::move(student));
                 spargel_check(result.isLeft());
 
                 auto& object = result.left().object;
-                spargel_check(isMemberEqual(object, JsonString("type"), JsonString("normal")));
-                spargel_check(isMemberEqual(object, JsonString("name"), JsonString("Alice")));
+                spargel_check(isMemberEqual(object, JsonString("type"),
+                                            JsonString("normal")));
+                spargel_check(isMemberEqual(object, JsonString("name"),
+                                            JsonString("Alice")));
                 auto* p_nickname = object.members.get(JsonString("nickname"));
                 spargel_check(p_nickname == nullptr);
-                spargel_check(isMemberEqual(object, JsonString("age"), JsonNumber(20)));
-                spargel_check(isMemberEqual(object, JsonString("happy"), JsonBoolean(true)));
+                spargel_check(
+                    isMemberEqual(object, JsonString("age"), JsonNumber(20)));
+                spargel_check(isMemberEqual(object, JsonString("happy"),
+                                            JsonBoolean(true)));
                 auto* p_array = object.members.get(JsonString("scores"));
-                spargel_check(p_array != nullptr && p_array->type == JsonValueType::array);
+                spargel_check(p_array != nullptr &&
+                              p_array->type == JsonValueType::array);
                 auto& array = p_array->array.elements;
                 spargel_check(array.count() == 3);
                 spargel_check(array[0] == JsonNumber(98));
@@ -245,7 +280,8 @@ namespace spargel::codec {
                 auto result_json = parseJson(str);
                 spargel_check(result_json.isLeft());
 
-                auto result = studentCodec.decode(decodeBackend, base::move(result_json.left()));
+                auto result = studentCodec.decode(
+                    decodeBackend, base::move(result_json.left()));
                 spargel_check(result.isLeft());
 
                 auto& student = result.left();
@@ -287,8 +323,9 @@ namespace spargel::codec {
                 auto result_json = parseJson(str);
                 spargel_check(result_json.isLeft());
 
-                auto result = makeVectorCodec(studentCodec)
-                                  .decode(decodeBackend, base::move(result_json.left()));
+                auto result =
+                    makeVectorCodec(studentCodec)
+                        .decode(decodeBackend, base::move(result_json.left()));
                 spargel_check(result.isLeft());
 
                 auto& students = result.left();
@@ -306,7 +343,8 @@ namespace spargel::codec {
                 spargel_check(students[1].type == base::String("normal"));
                 spargel_check(students[1].name == base::String("Bob"));
                 spargel_check(students[1].nickname.hasValue() &&
-                              students[1].nickname.value() == base::String("Bomb"));
+                              students[1].nickname.value() ==
+                                  base::String("Bomb"));
                 spargel_check(students[1].age == 18);
                 spargel_check(students[1].happy == false);
                 spargel_check(students[1].scores.count() == 1);

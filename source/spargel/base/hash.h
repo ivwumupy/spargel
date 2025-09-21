@@ -10,7 +10,8 @@
 #include <string.h>
 
 // todo: now the code assumes little-endian
-// use `__builtin_bswap64` (gcc/clang) or `_byteswap_uint64` (msvc) to swap endian
+// use `__builtin_bswap64` (gcc/clang) or `_byteswap_uint64` (msvc) to swap
+// endian
 
 #if SPARGEL_IS_MSVC
 #include <intrin.h>
@@ -108,18 +109,23 @@ namespace spargel::base {
                     u64 seed1 = seed;
                     u64 seed2 = seed;
                     do {
-                        seed = wymix(wyread8(p) ^ secret0, wyread8(p + 8) ^ seed);
-                        seed1 = wymix(wyread8(p + 16) ^ secret1, wyread8(p + 24) ^ seed1);
-                        seed2 = wymix(wyread8(p + 32) ^ secret2, wyread8(p + 40) ^ seed2);
+                        seed =
+                            wymix(wyread8(p) ^ secret0, wyread8(p + 8) ^ seed);
+                        seed1 = wymix(wyread8(p + 16) ^ secret1,
+                                      wyread8(p + 24) ^ seed1);
+                        seed2 = wymix(wyread8(p + 32) ^ secret2,
+                                      wyread8(p + 40) ^ seed2);
                         p += 48;
                         i -= 48;
                     } while (i >= 48);
                     seed ^= seed1 ^ seed2;
                 }
                 if (i > 16) {
-                    seed = wymix(wyread8(p) ^ secret2, wyread8(p + 8) ^ seed ^ secret1);
+                    seed = wymix(wyread8(p) ^ secret2,
+                                 wyread8(p + 8) ^ seed ^ secret1);
                     if (i > 32) {
-                        seed = wymix(wyread8(p + 16) ^ secret2, wyread8(p + 24) ^ seed);
+                        seed = wymix(wyread8(p + 16) ^ secret2,
+                                     wyread8(p + 24) ^ seed);
                     }
                 }
                 a = wyread8(p + i - 16);
@@ -190,7 +196,9 @@ namespace spargel::base {
         }
 #endif
 
-        void combine(u8 const* data, u64 len) { _hash = __wyhash::wyhash(data, len, _hash); }
+        void combine(u8 const* data, u64 len) {
+            _hash = __wyhash::wyhash(data, len, _hash);
+        }
 
         template <typename T>
         void combine(T const& v);
@@ -218,10 +226,18 @@ namespace spargel::base {
         inline void tag_invoke(hash, HashRun& r, u16 v) { r.combine(v); }
         inline void tag_invoke(hash, HashRun& r, u32 v) { r.combine(v); }
         inline void tag_invoke(hash, HashRun& r, u64 v) { r.combine(v); }
-        inline void tag_invoke(hash, HashRun& r, i8 v) { r.combine(bitCast<i8, u8>(v)); }
-        inline void tag_invoke(hash, HashRun& r, i16 v) { r.combine(bitCast<i16, u16>(v)); }
-        inline void tag_invoke(hash, HashRun& r, i32 v) { r.combine(bitCast<i32, u32>(v)); }
-        inline void tag_invoke(hash, HashRun& r, i64 v) { r.combine(bitCast<i64, u64>(v)); }
+        inline void tag_invoke(hash, HashRun& r, i8 v) {
+            r.combine(bitCast<i8, u8>(v));
+        }
+        inline void tag_invoke(hash, HashRun& r, i16 v) {
+            r.combine(bitCast<i16, u16>(v));
+        }
+        inline void tag_invoke(hash, HashRun& r, i32 v) {
+            r.combine(bitCast<i32, u32>(v));
+        }
+        inline void tag_invoke(hash, HashRun& r, i64 v) {
+            r.combine(bitCast<i64, u64>(v));
+        }
     }  // namespace __hash
 
     inline constexpr __hash::hash hash{};

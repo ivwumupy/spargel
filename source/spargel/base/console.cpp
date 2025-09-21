@@ -3,8 +3,8 @@
 //
 #include "spargel/base/check.h"
 #include "spargel/base/checked_convert.h"
-#include "spargel/base/panic.h"
 #include "spargel/base/memory.h"
+#include "spargel/base/panic.h"
 
 #if SPARGEL_IS_POSIX
 //
@@ -40,8 +40,8 @@ namespace spargel::base {
         if (usize(end_ - cur_) < len) [[unlikely]] {
             // There is not enough space.
             if (cur_ == begin_) {
-                // The buffer is empty, and we don't need to copy to the internal buffer.
-                // Just output a multiple of buffer size.
+                // The buffer is empty, and we don't need to copy to the
+                // internal buffer. Just output a multiple of buffer size.
                 usize bytes_to_output = len - len % BUFFER_SIZE;
                 output(s, bytes_to_output);
                 // The remaining data fits into the buffer.

@@ -20,7 +20,9 @@
 
 namespace spargel::ui {
 
-    base::unique_ptr<Platform> makePlatformXcb() { return base::make_unique<PlatformXcb>(); }
+    base::unique_ptr<Platform> makePlatformXcb() {
+        return base::make_unique<PlatformXcb>();
+    }
 
     PlatformXcb::PlatformXcb() : Platform(PlatformKind::xcb) {
         /*
@@ -81,7 +83,8 @@ namespace spargel::ui {
     const unsigned int SECOND_NS = 1000000000U;
     const unsigned int FRAME_DELTA_NS = (unsigned int)(SECOND_NS / FPS);
 
-    static bool in_delta(struct timespec* t1, struct timespec* t2, unsigned int delta) {
+    static bool in_delta(struct timespec* t1, struct timespec* t2,
+                         unsigned int delta) {
         if (t1->tv_sec == t2->tv_sec) {
             return t2->tv_nsec < t1->tv_nsec + delta;
         } else if (t1->tv_sec == t2->tv_sec - 1) {
@@ -131,7 +134,8 @@ namespace spargel::ui {
             switch (event->response_type & 0x7f) {
             case XCB_CLIENT_MESSAGE: {
                 auto* client_message_event = (xcb_client_message_event_t*)event;
-                if (client_message_event->data.data32[0] == atom_wm_delete_window) {
+                if (client_message_event->data.data32[0] ==
+                    atom_wm_delete_window) {
                     for (auto& window : windows) {
                         if (window->id == client_message_event->window) {
                             window->closed = true;
@@ -152,7 +156,8 @@ namespace spargel::ui {
                     if (window->id == key_press_event->event) {
                         KeyboardEvent keyboard_event = {
                             .action = KeyboardAction::press,
-                            .key = xkb.translatePhysicalKey(key_press_event->detail)};
+                            .key = xkb.translatePhysicalKey(
+                                key_press_event->detail)};
                         window->getDelegate()->onKeyboard(keyboard_event);
                         break;
                     }
@@ -164,7 +169,8 @@ namespace spargel::ui {
                     if (window->id == key_release_event->event) {
                         KeyboardEvent keyboard_event = {
                             .action = KeyboardAction::release,
-                            .key = xkb.translatePhysicalKey(key_release_event->detail)};
+                            .key = xkb.translatePhysicalKey(
+                                key_release_event->detail)};
                         window->getDelegate()->onKeyboard(keyboard_event);
                         break;
                     }
@@ -203,7 +209,8 @@ namespace spargel::ui {
 
             visual_info = glXChooseVisual(display, 0, attribs);
             if (visual_info) {
-                spargel_log_info("selected visual 0x%lx for GLX", visual_info->visualid);
+                spargel_log_info("selected visual 0x%lx for GLX",
+                                 visual_info->visualid);
             } else {
                 spargel_log_fatal("cannot find appropriate visual for GLX");
                 spargel_panic_here();
@@ -219,7 +226,8 @@ namespace spargel::ui {
 #endif
 
         u32 mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-        u32 values[2] = {screen->black_pixel, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS |
+        u32 values[2] = {screen->black_pixel, XCB_EVENT_MASK_EXPOSURE |
+                                                  XCB_EVENT_MASK_KEY_PRESS |
                                                   XCB_EVENT_MASK_KEY_RELEASE};
 
         spargel_log_debug("creating X window %d", id);
@@ -233,8 +241,9 @@ namespace spargel::ui {
                           visualid,                      /* visual */
                           mask, values);
 
-        xcb_change_property(connection, XCB_PROP_MODE_REPLACE, id, atom_wm_protocols, XCB_ATOM_ATOM,
-                            XCB_ATOM_VISUALID, 1, &atom_wm_delete_window);
+        xcb_change_property(connection, XCB_PROP_MODE_REPLACE, id,
+                            atom_wm_protocols, XCB_ATOM_ATOM, XCB_ATOM_VISUALID,
+                            1, &atom_wm_delete_window);
 
         xcb_map_window(connection, id);
         xcb_flush(connection);
@@ -253,11 +262,13 @@ namespace spargel::ui {
         }
     }
 
-    xcb_intern_atom_cookie_t PlatformXcb::intern_atom_cookie(u8 only_if_exists, const char* name) {
+    xcb_intern_atom_cookie_t PlatformXcb::intern_atom_cookie(u8 only_if_exists,
+                                                             const char* name) {
         return xcb_intern_atom(connection, only_if_exists, strlen(name), name);
     }
 
-    xcb_intern_atom_reply_t* PlatformXcb::intern_atom_reply(xcb_intern_atom_cookie_t cookie) {
+    xcb_intern_atom_reply_t* PlatformXcb::intern_atom_reply(
+        xcb_intern_atom_cookie_t cookie) {
         return xcb_intern_atom_reply(connection, cookie, nullptr);
     }
 
@@ -275,14 +286,15 @@ namespace spargel::ui {
         }
         spargel_log_info("XKB: core keyboard device id is %d", device_id);
 
-        xkb.keymap = xkb_x11_keymap_new_from_device(xkb.context, connection, device_id,
-                                                    XKB_KEYMAP_COMPILE_NO_FLAGS);
+        xkb.keymap = xkb_x11_keymap_new_from_device(
+            xkb.context, connection, device_id, XKB_KEYMAP_COMPILE_NO_FLAGS);
         if (!xkb.keymap) {
             spargel_log_fatal("XKB: failed to get keymap from device");
             spargel_panic_here();
         }
 
-        xkb.state = xkb_x11_state_new_from_device(xkb.keymap, connection, device_id);
+        xkb.state =
+            xkb_x11_state_new_from_device(xkb.keymap, connection, device_id);
         if (!xkb.state) {
             spargel_log_fatal("XKB: failed to create state from device");
             spargel_panic_here();
@@ -300,9 +312,11 @@ namespace spargel::ui {
     }
 
     void WindowXcb::setTitle(char const* title) {
-        spargel_log_debug("setting the title of X window %d to \"%s\"", id, title);
-        xcb_change_property(platform->connection, XCB_PROP_MODE_REPLACE, id, XCB_ATOM_WM_NAME,
-                            XCB_ATOM_STRING, 8, strlen(title), title);
+        spargel_log_debug("setting the title of X window %d to \"%s\"", id,
+                          title);
+        xcb_change_property(platform->connection, XCB_PROP_MODE_REPLACE, id,
+                            XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(title),
+                            title);
     }
 
     WindowHandle WindowXcb::getHandle() {

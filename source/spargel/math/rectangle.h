@@ -12,7 +12,8 @@ namespace spargel::math {
         RectangleSize size;
 
         bool contains(Vector2f p) const {
-            return (p.x >= origin.x) && (p.y >= origin.y) && (p.x <= origin.x + size.width) &&
+            return (p.x >= origin.x) && (p.y >= origin.y) &&
+                   (p.x <= origin.x + size.width) &&
                    (p.y <= origin.y + size.height);
         }
     };

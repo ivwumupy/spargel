@@ -30,7 +30,9 @@ namespace spargel::math {
         // clang-format on
 
         T& operator()(int row, int col) { return entries[4 * col + row]; }
-        const T& operator()(int row, int col) const { return entries[4 * col + row]; }
+        const T& operator()(int row, int col) const {
+            return entries[4 * col + row];
+        }
     };
 
     template <typename T>
@@ -38,8 +40,8 @@ namespace spargel::math {
         Matrix4x4<T> m;
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
-                m(i, j) = m1(i, 0) * m2(0, j) + m1(i, 1) * m2(1, j) + m1(i, 2) * m2(2, j) +
-                          m1(i, 3) * m2(3, j);
+                m(i, j) = m1(i, 0) * m2(0, j) + m1(i, 1) * m2(1, j) +
+                          m1(i, 2) * m2(2, j) + m1(i, 3) * m2(3, j);
             }
         }
         return m;
@@ -57,7 +59,9 @@ namespace spargel::math {
             : entries{a11, a21, a31, a12, a22, a32, a13, a23, a33} {}
 
         T& operator()(int row, int col) { return entries[3 * col + row]; }
-        const T& operator()(int row, int col) const { return entries[3 * col + row]; }
+        const T& operator()(int row, int col) const {
+            return entries[3 * col + row];
+        }
     };
 
     template <typename T>
@@ -65,7 +69,8 @@ namespace spargel::math {
         Matrix3x3<T> m;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                m(i, j) = m1(i, 0) * m2(0, j) + m1(i, 1) * m2(1, j) + m1(i, 2) * m2(2, j);
+                m(i, j) = m1(i, 0) * m2(0, j) + m1(i, 1) * m2(1, j) +
+                          m1(i, 2) * m2(2, j);
             }
         }
         return m;

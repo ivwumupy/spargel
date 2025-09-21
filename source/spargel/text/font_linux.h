@@ -15,7 +15,8 @@ namespace spargel::text {
 
     class FontLinux : public Font {
     public:
-        FontLinux(FontManagerLinux* font_manager, base::Span<u8> buffer, float size);
+        FontLinux(FontManagerLinux* font_manager, base::Span<u8> buffer,
+                  float size);
 
         base::StringView name() override { return name_.view(); }
 

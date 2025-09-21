@@ -71,7 +71,8 @@ namespace spargel::base {
 #endif
     }
 
-    void log(int level, char const* file, char const* func, u32 line, char const* format, ...) {
+    void log(int level, char const* file, char const* func, u32 line,
+             char const* format, ...) {
         spargel_assert(level >= 0 && level < _LOG_COUNT);
 
         va_list ap;
@@ -107,12 +108,13 @@ namespace spargel::base {
 
         // Old log format.
         //
-        // fprintf(stderr, "[%02d%02d/%02d%02d%02d.%06d:%s:%s:%s:%u] ", time.mon, time.day,
-        // time.hour,
+        // fprintf(stderr, "[%02d%02d/%02d%02d%02d.%06d:%s:%s:%s:%u] ",
+        // time.mon, time.day, time.hour,
         //         time.min, time.sec, time.usec, name, file, func, line);
 
-        fprintf(stderr, "[%02d%02d/%02d%02d%02d.%06d:%s:%s:%s:%u] ", time.mon, time.day, time.hour,
-                time.min, time.sec, time.usec, name, file, func, line);
+        fprintf(stderr, "[%02d%02d/%02d%02d%02d.%06d:%s:%s:%s:%u] ", time.mon,
+                time.day, time.hour, time.min, time.sec, time.usec, name, file,
+                func, line);
 
         va_start(ap, format);
         vfprintf(stderr, format, ap);

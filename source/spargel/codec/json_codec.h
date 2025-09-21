@@ -8,8 +8,9 @@ namespace spargel::codec {
     /*
      * Codec Backend
      *
-     * Note: due to floating point errors, JSON backend cannot properly handle large integers
-     * (U64/I64). For large integers, use strings to represent them.
+     * Note: due to floating point errors, JSON backend cannot properly handle
+     * large integers (U64/I64). For large integers, use strings to represent
+     * them.
      */
 
     using JsonEncodeError = CodecError;
@@ -60,7 +61,8 @@ namespace spargel::codec {
             return base::Left(json::JsonValue(json::JsonNumber(v)));
         }
 
-        base::Either<json::JsonValue, JsonEncodeError> makeString(const base::String& s) {
+        base::Either<json::JsonValue, JsonEncodeError> makeString(
+            const base::String& s) {
             return base::Left(json::JsonValue(json::JsonString(s)));
         }
 
@@ -82,7 +84,8 @@ namespace spargel::codec {
 
         base::Optional<JsonDecodeError> getNull(const json::JsonValue& data);
 
-        base::Either<bool, JsonDecodeError> getBoolean(const json::JsonValue& data);
+        base::Either<bool, JsonDecodeError> getBoolean(
+            const json::JsonValue& data);
 
         base::Either<u8, JsonDecodeError> getU8(const json::JsonValue& data);
         base::Either<i8, JsonDecodeError> getI8(const json::JsonValue& data);
@@ -96,13 +99,14 @@ namespace spargel::codec {
         base::Either<f32, JsonDecodeError> getF32(const json::JsonValue& data);
         base::Either<f64, JsonDecodeError> getF64(const json::JsonValue& data);
 
-        base::Either<base::String, JsonDecodeError> getString(const json::JsonValue& data);
+        base::Either<base::String, JsonDecodeError> getString(
+            const json::JsonValue& data);
 
         base::Either<base::vector<json::JsonValue>, JsonDecodeError> getArray(
             const json::JsonValue& data);
 
-        base::Either<base::Optional<json::JsonValue>, JsonDecodeError> getMember(
-            const json::JsonValue& data, base::StringView key);
+        base::Either<base::Optional<json::JsonValue>, JsonDecodeError>
+        getMember(const json::JsonValue& data, base::StringView key);
     };
 
     struct JsonCodecBackend {

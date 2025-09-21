@@ -31,7 +31,8 @@ namespace spargel::base {
         };
 
         /*
-         *  bind a value to the first argument of f and generate a new function with fewer arguments
+         *  bind a value to the first argument of f and generate a new function
+         * with fewer arguments
          */
         template <typename F, typename T, typename... Args>
         constexpr Curried<F, T> curry(F&& f, T&& t) {
@@ -49,8 +50,9 @@ namespace spargel::base {
         template <typename F, typename T>
         constexpr auto curry(F&& f, T&& t) {
             return [&f, &t](auto&&... args) {
-                return base::forward<F>(f)(base::forward<T>(t),
-                                           base::forward<decltype(args)>(args)...);
+                return base::forward<F>(f)(
+                    base::forward<T>(t),
+                    base::forward<decltype(args)>(args)...);
             };
         }
     }  // namespace __test

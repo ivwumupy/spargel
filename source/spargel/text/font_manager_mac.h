@@ -17,7 +17,8 @@ namespace spargel::text {
         friend bool operator==(CoreTextFont lhs, CoreTextFont rhs) {
             return CFEqual(lhs.object, rhs.object);
         }
-        friend void tag_invoke(base::tag<base::hash>, base::HashRun& run, CoreTextFont font) {
+        friend void tag_invoke(base::tag<base::hash>, base::HashRun& run,
+                               CoreTextFont font) {
             run.combine(base::bitCast<CFHashCode, u64>(CFHash(font.object)));
         }
     };

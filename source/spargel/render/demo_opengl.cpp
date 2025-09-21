@@ -74,7 +74,8 @@ int main() {
     delegate.x_display = x_display;
     delegate.x_window = x_window;
 
-    GLXContext glx_ctx = glXCreateContext(x_display, x_visual_info, nullptr, GL_TRUE);
+    GLXContext glx_ctx =
+        glXCreateContext(x_display, x_visual_info, nullptr, GL_TRUE);
     if (!glx_ctx) {
         spargel_log_fatal("cannot create GL context");
         spargel_panic_here();
@@ -134,14 +135,16 @@ int main() {
     char infoLog[512];
 
     u32 vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    auto vertexShaderCode = resource_manager->open(resource::ResourceId("demo_opengl.vs"_sv));
+    auto vertexShaderCode =
+        resource_manager->open(resource::ResourceId("demo_opengl.vs"_sv));
     if (!vertexShaderCode.hasValue()) {
         spargel_log_fatal("cannot open vertex shader file");
         spargel_panic_here();
     }
     auto pVertexShaderCode = (GLchar*)vertexShaderCode.value()->mapData();
     auto vertexShaderCodeLength = (GLint)vertexShaderCode.value()->size();
-    glShaderSource(vertexShader, 1, &pVertexShaderCode, &vertexShaderCodeLength);
+    glShaderSource(vertexShader, 1, &pVertexShaderCode,
+                   &vertexShaderCodeLength);
     glCompileShader(vertexShader);
     glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
     if (!success) {
@@ -151,14 +154,16 @@ int main() {
     }
 
     u32 fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    auto fragmentShaderCode = resource_manager->open(resource::ResourceId("demo_opengl.fs"_sv));
+    auto fragmentShaderCode =
+        resource_manager->open(resource::ResourceId("demo_opengl.fs"_sv));
     if (!fragmentShaderCode.hasValue()) {
         spargel_log_fatal("cannot open fragment shader file");
         spargel_panic_here();
     }
     auto pFragmentShaderCode = (GLchar*)fragmentShaderCode.value()->mapData();
     auto fragmentShaderCodeLength = (GLint)fragmentShaderCode.value()->size();
-    glShaderSource(fragmentShader, 1, &pFragmentShaderCode, &fragmentShaderCodeLength);
+    glShaderSource(fragmentShader, 1, &pFragmentShaderCode,
+                   &fragmentShaderCodeLength);
     glCompileShader(fragmentShader);
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
     if (!success) {
@@ -200,10 +205,12 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                          (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                          (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);

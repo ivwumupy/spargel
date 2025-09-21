@@ -31,7 +31,8 @@ using math::Vector3f;
 
 class Cursor final {
 public:
-    explicit Cursor(base::span<u8> bytes) : _begin{bytes.begin()}, _end{bytes.end()}, _cur{_begin} {
+    explicit Cursor(base::span<u8> bytes)
+        : _begin{bytes.begin()}, _end{bytes.end()}, _cur{_begin} {
         printf("len = %zu\n", bytes.count());
     }
 
@@ -150,7 +151,8 @@ struct BoundingBox {
     float zmax;
 
     BoundingBox() = default;
-    BoundingBox(float x, float y, float z) : xmin{x}, ymin{y}, zmin{z}, xmax{x}, ymax{y}, zmax{z} {}
+    BoundingBox(float x, float y, float z)
+        : xmin{x}, ymin{y}, zmin{z}, xmax{x}, ymax{y}, zmax{z} {}
 
     void merge(float x, float y, float z) {
         xmin = min(xmin, x);
@@ -202,11 +204,13 @@ public:
                 return {};
             }
             // scale the bunny mesh
-            vertices[i] = {x.value() * 1000, y.value() * 1000, z.value() * 1000};
+            vertices[i] = {x.value() * 1000, y.value() * 1000,
+                           z.value() * 1000};
         }
 
-        return base::makeOptional<SimpleMesh>(face_count.value(), vert_count.value(),
-                                              base::move(indices), base::move(vertices));
+        return base::makeOptional<SimpleMesh>(
+            face_count.value(), vert_count.value(), base::move(indices),
+            base::move(vertices));
     }
 
     SimpleMesh() = default;
@@ -247,7 +251,8 @@ public:
 
     BoundingBox const& getBoundingBox() const { return _bbox; }
 
-    friend void tag_invoke(base::tag<base::swap>, SimpleMesh& lhs, SimpleMesh& rhs) {
+    friend void tag_invoke(base::tag<base::swap>, SimpleMesh& lhs,
+                           SimpleMesh& rhs) {
         base::swap(lhs._face_count, rhs._face_count);
         base::swap(lhs._vert_count, rhs._vert_count);
         base::swap(lhs._indices, rhs._indices);
@@ -436,7 +441,8 @@ public:
         auto desc = [MTLRenderPassDescriptor renderPassDescriptor];
         desc.colorAttachments[0].texture = drawable.texture;
         desc.colorAttachments[0].loadAction = MTLLoadActionClear;
-        desc.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 1.0, 1.0, 1.0);
+        desc.colorAttachments[0].clearColor =
+            MTLClearColorMake(0.0, 1.0, 1.0, 1.0);
 
         auto encoder = [cmdbuf renderCommandEncoderWithDescriptor:desc];
 
@@ -492,8 +498,10 @@ private:
             _mesh = base::move(s).value();
 
             auto& bbox = _mesh.getBoundingBox();
-            spargel_log_info("bounding box: (%.3f, %.3f, %.3f) - (%.3f, %.3f, %.3f)", bbox.xmin,
-                             bbox.ymin, bbox.zmin, bbox.xmax, bbox.ymax, bbox.zmax);
+            spargel_log_info(
+                "bounding box: (%.3f, %.3f, %.3f) - (%.3f, %.3f, %.3f)",
+                bbox.xmin, bbox.ymin, bbox.zmin, bbox.xmax, bbox.ymax,
+                bbox.zmax);
         }
 
         _device = MTLCreateSystemDefaultDevice();
@@ -505,8 +513,9 @@ private:
         }
 
         {
-            // auto blob = _resource->open(resource::ResourceId("shader.metallib"));
-            // if (!blob.hasValue()) {
+            // auto blob =
+            // _resource->open(resource::ResourceId("shader.metallib")); if
+            // (!blob.hasValue()) {
             //     spargel_log_error("cannot load shader");
             //     spargel_panic_here();
             // }
@@ -515,7 +524,8 @@ private:
                 // dispatch_data_create(blob_span.data(), blob_span.count(),
                 // dispatch_get_main_queue(),
                 dispatch_data_create(spargel_render_metal_shader,
-                                     sizeof(spargel_render_metal_shader), dispatch_get_main_queue(),
+                                     sizeof(spargel_render_metal_shader),
+                                     dispatch_get_main_queue(),
                                      DISPATCH_DATA_DESTRUCTOR_DEFAULT);
 
             _library = [_device newLibraryWithData:library_data error:&error];
@@ -550,19 +560,24 @@ private:
 
             desc.inputPrimitiveTopology = MTLPrimitiveTopologyClassTriangle;
 
-            _mesh_pipeline = [_device newRenderPipelineStateWithDescriptor:desc error:&error];
+            _mesh_pipeline =
+                [_device newRenderPipelineStateWithDescriptor:desc
+                                                        error:&error];
         }
 
         {
-            _vertices = [_device newBufferWithBytes:_mesh.getVertices().asBytes().data()
-                                             length:_mesh.getVertices().asBytes().count()
-                                            options:MTLResourceStorageModeShared];
-            _indices = [_device newBufferWithBytes:_mesh.getIndices().asBytes().data()
-                                            length:_mesh.getIndices().asBytes().count()
-                                           options:MTLResourceStorageModeShared];
-            _normals = [_device newBufferWithBytes:_mesh.getNormals().asBytes().data()
-                                            length:_mesh.getNormals().asBytes().count()
-                                           options:MTLResourceStorageModeShared];
+            _vertices = [_device
+                newBufferWithBytes:_mesh.getVertices().asBytes().data()
+                            length:_mesh.getVertices().asBytes().count()
+                           options:MTLResourceStorageModeShared];
+            _indices =
+                [_device newBufferWithBytes:_mesh.getIndices().asBytes().data()
+                                     length:_mesh.getIndices().asBytes().count()
+                                    options:MTLResourceStorageModeShared];
+            _normals =
+                [_device newBufferWithBytes:_mesh.getNormals().asBytes().data()
+                                     length:_mesh.getNormals().asBytes().count()
+                                    options:MTLResourceStorageModeShared];
         }
 
         _camera.setDirection(Vector3f(0, 0, 1));

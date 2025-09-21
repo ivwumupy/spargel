@@ -1,16 +1,17 @@
 #include "spargel/ui/platform_win32.h"
 
+#include <Windowsx.h>
+
 #include "spargel/base/logging.h"
 #include "spargel/ui/window_win32.h"
 
-#include <Windowsx.h>
-
 namespace spargel::ui {
-    
+
     namespace {
         constexpr auto CLASS_NAME = "Spargel Engine Window Class";
 
-        LRESULT CALLBACK windowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+        LRESULT CALLBACK windowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
+                                    LPARAM lParam) {
             switch (uMsg) {
             case WM_DESTROY: {
                 PostQuitMessage(0);
@@ -25,7 +26,7 @@ namespace spargel::ui {
             }
             return DefWindowProcA(hwnd, uMsg, wParam, lParam);
         }
-    }
+    }  // namespace
 
     void PlatformWin32::startLoop() {
         MSG msg = {};
@@ -45,18 +46,19 @@ namespace spargel::ui {
 
         RegisterClassA(&wc);
 
-        HWND hwnd = CreateWindowExA(0,                    // optional window styles
-                                    CLASS_NAME,           // window class
-                                    "Spargel Engine",     // window name
+        HWND hwnd = CreateWindowExA(0,                 // optional window styles
+                                    CLASS_NAME,        // window class
+                                    "Spargel Engine",  // window name
                                     WS_OVERLAPPEDWINDOW,  // window style
 
                                     // size and position
-                                    CW_USEDEFAULT, CW_USEDEFAULT, (int)width, (int)height,
+                                    CW_USEDEFAULT, CW_USEDEFAULT, (int)width,
+                                    (int)height,
 
-                                    nullptr,        // parent window
-                                    nullptr,        // menu
-                                    hInstance_,     // instance handle
-                                    nullptr         // additional application data
+                                    nullptr,     // parent window
+                                    nullptr,     // menu
+                                    hInstance_,  // instance handle
+                                    nullptr      // additional application data
         );
 
         if (hwnd == nullptr) {
@@ -77,4 +79,4 @@ namespace spargel::ui {
         return base::makeUnique<PlatformWin32>(hInstance);
     }
 
-}
+}  // namespace spargel::ui

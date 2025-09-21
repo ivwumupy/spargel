@@ -92,24 +92,28 @@ namespace spargel::base {
             }
 
             auto tag() {
-                return visitByIndex<Count>(_storage.getIndex(), []<usize i>(Index<i>) {
-                    return IndexToTag<i, Cases...>::value;
-                });
+                return visitByIndex<Count>(
+                    _storage.getIndex(), []<usize i>(Index<i>) {
+                        return IndexToTag<i, Cases...>::value;
+                    });
             }
 
             template <typename... F>
             decltype(auto) match(F&&... f) {
                 auto helper = MatchHelper{f...};
-                return visitByIndex<Count>(_storage.getIndex(), [&helper, this]<usize i>(Index<i>) {
-                    return helper(Case<IndexToTag<i, Cases...>::value>{},
-                                  _storage.template getValue<i>());
-                });
+                return visitByIndex<Count>(
+                    _storage.getIndex(), [&helper, this]<usize i>(Index<i>) {
+                        return helper(Case<IndexToTag<i, Cases...>::value>{},
+                                      _storage.template getValue<i>());
+                    });
             }
 
         private:
             template <usize i, typename... Args>
             TaggedUnion(Index<i>, Args&&... args)
-                : _storage(Storage::template make<i>(base::forward<Args>(args)...)) {}
+                : _storage(
+                      Storage::template make<i>(base::forward<Args>(args)...)) {
+            }
 
             Storage _storage;
         };

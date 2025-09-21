@@ -11,7 +11,8 @@ int main() {
     entry::simple_entry_data data;
     data.platform = ui::makePlatform();
     data.window = data.platform->makeWindow(500, 500);
-    data.resource_manager = resource::makeRelativeManager(base::String("resources"));
+    data.resource_manager =
+        resource::makeRelativeManager(base::String("resources"));
 
     return entry::simple_entry(&data);
 }

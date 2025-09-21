@@ -23,22 +23,31 @@ namespace spargel::ui {
         virtual ~TextInputDelegate() = default;
 
         virtual bool hasMarkedText() { return false; }
-        virtual void setMarkedText([[maybe_unused]] id string, [[maybe_unused]] NSRange selected,
+        virtual void setMarkedText([[maybe_unused]] id string,
+                                   [[maybe_unused]] NSRange selected,
                                    [[maybe_unused]] NSRange replaced) {}
         virtual NSRange getMarkedRange() { return NSMakeRange(NSNotFound, 0); }
         virtual void unmarkText() {}
-        virtual NSArray<NSAttributedStringKey>* validAttributesForMarkedText() { return nil; }
-        virtual NSRange getSelectedRange() { return NSMakeRange(NSNotFound, 0); }
-        virtual void insertText([[maybe_unused]] id string, [[maybe_unused]] NSRange replaced) {}
-        virtual NSAttributedString* attributedSubstringForProposedRange(
-            [[maybe_unused]] NSRange range, [[maybe_unused]] NSRangePointer actual) {
+        virtual NSArray<NSAttributedStringKey>* validAttributesForMarkedText() {
             return nil;
         }
-        virtual NSUInteger characterIndexForPoint([[maybe_unused]] NSPoint point) {
+        virtual NSRange getSelectedRange() {
+            return NSMakeRange(NSNotFound, 0);
+        }
+        virtual void insertText([[maybe_unused]] id string,
+                                [[maybe_unused]] NSRange replaced) {}
+        virtual NSAttributedString* attributedSubstringForProposedRange(
+            [[maybe_unused]] NSRange range,
+            [[maybe_unused]] NSRangePointer actual) {
+            return nil;
+        }
+        virtual NSUInteger characterIndexForPoint(
+            [[maybe_unused]] NSPoint point) {
             return NSNotFound;
         }
-        virtual NSRect firstRectForCharacterRange([[maybe_unused]] NSRange range,
-                                                  [[maybe_unused]] NSRangePointer actual) {
+        virtual NSRect firstRectForCharacterRange(
+            [[maybe_unused]] NSRange range,
+            [[maybe_unused]] NSRangePointer actual) {
             return NSMakeRect(0, 0, 0, 0);
         }
     };
@@ -75,7 +84,9 @@ namespace spargel::ui {
 
         void _enable_text_cursor();
 
-        void setTextDelegate(TextInputDelegate* delegate) { _text_delegate = delegate; }
+        void setTextDelegate(TextInputDelegate* delegate) {
+            _text_delegate = delegate;
+        }
         TextInputDelegate* getTextDelegate() { return _text_delegate; }
 
         auto ns_view() { return ns_view_; }

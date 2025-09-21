@@ -59,8 +59,9 @@ namespace spargel::base {
     //         string str;
     //         str._length = lhs._length + rhs._length;
     //         if (str._length > 0) {
-    //             // str._data = (char*)allocate(str._length + 1, ALLOCATION_BASE);
-    //             str._data = (char*)default_allocator()->allocate(str._length + 1);
+    //             // str._data = (char*)allocate(str._length + 1,
+    //             ALLOCATION_BASE); str._data =
+    //             (char*)default_allocator()->allocate(str._length + 1);
     //             memcpy(str._data, lhs._data, lhs._length);
     //             memcpy(str._data + lhs._length, rhs._data, rhs._length);
     //             str._data[str._length] = '\0';
@@ -72,11 +73,9 @@ namespace spargel::base {
     //         string str;
     //         str._length = s._length + 1;
     //         // str._data = (char*)allocate(str._length + 1, ALLOCATION_BASE);
-    //         str._data = (char*)default_allocator()->allocate(str._length + 1);
-    //         memcpy(str._data, s._data, s._length);
-    //         str._data[s._length] = ch;
-    //         str._data[s._length + 1] = '\0';
-    //         return str;
+    //         str._data = (char*)default_allocator()->allocate(str._length +
+    //         1); memcpy(str._data, s._data, s._length); str._data[s._length] =
+    //         ch; str._data[s._length + 1] = '\0'; return str;
     //     }
 
     // }  // namespace _string
@@ -85,9 +84,9 @@ namespace spargel::base {
     //     string str;
     //     str._length = end - begin;
     //     if (str._length > 0) {
-    //         str._data = (char*)default_allocator()->allocate(str._length + 1);
-    //         memcpy(str._data, begin, str._length);
-    //         str._data[str._length] = 0;
+    //         str._data = (char*)default_allocator()->allocate(str._length +
+    //         1); memcpy(str._data, begin, str._length); str._data[str._length]
+    //         = 0;
     //     }
     //     return str;
     // }

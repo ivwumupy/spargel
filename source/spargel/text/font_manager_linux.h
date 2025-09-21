@@ -21,7 +21,9 @@ namespace spargel::text {
 
         Font* defaultFont() override { return nullptr; }
 
-        Font* matchDescriptor(FontDescriptor const& descriptor) override { return nullptr; }
+        Font* matchDescriptor(FontDescriptor const& descriptor) override {
+            return nullptr;
+        }
 
     private:
         friend class FontLinux;

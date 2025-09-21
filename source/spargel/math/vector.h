@@ -16,7 +16,9 @@ namespace spargel::math {
         T y;
         T z;
 
-        T dot(Vector3 const& other) const { return x * other.x + y * other.y + z * other.z; }
+        T dot(Vector3 const& other) const {
+            return x * other.x + y * other.y + z * other.z;
+        }
 
         Vector3 cross(Vector3 const& other) const {
             return Vector3(y * other.z - z * other.y, z * other.x - x * other.z,
@@ -79,12 +81,14 @@ namespace spargel::math {
 
     template <typename T>
     Vector4<T> operator+(Vector4<T> const& lhs, Vector4<T> const& rhs) {
-        return Vector4<T>(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z, lhs.w + rhs.w);
+        return Vector4<T>(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z,
+                          lhs.w + rhs.w);
     }
 
     template <typename T>
     Vector4<T> operator-(Vector4<T> const& lhs, Vector4<T> const& rhs) {
-        return Vector3<T>(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w);
+        return Vector3<T>(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z,
+                          lhs.w - rhs.w);
     }
 
     using Vector2f = Vector2<float>;

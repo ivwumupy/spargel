@@ -23,7 +23,8 @@ namespace spargel::base {
             // TODO: hash float/double.
             // spargel_check(hash(1.2) == hash(1.2));
             spargel_check(hash(string("hello")) == hash(string("hello")));
-            spargel_check(hash(Foo(1, 2, string("xyz"))) == hash(Foo(1, 2, string("xyz"))));
+            spargel_check(hash(Foo(1, 2, string("xyz"))) ==
+                          hash(Foo(1, 2, string("xyz"))));
         }
 
         TEST(HashIsSparse) {
@@ -31,7 +32,8 @@ namespace spargel::base {
             // TODO: hash float/double.
             // spargel_check(hash(1.2) != hash(2.1));
             spargel_check(hash(string("hello")) != hash(string("bonjour")));
-            spargel_check(hash(Foo(1, 2, string("xyz"))) != hash(Foo(3, 5, string("def"))));
+            spargel_check(hash(Foo(1, 2, string("xyz"))) !=
+                          hash(Foo(3, 5, string("def"))));
         }
     }  // namespace
 }  // namespace spargel::base

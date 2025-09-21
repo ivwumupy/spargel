@@ -123,7 +123,8 @@ namespace spargel::json {
             if ((ch >= '0' && ch <= '9') || ch == '-') {
                 return parseNumber();
             } else {
-                return Right(JsonParseError(String("unexpected character: '") + ch + '\''));
+                return Right(JsonParseError(String("unexpected character: '") +
+                                            ch + '\''));
             }
         }
     }
@@ -137,7 +138,8 @@ namespace spargel::json {
         spargel_trace_scope("parseObject");
 
         // '{' ws
-        if (!cursor.tryEatChar('{')) return Right(JsonParseError("expected a value"_sv));
+        if (!cursor.tryEatChar('{'))
+            return Right(JsonParseError("expected a value"_sv));
         eatWhitespaces();
         if (cursor.isEnd()) return Right(JsonParseError(UNEXPECTED_END));
 
@@ -147,7 +149,8 @@ namespace spargel::json {
         // members '}'
         auto result = parseMembers();
         if (result.isRight()) return result;
-        if (!cursor.tryEatChar('}')) return Right(JsonParseError("expected '}'"_sv));
+        if (!cursor.tryEatChar('}'))
+            return Right(JsonParseError("expected '}'"_sv));
 
         return result;
     }
@@ -161,7 +164,8 @@ namespace spargel::json {
         spargel_trace_scope("parseArray");
 
         // '[' ws
-        if (!cursor.tryEatChar('[')) return Right(JsonParseError("expected '['"_sv));
+        if (!cursor.tryEatChar('['))
+            return Right(JsonParseError("expected '['"_sv));
         eatWhitespaces();
         if (cursor.isEnd()) return Right(JsonParseError(UNEXPECTED_END));
 
@@ -171,14 +175,16 @@ namespace spargel::json {
         // elements ']'
         auto result = parseElements();
         if (result.isRight()) return result;
-        if (!cursor.tryEatChar(']')) return Right(JsonParseError("expected ']'"_sv));
+        if (!cursor.tryEatChar(']'))
+            return Right(JsonParseError("expected ']'"_sv));
 
         return result;
     }
 
     /*
     bool isGood(char c, char d) {
-        return (c != '"' && d != '"') && (c != '\\' && d != '\\') && (c >= 0x20 && d >= 0x20);
+        return (c != '"' && d != '"') && (c != '\\' && d != '\\') && (c >= 0x20
+    && d >= 0x20);
     }
     */
 
@@ -211,7 +217,8 @@ namespace spargel::json {
         spargel_trace_scope("parseString");
 
         // '"'
-        if (!cursor.tryEatChar('"')) return Right(JsonParseError("expected '\"'"_sv));
+        if (!cursor.tryEatChar('"'))
+            return Right(JsonParseError("expected '\"'"_sv));
 
         // characters
         base::vector<char> chars;
@@ -226,12 +233,14 @@ namespace spargel::json {
 
             // '"'
             if (ch == '"') {
-                return Left(JsonString(base::string_from_range(chars.begin(), chars.end())));
+                return Left(JsonString(
+                    base::string_from_range(chars.begin(), chars.end())));
             }
 
             // '\'
             if (ch == '\\') {
-                if (cursor.isEnd()) return Right(JsonParseError("unfinished escape"_sv));
+                if (cursor.isEnd())
+                    return Right(JsonParseError("unfinished escape"_sv));
 
                 ch = (char)cursor.consumeChar();
                 switch (ch) {
@@ -259,7 +268,9 @@ namespace spargel::json {
                     // TODO: unicode
                     u16 code = 0;
                     for (int i = 0; i < 4; i++) {
-                        if (cursor.isEnd()) return Right(JsonParseError("expected a hex digit"_sv));
+                        if (cursor.isEnd())
+                            return Right(
+                                JsonParseError("expected a hex digit"_sv));
                         ch = (char)cursor.consumeChar();
                         char v;
                         if ('0' <= ch && ch <= '9')
@@ -275,15 +286,16 @@ namespace spargel::json {
                     appendUtf8(chars, code);
                 } break;
                 default:
-                    return Right(
-                        JsonParseError(String("unexpected escape character: '") + ch + '\''));
+                    return Right(JsonParseError(
+                        String("unexpected escape character: '") + ch + '\''));
                 }
             } else if ((u8)ch >= 0x20) {
                 // TODO: unicode
                 // no problem for UTF-8
                 chars.emplace(ch);
             } else {
-                return Right(JsonParseError(String("invalid character 0x") + char2hex(ch)));
+                return Right(JsonParseError(String("invalid character 0x") +
+                                            char2hex(ch)));
             }
         }
 
@@ -308,7 +320,8 @@ namespace spargel::json {
      * onenine:
      *   '1' . '9'
      */
-    Optional<JsonParseError> JsonParser::parseInteger(JsonNumber& number, bool& minus) {
+    Optional<JsonParseError> JsonParser::parseInteger(JsonNumber& number,
+                                                      bool& minus) {
         spargel_trace_scope("parseInteger");
 
         if (cursor.isEnd()) return makeOptional<JsonParseError>(UNEXPECTED_END);
@@ -499,7 +512,8 @@ namespace spargel::json {
             members.set(base::move(key), base::move(value));
 
             // ','
-            if (!cursor.tryEatChar(',')) return Left(JsonObject(base::move(members)));
+            if (!cursor.tryEatChar(','))
+                return Left(JsonObject(base::move(members)));
         }
 
         return Right(JsonParseError(UNEXPECTED_END));
@@ -509,7 +523,8 @@ namespace spargel::json {
      * member:
      *   ws string ws ':' element
      */
-    Optional<JsonParseError> JsonParser::parseMember(JsonString& key, JsonValue& value) {
+    Optional<JsonParseError> JsonParser::parseMember(JsonString& key,
+                                                     JsonValue& value) {
         spargel_trace_scope("parseMember");
 
         // ws
@@ -525,12 +540,14 @@ namespace spargel::json {
         eatWhitespaces();
 
         // ':'
-        if (!cursor.tryEatChar(':')) return makeOptional<JsonParseError>("expected ':'"_sv);
+        if (!cursor.tryEatChar(':'))
+            return makeOptional<JsonParseError>("expected ':'"_sv);
 
         // element
         auto result_value = parseElement();
         if (result_value.isRight())
-            return makeOptional<JsonParseError>(base::move(result_value.right()));
+            return makeOptional<JsonParseError>(
+                base::move(result_value.right()));
         value = base::move(result_value.left());
 
         return nullopt;
@@ -553,7 +570,8 @@ namespace spargel::json {
             elements.emplace(base::move(result.left()));
 
             // ','
-            if (!cursor.tryEatChar(',')) return Left(JsonArray(base::move(elements)));
+            if (!cursor.tryEatChar(','))
+                return Left(JsonArray(base::move(elements)));
         }
 
         return Right(JsonParseError(UNEXPECTED_END));

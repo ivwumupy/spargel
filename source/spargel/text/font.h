@@ -10,8 +10,11 @@
 namespace spargel::text {
     struct GlyphId {
         u32 value;
-        friend bool operator==(GlyphId lhs, GlyphId rhs) { return lhs.value == rhs.value; }
-        friend void tag_invoke(base::tag<base::hash>, base::HashRun& run, GlyphId const& self) {
+        friend bool operator==(GlyphId lhs, GlyphId rhs) {
+            return lhs.value == rhs.value;
+        }
+        friend void tag_invoke(base::tag<base::hash>, base::HashRun& run,
+                               GlyphId const& self) {
             run.combine(self.value);
         }
     };
@@ -41,7 +44,9 @@ namespace spargel::text {
         // The origin of the next glyph.
         float horizontal_advance;
         // The (signed) distance to the top of the bounding box.
-        float ascent() const { return bounding_box.origin.y + bounding_box.size.height; }
+        float ascent() const {
+            return bounding_box.origin.y + bounding_box.size.height;
+        }
         // The (signed) distance to the bottom of the bounding box.
         float descent() const { return bounding_box.origin.y; }
         float width() const { return bounding_box.size.width; }
@@ -56,8 +61,9 @@ namespace spargel::text {
         // TODO
         // unit of scale: pixel per point
         virtual Bitmap rasterizeGlyph(GlyphId id, float scale) = 0;
-        virtual Bitmap rasterizeGlyph(GlyphId id, float scale,
-                                      [[maybe_unused]] math::Vector2f subpixel_position) {
+        virtual Bitmap rasterizeGlyph(
+            GlyphId id, float scale,
+            [[maybe_unused]] math::Vector2f subpixel_position) {
             return rasterizeGlyph(id, scale);
         }
 

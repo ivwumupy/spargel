@@ -51,10 +51,12 @@ namespace spargel::ecs {
     /**
      * @brief register a component type in an ecs world
      */
-    int register_component(world_id world, struct component_descriptor const* descriptor,
+    int register_component(world_id world,
+                           struct component_descriptor const* descriptor,
                            component_id* id);
 
-    int spawn_entities(world_id world, struct spawn_descriptor* desc, struct view* view);
+    int spawn_entities(world_id world, struct spawn_descriptor* desc,
+                       struct view* view);
 
     int query(world_id world, struct query_descriptor* desc, struct view* view);
 

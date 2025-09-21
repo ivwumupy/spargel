@@ -43,17 +43,20 @@ namespace {
     };
 
     float camera_angle = 3.1415926 / 3;
-    auto mView = math::Matrix4x4f(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-                                  0.0f, 0.0f, 0.0f, -4.0f, 1.0f) *
-                 math::Matrix4x4f(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, math::cos(camera_angle),
-                                  -math::sin(camera_angle), 0.0f, 0.0f, math::sin(camera_angle),
-                                  math::cos(camera_angle), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    auto mView =
+        math::Matrix4x4f(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+                         0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -4.0f, 1.0f) *
+        math::Matrix4x4f(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, math::cos(camera_angle),
+                         -math::sin(camera_angle), 0.0f, 0.0f,
+                         math::sin(camera_angle), math::cos(camera_angle), 0.0f,
+                         0.0f, 0.0f, 0.0f, 1.0f);
 
-    float z_near = 0.01f, z_far = 100.0f, tanFov = 1.0f, aspect = 800.0f / 600.0f;
-    auto mProjection =
-        math::Matrix4x4f(1.0f / (tanFov * aspect), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f / tanFov, 0.0f,
-                         0.0f, 0.0f, 0.0f, -(z_far + z_near) / (z_far - z_near), -1.0f, 0.0f, 0.0f,
-                         -2 * z_far * z_near / (z_far - z_near), 0.0f);
+    float z_near = 0.01f, z_far = 100.0f, tanFov = 1.0f,
+          aspect = 800.0f / 600.0f;
+    auto mProjection = math::Matrix4x4f(
+        1.0f / (tanFov * aspect), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f / tanFov, 0.0f,
+        0.0f, 0.0f, 0.0f, -(z_far + z_near) / (z_far - z_near), -1.0f, 0.0f,
+        0.0f, -2 * z_far * z_near / (z_far - z_near), 0.0f);
 
     class Delegate final : public ui::WindowDelegate {
     public:
@@ -65,9 +68,10 @@ namespace {
 
             static float angle = 0.0f;
             angle += 0.01f;
-            auto mModel = math::Matrix4x4f(math::cos(angle), -math::sin(angle), 0.0f, 0.0f,
-                                           math::sin(angle), math::cos(angle), 0.0f, 0.0f, 0.0f,
-                                           0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+            auto mModel = math::Matrix4x4f(
+                math::cos(angle), -math::sin(angle), 0.0f, 0.0f,
+                math::sin(angle), math::cos(angle), 0.0f, 0.0f, 0.0f, 0.0f,
+                1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
             auto mMVP = mProjection * mView * mModel;
 
@@ -77,7 +81,8 @@ namespace {
                 glBindVertexArray(instance.vao);
 
                 if (instance.indices) {
-                    glDrawElements(instance.mode, instance.count, instance.indices_type, (void*)0);
+                    glDrawElements(instance.mode, instance.count,
+                                   instance.indices_type, (void*)0);
                 } else {
                     glDrawArrays(instance.mode, 0, instance.count);
                 };
@@ -107,14 +112,16 @@ void loadProgram(resource::ResourceManager* resource_manager, Context& ctx) {
     char infoLog[512];
 
     u32 vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    auto vertexShaderCode = resource_manager->open(resource::ResourceId("demo_gltf_opengl.vs"_sv));
+    auto vertexShaderCode =
+        resource_manager->open(resource::ResourceId("demo_gltf_opengl.vs"_sv));
     if (!vertexShaderCode.hasValue()) {
         spargel_log_fatal("cannot open vertex shader file");
         spargel_panic_here();
     }
     auto pVertexShaderCode = (GLchar*)vertexShaderCode.value()->mapData();
     auto vertexShaderCodeLength = (GLint)vertexShaderCode.value()->size();
-    glShaderSource(vertexShader, 1, &pVertexShaderCode, &vertexShaderCodeLength);
+    glShaderSource(vertexShader, 1, &pVertexShaderCode,
+                   &vertexShaderCodeLength);
     glCompileShader(vertexShader);
     glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
     if (!success) {
@@ -132,7 +139,8 @@ void loadProgram(resource::ResourceManager* resource_manager, Context& ctx) {
     }
     auto pFragmentShaderCode = (GLchar*)fragmentShaderCode.value()->mapData();
     auto fragmentShaderCodeLength = (GLint)fragmentShaderCode.value()->size();
-    glShaderSource(fragmentShader, 1, &pFragmentShaderCode, &fragmentShaderCodeLength);
+    glShaderSource(fragmentShader, 1, &pFragmentShaderCode,
+                   &fragmentShaderCodeLength);
     glCompileShader(fragmentShader);
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
     if (!success) {
@@ -158,16 +166,21 @@ void loadProgram(resource::ResourceManager* resource_manager, Context& ctx) {
     ctx.mvpLocation = glGetUniformLocation(program, "uMVP");
 }
 
-void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Context& ctx) {
+void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf,
+               Context& ctx) {
     // show meta info
     auto& asset = gltf.asset;
-    spargel_log_info("glTF version: \"%s\"", base::CString(asset.version).data());
+    spargel_log_info("glTF version: \"%s\"",
+                     base::CString(asset.version).data());
     if (asset.copyright.hasValue())
-        spargel_log_info("glTF copyright: \"%s\"", base::CString(asset.copyright.value()).data());
+        spargel_log_info("glTF copyright: \"%s\"",
+                         base::CString(asset.copyright.value()).data());
     if (asset.generator.hasValue())
-        spargel_log_info("glTF generator: \"%s\"", base::CString(asset.generator.value()).data());
+        spargel_log_info("glTF generator: \"%s\"",
+                         base::CString(asset.generator.value()).data());
     if (asset.minVersion.hasValue())
-        spargel_log_info("glTF minVersion: \"%s\"", base::CString(asset.minVersion.value()).data());
+        spargel_log_info("glTF minVersion: \"%s\"",
+                         base::CString(asset.minVersion.value()).data());
 
     // load raw buffers
     base::vector<base::unique_ptr<resource::Resource>> buffer_resources;
@@ -175,7 +188,8 @@ void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Co
         for (auto& buffer : gltf.buffers.value()) {
             spargel_check(buffer.uri.hasValue());
 
-            auto optional = resource_manager->open(resource::ResourceId(buffer.uri.value()));
+            auto optional = resource_manager->open(
+                resource::ResourceId(buffer.uri.value()));
             spargel_check(optional.hasValue());
             buffer_resources.emplace(base::move(optional.value()));
         }
@@ -189,16 +203,22 @@ void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Co
 
     // upload buffers
     if (gltf.bufferViews.hasValue()) {
-        spargel_log_info("glTF bufferView count: %zu", gltf.bufferViews.value().count());
+        spargel_log_info("glTF bufferView count: %zu",
+                         gltf.bufferViews.value().count());
         for (auto& bufferView : gltf.bufferViews.value()) {
-            int byteOffset = bufferView.byteOffset.hasValue() ? bufferView.byteOffset.value() : 0;
-            int target = bufferView.target.hasValue() ? bufferView.target.value() : GL_ARRAY_BUFFER;
+            int byteOffset = bufferView.byteOffset.hasValue()
+                                 ? bufferView.byteOffset.value()
+                                 : 0;
+            int target = bufferView.target.hasValue()
+                             ? bufferView.target.value()
+                             : GL_ARRAY_BUFFER;
 
             u32 vbo;
             glGenBuffers(1, &vbo);
             glBindBuffer(target, vbo);
             glBufferData(target, bufferView.byteLength,
-                         raw_buffers[bufferView.buffer].data() + byteOffset, GL_STATIC_DRAW);
+                         raw_buffers[bufferView.buffer].data() + byteOffset,
+                         GL_STATIC_DRAW);
 
             ctx.buffers.emplace(vbo);
         }
@@ -217,7 +237,8 @@ void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Co
         for (auto& mesh : gltf.meshes.value()) {
             /*
             if (mesh.name.hasValue()) {
-                spargel_log_debug("mesh name: %s", base::CString(mesh.name.value()).data());
+                spargel_log_debug("mesh name: %s",
+            base::CString(mesh.name.value()).data());
             }
             */
 
@@ -230,16 +251,19 @@ void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Co
                 auto& attributes = primitive.attributes;
 
                 spargel_check(attributes.position.hasValue());
-                auto& position_accessor = accessors[attributes.position.value()];
+                auto& position_accessor =
+                    accessors[attributes.position.value()];
                 spargel_check(position_accessor.bufferView.hasValue());
                 spargel_check(position_accessor.componentType == GL_FLOAT);
                 spargel_check(position_accessor.type == base::String("VEC3"));
-                glBindBuffer(GL_ARRAY_BUFFER, ctx.buffers[position_accessor.bufferView.value()]);
+                glBindBuffer(GL_ARRAY_BUFFER,
+                             ctx.buffers[position_accessor.bufferView.value()]);
                 glVertexAttribPointer(
                     0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
-                    reinterpret_cast<void*>(position_accessor.byteOffset.hasValue()
-                                                ? position_accessor.byteOffset.value()
-                                                : 0));
+                    reinterpret_cast<void*>(
+                        position_accessor.byteOffset.hasValue()
+                            ? position_accessor.byteOffset.value()
+                            : 0));
                 glEnableVertexAttribArray(0);
 
                 spargel_check(attributes.normal.hasValue());
@@ -247,26 +271,33 @@ void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Co
                 spargel_check(normal_accessor.bufferView.hasValue());
                 spargel_check(normal_accessor.componentType == GL_FLOAT);
                 spargel_check(normal_accessor.type == base::String("VEC3"));
-                glBindBuffer(GL_ARRAY_BUFFER, ctx.buffers[normal_accessor.bufferView.value()]);
+                glBindBuffer(GL_ARRAY_BUFFER,
+                             ctx.buffers[normal_accessor.bufferView.value()]);
                 glVertexAttribPointer(
                     1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
-                    reinterpret_cast<void*>(normal_accessor.byteOffset.hasValue()
-                                                ? normal_accessor.byteOffset.value()
-                                                : 0));
+                    reinterpret_cast<void*>(
+                        normal_accessor.byteOffset.hasValue()
+                            ? normal_accessor.byteOffset.value()
+                            : 0));
                 glEnableVertexAttribArray(1);
 
                 Instance instance;
                 instance.vao = vao;
                 instance.count = position_accessor.count;
-                instance.mode = primitive.mode.hasValue() ? primitive.mode.value() : GL_TRIANGLES;
+                instance.mode = primitive.mode.hasValue()
+                                    ? primitive.mode.value()
+                                    : GL_TRIANGLES;
                 instance.indices = false;
 
                 if (primitive.indices.hasValue()) {
-                    auto& indices_accesor = accessors[primitive.indices.value()];
+                    auto& indices_accesor =
+                        accessors[primitive.indices.value()];
                     spargel_check(indices_accesor.bufferView.hasValue());
-                    spargel_check(indices_accesor.type == base::String("SCALAR"));
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,
-                                 ctx.buffers[indices_accesor.bufferView.value()]);
+                    spargel_check(indices_accesor.type ==
+                                  base::String("SCALAR"));
+                    glBindBuffer(
+                        GL_ELEMENT_ARRAY_BUFFER,
+                        ctx.buffers[indices_accesor.bufferView.value()]);
 
                     instance.indices_type = indices_accesor.componentType;
                     instance.indices = true;
@@ -314,14 +345,14 @@ void loadModel(resource::ResourceManager* resource_manager, const GlTF& gltf, Co
     glBindVertexArray(vao);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo_p);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(position_data), position_data, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(position_data), position_data,
+    GL_STATIC_DRAW); glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 *
+    sizeof(float), (void*)0); glEnableVertexAttribArray(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo_n);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(normal_data), normal_data, GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(normal_data), normal_data,
+    GL_STATIC_DRAW); glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 *
+    sizeof(float), (void*)0); glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -347,14 +378,17 @@ int main(int argc, char* argv[]) {
     }
 
     auto resource_manager = resource::makeRelativeManager("resources"_sv);
-    auto gltf_resource_manager = resource::ResourceManagerDirectory(base::String(argv[1]).view());
+    auto gltf_resource_manager =
+        resource::ResourceManagerDirectory(base::String(argv[1]).view());
 
     // load glTF
     GlTF gltf;
     {
-        auto optional = gltf_resource_manager.open(resource::ResourceId(base::String(argv[2])));
+        auto optional = gltf_resource_manager.open(
+            resource::ResourceId(base::String(argv[2])));
         if (!optional.hasValue()) {
-            spargel_log_fatal("Cannot open file \"%s : %s\"\n", argv[1], argv[2]);
+            spargel_log_fatal("Cannot open file \"%s : %s\"\n", argv[1],
+                              argv[2]);
             return 1;
         }
         auto& resource = optional.value();
@@ -385,7 +419,8 @@ int main(int argc, char* argv[]) {
     delegate.x_display = x_display;
     delegate.x_window = x_window;
 
-    GLXContext glx_ctx = glXCreateContext(x_display, x_visual_info, nullptr, GL_TRUE);
+    GLXContext glx_ctx =
+        glXCreateContext(x_display, x_visual_info, nullptr, GL_TRUE);
     if (!glx_ctx) {
         spargel_log_fatal("cannot create GL context");
         spargel_panic_here();

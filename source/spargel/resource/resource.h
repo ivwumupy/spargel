@@ -13,10 +13,13 @@ namespace spargel::resource {
 
     class ResourceId {
     public:
-        static constexpr base::StringView default_namespace = base::StringView("core", 4);
+        static constexpr base::StringView default_namespace =
+            base::StringView("core", 4);
 
-        ResourceId(base::StringView ns, base::StringView path) : _namespace(ns), _path(path) {}
-        ResourceId(base::StringView path) : _namespace(default_namespace), _path(path) {}
+        ResourceId(base::StringView ns, base::StringView path)
+            : _namespace(ns), _path(path) {}
+        ResourceId(base::StringView path)
+            : _namespace(default_namespace), _path(path) {}
 
         const base::String& ns() const { return _namespace; }
         const base::String& path() const { return _path; }
@@ -34,7 +37,8 @@ namespace spargel::resource {
 
         virtual bool has(const ResourceId& id) = 0;
 
-        virtual base::Optional<base::unique_ptr<Resource>> open(const ResourceId& id) = 0;
+        virtual base::Optional<base::unique_ptr<Resource>> open(
+            const ResourceId& id) = 0;
     };
 
     /*
@@ -55,7 +59,9 @@ namespace spargel::resource {
 
         virtual void* mapData();
 
-        base::span<u8> getSpan() { return base::make_span<u8>(size(), (u8*)mapData()); }
+        base::span<u8> getSpan() {
+            return base::make_span<u8>(size(), (u8*)mapData());
+        }
 
     private:
         void* _mapped;
@@ -65,7 +71,9 @@ namespace spargel::resource {
     // The most trivial example
     class ResourceManagerEmpty final : public ResourceManager {
     public:
-        bool has([[maybe_unused]] const ResourceId& id) override { return false; }
+        bool has([[maybe_unused]] const ResourceId& id) override {
+            return false;
+        }
 
         base::Optional<base::unique_ptr<Resource>> open(
             [[maybe_unused]] const ResourceId& id) override {

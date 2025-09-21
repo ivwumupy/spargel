@@ -56,8 +56,10 @@ namespace spargel::ui {
         xcb_atom_t atom_wm_protocols;
         xcb_atom_t atom_wm_delete_window;
 
-        xcb_intern_atom_cookie_t intern_atom_cookie(u8 only_if_exists, const char* name);
-        xcb_intern_atom_reply_t* intern_atom_reply(xcb_intern_atom_cookie_t cookie);
+        xcb_intern_atom_cookie_t intern_atom_cookie(u8 only_if_exists,
+                                                    const char* name);
+        xcb_intern_atom_reply_t* intern_atom_reply(
+            xcb_intern_atom_cookie_t cookie);
 
         void initXKBContext();
     };

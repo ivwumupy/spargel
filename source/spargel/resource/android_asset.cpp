@@ -21,13 +21,17 @@ namespace spargel::resource {
 
     usize ResourceAndroidAsset::size() { return AAsset_getLength(_asset); }
 
-    void ResourceAndroidAsset::getData(void* buf) { AAsset_read(_asset, buf, size()); }
+    void ResourceAndroidAsset::getData(void* buf) {
+        AAsset_read(_asset, buf, size());
+    }
 
-    base::Optional<base::unique_ptr<Resource>> ResourceManagerAndroidAsset::open(
-        const resource::ResourceId& id) {
-        AAsset* asset = AAssetManager_open(_asset_manager, id.path().data(), AASSET_MODE_BUFFER);
-        return asset ? base::makeOptional<base::unique_ptr<ResourceAndroidAsset>>(
-                           base::make_unique<ResourceAndroidAsset>(asset))
-                     : base::nullopt;
+    base::Optional<base::unique_ptr<Resource>>
+    ResourceManagerAndroidAsset::open(const resource::ResourceId& id) {
+        AAsset* asset = AAssetManager_open(_asset_manager, id.path().data(),
+                                           AASSET_MODE_BUFFER);
+        return asset
+                   ? base::makeOptional<base::unique_ptr<ResourceAndroidAsset>>(
+                         base::make_unique<ResourceAndroidAsset>(asset))
+                   : base::nullopt;
     }
 }  // namespace spargel::resource

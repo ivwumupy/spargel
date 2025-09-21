@@ -4,4 +4,4 @@ namespace spargel::text {
     base::UniquePtr<TextShaper> TextShaper::create(FontManager* font_manager) {
         return nullptr;
     }
-}
+}  // namespace spargel::text

@@ -15,7 +15,8 @@ namespace spargel::render {
     public:
         static constexpr bool use_compute = false;
 
-        UIRendererMetal(gpu::GPUContext* context, text::TextShaper* text_shaper);
+        UIRendererMetal(gpu::GPUContext* context,
+                        text::TextShaper* text_shaper);
         ~UIRendererMetal();
 
         void setLayer(CAMetalLayer* layer) {
@@ -28,16 +29,24 @@ namespace spargel::render {
         }
 
         void render(UIScene const& scene) override;
-        void uploadBitmap(TextureHandle handle, text::Bitmap const& bitmap) override;
+        void uploadBitmap(TextureHandle handle,
+                          text::Bitmap const& bitmap) override;
 
-        gpu::MetalContext* metal_context() { return static_cast<gpu::MetalContext*>(context()); }
+        gpu::MetalContext* metal_context() {
+            return static_cast<gpu::MetalContext*>(context());
+        }
 
         //
-        id<MTLCommandBuffer> renderToTexture(UIScene const& scene, id<MTLTexture> texture);
-        id<MTLCommandBuffer> renderToTextureRender(UIScene const& scene, id<MTLTexture> texture);
-        id<MTLCommandBuffer> renderToTextureRender2(UIScene const& scene, id<MTLTexture> texture);
-        id<MTLCommandBuffer> renderToTextureCompute(UIScene const& scene, id<MTLTexture> texture);
-        id<MTLCommandBuffer> renderToTextureComputeV2(UIScene const& scene, id<MTLTexture> texture);
+        id<MTLCommandBuffer> renderToTexture(UIScene const& scene,
+                                             id<MTLTexture> texture);
+        id<MTLCommandBuffer> renderToTextureRender(UIScene const& scene,
+                                                   id<MTLTexture> texture);
+        id<MTLCommandBuffer> renderToTextureRender2(UIScene const& scene,
+                                                    id<MTLTexture> texture);
+        id<MTLCommandBuffer> renderToTextureCompute(UIScene const& scene,
+                                                    id<MTLTexture> texture);
+        id<MTLCommandBuffer> renderToTextureComputeV2(UIScene const& scene,
+                                                      id<MTLTexture> texture);
 
     private:
         // TODO: We should not purge the buffers by delta-time.

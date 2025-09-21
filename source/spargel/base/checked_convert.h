@@ -11,8 +11,9 @@ namespace spargel::base {
         inline constexpr bool IsArithmetic =
             // Integrals
             IsSame<T, short> || IsSame<T, unsigned short> || IsSame<T, int> ||
-            IsSame<T, unsigned int> || IsSame<T, long> || IsSame<T, unsigned long> ||
-            IsSame<T, long long> || IsSame<T, unsigned long long> ||
+            IsSame<T, unsigned int> || IsSame<T, long> ||
+            IsSame<T, unsigned long> || IsSame<T, long long> ||
+            IsSame<T, unsigned long long> ||
             // Floating-points
             IsSame<T, float> || IsSame<T, double> || IsSame<T, long double>;
 

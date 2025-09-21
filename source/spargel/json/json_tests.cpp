@@ -47,7 +47,8 @@ namespace {
     }
 
     TEST(JSON_Parse_Primitive) {
-        base::Either<JsonValue, JsonParseError> result = base::Left(JsonValue());
+        base::Either<JsonValue, JsonParseError> result =
+            base::Left(JsonValue());
 
         result = parseJson("null");
         spargel_check(result.isLeft() && result.left() == JsonNull());
@@ -62,10 +63,12 @@ namespace {
         spargel_check(result.isLeft() && result.left() == JsonString("string"));
 
         result = parseJson("\"123\\n\\\"xyz\"");
-        spargel_check(result.isLeft() && result.left() == JsonString("123\n\"xyz"));
+        spargel_check(result.isLeft() &&
+                      result.left() == JsonString("123\n\"xyz"));
 
         result = parseJson("\" \\\" \\\\ \\/ \\b \\f \\n \\r \\t \"");
-        spargel_check(result.isLeft() && result.left() == JsonString(" \" \\ / \b \f \n \r \t "));
+        spargel_check(result.isLeft() &&
+                      result.left() == JsonString(" \" \\ / \b \f \n \r \t "));
 
         result = parseJson("\"\\u0020\\u0041\\u0061\"");
         spargel_check(result.isLeft() && result.left() == JsonString(" Aa"));
@@ -92,10 +95,12 @@ namespace {
         spargel_check(result.isLeft() && result.left() == JsonNumber(-54321));
 
         result = parseJson("123.000456");
-        spargel_check(result.isLeft() && result.left() == JsonNumber(123.000456));
+        spargel_check(result.isLeft() &&
+                      result.left() == JsonNumber(123.000456));
 
         result = parseJson("-654.000321");
-        spargel_check(result.isLeft() && result.left() == JsonNumber(-654.000321));
+        spargel_check(result.isLeft() &&
+                      result.left() == JsonNumber(-654.000321));
 
         result = parseJson("0.001");
         spargel_check(result.isLeft() && result.left() == JsonNumber(0.001));
@@ -107,21 +112,26 @@ namespace {
         spargel_check(result.isLeft() && result.left() == JsonNumber(0.001e4));
 
         result = parseJson("-0.001e+3");
-        spargel_check(result.isLeft() && result.left() == JsonNumber(-0.001e+3));
+        spargel_check(result.isLeft() &&
+                      result.left() == JsonNumber(-0.001e+3));
 
         result = parseJson("-0.001E-3");
-        spargel_check(result.isLeft() && result.left() == JsonNumber(-0.001E-3));
+        spargel_check(result.isLeft() &&
+                      result.left() == JsonNumber(-0.001E-3));
     }
 
     TEST(JSON_Parse_Array) {
-        base::Either<JsonValue, JsonParseError> result = base::Left(JsonValue());
+        base::Either<JsonValue, JsonParseError> result =
+            base::Left(JsonValue());
 
         result = parseJson("[]");
-        spargel_check(result.isLeft() && result.left().type == JsonValueType::array);
+        spargel_check(result.isLeft() &&
+                      result.left().type == JsonValueType::array);
         spargel_check(result.left().array.elements.count() == 0);
 
         result = parseJson("[ true, \"ABC\", -123.456, null, false ]");
-        spargel_check(result.isLeft() && result.left().type == JsonValueType::array);
+        spargel_check(result.isLeft() &&
+                      result.left().type == JsonValueType::array);
         auto array = result.left().array;
         spargel_check(array.elements.count() == 5);
         spargel_check(array.elements[0] == JsonBoolean(true));
@@ -132,26 +142,33 @@ namespace {
     }
 
     TEST(JSON_Parse_Object) {
-        base::Either<JsonValue, JsonParseError> result = base::Left(JsonValue());
+        base::Either<JsonValue, JsonParseError> result =
+            base::Left(JsonValue());
 
         result = parseJson("{}");
-        spargel_check(result.isLeft() && result.left().type == JsonValueType::object);
+        spargel_check(result.isLeft() &&
+                      result.left().type == JsonValueType::object);
         spargel_check(result.left().object.members.count() == 0);
 
-        result =
-            parseJson("{ \"error\": null, \"name\": \"Alice\", \"age\": 20, \"happy\": true }");
+        result = parseJson(
+            "{ \"error\": null, \"name\": \"Alice\", \"age\": 20, \"happy\": "
+            "true }");
 
-        spargel_check(result.isLeft() && result.left().type == JsonValueType::object);
+        spargel_check(result.isLeft() &&
+                      result.left().type == JsonValueType::object);
         auto object = result.left().object;
         spargel_check(object.members.count() == 4);
         spargel_check(isMemberEqual(object, JsonString("error"), JsonNull()));
-        spargel_check(isMemberEqual(object, JsonString("name"), JsonString("Alice")));
+        spargel_check(
+            isMemberEqual(object, JsonString("name"), JsonString("Alice")));
         spargel_check(isMemberEqual(object, JsonString("age"), JsonNumber(20)));
-        spargel_check(isMemberEqual(object, JsonString("happy"), JsonBoolean(true)));
+        spargel_check(
+            isMemberEqual(object, JsonString("happy"), JsonBoolean(true)));
     }
 
     TEST(JSON_Parse_Composite) {
-        base::Either<JsonValue, JsonParseError> result = base::Left(JsonValue());
+        base::Either<JsonValue, JsonParseError> result =
+            base::Left(JsonValue());
         const char* str;
 
         str =
@@ -178,8 +195,8 @@ namespace {
         spargel_check(value.type == JsonValueType::object);
         spargel_check(value.object.members.count() == 3);
 
-        spargel_check(
-            isMemberEqual(value.object, JsonString("model"), JsonString("deepseek-chat")));
+        spargel_check(isMemberEqual(value.object, JsonString("model"),
+                                    JsonString("deepseek-chat")));
 
         auto* ptr1 = value.object.members.get(JsonString("choices"));
         spargel_check(ptr1 != nullptr);
@@ -188,18 +205,25 @@ namespace {
         spargel_check(v1.array.elements.count() == 1);
         auto& v11 = v1.array.elements[0];
         spargel_check(v11.type == JsonValueType::object);
-        spargel_check(isMemberEqual(v11.object, JsonString("index"), JsonNumber(0)));
-        spargel_check(isMemberEqual(v11.object, JsonString("role"), JsonString("assistant")));
-        spargel_check(isMemberEqual(v11.object, JsonString("logprobs"), JsonNull()));
-        spargel_check(isMemberEqual(v11.object, JsonString("finish_reason"), JsonString("stop")));
+        spargel_check(
+            isMemberEqual(v11.object, JsonString("index"), JsonNumber(0)));
+        spargel_check(isMemberEqual(v11.object, JsonString("role"),
+                                    JsonString("assistant")));
+        spargel_check(
+            isMemberEqual(v11.object, JsonString("logprobs"), JsonNull()));
+        spargel_check(isMemberEqual(v11.object, JsonString("finish_reason"),
+                                    JsonString("stop")));
 
         auto* ptr2 = value.object.members.get(JsonString("usage"));
         spargel_check(ptr2 != nullptr);
         auto& v2 = *ptr2;
         spargel_check(v2.type == JsonValueType::object);
-        spargel_check(isMemberEqual(v2.object, JsonString("prompt_tokens"), JsonNumber(11)));
-        spargel_check(isMemberEqual(v2.object, JsonString("completion_tokens"), JsonNumber(11)));
-        spargel_check(isMemberEqual(v2.object, JsonString("total_tokens"), JsonNumber(22)));
+        spargel_check(isMemberEqual(v2.object, JsonString("prompt_tokens"),
+                                    JsonNumber(11)));
+        spargel_check(isMemberEqual(v2.object, JsonString("completion_tokens"),
+                                    JsonNumber(11)));
+        spargel_check(isMemberEqual(v2.object, JsonString("total_tokens"),
+                                    JsonNumber(22)));
     }
 
 }  // namespace

@@ -20,7 +20,8 @@ int main() {
         // auto n = kCTFontClassSansSerif;
         auto number = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &n);
         void const* values[] = {number};
-        return CFDictionaryCreate(kCFAllocatorDefault, keys, values, 1, NULL, NULL);
+        return CFDictionaryCreate(kCFAllocatorDefault, keys, values, 1, NULL,
+                                  NULL);
     }();
     CFShow(trait_dict);
 
@@ -30,19 +31,21 @@ int main() {
         return CFArrayCreate(kCFAllocatorDefault, values, 1, nullptr);
     }();
 
-    // auto family_name = CFStringCreateWithCString(nullptr, "Times", kCFStringEncodingUTF8);
-    // void const* keys[] = {kCTFontFamilyNameAttribute};
-    // void const* values[] = {family_name};
+    // auto family_name = CFStringCreateWithCString(nullptr, "Times",
+    // kCFStringEncodingUTF8); void const* keys[] =
+    // {kCTFontFamilyNameAttribute}; void const* values[] = {family_name};
     void const* keys[] = {kCTFontTraitsAttribute, kCTFontLanguagesAttribute};
     void const* values[] = {trait_dict, langs};
-    auto dict = CFDictionaryCreate(kCFAllocatorDefault, keys, values, 2, NULL, NULL);
+    auto dict =
+        CFDictionaryCreate(kCFAllocatorDefault, keys, values, 2, NULL, NULL);
     CFShow(dict);
     auto font_desc = CTFontDescriptorCreateWithAttributes(dict);
     CFShow(font_desc);
     auto font = CTFontCreateWithFontDescriptor(font_desc, 0, nullptr);
     CFShow(font);
 
-    auto fonts = CTFontDescriptorCreateMatchingFontDescriptors(font_desc, nullptr);
+    auto fonts =
+        CTFontDescriptorCreateMatchingFontDescriptors(font_desc, nullptr);
     CFShow(fonts);
 
     auto traits = CTFontCopyTraits(font);

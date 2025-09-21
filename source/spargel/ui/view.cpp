@@ -51,7 +51,8 @@ namespace spargel::ui {
         } else {
             // There is no parent.
             // In this case, notify the host.
-            // NOTE: It's possible that the view has not been attached to a host.
+            // NOTE: It's possible that the view has not been attached to a
+            // host.
             if (host_) {
                 host_->invalidateLayout();
             }
@@ -61,7 +62,8 @@ namespace spargel::ui {
         if (!frame_.contains({e.x, e.y})) {
             return;
         }
-        MouseDownEvent converted{e.x - frame().origin.x, e.y - frame().origin.y};
+        MouseDownEvent converted{e.x - frame().origin.x,
+                                 e.y - frame().origin.y};
         for (auto* child : children()) {
             child->handleMousePressed(converted);
         }

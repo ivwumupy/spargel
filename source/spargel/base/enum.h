@@ -19,5 +19,6 @@ namespace spargel::base {
         return static_cast<UnderlyingType<T>>(t);
     }
 
-    // NOTE: It's not possible to implement a generic safe fromUnderlying without reflection.
+    // NOTE: It's not possible to implement a generic safe fromUnderlying
+    // without reflection.
 }  // namespace spargel::base

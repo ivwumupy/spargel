@@ -24,9 +24,11 @@
 // - The NSWindow is owned by WindowAppKit.
 //   When the NSWindow is closed, WindowAppKit needs to release it.
 //   Thus WindowAppKit should have a closed state.
-//   In this case the window delegate should be notified and it should delete the WindowAppKit.
+//   In this case the window delegate should be notified and it should delete
+//   the WindowAppKit.
 // - Make WindowAppKit lightweight, i.e. implement main logic in objc.
-//   Reason: It's easier to deal with Cocoa objects in objc, for example calling super methods.
+//   Reason: It's easier to deal with Cocoa objects in objc, for example calling
+//   super methods.
 //
 
 @implementation SpargelHostView {
@@ -35,7 +37,8 @@
     NSTrackingArea* _tracking;
     spargel::ui::WindowAppKit* _bridge;
 }
-- (instancetype)initWithBridge:(spargel::ui::WindowAppKit*)bridge metalLayer:(CAMetalLayer*)layer {
+- (instancetype)initWithBridge:(spargel::ui::WindowAppKit*)bridge
+                    metalLayer:(CAMetalLayer*)layer {
     self = [super init];
     if (self) {
         _bridge = bridge;
@@ -47,10 +50,11 @@
         [self recreateTrackingArea];
 
         // TODO: Remove.
-        [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(keyboardWasConnected:)
-                                                     name:GCKeyboardDidConnectNotification
-                                                   object:nil];
+        [[NSNotificationCenter defaultCenter]
+            addObserver:self
+               selector:@selector(keyboardWasConnected:)
+                   name:GCKeyboardDidConnectNotification
+                 object:nil];
     }
     return self;
 }
@@ -63,9 +67,11 @@
     spargel_check(keyboard_input);
     auto key = [keyboard_input buttonForKeyCode:GCKeyCodeKeyA];
     spargel_check(key);
-    key.pressedChangedHandler = ^(GCControllerButtonInput*, float, bool pressed) {
-      spargel_log_info("GC Callback Key A: %s", pressed ? "pressed" : "released");
-    };
+    key.pressedChangedHandler =
+        ^(GCControllerButtonInput*, float, bool pressed) {
+          spargel_log_info("GC Callback Key A: %s",
+                           pressed ? "pressed" : "released");
+        };
 }
 - (void)recreateTrackingArea {
     if (_tracking != nil) {
@@ -73,8 +79,9 @@
         [_tracking release];
     }
 
-    NSTrackingAreaOptions options = NSTrackingActiveAlways | NSTrackingInVisibleRect |
-                                    NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved;
+    NSTrackingAreaOptions options =
+        NSTrackingActiveAlways | NSTrackingInVisibleRect |
+        NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved;
     _tracking = [[NSTrackingArea alloc] initWithRect:[self bounds]
                                              options:options
                                                owner:self
@@ -83,7 +90,8 @@
 }
 - (void)mouseMoved:(NSEvent*)event {
     auto loc = [event locationInWindow];
-    _bridge->emitMouseMoved({(float)loc.x, (float)loc.y, (float)event.deltaX, (float)event.deltaX});
+    _bridge->emitMouseMoved(
+        {(float)loc.x, (float)loc.y, (float)event.deltaX, (float)event.deltaX});
 }
 - (void)mouseDragged:(NSEvent*)event {
     _bridge->_bridgeMouseDragged((float)event.deltaX, (float)event.deltaY);
@@ -101,7 +109,8 @@
         return;
     }
     [self setupDisplayLink:self.window];
-    [_link addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+    [_link addToRunLoop:[NSRunLoop currentRunLoop]
+                forMode:NSRunLoopCommonModes];
     [self resizeDrawable:self.window.screen.backingScaleFactor];
 }
 - (void)setupDisplayLink:(NSWindow*)window {
@@ -112,9 +121,10 @@
     _link.paused = !animating;
 }
 - (void)render:(CADisplayLink*)sender {
-    // The Application Kit creates an autorelease pool on the main thread at the beginning of every
-    // cycle of the event loop, and drains it at the end, thereby releasing any autoreleased objects
-    // generated while processing an event.
+    // The Application Kit creates an autorelease pool on the main thread at the
+    // beginning of every cycle of the event loop, and drains it at the end,
+    // thereby releasing any autoreleased objects generated while processing an
+    // event.
     //
     _bridge->_bridge_render();
 }
@@ -148,7 +158,8 @@
 
     // _bridge->_setDrawableSize((float)newSize.width, (float)newSize.height);
 }
-// Note: Please read Chromium's docs on integrating with Cocoa's input management system.
+// Note: Please read Chromium's docs on integrating with Cocoa's input
+// management system.
 // https://chromium.googlesource.com/chromium/src/+/main/docs/ui/input_event/index.md#MacViews
 // https://chromium.googlesource.com/chromium/src/+/main/components/remote_cocoa/app_shim/bridged_content_view.mm
 - (void)keyDown:(NSEvent*)event {
@@ -216,7 +227,8 @@
     return delegate->validAttributesForMarkedText();
 }
 - (NSAttributedString*)attributedSubstringForProposedRange:(NSRange)range
-                                               actualRange:(NSRangePointer)actualRange {
+                                               actualRange:
+                                                   (NSRangePointer)actualRange {
     auto delegate = _bridge->getTextDelegate();
     if (!delegate) {
         return nil;
@@ -237,7 +249,8 @@
     }
     return delegate->characterIndexForPoint(point);
 }
-- (NSRect)firstRectForCharacterRange:(NSRange)range actualRange:(NSRangePointer)actualRange {
+- (NSRect)firstRectForCharacterRange:(NSRange)range
+                         actualRange:(NSRangePointer)actualRange {
     auto delegate = _bridge->getTextDelegate();
     if (!delegate) {
         return NSMakeRect(0, 0, 0, 0);
@@ -261,9 +274,8 @@
     if (self) {
         spargel_check(bridge);
         bridge_ = bridge;
-        // If we cache NSWindow in the constructor, then the delegate need to be created after the
-        // window.
-        // window_ = bridge_->getNSWindow();
+        // If we cache NSWindow in the constructor, then the delegate need to be
+        // created after the window. window_ = bridge_->getNSWindow();
     }
     return self;
 }
@@ -293,25 +305,30 @@ namespace spargel::ui {
     }  // namespace
 
     WindowAppKit::WindowAppKit(u32 width, u32 height)
-        : width_{static_cast<float>(width)}, height_{static_cast<float>(height)} {
+        : width_{static_cast<float>(width)},
+          height_{static_cast<float>(height)} {
         auto screen = [NSScreen mainScreen];
 
-        NSWindowStyleMask style = NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable |
-                                  NSWindowStyleMaskResizable | NSWindowStyleMaskTitled;
+        NSWindowStyleMask style =
+            NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable |
+            NSWindowStyleMaskResizable | NSWindowStyleMaskTitled;
 
         auto rect = NSMakeRect(0, 0, width, height);
         // center the window
         rect.origin.x = (screen.frame.size.width - width_) / 2;
         rect.origin.y = (screen.frame.size.height - height_) / 2;
 
-        ns_window_ = [[NSWindow alloc] initWithContentRect:rect
-                                                 styleMask:style
-                                                   backing:NSBackingStoreBuffered
-                                                     defer:NO
-                                                    screen:screen];
+        ns_window_ =
+            [[NSWindow alloc] initWithContentRect:rect
+                                        styleMask:style
+                                          backing:NSBackingStoreBuffered
+                                            defer:NO
+                                           screen:screen];
 
-        // Create the delegate after the window, as the delegate stores a pointer to the window.
-        ns_window_delegate_ = [[SpargelWindowDelegate alloc] initWithBridge:this];
+        // Create the delegate after the window, as the delegate stores a
+        // pointer to the window.
+        ns_window_delegate_ =
+            [[SpargelWindowDelegate alloc] initWithBridge:this];
         // This is a weak reference.
         ns_window_.delegate = ns_window_delegate_;
 
@@ -322,9 +339,11 @@ namespace spargel::ui {
 
         metal_layer_ = [[CAMetalLayer alloc] init];
 
-        ns_view_ = [[SpargelHostView alloc] initWithBridge:this metalLayer:metal_layer_];
+        ns_view_ = [[SpargelHostView alloc] initWithBridge:this
+                                                metalLayer:metal_layer_];
 
-        auto _text_cursor = [[NSTextInsertionIndicator alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
+        auto _text_cursor = [[NSTextInsertionIndicator alloc]
+            initWithFrame:NSMakeRect(0, 0, 0, 0)];
         [ns_view_ addSubview:_text_cursor];
 
         _text_cursor.displayMode = NSTextInsertionIndicatorDisplayModeAutomatic;
@@ -336,7 +355,8 @@ namespace spargel::ui {
     }
 
     void WindowAppKit::_enable_text_cursor() {
-        // _text_cursor.displayMode = NSTextInsertionIndicatorDisplayModeAutomatic;
+        // _text_cursor.displayMode =
+        // NSTextInsertionIndicatorDisplayModeAutomatic;
     }
 
     WindowAppKit::~WindowAppKit() {
@@ -376,7 +396,9 @@ namespace spargel::ui {
             usize index = 0;
             u64 last_report = 0;
             u64 start = 0;
-            u64 getTimestamp() { return clock_gettime_nsec_np(CLOCK_UPTIME_RAW); }
+            u64 getTimestamp() {
+                return clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+            }
             void beginFrame() { start = getTimestamp(); }
             void endFrame() {
                 auto now = getTimestamp();
@@ -393,7 +415,8 @@ namespace spargel::ui {
                 for (auto d : data) {
                     sum += d;
                 }
-                spargel_log_info("wall frame time: %.3fms", (double)sum / (1e6 * N));
+                spargel_log_info("wall frame time: %.3fms",
+                                 (double)sum / (1e6 * N));
             }
         };
     }  // namespace
@@ -459,8 +482,12 @@ namespace spargel::ui {
         return static_cast<float>([ns_window_ backingScaleFactor]);
     }
 
-    float WindowAppKit::width() { return (float)ns_window_.contentView.frame.size.width; }
-    float WindowAppKit::height() { return (float)ns_window_.contentView.frame.size.height; }
+    float WindowAppKit::width() {
+        return (float)ns_window_.contentView.frame.size.width;
+    }
+    float WindowAppKit::height() {
+        return (float)ns_window_.contentView.frame.size.height;
+    }
 
     void WindowAppKit::emitMouseMoved(const MouseMovedEvent& e) {
         if (delegate()) {

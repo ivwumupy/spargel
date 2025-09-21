@@ -1,7 +1,7 @@
 #pragma once
 
 #include "spargel/base/compiler.h"
-#include "spargel/base/types.h" // IWYU pragma: keep
+#include "spargel/base/types.h"  // IWYU pragma: keep
 
 // notes:
 //
@@ -295,10 +295,11 @@ namespace spargel::base {
     using decay = __decay(T);
 #else
     template <typename T>
-    using decay =
-        conditional<is_array<remove_reference<T>>, add_pointer<remove_extent<remove_reference<T>>>,
-                    conditional<is_function<remove_reference<T>>, add_pointer<remove_reference<T>>,
-                                remove_cv<remove_reference<T>>>>;
+    using decay = conditional<is_array<remove_reference<T>>,
+                              add_pointer<remove_extent<remove_reference<T>>>,
+                              conditional<is_function<remove_reference<T>>,
+                                          add_pointer<remove_reference<T>>,
+                                          remove_cv<remove_reference<T>>>>;
 #endif
 
 #if spargel_has_builtin(__add_rvalue_reference)
@@ -316,7 +317,8 @@ namespace spargel::base {
         };
     }  // namespace _add_rvalue_reference
     template <typename T>
-    using add_rvalue_reference = _add_rvalue_reference::add_rvalue_reference<T>::type;
+    using add_rvalue_reference =
+        _add_rvalue_reference::add_rvalue_reference<T>::type;
 #endif
 
     // need this workaround for some compilers
@@ -335,7 +337,8 @@ namespace spargel::base {
     inline constexpr bool is_convertible = __is_convertible(S, T);
 #else
     template <typename S, typename T>
-    inline constexpr bool is_convertible = requires { declval<void (&)(T)>()(declval<S>()); };
+    inline constexpr bool is_convertible =
+        requires { declval<void (&)(T)>()(declval<S>()); };
 #endif
 
 }  // namespace spargel::base

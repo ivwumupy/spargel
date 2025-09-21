@@ -15,31 +15,57 @@ namespace {
         using DataType = TestData;
         using ErrorType = CodecError;
 
-        base::Either<TestData, CodecError> makeNull() { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeNull() {
+            return base::Left(TestData{});
+        }
 
-        base::Either<TestData, CodecError> makeBoolean(bool) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeBoolean(bool) {
+            return base::Left(TestData{});
+        }
 
-        base::Either<TestData, CodecError> makeU8(u8) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeI8(i8) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeU16(u16) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeI16(i16) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeU32(u32) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeI32(i32) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeU64(u64) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeI64(i64) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeU8(u8) {
+            return base::Left(TestData{});
+        }
+        base::Either<TestData, CodecError> makeI8(i8) {
+            return base::Left(TestData{});
+        }
+        base::Either<TestData, CodecError> makeU16(u16) {
+            return base::Left(TestData{});
+        }
+        base::Either<TestData, CodecError> makeI16(i16) {
+            return base::Left(TestData{});
+        }
+        base::Either<TestData, CodecError> makeU32(u32) {
+            return base::Left(TestData{});
+        }
+        base::Either<TestData, CodecError> makeI32(i32) {
+            return base::Left(TestData{});
+        }
+        base::Either<TestData, CodecError> makeU64(u64) {
+            return base::Left(TestData{});
+        }
+        base::Either<TestData, CodecError> makeI64(i64) {
+            return base::Left(TestData{});
+        }
 
-        base::Either<TestData, CodecError> makeF32(f32) { return base::Left(TestData{}); }
-        base::Either<TestData, CodecError> makeF64(f64) { return base::Left(TestData{}); }
+        base::Either<TestData, CodecError> makeF32(f32) {
+            return base::Left(TestData{});
+        }
+        base::Either<TestData, CodecError> makeF64(f64) {
+            return base::Left(TestData{});
+        }
 
         base::Either<TestData, CodecError> makeString(const base::String&) {
             return base::Left(TestData{});
         }
 
-        base::Either<TestData, CodecError> makeArray(const base::vector<TestData>&) {
+        base::Either<TestData, CodecError> makeArray(
+            const base::vector<TestData>&) {
             return base::Left(TestData{});
         }
 
-        base::Either<TestData, CodecError> makeMap(const base::HashMap<base::String, TestData>&) {
+        base::Either<TestData, CodecError> makeMap(
+            const base::HashMap<base::String, TestData>&) {
             return base::Left(TestData{});
         }
     };
@@ -50,32 +76,57 @@ namespace {
         using DataType = TestData;
         using ErrorType = CodecError;
 
-        base::Optional<CodecError> getNull(const TestData&) { return base::nullopt; }
+        base::Optional<CodecError> getNull(const TestData&) {
+            return base::nullopt;
+        }
 
-        base::Either<bool, CodecError> getBoolean(const TestData&) { return base::Left(true); }
+        base::Either<bool, CodecError> getBoolean(const TestData&) {
+            return base::Left(true);
+        }
 
-        base::Either<u8, CodecError> getU8(const TestData&) { return base::Left((u8)0); }
-        base::Either<i8, CodecError> getI8(const TestData&) { return base::Left((i8)0); }
-        base::Either<u16, CodecError> getU16(const TestData&) { return base::Left((u16)0); }
-        base::Either<i16, CodecError> getI16(const TestData&) { return base::Left((i16)0); }
-        base::Either<u32, CodecError> getU32(const TestData&) { return base::Left((u32)0); }
-        base::Either<i32, CodecError> getI32(const TestData&) { return base::Left((i32)0); }
-        base::Either<u64, CodecError> getU64(const TestData&) { return base::Left((u64)0); }
-        base::Either<i64, CodecError> getI64(const TestData&) { return base::Left((i64)0); }
+        base::Either<u8, CodecError> getU8(const TestData&) {
+            return base::Left((u8)0);
+        }
+        base::Either<i8, CodecError> getI8(const TestData&) {
+            return base::Left((i8)0);
+        }
+        base::Either<u16, CodecError> getU16(const TestData&) {
+            return base::Left((u16)0);
+        }
+        base::Either<i16, CodecError> getI16(const TestData&) {
+            return base::Left((i16)0);
+        }
+        base::Either<u32, CodecError> getU32(const TestData&) {
+            return base::Left((u32)0);
+        }
+        base::Either<i32, CodecError> getI32(const TestData&) {
+            return base::Left((i32)0);
+        }
+        base::Either<u64, CodecError> getU64(const TestData&) {
+            return base::Left((u64)0);
+        }
+        base::Either<i64, CodecError> getI64(const TestData&) {
+            return base::Left((i64)0);
+        }
 
-        base::Either<f32, CodecError> getF32(const TestData&) { return base::Left((f32)0); }
-        base::Either<f64, CodecError> getF64(const TestData&) { return base::Left((f64)0); }
+        base::Either<f32, CodecError> getF32(const TestData&) {
+            return base::Left((f32)0);
+        }
+        base::Either<f64, CodecError> getF64(const TestData&) {
+            return base::Left((f64)0);
+        }
 
         base::Either<base::String, CodecError> getString(const TestData&) {
             return base::Left(base::String(""));
         }
 
-        base::Either<base::vector<TestData>, CodecError> getArray(const TestData&) {
+        base::Either<base::vector<TestData>, CodecError> getArray(
+            const TestData&) {
             return base::Left(base::vector<TestData>{});
         }
 
-        base::Either<base::Optional<TestData>, CodecError> getMember(const TestData&,
-                                                                     base::StringView) {
+        base::Either<base::Optional<TestData>, CodecError> getMember(
+            const TestData&, base::StringView) {
             return base::Left(base::makeOptional<TestData>());
         }
     };
@@ -103,38 +154,47 @@ namespace {
                                                [](auto& o) { return o.type; }),
                 makeNormalEncodeField<Student>("name"_sv, StringCodec{},
                                                [](auto& o) { return o.name; }),
-                makeOptionalEncodeField<Student>("nickname"_sv, StringCodec{},
-                                                 [](auto& o) { return o.nickname; }),
-                makeNormalEncodeField<Student>("age"_sv, U32Codec{}, [](auto& o) { return o.age; }),
+                makeOptionalEncodeField<Student>(
+                    "nickname"_sv, StringCodec{},
+                    [](auto& o) { return o.nickname; }),
+                makeNormalEncodeField<Student>("age"_sv, U32Codec{},
+                                               [](auto& o) { return o.age; }),
                 makeNormalEncodeField<Student>("happy"_sv, BooleanCodec{},
                                                [](auto& o) { return o.happy; }),
-                makeNormalEncodeField<Student>("scores"_sv, makeVectorEncoder(F32Codec{}),
-                                               [](auto& o) { return o.scores; }));
+                makeNormalEncodeField<Student>(
+                    "scores"_sv, makeVectorEncoder(F32Codec{}),
+                    [](auto& o) { return o.scores; }));
         }
 
         static auto decoder() {
             return makeRecordDecoder<Student>(
                 base::Constructor<Student>{},
-                makeDefaultDecodeField("type"_sv, StringCodec{}, base::String("normal")),
+                makeDefaultDecodeField("type"_sv, StringCodec{},
+                                       base::String("normal")),
                 makeNormalDecodeField("name"_sv, StringCodec{}),
                 makeOptionalDecodeField("nickname"_sv, StringCodec{}),
                 makeNormalDecodeField("age"_sv, U32Codec{}),
                 makeNormalDecodeField("happy"_sv, BooleanCodec{}),
-                makeNormalDecodeField("scores"_sv, makeVectorDecoder(F32Codec{})));
+                makeNormalDecodeField("scores"_sv,
+                                      makeVectorDecoder(F32Codec{})));
         }
 
         static auto codec() {
             return makeRecordCodec<Student>(
                 base::Constructor<Student>{},
-                makeDefaultField<Student>("type"_sv, StringCodec{}, base::String("normal"),
+                makeDefaultField<Student>("type"_sv, StringCodec{},
+                                          base::String("normal"),
                                           [](auto& o) { return o.type; }),
-                makeNormalField<Student>("name"_sv, StringCodec{}, [](auto& o) { return o.name; }),
+                makeNormalField<Student>("name"_sv, StringCodec{},
+                                         [](auto& o) { return o.name; }),
                 makeOptionalField<Student>("nickname"_sv, StringCodec{},
                                            [](auto& o) { return o.nickname; }),
-                makeNormalField<Student>("age"_sv, U32Codec{}, [](auto& o) { return o.age; }),
+                makeNormalField<Student>("age"_sv, U32Codec{},
+                                         [](auto& o) { return o.age; }),
                 makeNormalField<Student>("happy"_sv, BooleanCodec{},
                                          [](auto& o) { return o.happy; }),
-                makeNormalField<Student>("scores"_sv, makeVectorCodec(F32Codec{}),
+                makeNormalField<Student>("scores"_sv,
+                                         makeVectorCodec(F32Codec{}),
                                          [](auto& o) { return o.scores; }));
         }
     };
@@ -191,12 +251,14 @@ namespace {
 }  // namespace
 
 TEST(Codec_Encode_Error) {
-    auto result = ErrorEncoder<bool>("encode error"_sv).encode(encodeBackend, true);
+    auto result =
+        ErrorEncoder<bool>("encode error"_sv).encode(encodeBackend, true);
     spargel_check(result.isRight());
 }
 
 TEST(Codec_Decode_Error) {
-    auto result = ErrorDecoder<bool>("decode error"_sv).decode(decodeBackend, TestData{});
+    auto result =
+        ErrorDecoder<bool>("decode error"_sv).decode(decodeBackend, TestData{});
     spargel_check(result.isRight());
 }
 
@@ -262,7 +324,8 @@ TEST(Codec_Encode_Array) {
         v.emplace("A");
         v.emplace("BC");
         v.emplace("DEF");
-        auto result = makeVectorEncoder(StringCodec{}).encode(encodeBackend, base::move(v));
+        auto result = makeVectorEncoder(StringCodec{})
+                          .encode(encodeBackend, base::move(v));
         spargel_check(result.isLeft());
     }
     {
@@ -275,8 +338,8 @@ TEST(Codec_Encode_Array) {
         v2.emplace(3);
         v2.emplace(-4);
         v.emplace(base::move(v2));
-        auto result =
-            makeVectorEncoder(makeVectorEncoder(I32Codec{})).encode(encodeBackend, base::move(v));
+        auto result = makeVectorEncoder(makeVectorEncoder(I32Codec{}))
+                          .encode(encodeBackend, base::move(v));
         spargel_check(result.isLeft());
     }
 
@@ -285,24 +348,27 @@ TEST(Codec_Encode_Array) {
         v.emplace("A");
         v.emplace("BC");
         v.emplace("DEF");
-        auto result = makeVectorCodec(StringCodec{}).encode(encodeBackend, base::move(v));
+        auto result =
+            makeVectorCodec(StringCodec{}).encode(encodeBackend, base::move(v));
         spargel_check(result.isLeft());
     }
 }
 
 TEST(Codec_Decode_Array) {
     {
-        auto result = makeVectorDecoder(I32Codec{}).decode(decodeBackend, TestData{});
+        auto result =
+            makeVectorDecoder(I32Codec{}).decode(decodeBackend, TestData{});
         spargel_check(result.isLeft());
     }
     {
-        auto result =
-            makeVectorDecoder(makeVectorDecoder(I32Codec{})).decode(decodeBackend, TestData{});
+        auto result = makeVectorDecoder(makeVectorDecoder(I32Codec{}))
+                          .decode(decodeBackend, TestData{});
         spargel_check(result.isLeft());
     }
 
     {
-        auto result = makeVectorCodec(I32Codec{}).decode(decodeBackend, TestData{});
+        auto result =
+            makeVectorCodec(I32Codec{}).decode(decodeBackend, TestData{});
         spargel_check(result.isLeft());
     }
 }
@@ -343,44 +409,47 @@ TEST(Codec_Encode_Record_FailFast) {
     {
         int counter = 0;
         auto result =
-            makeRecordEncoder<int>(makeNormalEncodeField<int>("boo"_sv, BooleanCodec{},
-                                                              [&](int) {
-                                                                  counter++;
-                                                                  return true;
-                                                              }),
-                                   makeNormalEncodeField<int>("i32"_sv, I32Codec{},
-                                                              [&](int) {
-                                                                  counter++;
-                                                                  return 0;
-                                                              }),
-                                   makeNormalEncodeField<int>("string"_sv, StringCodec{},
-                                                              [&](int) {
-                                                                  counter++;
-                                                                  return base::String{"string"};
-                                                              }))
+            makeRecordEncoder<int>(
+                makeNormalEncodeField<int>("boo"_sv, BooleanCodec{},
+                                           [&](int) {
+                                               counter++;
+                                               return true;
+                                           }),
+                makeNormalEncodeField<int>("i32"_sv, I32Codec{},
+                                           [&](int) {
+                                               counter++;
+                                               return 0;
+                                           }),
+                makeNormalEncodeField<int>("string"_sv, StringCodec{},
+                                           [&](int) {
+                                               counter++;
+                                               return base::String{"string"};
+                                           }))
                 .encode(encodeBackend, 0);
         spargel_check(result.isLeft());
         spargel_check(counter == 3);
     }
     {
         int counter = 0;
-        auto result = makeRecordEncoder<int>(
-                          makeNormalEncodeField<int>("boo"_sv, BooleanCodec{},
-                                                     [&](int) {
-                                                         counter++;
-                                                         return true;
-                                                     }),
-                          makeNormalEncodeField<int>("i32"_sv, ErrorEncoder<i32>("error"_sv),
-                                                     [&](int) {
-                                                         counter++;
-                                                         return 0;
-                                                     }),
-                          makeNormalEncodeField<int>("string"_sv, StringCodec{},
-                                                     [&](int) {
-                                                         counter++;
-                                                         return base::String{"string"};
-                                                     }))
-                          .encode(encodeBackend, 0);
+        auto result =
+            makeRecordEncoder<int>(
+                makeNormalEncodeField<int>("boo"_sv, BooleanCodec{},
+                                           [&](int) {
+                                               counter++;
+                                               return true;
+                                           }),
+                makeNormalEncodeField<int>("i32"_sv,
+                                           ErrorEncoder<i32>("error"_sv),
+                                           [&](int) {
+                                               counter++;
+                                               return 0;
+                                           }),
+                makeNormalEncodeField<int>("string"_sv, StringCodec{},
+                                           [&](int) {
+                                               counter++;
+                                               return base::String{"string"};
+                                           }))
+                .encode(encodeBackend, 0);
         spargel_check(result.isRight());
         spargel_check(counter == 2);
     }

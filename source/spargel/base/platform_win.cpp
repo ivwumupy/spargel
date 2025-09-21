@@ -14,7 +14,9 @@ namespace spargel::base {
         return (dynamic_library_handle*)LoadLibraryA(filename);
     }
 
-    void close_dynamic_library(dynamic_library_handle* handle) { FreeLibrary((HMODULE)handle); }
+    void close_dynamic_library(dynamic_library_handle* handle) {
+        FreeLibrary((HMODULE)handle);
+    }
 
     void* get_proc_address(dynamic_library_handle* handle, const char* name) {
         return (void*)GetProcAddress((HMODULE)handle, name);
@@ -25,7 +27,7 @@ namespace spargel::base {
     }
 
     // TODO: Symbolize the traces.
-    void PrintBacktrace() { 
+    void PrintBacktrace() {
         void* entries[64];
         auto count = CaptureStackBackTrace(0, 64, entries, nullptr);
         for (int i = 0; i < count; i++) {

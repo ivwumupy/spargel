@@ -6,7 +6,8 @@
 
 namespace spargel::base {
     namespace {
-        // the object returned to the caller when the coroutine is initially suspended
+        // the object returned to the caller when the coroutine is initially
+        // suspended
         struct return_object {
             struct promise_type {
                 return_object get_return_object() {
@@ -31,7 +32,8 @@ namespace spargel::base {
             }
             // return void => transfer control to the caller/resumer
             void await_suspend(CoroutineHandle<> h) {
-                // schedule the (suspended) coroutine to some executor to execute later
+                // schedule the (suspended) coroutine to some executor to
+                // execute later
                 *handle = h;
             }
             void await_resume() { printf("resume\n"); }
@@ -59,7 +61,9 @@ namespace spargel::base {
             using Handle = CoroutineHandle<promise_type>;
             struct promise_type {
                 T value;
-                Generator<T> get_return_object() { return {Handle::from_promise(*this)}; }
+                Generator<T> get_return_object() {
+                    return {Handle::from_promise(*this)};
+                }
                 AlwaysSuspend initial_suspend() { return {}; }
                 AlwaysSuspend final_suspend() noexcept { return {}; }
                 void return_void() {}

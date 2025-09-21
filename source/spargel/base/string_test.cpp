@@ -12,7 +12,8 @@ namespace spargel::base {
 
         bool compare(const String& s, const char* s_expected) {
             usize len = s.length();
-            return memcmp(s.data(), s_expected, len) == 0 && s_expected[len] == 0;
+            return memcmp(s.data(), s_expected, len) == 0 &&
+                   s_expected[len] == 0;
         }
 
         // FIXME

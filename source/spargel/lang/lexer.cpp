@@ -7,8 +7,8 @@ namespace spargel::lang {
             return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
         }
         bool isIdentifierContinuation(char c) {
-            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' ||
-                   (c >= '0' && c <= '9');
+            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                   c == '_' || (c >= '0' && c <= '9');
         }
     }  // namespace
     SyntaxToken Cursor::nextToken() {
