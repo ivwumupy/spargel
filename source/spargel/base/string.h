@@ -1,5 +1,9 @@
 #pragma once
 
+// TODO: Move UTF-8 specific code into `UnicodeString`. Make
+// `base::String` a very basic string type that is used for calling
+// system apis.
+
 #include "spargel/base/algorithm.h"
 #include "spargel/base/allocator.h"
 #include "spargel/base/assert.h"
@@ -16,96 +20,14 @@
 namespace spargel::base {
     namespace _string {
 
-        /*
-        struct string {
-            string() = default;
-
-            string(string_view v);
-
-            string(string const& other);
-            string& operator=(string const& other) {
-                if (this != &other) {
-                    string tmp(other);
-                    swap(*this, tmp);
-                }
-                return *this;
-            }
-
-            string(string&& other) { swap(*this, other); }
-            string& operator=(string&& other) {
-                if (this != &other) {
-                    string tmp(move(other));
-                    swap(*this, tmp);
-                }
-                return *this;
-            }
-
-            explicit string(const char* cstr);
-            string& operator=(const char* cstr) {
-                string tmp(cstr);
-                swap(*this, tmp);
-                return *this;
-            }
-
-            explicit string(char ch);
-            string& operator=(char ch) {
-                string tmp(ch);
-                swap(*this, tmp);
-                return *this;
-            }
-
-            ~string();
-
-            char& operator[](usize i) {
-                spargel_check(i < _length);
-                return _data[i];
-            }
-            char const& operator[](usize i) const {
-                spargel_check(i < _length);
-                return _data[i];
-            }
-
-            usize length() const { return _length; }
-            char* begin() { return _data; }
-            char const* begin() const { return _data; }
-            char* end() { return _data + _length; }
-            char const* end() const { return _data + _length; }
-            char* data() { return _data; }
-            char const* data() const { return _data; }
-            string_view view() const { return string_view(_data, _data +
-        _length); }
-
-            friend bool operator==(string const& lhs, string const& rhs);
-
-            friend string operator+(const string& lhs, const string& rhs);
-
-            friend string operator+(const string& s, char ch);
-
-            friend string operator+(const string& s, const char* s2) { return s
-        + string(s2); }
-
-            friend void tag_invoke(tag<swap>, string& lhs, string& rhs) {
-                swap(lhs._length, rhs._length);
-                swap(lhs._data, rhs._data);
-            }
-
-            friend void tag_invoke(tag<hash>, HashRun& r, string const& s) {
-                r.combine((u8 const*)s._data, s._length);
-            }
-
-            usize _length = 0;
-            char* _data = nullptr;
-        };
-        */
-
-        // clang-format off
-        /// A code point is a value in the Unicode codespace, i.e. an integer in the range [0, 10ffff].
-        /// A Unicode scalar value is a code point that is not a high-surrogate or a low-surrogate.
-        /// In other words, a Unicode scalar value is a code point in the range [0, d7ff] union [e000, 10ffff].
-        ///
-        /// A `UnicodeScalar` represents a Unicode scalar value.
-        ///
-        // clang-format on
+        // A code point is a value in the Unicode codespace, i.e. an integer in
+        // the range [0, 10ffff]. A Unicode scalar value is a code point that is
+        // not a high-surrogate or a low-surrogate. In other words, a Unicode
+        // scalar value is a code point in the range [0, d7ff] union [e000,
+        // 10ffff].
+        //
+        // A `UnicodeScalar` represents a Unicode scalar value.
+        //
         class UnicodeScalar {
         public:
             UnicodeScalar() = default;
@@ -131,16 +53,18 @@ namespace spargel::base {
             u32 _value = 0;
         };
 
-        /// A UTF-8 string.
-        ///
-        ///-------
-        /// UTF-8
-        ///
-        /// 0yyyzzzz
-        /// 110xxxyy 10yyzzzz
-        /// 1110wwww 10xxxxyy 10yyzzzz
-        /// 11110uvv 10vvwwww 10xxxxyy 10yyzzzz
-        ///
+        // TODO: See above.
+        //
+        // A UTF-8 string.
+        //
+        //-------
+        // UTF-8
+        //
+        // 0yyyzzzz
+        // 110xxxyy 10yyzzzz
+        // 1110wwww 10xxxxyy 10yyzzzz
+        // 11110uvv 10vvwwww 10xxxxyy 10yyzzzz
+        //
         class String {
         public:
             static String from_range(char const* begin, char const* end) {
@@ -255,7 +179,7 @@ namespace spargel::base {
                 return result;
             }
 
-            /// Get the `i`-th byte.
+            // Get the `i`-th byte.
             Byte getByte(usize i) const { return (Byte)_bytes[i]; }
 
             span<Byte> bytes() const { return _bytes.toSpan().asBytes(); }
@@ -284,7 +208,7 @@ namespace spargel::base {
                 return len;
             }
 
-            /// Get the unicode scalar containing the `i`-th byte.
+            // Get the unicode scalar containing the `i`-th byte.
             // u32 getScalarAtByte(usize i) {
             //     spargel_panic_here();
             // }

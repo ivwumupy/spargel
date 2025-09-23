@@ -1,5 +1,6 @@
 #include "spargel/gpu/gpu_metal.h"
 #include "spargel/base/unique_ptr.h"
+#include "spargel/gpu/metal_shader_manager.h"
 
 // metal
 #import <Metal/Metal.h>
@@ -501,5 +502,31 @@ namespace spargel::gpu {
         [_encoder
             setComputePipelineState:static_cast<ComputePipelineMetal*>(pipeline)
                                         ->pipeline()];
+    }
+
+    id<MTLLibrary> DeviceMetal::loadLibrary(base::StringView path) {
+        auto* lib = libraries_.get(path);
+        if (lib != nullptr) {
+            return *lib;
+        }
+        return nullptr;
+    }
+
+    ShaderFunction* DeviceMetal::createShaderFunction(
+        base::StringView shader_id) {
+        auto& manager = MetalShaderManager::instance();
+        auto result = manager.queryShader(shader_id);
+        if (result.is_error()) {
+            spargel_log_error("shader not found");
+            return nullptr;
+        }
+        auto [path, meta] = result.value();
+        auto* lib = loadLibrary(path);
+        (void)(meta);
+        (void)(lib);
+        return nullptr;
+    }
+    void DeviceMetal::destroyShaderFunction(ShaderFunction* shader) {
+        delete shader;
     }
 }  // namespace spargel::gpu

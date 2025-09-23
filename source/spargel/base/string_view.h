@@ -1,6 +1,7 @@
 #pragma once
 
 #include "spargel/base/check.h"
+#include "spargel/base/format.h"
 #include "spargel/base/hash.h"
 #include "spargel/base/types.h"
 
@@ -10,18 +11,15 @@
 namespace spargel::base {
 
     namespace string_view_ {
-        class string_view {
+        class StringView {
         public:
-            constexpr string_view() = default;
-            constexpr string_view(char const* begin, char const* end)
+            constexpr StringView() = default;
+            constexpr StringView(char const* begin, char const* end)
                 : _begin{begin}, _end{end} {}
-            constexpr string_view(char const* begin, usize len)
+            constexpr StringView(char const* begin, usize len)
                 : _begin{begin}, _end{begin + len} {}
-            constexpr string_view(char const* s)
-                : string_view{s, __builtin_strlen(s)} {}
-            // template <usize N>
-            // constexpr string_view(char const (&str)[N]) : string_view(str,
-            // str + N - 1) {}
+            constexpr StringView(char const* s)
+                : StringView{s, __builtin_strlen(s)} {}
 
             constexpr char operator[](usize i) const { return _begin[i]; }
             constexpr usize length() const {
@@ -32,14 +30,14 @@ namespace spargel::base {
             constexpr char const* end() const { return _end; }
             constexpr char const* data() const { return _begin; }
 
-            friend bool operator==(string_view const& lhs,
-                                   string_view const& rhs) {
+            friend bool operator==(StringView const& lhs,
+                                   StringView const& rhs) {
                 if (lhs.length() != rhs.length()) return false;
                 return memcmp(lhs._begin, rhs._begin, lhs.length()) == 0;
             }
 
             friend void tag_invoke(tag<hash>, HashRun& run,
-                                   string_view const& self) {
+                                   StringView const& self) {
                 run.combine(reinterpret_cast<u8 const*>(self._begin),
                             self.length());
             }
@@ -48,10 +46,16 @@ namespace spargel::base {
             char const* _begin = nullptr;
             char const* _end = nullptr;
         };
+
+        template <FormatTarget Target>
+        void tag_invoke(tag<formatArg>, Target& target, detail::FormatString,
+                        StringView sv) {
+            target.append(sv.begin(), sv.end());
+        }
     }  // namespace string_view_
 
-    using StringView = string_view_::string_view;
-    using string_view = StringView;
+    using string_view_::StringView;
+    using string_view = string_view_::StringView;
 
     namespace literals {
         inline constexpr StringView operator""_sv(char const* begin,

@@ -11,11 +11,74 @@ namespace spargel::base {
         // TODO: Type-safe `FormatString`.
         class FormatString {
         public:
+            constexpr FormatString() : begin_{nullptr}, end_{nullptr} {}
             constexpr FormatString(char const* s)
-                : begin_{s}, end_{s + __builtin_strlen(s)} {}
+                : FormatString{s, s + __builtin_strlen(s)} {}
+            constexpr FormatString(char const* begin, char const* end)
+                : begin_{begin}, end_{end} {}
 
             constexpr char const* begin() const { return begin_; }
             constexpr char const* end() const { return end_; }
+
+            constexpr bool empty() const { return begin_ == nullptr; }
+
+            constexpr void split(FormatString& segment, FormatString& fmt,
+                                 FormatString& rest) const {
+                auto iter = begin_;
+                while (iter < end_) {
+                    if (*iter == '}') {
+                        auto next = iter + 1;
+                        if (next >= end_) {
+                            __builtin_trap();
+                        }
+                        if (*next != '}') {
+                            __builtin_trap();
+                        }
+                        iter += 2;
+                        continue;
+                    }
+                    if (*iter != '{') {
+                        iter++;
+                        continue;
+                    }
+                    // *iter == '{'
+                    if (iter + 1 >= end_) {
+                        // bad case: "xxx{"
+                        segment = FormatString{begin_, end_};
+                        fmt = FormatString{};
+                        rest = FormatString{};
+                    }
+                    auto next = *(iter + 1);
+                    if (next == '{') {
+                        // escape case: "xxx{{yyy"
+                        iter += 2;
+                        continue;
+                    }
+                    // fmt case: "xxx{yyy"
+                    segment = FormatString{begin_, iter};
+                    auto fmt_start = iter;
+                    while (iter < end_) {
+                        if (*iter == '}') {
+                            break;
+                        }
+                        iter++;
+                    }
+                    // *iter == '}' or iter == end_
+                    if (iter >= end_) {
+                        __builtin_trap();
+                    }
+                    // *iter == '}', iter < end_
+                    iter++;
+                    fmt = FormatString{fmt_start, iter};
+                    rest = FormatString{iter, end_};
+                    return;
+                }
+                if (iter == end_) {
+                    segment = FormatString{begin_, end_};
+                    fmt = FormatString{};
+                    rest = FormatString{};
+                }
+            }
 
         private:
             char const* begin_;
@@ -24,36 +87,47 @@ namespace spargel::base {
     }  // namespace detail
 
     namespace format_ {
-        struct ParseFormatCPO {
-            template <typename T>
-            constexpr decltype(auto) operator()(T&& t) const {
-                return tag_invoke(ParseFormatCPO{}, base::forward<T>(t));
+        struct FormatArgCPO {
+            template <FormatTarget Target, typename Arg>
+            constexpr decltype(auto) operator()(Target& target,
+                                                detail::FormatString fmt,
+                                                Arg&& arg) const {
+                return tag_invoke(FormatArgCPO{}, target, fmt,
+                                  base::forward<Arg>(arg));
             }
         };
     }  // namespace format_
 
-    // `parseFormat` is a customization-point to handle the parsing of the
-    // format specification. It should return a formatter object that will be
-    // invoked to perform the format.
-    inline constexpr format_::ParseFormatCPO parseFormat;
+    inline constexpr format_::FormatArgCPO formatArg;
 
-    template <FormatTarget Target, typename... Args>
-    constexpr void formatTo(Target& target, detail::FormatString fmt,
-                            Args&&... args) {
-        auto it = fmt.begin();
-        auto fragment_begin = it;
-        while (it < fmt.end()) {
-            auto c = *it;
-            if (c != '{') {
-                it++;
-                continue;
-            }
+    namespace format_ {
+        template <FormatTarget Target>
+        void tag_invoke(tag<formatArg>, Target& target, detail::FormatString,
+                        char const* s) {
+            target.append(s, s + __builtin_strlen(s));
         }
+    }  // namespace format_
+
+    template <FormatTarget Target>
+    constexpr void formatTo(Target& target, detail::FormatString fmt) {
+        target.append(fmt.begin(), fmt.end());
+    }
+
+    template <FormatTarget Target, typename Arg, typename... Args>
+    constexpr void formatTo(Target& target, detail::FormatString fmt, Arg&& arg,
+                            Args&&... args) {
+        detail::FormatString segment;
+        detail::FormatString fmt_str;
+        detail::FormatString rest;
+        fmt.split(segment, fmt_str, rest);
+        target.append(segment.begin(), segment.end());
+        formatArg(target, fmt_str, arg);
+        formatTo(target, rest, forward<Args>(args)...);
     }
 
     namespace detail {
         struct ConsoleTarget {
-            // TODO
+            void append(char const* begin, char const* end);
         };
     }  // namespace detail
 

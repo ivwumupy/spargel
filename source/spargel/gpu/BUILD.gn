@@ -17,6 +17,7 @@ source_set("gpu") {
         sources += [
             "gpu_metal.mm",
             "metal_context.mm",
+            "metal_shader_manager.cpp",
         ]
         frameworks = [
             "Foundation.framework",

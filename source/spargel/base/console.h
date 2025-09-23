@@ -24,6 +24,9 @@ namespace spargel::base {
 
         void write(char c);
         void write(char const* s, usize len);
+        void write(char const* begin, char const* end) {
+            write(begin, static_cast<usize>(end - begin));
+        }
 
         template <usize N>
         void write(char const (&s)[N]) {

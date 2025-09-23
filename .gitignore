@@ -24,3 +24,6 @@ CMakeUserPresets.json
 
 # swift
 .build/
+
+# xmake
+.xmake/

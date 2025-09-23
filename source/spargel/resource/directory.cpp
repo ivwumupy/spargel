@@ -114,8 +114,7 @@ namespace spargel::resource {
         auto real_path = base::CString(_real_path(id));
         int fd = ::open(real_path.data(), O_RDONLY);
         if (fd < 0) {
-            spargel_log_error("requested resource \"%s:%s\" not found (%s)",
-                              base::CString(id.ns()).data(),
+            spargel_log_error("requested resource \"%s\" not found (%s)",
                               base::CString(id.path()).data(),
                               real_path.data());
             return base::nullopt;
@@ -237,7 +236,7 @@ namespace spargel::resource {
 
     base::String ResourceManagerDirectory::_real_path(const ResourceId& id) {
         if (_root_path.length() == 0) {
-            return id.path();
+            return base::String(id.path());
         } else {
             return _root_path + PATH_SPLIT + id.path();
         }

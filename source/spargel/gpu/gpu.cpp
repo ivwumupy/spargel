@@ -42,8 +42,4 @@ namespace spargel::gpu {
 #endif
     }
 
-    void ShaderManager::registerMetalLibrary(MetalLibraryMeta const&) {
-        // blobs_.set(ShaderKey{shader_id, ShaderKind::metal_library}, nullptr);
-    }
-
 }  // namespace spargel::gpu

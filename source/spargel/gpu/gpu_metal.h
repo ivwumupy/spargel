@@ -1,6 +1,8 @@
 #pragma once
 
 #include "spargel/base/assert.h"
+#include "spargel/base/hash_map.h"
+#include "spargel/base/string.h"
 #include "spargel/base/unique_ptr.h"
 #include "spargel/base/vector.h"
 #include "spargel/gpu/gpu.h"
@@ -367,11 +369,10 @@ namespace spargel::gpu {
 
         ShaderLibrary* createShaderLibrary(base::span<u8> bytes) override;
         void destroyShaderLibrary(ShaderLibrary* library) override;
+
         ShaderFunction* createShaderFunction(
-            base::StringView /*shader_id*/) override {
-            return nullptr;
-        }
-        void destroyShaderFunction(ShaderFunction* /*shader*/) override {}
+            base::StringView shader_id) override;
+        void destroyShaderFunction(ShaderFunction* shader) override;
 
         RenderPipeline* createRenderPipeline(
             RenderPipelineDescriptor const& descriptor) override;
@@ -454,7 +455,12 @@ namespace spargel::gpu {
         auto device() { return _device; }
 
     private:
+        id<MTLLibrary> loadLibrary(base::StringView path);
+
         id<MTLDevice> _device;
+
+        // path -> library
+        base::HashMap<base::StringView, id<MTLLibrary>> libraries_;
     };
 
 }  // namespace spargel::gpu
